@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="Layer_2"
+   x="0px"
+   y="0px"
+   width="400.667px"
+   height="400.666px"
+   viewBox="0 0 400.667 400.666"
+   enable-background="new 0 0 400.667 400.666"
+   xml:space="preserve"
+   sodipodi:docname="heading_mechanics_text.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"><metadata
+   id="metadata2353"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs2351" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="1920"
+   inkscape:window-height="1092"
+   id="namedview2349"
+   showgrid="false"
+   inkscape:zoom="2.1938473"
+   inkscape:cx="116.00676"
+   inkscape:cy="200.33299"
+   inkscape:window-x="0"
+   inkscape:window-y="27"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_2" />
+<filter
+   filterUnits="objectBoundingBox"
+   id="AI_Shadow_1">
+	<feGaussianBlur
+   stdDeviation="5"
+   result="blur"
+   in="SourceAlpha"
+   id="feGaussianBlur2189" />
+	<feOffset
+   dy="0"
+   dx="0"
+   result="offsetBlurredAlpha"
+   in="blur"
+   id="feOffset2191" />
+	<feMerge
+   id="feMerge2197">
+		<feMergeNode
+   in="offsetBlurredAlpha"
+   id="feMergeNode2193" />
+		<feMergeNode
+   in="SourceGraphic"
+   id="feMergeNode2195" />
+	</feMerge>
+</filter>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<g
+   display="none"
+   filter="url(#AI_Shadow_1)"
+   id="g2304">
+	<path
+   display="inline"
+   fill="#232323"
+   d="M200.333,33.5c-91.956,0-166.5,74.544-166.5,166.5s74.544,166.5,166.5,166.5   c91.957,0,166.5-74.544,166.5-166.5S292.29,33.5,200.333,33.5z M200.667,350.099c-82.714,0-149.767-67.053-149.767-149.767   c0-82.713,67.053-149.767,149.767-149.767s149.767,67.053,149.767,149.767C350.433,283.046,283.38,350.099,200.667,350.099z"
+   id="path2300" />
+	<path
+   display="inline"
+   fill="none"
+   stroke="#353535"
+   stroke-width="1.3"
+   stroke-miterlimit="10"
+   d="M200.333,33.5   c-91.956,0-166.5,74.544-166.5,166.5s74.544,166.5,166.5,166.5c91.957,0,166.5-74.544,166.5-166.5S292.29,33.5,200.333,33.5z    M200.667,350.099c-82.714,0-149.767-67.053-149.767-149.767c0-82.713,67.053-149.767,149.767-149.767   s149.767,67.053,149.767,149.767C350.433,283.046,283.38,350.099,200.667,350.099z"
+   id="path2302" />
+</g>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<text
+   stroke-miterlimit="10"
+   font-size="14"
+   id="text2344"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:21.33333397px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;stroke:#ffffff;stroke-width:0.5;stroke-miterlimit:10"
+   x="150.50015"
+   y="165.6895"><tspan
+     sodipodi:role="line"
+     id="tspan2231"
+     x="150.50015"
+     y="165.6895">HEADING</tspan></text>
+
+
+
+
+</svg>

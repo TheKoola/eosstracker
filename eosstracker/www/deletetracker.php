@@ -1,0 +1,132 @@
+<?php
+    ###  This will query the database for the n most recent packets.  
+
+    session_start();
+    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    include $documentroot . '/common/functions.php';
+    include $documentroot . '/common/sessionvariables.php';
+
+
+    if (isset($_GET["callsign"])) {
+        $get_callsign = $_GET["callsign"];
+    }
+    else {
+        $get_callsign = "";
+    }
+    
+
+    ## if any of the GET parameters are not supplied, then exit...
+    if ($get_callsign == "" ) {
+        printf ("[]");
+        return 0;
+    }
+  
+
+    ## Connect to the database
+    $link = connect_to_database();
+    if (!$link) {
+        db_error(sql_last_error());
+        return 0;
+    }
+
+    ## Query to determine if the original callsign is in the trackers table
+    $query = "select
+     tm.callsign,
+     tm.tactical,
+     tm.notes
+
+     from
+     trackers tm
+   
+     where
+     tm.callsign = $1
+     ;";
+
+    ## Execute the query...
+    $result = pg_query_params($link, $query, array(sql_escape_string($get_callsign)));
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    ## if the number of rows is zero, then we couldn't find this original callsign in the trackers table...so we exit.
+    $num = sql_num_rows($result);
+    if ($num == 0) {
+        printf ("[]");
+        sql_close($link);
+        return 0;
+    }
+
+    ## We're here, so we now update this record for the original callsign...
+    $query = "delete from trackers where callsign=$1;";
+    $result = pg_query_params($link, $query, array(sql_escape_string($get_callsign)));
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+    
+    ## if we've made it this far, return the list of trackers including the record just updated...
+    $query = "select
+     t.tactical,
+     tm.callsign,
+     tm.notes,
+     case
+         when t.flightid = '' or t.flightid is null then 'At Large'
+         else t.flightid
+     end as flightid
+
+     from
+     teams t,
+     trackers tm
+
+     where
+     tm.tactical = t.tactical 
+
+     order by
+     t.tactical asc,
+     tm.callsign asc
+     ;";
+
+    $result = sql_query($query);
+
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    $trackers = [];
+    $teams = [];
+
+    while ($row = sql_fetch_array($result)) {
+        $trackers[$row["tactical"]][] = array("tactical" => $row['tactical'], "callsign" => $row['callsign'], "notes" => $row['notes']);
+        $teams[$row["tactical"]] = $row["flightid"];
+    }
+
+    $outerfirsttime = 0;
+    printf ("[ ");
+    foreach ($trackers as $tactical => $ray) {
+        if ($outerfirsttime == 1)
+            printf (", ");
+        $outerfirsttime = 1;
+        printf ("{ \"tactical\" : %s, \"flightid\" : %s, \"trackers\" : [ ", json_encode($tactical), json_encode($teams[$tactical]));
+        $firsttime = 0;
+        foreach ($ray as $k => $list) {
+            if ($firsttime == 1)
+                printf (", ");
+            $firsttime = 1;
+            printf ("{\"tactical\" : %s, \"callsign\" : %s, \"notes\" : %s }", 
+                json_encode($list["tactical"]), 
+                json_encode($list["callsign"]), 
+                json_encode(($list["notes"] == "" ? "n/a" : $list["notes"])) 
+            );
+        }
+        printf (" ] } ");
+    }
+    printf (" ]");
+
+    sql_close($link);
+
+?>

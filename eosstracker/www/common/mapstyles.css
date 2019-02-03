@@ -1,0 +1,376 @@
+/*
+*
+##################################################
+#    This file is part of the HABTracker project for tracking high altitude balloons.
+#
+#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#
+#    HABTracker is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    HABTracker is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################
+*
+*/
+
+
+/* 
+* Styles for things specific to the mapping screens 
+*
+*/
+
+
+.logo {
+    font-size: 3em;
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+    color:  black;
+    text-decoration: none;
+    text-align:  left;
+    vertical-align: middle;
+    border-style: none;
+    text-shadow:  5px 5px 14px gray;
+}
+
+
+.leaflet-control-layers {
+    text-align:  left;
+    /*max-height:  300px;*/
+    overflow: auto;
+}
+
+
+.myTooltipLabelStyle {
+/*  background: #F5F5F5;*/
+  background: #f2efe9;
+  text-align:  center;
+  box-shadow: none;
+  font-size:  1em;
+  border: none;
+  box-shadow: none;
+  margin: 0px;
+  padding:  0px;
+  cursor: none;
+}
+
+.flightTooltipLabelStyle {
+  font-size:  1em;
+  background: #ffffcc;
+  border: none;
+  border: 1px solid tan;
+  text-align:  center;
+  box-shadow: none;
+  font-weight: bold;
+  box-shadow: none;
+  margin: 0px;
+  padding:  2px;
+  cursor: none;
+}
+
+.flightBreadCrumbStyle {
+  font-size:  .9em;
+  background: #f2efe9;
+  border: none;
+/*  border: 1px solid tan;*/
+  text-align:  center;
+  box-shadow: none;
+/*  font-weight: bold;*/
+  box-shadow: none;
+  margin: 0px;
+  padding:  2px;
+  cursor: none;
+}
+
+.myTooltipStyle {
+    font-size: 1em;
+}
+
+
+.myPopupStyle {
+  /*background: green;
+  border: 2px solid cyan
+  */
+
+  font-size:  1em;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+}
+
+html, body, .map {
+    width: 100%;
+    height: 100%;
+    /*font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;*/
+    font: .9em  "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+
+.lorem {
+    font-style: italic;
+    /*color: "#404040";*/
+    color: gray;
+}
+
+
+.flightlink {
+    text-decoration:  none;
+    color:  black;
+    
+}
+
+
+p.instrumentvaluetitle {
+    text-align:  center; 
+    text-decoration: underline;
+    margin-top:  0;
+    margin-right:  0;
+    margin-left:  0;
+    margin-bottom:  10; 
+    font-size:  1.2em; 
+    font-weight: bold;
+    color: black;
+}
+
+div.readouttop {
+    width:  162px;
+    height:  20px;
+    margin: 0;
+    margin-top: 0px;
+    margin-bottom: 5px;
+}    
+
+div.readoutbottom {
+    width:  162px;
+    height:  20px;
+    margin: 0;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}    
+
+
+p.instrumentvalue {
+    background-color:  black;
+    text-align:  center; 
+    vertical-align:  middle;
+    margin: 0;
+    font-family:  "Lucida Console", Monaco, monospace;
+    font-size: 1.2em;
+    font-weight: bold;
+    color:  white;
+    width: 162px;
+    height:  20px;
+    display:  table-cell;
+}
+
+div.instrumentpanel {
+    margin: 0px;
+    padding-top:  5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color:  black;
+    /*border:  1px solid black; */
+    height: 414px;
+    width: 360px;
+}
+
+div.lowerinstrumentpanel {
+    margin: 0px;
+    padding-top:  0px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    background-color:  black;
+    /*border:  1px solid black; */
+    height: 235px;
+    width: 360px;
+}
+
+.column {
+    float: left;
+    width:  180;
+    height: 409; 
+    overflow:  hidden;
+/*    border:  1px solid blue;*/
+}
+
+.rowtop {
+    width:  180px;
+    height:  205px;
+/*    border:  1px solid red;*/
+}
+
+.rowbottom {
+    width:  180px;
+    height:  204px;
+/*    border:  1px solid red;*/
+}
+
+
+
+.packetlist {
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1em;
+    width:  100%;
+}
+
+td.packetlistright {
+    text-align: right;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  2px;
+    padding-left:  5px;
+    font-size:  .9em;
+}
+
+
+
+.packetlistheader {
+    color:  white;
+    text-decoration:none;
+    white-space: normal;
+    font-variant:  small-caps;
+    border:  solid 1px black;
+    background-color: #0074d9;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
+
+.grayrow {
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .5em;
+    width:  100%;
+    background-color: lightgray;
+}
+
+.packetlistpanel {
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+    width:  100%;
+}
+td.packetlistheaderpanel {
+    color:  white;
+    text-decoration:none;
+    white-space: nowrap;
+    font-variant:  small-caps;
+    border:  solid 1px black;
+    background-color: #0074d9;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
+
+td.packetlistheaderright {
+    text-align: right;
+    color:  white;
+    text-decoration:none;
+    white-space: nowrap;
+    font-variant:  small-caps;
+    border:  solid 1px black;
+    background-color: #0074d9;
+    padding-right:  2px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
+
+.preferencestable {
+    border: solid 1px black;
+    
+}
+
+a.section-link:hover { text-decoration: underline; }
+
+.section-header {
+    color: black;
+    font-size:  1.2em;
+    font-variant:  small-caps;
+    text-decoration:  none;
+    font-weight:  bold;
+}
+
+.section-link {
+    color: black;
+/*    font-size:  1.2em;*/
+    font-variant:  small-caps;
+    text-decoration:  none;
+    font-weight:  bold;
+}
+
+p.relativeposition {
+    color black;
+    font-family:  "Lucida Console", Monaco, monospace;
+    font-size: 1em;
+    font-weight: bold;
+    
+}
+
+div.packetdata {
+    width:  100%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+
+p.packetdata {
+    /*color:  #25262b;*/
+    font-family:  "Lucida Console", Monaco, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-decoration: none;
+    font-size:  .85em;
+    text-align:  left;
+    vertical-align: top;
+    background-color: #d3d3d3;
+    color: black; 
+}
+
+
+input {
+    font-family:  "Lucida Console", Monaco, monospace;
+    font-size: 1em;
+}
+
+
+.leaflet-div-icon {
+    background: none;
+    border:  0;
+}
+

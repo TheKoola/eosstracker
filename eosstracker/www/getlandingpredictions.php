@@ -1,0 +1,111 @@
+<?php
+    ###  This will query the database for the n most recent packets.  
+
+    session_start();
+    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    include $documentroot . '/common/functions.php';
+    include $documentroot . '/common/sessionvariables.php';
+
+    
+    function coord_distance($lat1, $lon1, $lat2, $lon2) {
+        $p = pi()/180;
+        $a = 0.5 - cos(($lat2 - $lat1) * $p)/2 + cos($lat1 * $p) * cos($lat2 * $p) * (1 - cos(($lon2 - $lon1) * $p))/2;
+        return (12742 * asin(sqrt($a)))*.6213712;
+    }
+
+
+    function calc_speed($lat1, $lon1, $lat2, $lon2, $start, $end) {
+        $p = pi()/180;
+        $a = 0.5 - cos(($lat2 - $lat1) * $p)/2 + cos($lat1 * $p) * cos($lat2 * $p) * (1 - cos(($lon2 - $lon1) * $p))/2;
+        $dist = (12742 * asin(sqrt($a)))*.6213712;
+
+        $time1 = date_create($start);
+        $time2 = date_create($end);
+        $diff = date_diff($time2, $time1);
+        $time_delta = $diff->h + (($diff->i * 60) + $diff->s)/3600; 
+        
+        // in MPH.. 
+        if ($time_delta > 0)
+            $speed = abs($dist / $time_delta);
+        else
+            $speed = 312;
+    
+        return $speed;
+    }
+
+
+
+    if (isset($_GET["type"])) {
+        $prediction_type = $_GET["type"];
+    }
+    else {
+        $prediction_type = "predicted"; 
+    }
+    
+    if (isset($_GET["flightid"])) {
+        $get_flightid = $_GET["flightid"];
+    }
+    else {
+        $get_flightid = "";
+        return 0;
+    }
+
+    ## Connect to the database
+    $link = connect_to_database();
+    if (!$link) {
+        db_error(sql_last_error());
+        return 0;
+    }
+    
+    ## get the landing predictions...
+    $query = 'select l.tm, l.flightid, l.callsign, l.thetype, ST_Y(l.location2d) as lat, ST_X(l.location2d) as long from landingpredictions l, flights f where f.flightid = l.flightid and f.active = \'t\' and l.thetype = $1 and l.flightid = $2 and l.tm > (now() - (to_char((\'' . $lookbackperiod . ' minute\')::interval, \'HH24:MI:SS\'))::time)  order by l.tm, l.flightid, l.callsign;';
+    $result = pg_query_params($link, $query, array($prediction_type, $get_flightid));
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+    $features = array();
+    while ($row = sql_fetch_array($result)) {
+        $flightid = $row['flightid'];
+        $callsign = $row['callsign'];
+        $latitude = $row['lat'];
+        $longitude = $row['long'];
+        $features[$callsign][$latitude . $longitude] = array($latitude, $longitude);
+    }
+
+
+    printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Landing Predictions\" }, \"features\" : [");
+
+    $firsttimeinloop = 1;
+    foreach ($features as $callsign => $ray) {
+        if ($firsttimeinloop == 0)
+            printf (", ");
+        $firsttimeinloop = 0;
+        printf ("{ \"type\" : \"Feature\",");
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s },", 
+            json_encode($callsign . "_landing_" . $prediction_type), 
+            json_encode($callsign . " Predicted Landing"), 
+            json_encode($callsign . " Landing"), 
+            json_encode("/J"), 
+            json_encode("Landing prediction"),
+            json_encode($callsign . " Landing")
+        );
+        printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}", end($features[$callsign])[1], end($features[$callsign])[0]);
+        printf ("}");
+        if (count($ray) > 1) {
+            printf (", ");
+            foreach ($ray as $k => $elem) {
+                $linestring[] = array($elem[1], $elem[0]);
+            }
+            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing" . $prediction_type));
+            printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
+            unset ($linestring);
+        }
+    }
+    printf ("] }"); 
+
+    sql_close($link);
+
+
+?>

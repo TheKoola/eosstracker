@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="Layer_2"
+   x="0px"
+   y="0px"
+   width="400.667px"
+   height="400.666px"
+   viewBox="0 0 400.667 400.666"
+   enable-background="new 0 0 400.667 400.666"
+   xml:space="preserve"
+   sodipodi:docname="fi_box_white.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"><metadata
+   id="metadata4015"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs4013" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="1403"
+   inkscape:window-height="896"
+   id="namedview4011"
+   showgrid="false"
+   inkscape:zoom="0.5890193"
+   inkscape:cx="200.3335"
+   inkscape:cy="200.33299"
+   inkscape:window-x="0"
+   inkscape:window-y="27"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="Layer_2" />
+<filter
+   filterUnits="objectBoundingBox"
+   id="AI_Shadow_1">
+	<feGaussianBlur
+   stdDeviation="5"
+   result="blur"
+   in="SourceAlpha"
+   id="feGaussianBlur3993" />
+	<feOffset
+   dy="0"
+   dx="0"
+   result="offsetBlurredAlpha"
+   in="blur"
+   id="feOffset3995" />
+	<feMerge
+   id="feMerge4001">
+		<feMergeNode
+   in="offsetBlurredAlpha"
+   id="feMergeNode3997" />
+		<feMergeNode
+   in="SourceGraphic"
+   id="feMergeNode3999" />
+	</feMerge>
+</filter>
+<g
+   filter="url(#AI_Shadow_1)"
+   id="g4008"
+   style="fill:#ffffff">
+	<path
+   fill="#110F0F"
+   d="M387.667,375c0,6.627-5.373,12-12,12h-350c-6.627,0-12-5.373-12-12V25c0-6.627,5.373-12,12-12h350   c6.627,0,12,5.373,12,12V375z"
+   id="path4004"
+   style="fill:#ffffff" />
+	<path
+   fill="none"
+   stroke="#FFFFFF"
+   stroke-width="0.5"
+   stroke-miterlimit="10"
+   d="M387.667,375c0,6.627-5.373,12-12,12h-350   c-6.627,0-12-5.373-12-12V25c0-6.627,5.373-12,12-12h350c6.627,0,12,5.373,12,12V375z"
+   id="path4006"
+   style="fill:#ffffff" />
+</g>
+</svg>
