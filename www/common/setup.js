@@ -539,14 +539,53 @@
         var flightid = flightidelem.options[flightidelem.selectedIndex].value;
         var launchsite = document.getElementById("newprediction_launchsite").value;
         var thedate = document.getElementById("newprediction_thedate").value;
-        var url = document.getElementById("newprediction_url").value;
+        var rawfile = document.getElementById("newprediction_file");
         var origin = document.getElementById("newprediction_launchsite");
         var launchsite = origin.options[origin.selectedIndex].value;
+
+	var file_data = $("#newprediction_file").prop("files")[0];
+        var form_data = new FormData();    
+        form_data.append("file", file_data);
+        form_data.append("flightid", flightid);
+        form_data.append("thedate", thedate);
+        form_data.append("launchsite", launchsite);
+        $.ajax({
+                url: "addpredictiondata.php",
+                dataType: 'script',
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: form_data,
+                type: 'post',
+		success: function(data) {
+                    var jsonData = JSON.parse(data);
+	            if (jsonData.result == 1)
+                        document.getElementById("addpredictionerror").innerHTML = "<mark>" + jsonData.error + "</mark>";
+                    else
+                        document.getElementById("addpredictionerror").innerHTML = "";
+                    getPredictions();
+                    document.getElementById("newprediction_flightids").selectedIndex = 0;
+                    document.getElementById("newprediction_launchsite").selectedIndex = 0;
+                    document.getElementById("newprediction_thedate").value = "";
+                    document.getElementById("newprediction_launchsite").value = "";
+                    document.getElementById("newprediction_file").value = "";
+                },
+                error: function (data) {
+                    document.getElementById("addpredictionerror").innerHTML = "<mark>" + data + "</mark>";
+                    getPredictions();
+                    document.getElementById("newprediction_flightids").selectedIndex = 0;
+                    document.getElementById("newprediction_launchsite").selectedIndex = 0;
+                    document.getElementById("newprediction_thedate").value = "";
+                    document.getElementById("newprediction_launchsite").value = "";
+                    document.getElementById("newprediction_file").value = "";
+                }
+        });
 
         var i = 1;
  
         //document.getElementById("addpredictionerror").innerHTML = flightid + ", " + thedate + ", " + launchsite + ", " + url;
        
+/*	   
         $.get("addpredictiondata.php?flightid=" + flightid + "&thedate=" + thedate + "&launchsite=" + launchsite + "&url=" + url, function(data) {
             var jsonData = JSON.parse(data);
   
@@ -562,6 +601,7 @@
             document.getElementById("newprediction_launchsite").value = "";
             document.getElementById("newprediction_url").value = "";
         });
+	*/
         return false;
     }
 

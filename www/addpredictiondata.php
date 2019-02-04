@@ -12,28 +12,91 @@ include_once $documentroot . '/common/sessionvariables.php';
         return 0;
     }
 
-//    print_r($_GET);
+//    print_r($_POST);
+
+//    print_r($_FILES);
+//    exit;
+
+try {
+    
+    // Undefined | Multiple Files | $_FILES Corruption Attack
+    // If this request falls under any of them, treat it invalid.
+    if (
+        !isset($_FILES['file']['error']) ||
+        is_array($_FILES['file']['error'])
+    ) {
+        throw new RuntimeException('Invalid parameters.');
+    }
+
+    // Check $_FILES['file']['error'] value.
+    switch ($_FILES['file']['error']) {
+        case UPLOAD_ERR_OK:
+            break;
+        case UPLOAD_ERR_NO_FILE:
+            throw new RuntimeException('No file sent.');
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            throw new RuntimeException('Exceeded filesize limit.');
+        default:
+            throw new RuntimeException('Unknown errors.');
+    }
+
+    // You should also check filesize here. 
+    if ($_FILES['file']['size'] > 1000000) {
+        throw new RuntimeException('Exceeded filesize limit.');
+    }
+    if ($_FILES['file']['size'] <= 0) {
+        throw new RuntimeException('File has zero size.');
+    }
+
+    // DO NOT TRUST $_FILES['file']['mime'] VALUE !!
+    // Check MIME Type by yourself.
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    if (false === $ext = array_search(
+        $finfo->file($_FILES['file']['tmp_name']),
+        array(
+            'txt' => 'text/plain'
+        ),
+        true
+    )) {
+        throw new RuntimeException('Invalid file format.');
+    }
+
+    // You should name it uniquely.
+    // DO NOT USE $_FILES['file']['name'] WITHOUT ANY VALIDATION !!
+    // On this example, obtain safe unique name from its binary data.
+/*    if (!move_uploaded_file(
+        $_FILES['file']['tmp_name'],
+        sprintf('/tmp/%s.%s',
+            sha1_file($_FILES['file']['tmp_name']),
+            $ext
+        )
+    )) {
+        throw new RuntimeException('Failed to move uploaded file.');
+    }
+ */
+
+
+} catch (RuntimeException $e) {
+    printf("{\"result\": 1, \"error\": \"%s.\"}", $e->getMessage());
+    exit;
+}
 
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = strtoupper($_GET["flightid"]);
+    if (isset($_POST["flightid"])) 
+        $flightid = strtoupper($_POST["flightid"]);
     else
         $formerror = true;
-    if (isset($_GET["thedate"]))
-        $thedate = $_GET["thedate"];
+    if (isset($_POST["thedate"]))
+        $thedate = $_POST["thedate"];
     else
         $formerror = true;
-    if (isset($_GET["launchsite"]))
-        $launchsite = $_GET["launchsite"];
+    if (isset($_POST["launchsite"]))
+        $launchsite = $_POST["launchsite"];
     else
         $formerror = true;
 
-    if (isset($_GET["url"]))
-        $url = $_GET["url"];
-    else
-        $formerror = true;
- 
-    if ($thedate == "" || $flightid == "" || $launchsite == "" || $url == "")
+    if ($thedate == "" || $flightid == "" || $launchsite == "")
         $formerror = true;
 
 
@@ -51,7 +114,7 @@ include_once $documentroot . '/common/sessionvariables.php';
         }
         else {
 
-           $content = file($url);
+           $content = file($_FILES['file']['tmp_name']);
            $l = sizeof($content);
            $latitude_prev = 0;
            $longitude_prev = 0;
@@ -111,7 +174,7 @@ include_once $documentroot . '/common/sessionvariables.php';
                    printf("{\"result\": 0, \"error\": \"\"}");
                }
                else
-                   printf("{\"result\": 1, \"error\": \"Incorrect format.  Not the RAW prediction file.\"}");
+                   printf("{\"result\": 1, \"error\": \"Incorrect format.  Not the RAW prediction file: <pre>%s</pre>.\"}", $content[0]);
                
            }
            else

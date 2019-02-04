@@ -257,12 +257,13 @@ include $documentroot . '/common/header-setup.php';
                 <span id="newprediction"></span>
                 <form name="newprediction_form" id="newprediction_form">
                 <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
-                <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Flight ID</th><th class="packetlistheader">The Date</th><th class="packetlistheader">Launch Site</th><th class="packetlistheader">URL to RAW File</th></tr>
+                <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Flight ID</th><th class="packetlistheader">The Date</th><th class="packetlistheader">Launch Site</th><th class="packetlistheader">RAW File</th></tr>
                 <tr><td class="packetlist"><input type="image" form="newprediction_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addPrediction(); return false;"></td>
                     <td class="packetlist"><select form="newprediction_form" name="newprediction_flightids" id="newprediction_flightids"></select></td>
                     <td class="packetlist"><input type="date"  form="newprediction_form" name="newprediction_thedate" id="newprediction_thedate" placeholder="mm-dd-yyyy" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form="newprediction_form" name="newprediction_launchsite" id="newprediction_launchsite"></select>
-                    <td class="packetlist"><input type="text"  form="newprediction_form" size="25" name="newprediction_url" id="newprediction_url" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" placeholder="url">
+                    <!--<td class="packetlist"><input type="text"  form="newprediction_form" size="25" name="newprediction_url" id="newprediction_url" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" placeholder="url"> -->
+                    <td class="packetlist"><input type="file"  form="newprediction_form" name="newprediction_file" id="newprediction_file" required="required" >
                 </td></tr>
                 </table>
                 </form>
