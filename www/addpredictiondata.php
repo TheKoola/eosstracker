@@ -174,7 +174,7 @@ try {
                    printf("{\"result\": 0, \"error\": \"\"}");
                }
                else
-                   printf("{\"result\": 1, \"error\": \"Incorrect format.  Not the RAW prediction file: <pre>%s</pre>.\"}", $content[0]);
+                   printf("{\"result\": 1, \"error\": \"Incorrect format.  Not the RAW prediction file.\"}");
                
            }
            else
