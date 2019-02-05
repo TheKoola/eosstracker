@@ -12,11 +12,6 @@ include_once $documentroot . '/common/sessionvariables.php';
         return 0;
     }
 
-//    print_r($_POST);
-
-//    print_r($_FILES);
-//    exit;
-
 try {
     
     // Undefined | Multiple Files | $_FILES Corruption Attack
@@ -62,9 +57,23 @@ try {
         throw new RuntimeException('Invalid file format.');
     }
 
+    // You should name it uniquely.
+    // DO NOT USE $_FILES['file']['name'] WITHOUT ANY VALIDATION !!
+    // On this example, obtain safe unique name from its binary data.
+/*    if (!move_uploaded_file(
+        $_FILES['file']['tmp_name'],
+        sprintf('/tmp/%s.%s',
+            sha1_file($_FILES['file']['tmp_name']),
+            $ext
+        )
+    )) {
+        throw new RuntimeException('Failed to move uploaded file.');
+    }
+ */
+
 
 } catch (RuntimeException $e) {
-    printf("{\"result\": 1, \"error\": \"%s.\"}", $e->getMessage());
+    printf("{\"result\": 1, \"error\": \"%s\"}", $e->getMessage());
     exit;
 }
 

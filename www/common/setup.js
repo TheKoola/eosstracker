@@ -539,7 +539,7 @@
         var flightid = flightidelem.options[flightidelem.selectedIndex].value;
         var launchsite = document.getElementById("newprediction_launchsite").value;
         var thedate = document.getElementById("newprediction_thedate").value;
-        var rawfile = document.getElementById("newprediction_file");
+        //var rawfile = document.getElementById("newprediction_file");
         var origin = document.getElementById("newprediction_launchsite");
         var launchsite = origin.options[origin.selectedIndex].value;
 
@@ -551,14 +551,13 @@
         form_data.append("launchsite", launchsite);
         $.ajax({
                 url: "addpredictiondata.php",
-                dataType: 'script',
+                dataType: 'json',
                 cache: false,
                 contentType: false,
                 processData: false,
                 data: form_data,
                 type: 'post',
-		success: function(data) {
-                    var jsonData = JSON.parse(data);
+		success: function(jsonData, textStatus, jqXHR) {
 	            if (jsonData.result == 1)
                         document.getElementById("addpredictionerror").innerHTML = "<mark>" + jsonData.error + "</mark>";
                     else
@@ -570,8 +569,8 @@
                     document.getElementById("newprediction_launchsite").value = "";
                     document.getElementById("newprediction_file").value = "";
                 },
-                error: function (data) {
-                    document.getElementById("addpredictionerror").innerHTML = "<mark>" + data + "</mark>";
+                error: function (jqXHR, textStatus, errorThrown) {
+                    document.getElementById("errors").innerHTML = "<mark>" + textStatus + ": " + errorThrown + "</mark>";
                     getPredictions();
                     document.getElementById("newprediction_flightids").selectedIndex = 0;
                     document.getElementById("newprediction_launchsite").selectedIndex = 0;
