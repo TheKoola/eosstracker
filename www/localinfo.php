@@ -22,12 +22,17 @@
 ##################################################
 *
  */
-
-/* This is the main title at the top of the application screens.  It should be no longer than 2-4 words 
- * 
- * Edit this to reflect your site/organzation/application's name
- *
- */
-
-    $logo = "EOSS Tracker";
 ?>
+<p class="normal-black">
+    <!-- update the URL for your organization...i.e the "href=" part -->
+    <a class="normal-link" target="_blank" href="https://www.eoss.org">
+        <!-- add a link to an image file that contains the brand graphic for your organization.  Do not change width of image by more than ~300px to retain 
+             sizing on the page --> 
+        <img src="/eosslogo.png" style="width: 250px; float: right; margin: 30px; margin-top: 0px;">
+    </a>
+</p> 
+
+<p class="normal-black">
+<!-- update the URL for your organization...i.e the "href=" part -->
+    <a class="normal-link-black" target="_blank" href="https://www.eoss.org">Edge of Space Sciences</a> uses the HAB Tracker application to help fulfill their mission of promoting science and education through high altitude balloons and amateur radio.
+</p>

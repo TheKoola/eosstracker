@@ -27,12 +27,12 @@
             <center>
             <table cellspacing=0 cellpadding=0 border=0  width=100%>
             <tr valign="middle" align="left">
-            <td align="left" valign="bottom" width="18%">
+            <td align="left" valign="bottom" width="10%">
             <p class="normal-black" style="font-family: monospace; margin: 0px; padding: 0px; color: white; font-size: .9em; margin-left:  5px;">
             <?php echo $_SERVER["HTTP_HOST"]; echo "<br>" . $_SERVER["SERVER_ADDR"]; ?>
             </p>
             </td>
-            <td align="center" valign="middle" width="64%">
+            <td align="center" valign="middle" width="80%">
                 <table class="navbar-table" cellspacing=0 cellpadding=0 border=0>
                 <tr valign="middle" align="center">
                     <td align="center"><a href="/index.php" class="navbar">Home</a></td>
@@ -44,7 +44,7 @@
                 </tr>
                 </table>
             </td>
-            <td align="right" valign="bottom" width="18%">
+            <td align="right" valign="bottom" width="10%">
             <p class="normal-black" style="font-family: monospace; margin: 0px; padding: 0px; color: white; font-size: .9em; margin-right:  5px; text-align: right;">
             <?php if (is_readable("nodeid.txt")) echo file_get_contents("nodeid.txt"); ?>
             </p>
