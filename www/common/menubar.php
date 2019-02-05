@@ -1,3 +1,28 @@
+<?php
+/*
+*
+##################################################
+#    This file is part of the HABTracker project for tracking high altitude balloons.
+#
+#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#
+#    HABTracker is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    HABTracker is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################
+*
+ */
+?>
 <div class="menubar">
             <center>
             <table cellspacing=0 cellpadding=0 border=0  width=100%>
@@ -15,6 +40,7 @@
                     <td align="center"><a href="/monitor.php" class="navbar">Performance</a></td>
                     <td align="center"><a href="/rawdata.php" class="navbar">Live Packets</a></td>
                     <td align="center"><a href="/map.php" target="_blank" class="navbar">Map</a></td>
+                    <td align="center"><a href="/about.php" class="navbar">About</a></td>
                 </tr>
                 </table>
             </td>
