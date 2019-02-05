@@ -6,8 +6,21 @@
 
     $logfile = "/eosstracker/logs/start_session.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
-    $log = file($logfile);
-    $err = file($errfile);
+    if (is_readable($logfile)) {
+        $log = file($logfile);
+        if ($log === false)
+            $log = "Not available.";
+    }
+    else
+	$log = "Not available.";
+    if (is_readable($errfile)) {
+        $err = file($errfile);
+        if ($err === false)
+            $err = "Not available.";
+    }
+    else
+	$err = "Not available.";
+
     printf("{\"log\": %s, \"err\": %s}", json_encode($log), json_encode($err));
 ?>
 
