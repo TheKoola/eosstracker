@@ -41,14 +41,16 @@ for p in procs:
 isrunning = 0
 for proc in psutil.process_iter():
    # Get process detail as dictionary
-   pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
-  
-   for p in procstatus:
-       if p["process"] in pInfoDict["name"].lower() or p["process"] in pInfoDict["cmdline"]:
-           listOfProcesses.append(pInfoDict)
-           p["status"] = 1  
-           break
-
+   try:
+       pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+   except (psutil.NoSuchProcess, psutil.AccessDenied):
+       pass
+   else:
+       for p in procstatus:
+           if p["process"] in pInfoDict["name"].lower() or p["process"] in pInfoDict["cmdline"]:
+               listOfProcesses.append(pInfoDict)
+               p["status"] = 1  
+               break
 
 for p in procstatus:
     isrunning += p["status"]
