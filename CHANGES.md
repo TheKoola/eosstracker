@@ -10,6 +10,8 @@
 
 - Added an "About" screen.
 
+- Added the ability to download GPS position and flight records.
+
 
 ### Bugs Fixed: ###
 
