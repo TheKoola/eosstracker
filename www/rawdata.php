@@ -200,6 +200,86 @@ include $documentroot . '/common/header.php';
     }
 
 
+    function downloadData () {
+	var data_beginning = document.getElementById("data_beginning");
+	var data_ending = document.getElementById("data_ending");
+	var data_type_selection = document.getElementById("data_type_selection");
+
+        //document.getElementById("data_download_error").innerHTML = "and p.tm >= " + data_beginning.value + " and p.tm <= " + data_ending.value; 
+        if (!data_beginning.checkValidity()) {
+            throw data_beginning.validationMessage;
+            return false;
+        }
+
+        if (!data_ending.checkValidity()) {
+            throw data_ending.validationMessage;
+            return false;
+        }
+	
+	/*
+        var form_data = new FormData();
+        form_data.append("datatype", data_type_selection.value);
+        form_data.append("beginning", data_beginning.value);
+        form_data.append("ending", data_ending.value);
+        $.ajax({
+                url: "downloaddata.php",
+                dataType: 'json',
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: form_data,
+                type: 'post',
+                success: function(jsonData, textStatus, jqXHR) {
+                    if (jsonData.result == 1)
+                        document.getElementById("data_download_error").innerHTML = "<mark>" + jsonData.error + "</mark>";
+                    else
+                        document.getElementById("data_download_error").innerHTML = "";
+                    document.getElementById("data_beginning").value = "";
+                    document.getElementById("data_ending").value = "";
+		    initializeDataSelection();
+                    document.getElementById("data_type_selection").selectedIndex = 0;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    document.getElementById("errors").innerHTML = "<mark>" + textStatus + ": " + errorThrown + "</mark>";
+                    document.getElementById("data_beginning").value = "";
+                    document.getElementById("data_ending").value = "";
+		    initializeDataSelection();
+                    document.getElementById("data_type_selection").selectedIndex = 0;
+                }
+        });
+	 */
+
+
+	var url="downloaddata.php?datatype=" + data_type_selection.options[data_type_selection.selectedIndex].value + "&beginning=" + data_beginning.value + "&ending=" + data_ending.value;
+	//document.getElementById("data_download_error").innerHTML = url;
+        document.getElementById("data_beginning").value = "";
+        document.getElementById("data_ending").value = "";
+        initializeDataSelection();
+        document.getElementById("data_type_selection").selectedIndex = 0;
+        window.open(url, "_blank");
+
+	return false;
+    }
+
+
+    function initializeDataSelection() {
+        $.get("getflights.php", function(data) {
+            var flightsJson = JSON.parse(data);
+
+	    // blank out the list of flightids for the prediction form
+            $("#data_type_selection").html("");
+            $("#data_type_selection").append($("<option></option>").val("gps").html("GPS Position Log"));
+
+            for (f in flightsJson) {
+                $("#data_type_selection").append($("<option></option>").val("flight_" + flightsJson[f].flight).html("Flight:  " + flightsJson[f].flight));
+            }
+
+	});
+
+    }
+
+
+
     $(document).ready(function () {
         updatePacketsEvent = new CustomEvent("updatepackets");
         document.body.addEventListener("updatepackets", displaypackets, false);
@@ -217,6 +297,7 @@ include $documentroot . '/common/header.php';
         e.onpropertychange = e.oninput;
 
         initialize();
+	initializeDataSelection();
         setInterval(getrecentdata, 5000);
     });
     
@@ -226,7 +307,33 @@ include $documentroot . '/common/header.php';
     <div class="gallery-area" style="float:  left;">
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-                Raw Packet Data
+                Data Downloads
+            </p>
+            <p class="normal-black">
+                Download a variety of data sets for a selected date and time range.
+            </p>
+            <p class="normal-black"><span id="data_download_error"></span></p>
+            <p class="normal-black">
+                <form name="data_download_form" id="data_download_form">
+                <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
+                <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Data Selection</th><th class="packetlistheader">Beginning Date/Time</th><th class="packetlistheader">Ending Date/Time</th></tr>
+		<tr><td class="packetlist">
+                    <input type="submit" form="data_download_form" onclick="downloadData(); return false;" value="Download">
+<!--<input type="image" form="data_download_form" src="/images/graphics/download.png" style="width: 22px; height: 22px;" onclick="downloadData(); return false;" > -->
+                    </td> 
+                    <td class="packetlist">
+                        <select form="data_download_form" id="data_type_selection">
+                        </select>
+                    </td>
+		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
+		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
+                </tr>
+                </table>
+                </form>
+            </p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                Live APRS Packets
             </p>
             <p class="normal-black"><span id="debug"></span></p>
             <p class="normal-black"><span id="debug2"></span></p>
