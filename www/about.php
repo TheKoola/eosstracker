@@ -49,7 +49,7 @@ include $documentroot . '/common/header.php';
             The HAB Tracker application is licensed under version 3 of the GNU General Public License (see <a class="normal-link-black" target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
             </p>
             <p class="normal-black" style="text-align: center; margin-top: 40px; margin-bottom: 0px; clear: both;">
-            Copyright (C) 2019, Jeff Deaton (N6BA)
+            Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
             </p>
 </div>
 
