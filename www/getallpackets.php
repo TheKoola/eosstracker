@@ -42,6 +42,7 @@
     ## query the last packets from stations...
     $query = '
 select distinct 
+date_trunc(\'second\', a.tm)::timestamp without time zone as timestamp, 
 date_trunc(\'second\', a.tm)::time without time zone || \', \' || a.raw as packet
 
 from 
