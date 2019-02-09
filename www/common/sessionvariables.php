@@ -23,6 +23,8 @@
 *
 */
 
+    if(session_status() === PHP_SESSION_NONE) session_start();
+
     $update_plottracks = 0;
 
     $mycallsign = "NOCALL";
