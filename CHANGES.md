@@ -12,6 +12,8 @@
 
 - Added the ability to download GPS position and flight records.
 
+- Timezone support
+
 
 ### Bugs Fixed: ###
 
@@ -22,6 +24,8 @@
 - PHP session variables were not getting set correctly withing sessionvariables.php.
 
 - Updated packet sorting for the live packet screens to account for day boundaries.
+
+- Fixed issue where map screens were creating two update events for each incoming packet instead of just one.
 
 
 
