@@ -183,6 +183,7 @@
                     var mappane;
                     var tipclass;
                     var offset;
+		    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
                     if (objecttype == "balloon") {
                         mappane = "flightTooltipPane";
@@ -256,6 +257,7 @@
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
+                   var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
                    var localiconsize = iconsize;
                    var mappane = "otherStationsPane";
 
@@ -355,10 +357,10 @@
             
             // dispatch an event with this feature as content so that event listeners can update their content
             // dispatch event code here...
-            if (item.properties.objecttype == "balloon") {
-                var flightEvent = new CustomEvent("UpdateFlightGauges", { detail: item });
-                document.dispatchEvent(flightEvent);
-            }
+            //if (item.properties.objecttype == "balloon") {
+            //    var flightEvent = new CustomEvent("UpdateFlightGauges", { detail: item });
+            //    document.dispatchEvent(flightEvent);
+           // }
 
         }
         //document.getElementById("error").innerHTML = JSON.stringify(flightids);
@@ -419,6 +421,8 @@
 		    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
 
+                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
@@ -436,7 +440,7 @@
            pointToLayer:  function (feature, latlon) {
                var filename;
                var id = feature.properties.id;
-               var localiconsize = iconsize;
+               var localiconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
                var markercolor = 'navy';
 
                // Determine what the APRS symbol is for this object, then determine path to the corresponding icon file.
@@ -555,6 +559,8 @@
                     // Popup for the landing prediction point
 		    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
+                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
@@ -577,6 +583,7 @@
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
+               var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
                var localiconsize = iconsize;
 
                if (feature.properties.symbol) 
@@ -671,6 +678,8 @@
 
 		    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
+                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
@@ -693,6 +702,7 @@
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
+               var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
                var localiconsize = iconsize;
 
                    if (feature.properties.symbol) 

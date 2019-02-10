@@ -28,8 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
+    $config = readconfiguration();
 
     if (isset($_GET["flightid"])) {
         $get_flightid = $_GET["flightid"];
@@ -106,7 +106,6 @@
 
 /* ============================ */
 
-
     ## query the last packets from stations...
     $query = '
 select distinct on (thetime)
@@ -114,7 +113,7 @@ select distinct on (thetime)
 date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
 case
     when a.ptype = \'/\' and a.raw similar to \'%[0-9]{6}h%\' then 
-        date_trunc(\'second\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone \'America/Denver\')::time)::time without time zone
+        date_trunc(\'second\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
     else
         date_trunc(\'second\', a.tm)::time without time zone
 end as packet_time,
@@ -134,14 +133,11 @@ packets a
 
 where 
 a.location2d != \'\' 
-and a.tm > (now() - (to_char((\'' . $lookbackperiod . ' minute\')::interval, \'HH24:MI:SS\'))::time) ' 
+and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) ' 
 . $get_callsign . ' order by thetime asc, a.callsign;';
 
-#printf ("<br><br>%s<br><br>", $query);
 
-#and a.tm < \'8-11-2018 10:18:00\' and a.tm > \'8-11-2018\' ' 
-
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"]), sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

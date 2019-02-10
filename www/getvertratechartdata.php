@@ -28,8 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
+    $config = readconfiguration();
 
 
    ## Look for the variable "flightid" to be set. 
@@ -57,7 +57,6 @@
         return 0;
     }
 
-
     ## query the last n packets heard from the database
     $query = "select distinct on (f.flightid, a.callsign, thetime) 
 a.callsign, 
@@ -65,7 +64,7 @@ f.flightid,
 date_trunc('seconds', a.tm)::time without time zone as thetime, 
 case
     when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
-        date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone 'America/Denver')::time)::time without time zone
+        date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
     else
         date_trunc('second', a.tm)::time without time zone
 end as packet_time,
@@ -81,7 +80,7 @@ where
 fm.flightid = f.flightid 
 and a.callsign = fm.callsign 
 and a.location2d != '' 
-and a.tm > (now() - (to_char(('" . $lookbackperiod . " minute')::interval, 'HH24:MI:SS'))::time)
+and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
 and a.altitude > 0 
 and active = 't'  " . $flightstring . " 
 
@@ -91,7 +90,7 @@ a.callsign,
 thetime asc; 
 ";
 
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"]), sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

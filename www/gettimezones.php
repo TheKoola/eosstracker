@@ -26,15 +26,40 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
-/*    print_r ($_GET);
-    printf ("<BR>");
-    print_r ($_SESSION);
-    printf ("<BR>");
-*/
 
-    $referer = $_SERVER["HTTP_REFERER"];
+    ## Connect to the database
+    $link = connect_to_database();
+    if (!$link) {
+        db_error(sql_last_error());
+        return 0;
+    }
 
-    header ("Location:  " . $referer);
+    ## Get a list of the timezones for "America/*"
+    $query = "select distinct name from pg_timezone_names where name like 'America%' order by name asc; ";
+    $result = sql_query($query);
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    $rows = sql_fetch_all($result);
+    if (sql_num_rows($result) > 0) {
+	printf ("[");
+	$firstrow = 0;
+        foreach ($rows as $row) {
+		if ($firstrow == 1) 
+			printf (", ");
+		$firstrow = 1;
+		printf ("{\"timezone\": %s}", json_encode($row["name"]));
+        }
+	printf ("]");
+
+    }
+    else
+        printf("[]");
+
+    sql_close($link);
+
 ?>

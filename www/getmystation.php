@@ -28,7 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
+
+    $config = readconfiguration();
 
     function calc_speed($lat1, $lon1, $lat2, $lon2, $start, $end) {
         $p = pi()/180;
@@ -78,6 +79,7 @@
     $feature['properties']['symbol'] = "1x";
     $feature['properties']['comment'] = "";
     $feature['properties']['frequency'] = "";
+    $feature['properties']['iconsize'] = $config["iconsize"];
     $feature['geometry']['type'] = "Point";
     $feature['geometry']['coordinates'] = array($rows['longitude'], $rows['latitude']); 
     printf ("%s", json_encode($feature));

@@ -734,3 +734,59 @@
         });
     }
 
+
+    /***********
+    * getTimeZones function
+    *
+    * This function will get the list of timezones from the backend database.
+    ***********/
+    function getTimeZones() {
+	$.get("readconfiguration.php", function(data) {
+	    var mytzJson = JSON.parse(data);
+	    var mytz = mytzJson.timezone;
+
+	    //document.getElementById("errors2").innerHTML = "New TZ:  " + mytz + ",  id: " + mytzJson.sessionid;
+            $.get("gettimezones.php", function(data) {
+                var tzJson = JSON.parse(data);
+                var t;
+		
+                // blank out the list of flightids for the prediction form
+                $("#settimezone").html("");
+
+                for (t in tzJson) {
+		    if (mytz == tzJson[t].timezone)
+                        $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).prop("selected", true).html(tzJson[t].timezone));
+		    else
+                        $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).html(tzJson[t].timezone));
+                }
+	    });
+	});
+    }
+
+    /***********
+    * setTimeZone function
+    *
+    * This function will call the backend PHP script to set a SESSION variable to the timezone selected
+    ***********/
+    function setTimeZone(element) {
+	    var mytz = element.options[element.selectedIndex].value; 
+	    var form_data = new FormData();
+	    form_data.append("timezone", mytz);
+            $.ajax({
+                url: "setconfiguration.php",
+                dataType: 'json',
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: form_data,
+                type: 'post',
+		success: function(jsonData, textStatus, jqXHR) {
+	            //document.getElementById("errors").innerHTML = "set tz: " + JSON.stringify(jsonData);
+		    getTimeZones();
+		},
+                error: function (jqXHR, textStatus, errorThrown) {
+	            //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
+		}
+	    });
+    }
+

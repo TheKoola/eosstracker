@@ -28,7 +28,6 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
 
     ## Connect to the database
@@ -50,7 +49,6 @@ packets a
 
 where 
 a.tm > (now() - interval \'03:00:00\')
---a.tm > (now() - (to_char((\'' . $lookbackperiod . ' minute\')::interval, \'HH24:MI:SS\'))::time)
 and a.raw != \'\' 
 order by 1 desc;';
 

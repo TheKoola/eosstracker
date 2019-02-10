@@ -28,8 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
+    $config = readconfiguration();
 
     if (isset($_GET["flightid"])) {
         $get_flightid = $_GET["flightid"];
@@ -130,16 +130,14 @@ where
 fm.flightid = f.flightid
 and f.active = \'t\'
 and fm.callsign = a.callsign
-and a.tm > (now() - (to_char((\'' . $lookbackperiod . ' minute\')::interval, \'HH24:MI:SS\'))::time) 
+and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
 and a.raw != \'\' 
 and a.ptype = \'>\' '
 . $get_callsign .
 ' order by time desc limit ' . $get_num . ';';
 
-#printf ("<br><br>%s<br><br>", $query);
 
-
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

@@ -28,7 +28,6 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
 
     function calc_speed($lat1, $lon1, $lat2, $lon2, $start, $end) {

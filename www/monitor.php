@@ -27,14 +27,12 @@ $pagetitle="APRS: Monitor";
 session_start();
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
-include $documentroot . '/common/sessionvariables.php';
 include $documentroot . '/common/header.php';
+$config = readconfiguration();
 
 ?>
 <script>
     // This grabs the session variables
-    var mycallsign = "<?php echo $mycallsign; ?>"; 
-    var lookbackperiod = "<?php echo $lookbackperiod; ?>"; 
     var chart;
 
     function coord_distance(lat1, lon1, lat2, lon2) {
@@ -95,7 +93,7 @@ include $documentroot . '/common/header.php';
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 Packet Performance 
 <?php 
-    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $lookbackperiod / 60, (  ($lookbackperiod / 60.0) - floor($lookbackperiod / 60) ) * 60) ; 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
             <p class="normal-black"><div id="chart1"></div></p>

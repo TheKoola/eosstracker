@@ -28,7 +28,7 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
+    $config = readconfiguration();
 
 
     ## function to calculate the speed betwen two points.
@@ -81,7 +81,7 @@ where
 b.callsign is null
 and c.callsign is null
 and a.location2d != \'\' 
-and a.tm > (now() - (to_char((\'' . $lookbackperiod . ' minute\')::interval, \'HH24:MI:SS\'))::time) ' . ($mycallsign == "" ? "" : ' and a.callsign <> \'' . $mycallsign . '\' ' ) . '
+and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
 
 order by 
 thetime asc, 
@@ -89,7 +89,7 @@ a.callsign ;';
 
     //printf ("<br>%s<br><br><br>", $query);
 
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -143,7 +143,7 @@ a.callsign ;';
        
         /* This prints out the GeoJSON object for this station */
         printf ("{ \"type\" : \"Feature\",\n");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s },\n", 
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },\n", 
             json_encode($callsign), 
             json_encode($callsign), 
             json_encode($positioninfo[$callsign][0]), 
@@ -151,11 +151,12 @@ a.callsign ;';
             json_encode($positioninfo[$callsign][4]), 
             json_encode($positioninfo[$callsign][5]), 
             json_encode($callsign),
-            json_encode($callsign)
+	    json_encode($callsign),
+	    json_encode($config["iconsize"])
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");
-        if (count($ray) > 1 && $plottracks == "on") {
+        if (count($ray) > 1 && $config["plottracks"] == "on") {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 $linestring[] = array($elem[1], $elem[0]);

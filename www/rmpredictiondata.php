@@ -27,7 +27,6 @@
 session_start();
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
-include_once $documentroot . '/common/sessionvariables.php';
 
 
 

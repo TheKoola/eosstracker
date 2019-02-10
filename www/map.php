@@ -28,8 +28,9 @@
     $pagetitle="APRS:  Map";
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include_once $documentroot . '/common/functions.php';
-    include_once $documentroot . '/common/sessionvariables.php';
     include_once $documentroot . '/common/logo.php';
+
+    $config = readconfiguration();
 
 
     if (isset($_GET["followfeatureid"]))  {
@@ -116,10 +117,6 @@
 <script>
 
     var flightids = <?php echo json_encode($output); ?>;
-    var mycallsign = "<?php echo $mycallsign; ?>";
-    var lookbackperiod = "<?php echo $lookbackperiod; ?>";
-    var iconsize = "<?php echo $iconsize; ?>";
-    var plottracks = "<?php echo $plottracks; ?>";
  
     var followfeatureid = "<?php echo $get_followfeatureid; ?>";
     var showallstations = "<?php echo $get_showallstations; ?>";
@@ -146,6 +143,66 @@
 </script>
 <script src="/common/map.js"></script>
 <script>
+
+    /***********
+    * setConfiguration function
+    *
+    * This function will call the backend PHP script to set a SESSION variable to the timezone selected
+    ***********/
+    function setConfiguration() {
+            var iconsize = document.getElementById("iconsize").value;
+            var lookbackperiod = document.getElementById("lookbackperiod").value;
+            var plottracks = document.getElementById("plottracks").checked;
+            var form_data = new FormData();
+            form_data.append("iconsize", iconsize);
+            form_data.append("lookbackperiod", lookbackperiod);
+            form_data.append("plottracks", (plottracks == true ? "on" : "off"));
+            $.ajax({
+                url: "setconfiguration.php",
+                dataType: 'json',
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: form_data,
+                type: 'post',
+                success: function(data, textStatus, jqXHR) {
+		    var jsonData = data;
+
+		    document.getElementById("iconsize").value = jsonData.iconsize;
+		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
+		    if (jsonData.plottracks == "on")
+			    document.getElementById("plottracks").checked = true;
+		    else
+			    document.getElementById("plottracks").checked = false;
+		    window.location.reload(true);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
+	            alert("error: " + textStatus);
+                }
+            });
+	    return false;
+    }
+
+    /***********
+    * getConfiguration function
+    *
+    * This function will call the backend PHP script to get the configuration for the system
+    ***********/
+    function getConfiguration() {
+	    $.get("readconfiguration.php", function(data) {
+		    var jsonData = JSON.parse(data);
+
+		    document.getElementById("iconsize").value = jsonData.iconsize;
+		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
+		    if (jsonData.plottracks == "on")
+			    document.getElementById("plottracks").checked = true;
+		    else
+			    document.getElementById("plottracks").checked = false;
+            });
+    }
+
+
 
 
     /***********
@@ -579,12 +636,12 @@ function getTrackers() {
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
-        var a = createRealtimeLayer("getallstations.php?lookbackperiod=" + lookbackperiod + "&plottracks=" + plottracks, allstations, 5 * 1000, function(){ return { color: 'black'}});
+        var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
         if (showallstations == 1)
             a.addTo(map); 
 
-        createRealtimeLayer("getmystation.php?lookbackperiod=" + lookbackperiod, mystation, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
-        createRealtimeLayer("gettrackerstations.php?lookbackperiod=" + lookbackperiod, trackersatlarge, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
+        createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
+        createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
 
         // The base layers and overlays that will be added to every map
         var groupedoverlays = { 
@@ -633,14 +690,14 @@ function getTrackers() {
                 var activeflightlayer = L.featureGroup();
 
                 //activeflights.push({ "callsign" : flightids[key].callsigns[key2], "layergroup" : activeflightlayer });
-                createActiveFlightsLayer("getactiveflights.php?flightid=" + flightids[key].flightid + "&callsign=" + flightids[key].callsigns[key2] + "&lookbackperiod=" + lookbackperiod, activeflightlayer, 5 * 1000).addTo(map);
+                createActiveFlightsLayer("getactiveflights.php?flightid=" + flightids[key].flightid + "&callsign=" + flightids[key].callsigns[key2], activeflightlayer, 5 * 1000).addTo(map);
                 layerControl.addOverlay(activeflightlayer, flightids[key].callsigns[key2], "Flight:  " + flightids[key].flightid);
             }
     
             
-            createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid + "&lookbackperiod=" + lookbackperiod, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
-            createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid +  "&lookbackperiod=" + lookbackperiod, predictedpathlayer, 5 * 1000);
-            createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid + "&lookbackperiod=" + lookbackperiod, landingpredictionlayer, 5 * 1000).addTo(map);
+            createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}}).addTo(map);
+            createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
+            createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 5 * 1000).addTo(map);
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Flight Prediction", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
@@ -660,18 +717,11 @@ function getTrackers() {
     *************/
     function startup() {
         $.get("getposition.php", function(data) { 
-            //document.getElementById("error").innerHTML = "followfeatureid:  " + followfeatureid + "   mycallsign:  " + mycallsign + " LBP:  " + lookbackperiod;
+            //document.getElementById("error").innerHTML = "followfeatureid:  " + followfeatureid;
             lastposition = JSON.parse(data);
             initialize();
 
-            document.getElementById("lookbackperiod").value = lookbackperiod;
-            document.getElementById("iconsize").value = iconsize;
-/*            if (plottracks == 'on')
-                $("#plottracks").prop('checked', true);
-            else
-                $("#plottracks").prop('checked', false);
-*/
-
+	    getConfiguration();
             buildGauges();
             buildCharts();
             createTheListener();
@@ -860,7 +910,7 @@ function getTrackers() {
         }
 
         // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
-        $.get("getaltitudechartdata.php?lookbackperiod=" + lookbackperiod, function(data) {
+        $.get("getaltitudechartdata.php", function(data) {
             var thejsondata;
             var i = 0;
             var thekeys;
@@ -898,7 +948,7 @@ function getTrackers() {
 
 
         // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
-        $.get("getvertratechartdata.php?lookbackperiod=" + lookbackperiod, function(data) {
+        $.get("getvertratechartdata.php", function(data) {
             var thejsondata;
             var i = 0;
             var thekeys;
@@ -994,78 +1044,64 @@ function getTrackers() {
         var theListener = document.addEventListener("UpdateFlightGauges", function(event) {
             var flightid = event.detail.properties.flightid;
             var incomingTime = new Date(event.detail.properties.time.replace(/ /g, "T"));
-            var lastTime = $("#" + flightid + "_sidebar").data("lastpacket");
+            //var lastTime = $("#" + flightid + "_sidebar").data("lastpacket");
 
             //document.getElementById("error2").innerHTML = JSON.stringify(event.detail.properties);
             // if incoming packet is a later time and it's been at least 4 seconds since the last update...then update the gauges
-            if (incomingTime > lastTime && (incomingTime.getTime() - lastTime.getTime() / 1000) > 4) {
-
-                // Bring the "top" beacons to the top of the z-order for Leaflet feature groups
-                /*if (event.detail.properties.order)
-                    if (event.detail.properties.order == "top") {
-                        var k;
-                        for (k = 0; k < activeflights.length; k++) {
-                            if (activeflights[k].callsign == event.detail.properties.callsign) {
-                                var group = activeflights[k].layergroup;
-                                //group.bringToFront();
-                                group.setZIndex(event.detail.properties.altitude/1000);
-                                //document.getElementById("error").innerHTML = "bring to front: " + event.detail.properties.callsign;
-                                break;
-                            }
-                        }
-                    }
-*/
-
-
-                // The telemetry
-                var thealtitude = Math.round((event.detail.properties.altitude * 10) / 10);
-                var theheading = Math.round((event.detail.properties.bearing * 10) / 10);
-                var thespeed = Math.round((event.detail.properties.speed * 10) / 10);
-                var thevertrate = Math.round((event.detail.properties.verticalrate * 10) / 10);
-
-                // The element names for displaying the telemetry
-                var altitudeValue = "#" + flightid + "_altitudevalue";
-        	var verticalRateValue = "#" + flightid + "_verticalratevalue";
-                var balloonHeadingValue = "#" + flightid + "_headingvalue";
-                var speedValue = "#" + flightid + "_speedvalue";
-
-                // Update the gauges themselves
-                if (thealtitude > 0 && thevertrate/1000 < 20000 && thevertrate/1000 > -20000) {
-                    $(altitudeValue).data("altimeter").setAltitude(thealtitude);
-                    $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
-                }
-                $(balloonHeadingValue).data("heading").setHeading(theheading);
-                $(speedValue).data("airspeed").setAirSpeed(thespeed);
-
-                // Update the text displays
-                if (thealtitude > 0 && thevertrate/1000 < 20000 && thevertrate/1000 > -20000) {
-                    $(altitudeValue).text(thealtitude.toLocaleString());
-                    $(verticalRateValue).text(thevertrate.toLocaleString());
-                }
-                $(balloonHeadingValue).text(theheading);
-                $(speedValue).text(thespeed);
+            //if (incomingTime > lastTime && (incomingTime.getTime() - lastTime.getTime() / 1000) > 4) {
 
                 // Update the last position packets table
-                $.get("getpositionpackets.php?flightid=" + flightid + "&lookbackperiod=" + lookbackperiod, function(data) {
-                    var jsonData = JSON.parse(data);
-                    var k = 0;
+            $.get("getpositionpackets.php?flightid=" + flightid, function(data) {
+                var jsonData = JSON.parse(data);
+                var k = 0;
         
                     
-                    while (k < 5 && jsonData[k]) {
-                        var item = jsonData[k];
+                while (k < 5 && jsonData[k]) {
+                    var item = jsonData[k];
                
-                        $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
-                        $("#" + item.flightid + "_lastcallsign_" + k).text(item.callsign);
-                        $("#" + item.flightid + "_lastspeed_" + k).text(Math.round(item.speed * 10 / 10) + " mph");
-                        $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
-                        $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
-                        k += 1;
+                    $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
+                    $("#" + item.flightid + "_lastcallsign_" + k).text(item.callsign);
+                    $("#" + item.flightid + "_lastspeed_" + k).text(Math.round(item.speed * 10 / 10) + " mph");
+                    $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
+                    $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
+                    k += 1;
+                }
+
+		lastPacket = jsonData[0];
+		lastpacketTime = new Date(lastPacket.time.replace(/ /g, "T"));
+		if (incomingTime >= lastpacketTime && event.detail.properties.callsign == lastPacket.callsign) {
+
+                    // The telemetry
+                    var thealtitude = Math.round((event.detail.properties.altitude * 10) / 10);
+                    var theheading = Math.round((event.detail.properties.bearing * 10) / 10);
+                    var thespeed = Math.round((event.detail.properties.speed * 10) / 10);
+                    var thevertrate = Math.round((event.detail.properties.verticalrate * 10) / 10);
+
+                    // The element names for displaying the telemetry
+                    var altitudeValue = "#" + flightid + "_altitudevalue";
+               	    var verticalRateValue = "#" + flightid + "_verticalratevalue";
+                    var balloonHeadingValue = "#" + flightid + "_headingvalue";
+                    var speedValue = "#" + flightid + "_speedvalue";
+
+                    // Update altitude and vertical rate, but only if valid values...
+                    if (thealtitude > 0 && thevertrate < 50000 && thevertrate > -50000) {
+                        $(altitudeValue).data("altimeter").setAltitude(thealtitude);
+                        $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
+                        $(altitudeValue).text(thealtitude.toLocaleString());
+                        $(verticalRateValue).text(thevertrate.toLocaleString());
                     }
-                });
+
+		    // Update heading and speed
+                    $(balloonHeadingValue).data("heading").setHeading(theheading);
+                    $(speedValue).data("airspeed").setAirSpeed(thespeed);
+                    $(balloonHeadingValue).text(theheading);
+                    $(speedValue).text(thespeed);
+		}
+            });
                 
                 // update the time for the last packet
-                $("#" + flightid + "_sidebar").data("lastpacket", incomingTime);
-            }
+                //$("#" + flightid + "_sidebar").data("lastpacket", incomingTime);
+            //}
         });
     }
 
@@ -1079,7 +1115,7 @@ function getTrackers() {
     *************/
     function updateAllItems() {
         // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
-        $.get("getaltitudechartdata.php?lookbackperiod=" + lookbackperiod, function(data) {
+        $.get("getaltitudechartdata.php", function(data) {
             var thejsondata;
             var i = 0;
             var thekeys;
@@ -1117,7 +1153,7 @@ function getTrackers() {
 
 
         // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
-        $.get("getvertratechartdata.php?lookbackperiod=" + lookbackperiod, function(data) {
+        $.get("getvertratechartdata.php", function(data) {
             var thejsondata;
             var i = 0;
             var thekeys;
@@ -1155,7 +1191,7 @@ function getTrackers() {
 
 
         // Calculate our relative position to this flight's latest position packet
-        $.get("getrelativeposition.php?lookbackperiod=" + lookbackperiod, function(data) {
+        $.get("getrelativeposition.php", function(data) {
             var thejsondata;
             var i = 0;
             var thekeys;
@@ -1197,7 +1233,7 @@ function getTrackers() {
 
         // Update the last status packets table 
         for (flightid in flightids) {
-            $.get("getstatuspackets.php?flightid=" + flightids[flightid].flightid + "&lookbackperiod=" + lookbackperiod, function(data) {
+            $.get("getstatuspackets.php?flightid=" + flightids[flightid].flightid, function(data) {
                 var jsonData = JSON.parse(data);
                 var k = 0;
             
@@ -1314,13 +1350,10 @@ function getTrackers() {
                 <p class="section-header">Preferences:</p>
                 <form id="userpreferences" action="preferences.php" name="userpreferences">
                 <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
-<!--                    <tr><td class="section" colspan=2><strong>Preferences:</strong><td></tr> -->
-<!--                    <tr><td style="vertical-align:  top;">My Callsign:<p class="lorem">This is your callsign.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="mycallsign" style="text-transform: uppercase" placeholder="CALL-xx" id="mycallsign" pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="10" maxlength="9" form="userpreferences" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td></tr>
--->
 		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences"> minutes</td></tr>
                     <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" placeholder="nn"> pixels</td></tr>
-                    <!-- <tr><td style="vertical-align:  top;">Display landing prediction tracks?<br><p class="lorem">Should tracks be displayed for predicted landing locations.</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plotlandingtracks" id="plotlandingtracks" checked form="userpreferences"></td></tr> -->
-                    <tr><td colspan=2><input type="submit" value="Submit" form="userpreferences" style="font-size:  1.2em;"></td></tr>
+                    <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
+                    <tr><td colspan=2><input type="submit" value="Submit" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"></td></tr>
                 </table>
                 </p>
                 <div id="error"></div>

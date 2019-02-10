@@ -28,9 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
-
+    $config = readconfiguration();
 
     function coord_distance($lat1, $lon1, $lat2, $lon2) {
         $p = pi()/180;
@@ -140,13 +139,13 @@ where
 fm.callsign = b.callsign
 and f.flightid = fm.flightid
 and f.active = 't'
-and b.thetime > (now() - (to_char(('" . $lookbackperiod . " minute')::interval, 'HH24:MI:SS'))::time)
+and b.thetime > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
 
 order by
 f.flightid,
 b.thetime desc;";
 
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

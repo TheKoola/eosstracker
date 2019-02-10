@@ -28,8 +28,6 @@ session_start();
 $pagetitle="APRS:  Setup";
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
-include $documentroot . '/common/sessionvariables.php';
-
 include $documentroot . '/common/header-setup.php';
 
 ?>
@@ -61,6 +59,12 @@ include $documentroot . '/common/header-setup.php';
         getFlights();
         getPredictions();
         getLaunchSites();
+	getTimeZones();
+        var configuration_a = "#configurationSelectionLink";
+        var configuration_l = "#configurationSelectionLinkSign";
+        var configuration_e = "#configurationSelection";
+        $(configuration_a).click({element: configuration_e, link: configuration_l }, toggle);
+
         var trackers_a = "#trackersSelectionLink";
         var trackers_l = "#trackersSelectionLinkSign";
         var trackers_e = "#trackersSelection";
@@ -93,6 +97,8 @@ include $documentroot . '/common/header-setup.php';
 <div class="main">
     <div class="gallery-area">
             <div id="errors"></div>
+            <div id="errors2"></div>
+
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 <a href="#trackers" class="header" id="trackersSelectionLink">(<span style="color: red;" id="trackersSelectionLinkSign">+</span>) Trackers</a>
@@ -332,6 +338,28 @@ include $documentroot . '/common/header-setup.php';
             </p>
             <p class="normal-black">
                 <span id="launchsites"></span>
+            </p>
+            </div>
+
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                <a href="#configuration" class="header" id="configurationSelectionLink">(<span style="color: red;" id="configurationSelectionLinkSign">+</span>) System Configuration</a>
+            </p>
+            <div id="configurationSelection" style="display: none;">
+            <p class="normal-italic">
+                Use this section to set configuration parameters for the HAB Tracker system.
+            </p>
+
+            <p class="normal-black"><span id="settimezone_error"></span></p>
+            <p class="normal-black">
+                <form name="settimezone_form" id="settimezone_form">
+                <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
+		<tr>
+		   <th class="packetlistheader">Set The Time Zone</th>
+                </tr>
+		<tr><td class="packetlist"><select form="settimezone_form" id="settimezone" onchange="setTimeZone(this);"></select></td></tr> 
+                </table>
+                </form>
             </p>
             </div>
 </div>

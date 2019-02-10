@@ -28,8 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
+    $config = readconfiguration();
 
 
    ## Look for the variable "flightid" to be set. 
@@ -73,7 +73,7 @@ flightmap fm
 where 
 fm.flightid = f.flightid 
 and a.callsign = fm.callsign 
-and a.tm > (now() - (to_char(('" . $lookbackperiod . " minute')::interval, 'HH24:MI:SS'))::time)
+and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
 and a.altitude > 0 and active = 't'  " . $flightstring . " 
 
 order by 
@@ -81,7 +81,7 @@ f.flightid,
 a.callsign, 
 thetime asc; ";
 
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

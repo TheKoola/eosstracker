@@ -28,13 +28,10 @@ session_start();
 $pagetitle="APRS:  Raw Data";
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
-include $documentroot . '/common/sessionvariables.php';
 include $documentroot . '/common/header.php';
 ?>
 <script>
     // This grabs the session variables
-    var mycallsign = "<?php echo $mycallsign; ?>";
-    var lookbackperiod = "<?php echo $lookbackperiod; ?>";
     var selectedFlight;
     var packetdata;
     var updatePacketsEvent;

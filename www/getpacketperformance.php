@@ -28,7 +28,8 @@
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
+
+    $config = readconfiguration();
 
     ## Connect to the database
     $link = connect_to_database();
@@ -48,13 +49,13 @@ from
 packets a
 
 where 
-a.tm > date_trunc('minute', (now() - (to_char(('" . $lookbackperiod . " minute')::interval, 'HH24:MI:SS')::time)))::timestamp
+a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
 
 group by 1,2,3
 order by 1,2,3
 ;";
 
-    $result = sql_query($query);
+    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

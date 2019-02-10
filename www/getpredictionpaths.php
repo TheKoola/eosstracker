@@ -23,14 +23,12 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
-    include $documentroot . '/common/sessionvariables.php';
 
-
+    $config = readconfiguration();
 
     function calc_speed($lat1, $lon1, $lat2, $lon2, $start, $end) {
         $p = pi()/180;
@@ -135,7 +133,13 @@
         $firsttimeinloop = 0;
         //printf ("{ \"type\" : \"FeatureCollection\", \"features\" : [ { \"type\" : \"Feature\",\n");
         printf ("{ \"type\" : \"Feature\",\n");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"comment\" : %s, \"objecttype\" : \"flightprediction\" },", json_encode($flightid . "_prediction"), json_encode($flightid), json_encode($positioninfo[$flightid][1]), json_encode($positioninfo[$flightid][5])) ;
+	printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"comment\" : %s, \"objecttype\" : \"flightprediction\", \"iconsize\" : %s },", 
+		json_encode($flightid . "_prediction"), 
+		json_encode($flightid), 
+		json_encode($positioninfo[$flightid][1]), 
+		json_encode($positioninfo[$flightid][5]),
+		json_encode($config["iconsize"])
+	);
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}", $positioninfo[$flightid][3], $positioninfo[$flightid][2]);
         printf ("}");
         if (count($ray) > 1) {
@@ -162,12 +166,13 @@
                 //printf ("<br><br>");
                 printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_ascent_path_prediction"));
                 printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }, ", json_encode($ascent_portion));
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : \"/n\", \"altitude\" : %s, \"comment\" : \"Predicted burst\", \"objecttype\" : \"burstlocation\", \"label\" : %s },", 
+                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : \"/n\", \"altitude\" : %s, \"comment\" : \"Predicted burst\", \"objecttype\" : \"burstlocation\", \"label\" : %s, \"iconsize\" : %s },", 
                     json_encode($flightid . "_burst_predicted"), 
                     json_encode($flightid . " Predicted Burst"), 
                     json_encode(number_format($peak_altitude) . "ft"), 
                     json_encode($peak_altitude),
-                    json_encode(number_format($peak_altitude) . "ft")
+		    json_encode(number_format($peak_altitude) . "ft"),
+		    json_encode($config["iconsize"])
                 );
                 printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } }, ", json_encode(end($ascent_portion)));
                 printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"false\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_descent_path_prediction"));
@@ -205,7 +210,7 @@
                         if ($i > 0)
                             printf (", ");
                     /* This is the GeoJSON object for the breadcrumb within the predicted flight path */ 
-                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s, \"tooltip\" : %s, \"label\" : %s },", 
+                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
                         //printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s },", 
                             json_encode($flightid . "_predictionpoint_" . $i), 
                             json_encode($flightid), 
@@ -213,7 +218,8 @@
                             json_encode($element[2]), 
                             json_encode($elem[3]),
                             json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"), 
-                            json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft") 
+			    json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"),
+			    json_encode($config["iconsize"])
                             //json_encode(number_format($element[2]) . "ft"),
                             //json_encode(number_format($element[2]) . "ft")
                         );

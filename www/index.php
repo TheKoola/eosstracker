@@ -28,7 +28,6 @@ session_start();
 $pagetitle="APRS:  Home";
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
-include $documentroot . '/common/sessionvariables.php';
 include $documentroot . '/common/header.php';
 
 ?>

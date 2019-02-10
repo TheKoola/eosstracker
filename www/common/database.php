@@ -23,10 +23,66 @@
 *
 */
 
+if(session_status() === PHP_SESSION_NONE) session_start();
+
+/* Read the configuration info */
+
+function readconfiguration() {
+
+    $fallbackJSON = "{ \"timezone\" : \"America\/Denver\", \"callsign\" : \"NOCALL\", \"lookbackperiod\" : \"180\", \"iconsize\" : \"24\", \"plottracks\" : \"off\" }";
+    $documentroot = $_SERVER["DOCUMENT_ROOT"]; 
+
+    // Defaults
+    $defaultsJSON = file_get_contents($documentroot . "/configuration/defaults.txt");
+    if ($defaultsJSON === false)
+	    $defaults = json_decode($fallbackJSON, true);
+    else 
+	    $defaults = json_decode($defaultsJSON, true);
+
+
+    // Get the configuration data from config.txt
+    $configJSON = file_get_contents($documentroot . "/configuration/config.txt");
+    if ($configJSON === false)
+	    $configuration = $defaults;
+    else 
+	    $configuration = json_decode($configJSON, true);
+
+
+
+    // Check the timezone parameter
+    if (!isset($configuration["timezone"]))
+	    $configuration["timezone"] = $defaults["timezone"];
+
+    // Check the callsign parameter
+    if (!isset($configuration["callsign"]))
+	    $configuration["callsign"] = $defaults["callsign"];
+
+    // Check the callsign lookbackperiod
+    if (!isset($configuration["lookbackperiod"]))
+	    $configuration["lookbackperiod"] = $defaults["lookbackperiod"];
+
+    // Check the callsign iconsize
+    if (!isset($configuration["iconsize"]))
+	    $configuration["iconsize"] = $defaults["iconsize"];
+
+    // Check the callsign plottracks
+    if (!isset($configuration["plottracks"]))
+	    $configuration["plottracks"] = $defaults["plottracks"];
+
+    //header("Content-Type:  application/json;");
+    return $configuration;
+}
+
+
 
 /* This will connect to the database */
 function connect_to_database() {
-    $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword!");
+    $config = readconfiguration();
+
+    if(isset($config["timezone"]))
+        $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword! options='-c timezone=" . $config['timezone'] . "'");
+    else
+        $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword!");
 
     return $linkvar;
 }
