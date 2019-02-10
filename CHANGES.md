@@ -21,7 +21,7 @@
 
 - Allowances for graceful handling of errors like NoSuchProcess and AccessDenied when getting the status of various UNIX processes.
 
-- PHP session variables were not getting set correctly withing sessionvariables.php.
+- PHP session variables were not getting set correctly.
 
 - Updated packet sorting for the live packet screens to account for day boundaries.
 
