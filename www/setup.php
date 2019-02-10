@@ -277,7 +277,7 @@ include $documentroot . '/common/header-setup.php';
             </p>
             <div id="predictionSelection" style="display: none;">
             <p class="normal-italic">
-                Use this section to add prediction data to the database for a specific flight.  Paste in the URL from the prediction page, for the "RAW" prediction file for a specific launch site.
+                Use this section to add prediction data to the database for a specific flight.  Select the RAW prediction file for upload.
             </p>
             <p class="normal-black" style="font-weight: bold;">
                 Add a Prediction
