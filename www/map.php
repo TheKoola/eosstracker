@@ -1360,7 +1360,7 @@ function getTrackers() {
                 <div id="error2"></div>
                 <div id="error3"></div>
                 <div style="position: absolute; bottom: 10px; width: 360px;">
-                    <p class="section-header">System Version: <?php if (isset($version)) printf ("%.1f", $version); ?></p>
+                    <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
                     <p class="lorem">This is the version of the HAB Tracker application.</p>
                 </div>
             </div>

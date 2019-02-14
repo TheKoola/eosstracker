@@ -34,7 +34,7 @@
     This site best viewed with recent versions of Firefox, Safari, Internet Explorer, Chrome, Opera, etc.
     </p>
     <p class="copyright" style="margin-bottom:  10px;">
-    System Version: <?php if (isset($version)) printf("%.1f", $version); ?> 
+    System Version: <?php if (isset($version)) printf("%s", $version); ?> 
     </p>
 </div>
 <!-- end of footer -->
