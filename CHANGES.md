@@ -14,6 +14,10 @@
 
 - Timezone support
 
+- Added igating support so that aprsc will upload packets to noam.aprs2.net
+
+- Added APRS beaconing support (through Dire Wolf).  Uses tracker, smart beaconing.
+
 
 ### Bugs Fixed: ###
 
