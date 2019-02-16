@@ -37,6 +37,35 @@ include $documentroot . '/common/header.php';
     var processInTransition = 0;
 
     /***********
+    * getConfiguration
+    *
+    * This function will read the current configuration
+    ***********/
+    function getConfiguration() {
+	    $.get("readconfiguration.php", function(data) {
+		    var jsonData = JSON.parse(data);
+
+		    var callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
+		    var timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
+		    var audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
+		    var igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
+		    var i = (igating == "true" ? "yes" : "no");
+		    var i2 = (i == "yes" ? "<mark>" + i + "</mark>" : i);
+		    var beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
+		    var b = (beaconing == "true" ? "yes" : "no");
+		    var b2 = (b == "yes" ? "<mark>" + b + "</mark>" : b);
+		    var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
+
+		    document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
+		    document.getElementById("timezone").innerHTML = timezone;
+		    document.getElementById("igating").innerHTML = i2;
+		    document.getElementById("beaconing").innerHTML = b2;
+		    document.getElementById("ssid").innerHTML = ssid; 
+	    });
+    }
+
+
+    /***********
     * startUpProcesses
     *
     * This function will submit a request to the backend web system to start the various daemons for the system.
@@ -80,7 +109,7 @@ include $documentroot . '/common/header.php';
   
        /* Loop through the processes and update their status */
 	  for (i = 0; i < keys.length; i++) {
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</mark>"; 
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</font></mark>"; 
               procs += statusJson.processes[i].status; 
           }
 
@@ -134,7 +163,9 @@ include $documentroot . '/common/header.php';
                 + "<p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px; font-size: .9em;\"><strong>Frequency &nbsp; (udp port):</strong><br>" + freqhtml 
                 + "<br><br><strong>GnuRadio:</strong><br>RTL-SDR #: " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer 
                 + "<br>Serial No: " + antennas[i].rtl_serialnumber 
-                + "<br><mark style=\"background-color:  lightgreen;\">[Okay]</mark></p></td></tr>";
+                + "<br><font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Okay]</mark></font></p></td></tr>";
+	    antenna_html = antenna_html + "<tr><td><p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px;  margin-top: 0px; margin-bottom: 0px;font-size: .9em;\">Igating status: <font style=\"font-variant: small-caps;\">" + (statusJson.igating == "true" ? "<mark style=\"background-color: lightgreen;\">[igating]</mark>" : "[no]") + "</font></p></td></tr>";
+	    antenna_html = antenna_html + "<tr><td><p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px; margin-top: 0px; margin-bottom: 0px; font-size: .9em;\">Beaconing status: <font style=\"font-variant: small-caps;\">" + (statusJson.beaconing == "true" ? "<mark style=\"background-color: lightgreen;\">[beaconing]</mark>" : "[no]") + "</font></p></td></tr>";
             antenna_html = antenna_html + "</table></td>";
         }
         antenna_html = antenna_html + "</tr></table>";
@@ -156,7 +187,12 @@ include $documentroot . '/common/header.php';
 
     $(document).ready(function () {
         getrecentdata();
-        setInterval(getrecentdata, 5000);
+	getConfiguration();
+        //setInterval(getrecentdata, 5000);
+	setInterval(function() {
+		getrecentdata();
+		getConfiguration();
+	}, 5000);
     });
     
     
@@ -181,7 +217,7 @@ include $documentroot . '/common/header.php';
                 System Processes
             </p>
             <table class="presentation-area" cellpadding=0 cellspacing=0 border=0 style="margin-left: 50px; margin-right: auto;">
-                <tr><td>
+                <tr><td valign="top">
                     <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
                     <tr><td class="packetlistheader" >Process</td><td class="packetlistheader" >Status</td></tr>
                     <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
@@ -191,7 +227,18 @@ include $documentroot . '/common/header.php';
                     </table>
                  </td>
                  <td valign="top">
-                    <p class="normal-black" style="font-weight: bold; margin-top:  0px;">Start and Stop Processes:</p>
+                    <table class="packetlist" cellpadding=0 cellspacing=0 border=0>
+                    <tr><th class="packetlistheader" colspan=2>Configuration Settings</th></tr>
+                    <tr><td class="packetlist">Callsign and SSID: </td><td class="packetlist" style="text-align: center; font-family:  'Lucida Console', Monaco, monospace;"><span id="callsign"></span><span id="ssid"></span></td<></tr>
+                    <tr><td class="packetlist">Timezone: </td><td class="packetlist" style="text-align: center;"><span id="timezone"></span></td></tr>
+                    <tr><td class="packetlist">Igating: </td><td class="packetlist" style="text-align: center;"><span id="igating"></span></td></tr>
+                    <tr><td class="packetlist">Beaconing: </td><td class="packetlist" style="text-align: center;"><span id="beaconing"></span></td></tr>
+                    </table>
+                 </td>
+                 </tr>
+                 <tr>
+                 <td colspan=2 valign="top">
+                    <p class="normal-black" style="font-weight: bold; margin-top:  20px;">Start and Stop Processes:</p>
                     <p class="normal-italic">Use these controls to start or stop the system daemons.</p>
                     <p class="normal-black"><button name="Start" id="startbutton" style="font-size: 1.1em;" onclick="startUpProcesses();">Start</button> &nbsp; <button name="Shutdown" id="stopbutton" style="font-size: 1.1em;" onclick="shutDownProcesses();">Stop</button></p>
                  </td></tr>

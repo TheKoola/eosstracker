@@ -790,3 +790,392 @@
 	    });
     }
 
+    /***********
+    * validateCallsign function
+    *
+    * This function will validate the callsign
+    ***********/
+    function validateCallsign() {
+        var callsign = document.getElementById("callsign");
+	    
+	//console.log("callsign:  " + callsign.value + ", passcode:  " + generatePasscode(callsign.value));
+
+        if (!callsign.checkValidity()) {
+            disableIgating();
+            disableBeaconing();
+            document.getElementById("beaconing").disabled = true;
+            document.getElementById("beaconingtext").style["color"] = "lightgrey";
+            document.getElementById("igating").disabled = true;
+            document.getElementById("igatingtext").style["color"] = "lightgrey";
+            document.getElementById("igating").checked = false;
+            document.getElementById("beaconing").checked = false;
+            //throw callsign.validationMessage;
+	    return false;
+	}
+	if (callsign.value != "") {
+            document.getElementById("igating").disabled = false;
+            document.getElementById("beaconing").disabled = false;
+	    document.getElementById("igatingtext").style["color"] = "black";
+	    document.getElementById("beaconingtext").style["color"] = "black";
+        }	
+	else {
+	    disableIgating();
+	    disableBeaconing();
+            document.getElementById("beaconing").disabled = true;
+            document.getElementById("beaconingtext").style["color"] = "lightgrey";
+            document.getElementById("igating").disabled = true;
+            document.getElementById("igatingtext").style["color"] = "lightgrey";
+            document.getElementById("igating").checked = false;
+            document.getElementById("beaconing").checked = false;
+	}
+	
+	return true;
+
+    }
+
+
+    /***********
+    * disablePasscode
+    *
+    * This function will disable the passcode data entry section
+    ***********/
+    function disableIgating() {
+        document.getElementById("passcode").disabled = true;
+        document.getElementById("passcodetext").style["color"] = "lightgrey";
+	//document.getElementById("igating").disabled = true;
+	//document.getElementById("igatingtext").style["color"] = "lightgrey";
+    }
+
+    /***********
+    * disableBeaconing
+    *
+    * This function will disable the beaconing data entry section
+    ***********/
+    function disableBeaconing() {
+        //document.getElementById("beaconing").disabled = true;
+        //document.getElementById("beaconingtext").style["color"] = "lightgrey";
+	document.getElementById("fastspeed").disabled = true;
+	document.getElementById("fastrate").disabled = true;
+	document.getElementById("slowspeed").disabled = true;
+	document.getElementById("slowrate").disabled = true;
+	document.getElementById("beaconlimit").disabled = true;
+	document.getElementById("fastturn").disabled = true;
+	document.getElementById("slowturn").disabled = true;
+	document.getElementById("audiodev").disabled = true;
+	document.getElementById("serialport").disabled = true;
+	document.getElementById("serialproto").disabled = true;
+	document.getElementById("beaconingtext1").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext2").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext3").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext4").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext5").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext6").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext7").style["color"] = "lightgrey";
+    }
+
+    
+
+    /***********
+    * generatePasscode function
+    *
+    * This function will generate the passcode for a given callsign
+    ***********/
+    function generatePasscode(callsign) {
+	var thecall = callsign.toUpperCase();
+	var code = 0x73e2;
+	var pcode = 0;
+	var i = 0;
+	var c;
+	var shift;
+
+	for (i in thecall){
+            c = thecall.charCodeAt(i);
+	    shift = (i % 2 == 0 ? 8 : 0); 
+            code ^= c << shift;
+	}
+
+        pcode = code & 0x7fff
+
+	return pcode;
+
+    }
+
+
+
+    /***********
+    * validatePasscode function
+    *
+    * This function will validate the passcode
+    ***********/
+    function validatePasscode() {
+        var passcode = document.getElementById("passcode");
+	var callsign = document.getElementById("callsign");
+	var calculatedPasscode = generatePasscode(callsign.value);
+
+
+	if (!passcode.checkValidity()) { 
+	    //throw passcode.validationMessage;
+            return false;
+	}
+
+	if (passcode.value != calculatedPasscode) {
+	    passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value + ".");
+	    //throw passcode.validationMessage; 
+	    return false;
+	}
+
+	passcode.setCustomValidity("");
+
+	return true;
+    }
+
+
+    /***********
+    * validateSlowSpeed function
+    *
+    * This function will make sure that the slowspeed threshold is <= fast speed threshold
+    ***********/
+    function validateSlowSpeed() {
+        var slowspeed = document.getElementById("slowspeed");
+	var fastspeed = document.getElementById("fastspeed");
+
+	if (!slowspeed.checkValidity()) { 
+	  //  throw slowspeed.validationMessage;
+            return false;
+	}
+
+	if (parseInt(slowspeed.value) > 0 && parseInt(slowspeed.value) > parseInt(fastspeed.value)) {
+	    slowspeed.setCustomValidity("Slow speed threshold cannot be greater than fast speed threshold");
+	   // throw slowspeed.validationMessage; 
+	    return false;
+	}
+
+	slowspeed.setCustomValidity("");
+	
+	return true;
+    }
+
+
+
+
+    /***********
+    * checkIgating function
+    *
+    * This function will check that the checkbox "igating" is checked and if so, enable some input fields.
+    ***********/
+    function checkIgating() {
+        var igating = document.getElementById("igating");
+	
+	if (igating.checked) {
+	    document.getElementById("passcode").disabled = false;
+	    document.getElementById("passcodetext").style["color"] = "black";
+	}
+	else {
+	    disableIgating();
+	}
+
+
+    }
+
+    /***********
+    * checkBeaconing function
+    *
+    * This function will check that the checkbox "beaconing" is checked and if so, enable some input fields.
+    ***********/
+    function checkBeaconing() {
+        var beaconing = document.getElementById("beaconing");
+	
+	if (beaconing.checked) {
+	    document.getElementById("fastspeed").disabled = false;
+	    document.getElementById("fastrate").disabled = false;
+	    document.getElementById("slowspeed").disabled = false;
+	    document.getElementById("slowrate").disabled = false;
+	    document.getElementById("beaconlimit").disabled = false;
+	    document.getElementById("fastturn").disabled = false;
+	    document.getElementById("slowturn").disabled = false;
+	    document.getElementById("audiodev").disabled = false;
+	    document.getElementById("serialport").disabled = false;
+	    document.getElementById("serialproto").disabled = false;
+	    document.getElementById("beaconingtext1").style["color"] = "black";
+	    document.getElementById("beaconingtext2").style["color"] = "black";
+	    document.getElementById("beaconingtext3").style["color"] = "black";
+	    document.getElementById("beaconingtext4").style["color"] = "black";
+	    document.getElementById("beaconingtext5").style["color"] = "black";
+	    document.getElementById("beaconingtext6").style["color"] = "black";
+	    document.getElementById("beaconingtext7").style["color"] = "black";
+	}
+	else {
+	    disableBeaconing();
+	}
+    }
+
+
+    /***********
+    * getConfiguration function
+    *
+    * This function will get the current system configuration settings
+    ***********/
+    function getConfiguration() {
+        $.get("readconfiguration.php", function(data) {
+	    var jsonData = JSON.parse(data);
+	    var keys = Object.keys(jsonData);
+            var i;
+            var ssid = document.getElementById("ssid");
+            var serialport = document.getElementById("serialport");
+            var serialproto = document.getElementById("serialproto");
+
+
+            document.getElementById("callsign").value = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);	    
+	    $("#ssid").val(jsonData.ssid);
+            //ssid.selectedIndex = (typeof(jsonData.ssid) == "undefined" ? 9 : jsonData.ssid -1 );	    
+
+            document.getElementById("passcode").value = (typeof(jsonData.passcode) == "undefined" ? "" : jsonData.passcode);	    
+
+            document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
+            document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
+            document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
+            document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
+            document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);	    
+            document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
+            document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
+	    $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
+	    
+	    var selectedAudioDevice = parseInt(jsonData.audiodev);
+	    $.get("getaudiodevs.php", function(d) {
+		var audioJson = JSON.parse(d);
+		var a;
+
+                $("#audiodev").html("");
+                for (a in audioJson) {
+                    $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
+                }
+    	        document.getElementById("audiodev").selectedIndex = selectedAudioDevice;
+	    });
+
+	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
+	    $.get("getserialports.php", function(d) {
+		var serialJson = JSON.parse(d);
+		var a;
+		var i = 0;
+		var idx = 0;
+
+                $("#serialport").html("");
+                $("#serialport").append($("<option></option>").val("none").html("none"));
+                for (a in serialJson) {
+                        $("#serialport").append($("<option></option>").val(serialJson[a].serialport).html(serialJson[a].serialport));
+                }
+    	        $("#serialport").val(selectedSerialPort);
+	    });
+            var beaconing = (typeof(jsonData.beaconing) == "undefined" ? false : (jsonData.beaconing == "true" ? true : false));
+            var igating = (typeof(jsonData.igating) == "undefined" ? false : (jsonData.igating == "true" ? true : false));
+            
+            document.getElementById("igating").checked = igating;
+            document.getElementById("beaconing").checked = beaconing;
+	    checkIgating();
+	    checkBeaconing();
+            validateCallsign();
+		
+            //document.getElementById("settimezone_error").innerHTML = "igating[" + document.getElementById("igating").checked + "]: " + jsonData.igating + ", beaconing[" + document.getElementById("beaconing").checked + "]: " + jsonData.beaconing;
+
+	});
+    }
+
+
+    /***********
+    * setConfiguration function
+    *
+    * This function will set the current system configuration settings
+    ***********/
+    function setConfiguration() {
+	    var form_data = new FormData();
+	    var callsign = document.getElementById("callsign");
+	    var passcode = document.getElementById("passcode");
+	    var fastspeed = document.getElementById("fastspeed");
+	    var slowspeed = document.getElementById("slowspeed");
+	    var fastrate = document.getElementById("fastrate");
+	    var slowrate = document.getElementById("slowrate");
+	    var beaconlimit = document.getElementById("beaconlimit");
+	    var fastturn = document.getElementById("fastturn");
+	    var slowturn = document.getElementById("slowturn");
+	    var igating = document.getElementById("igating");
+	    var beaconing = document.getElementById("beaconing");
+	    var audiodev = document.getElementById("audiodev");
+	    var ssid = document.getElementById("ssid");
+	    var serialport = document.getElementById("serialport");
+	    var serialproto = document.getElementById("serialproto");
+
+	    var fields = [ fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
+	    var f;
+
+            if (!callsign.checkValidity()) {
+                throw callsign.validationMessage;
+                return false;
+	    }
+
+            if (igating.checked) {
+		if (!passcode.checkValidity()) {
+                    throw passcode.validationMessage;
+                    return false;
+	        }
+		else {
+		    form_data.append("passcode", passcode.value);
+		    form_data.append("igating", igating.checked.toString());
+		}
+	    }
+	    else {
+		form_data.append("igating", "false");
+		form_data.append("passcode", "");
+            }
+	        
+
+
+	    if (beaconing.checked) {
+		for (f of fields) {
+	            //alert("checking: " + f.name);
+	            if (!f.checkValidity()) {
+			throw f.validationMessage;
+			return false;
+		    }
+	        }
+		form_data.append("beaconing", beaconing.checked.toString());
+		form_data.append("fastspeed", fastspeed.value);
+		form_data.append("fastrate", fastrate.value);
+		form_data.append("slowspeed", slowspeed.value);
+		form_data.append("slowrate", slowrate.value);
+		form_data.append("beaconlimit", beaconlimit.value);
+		form_data.append("fastturn", fastturn.value);
+		form_data.append("slowturn", slowturn.value);
+	    }
+	    else 
+		form_data.append("beaconing", "false");
+
+	    form_data.append("callsign", callsign.value.toUpperCase());
+	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
+	    form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+	    form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
+	    form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
+            $.ajax({
+                url: "setconfiguration.php",
+                dataType: 'json',
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: form_data,
+                type: 'post',
+		success: function(jsonData, textStatus, jqXHR) {
+	            document.getElementById("configurationsettings_error").innerHTML = "<mark>Settings saved.</mark>";
+		    setTimeout(function() {
+		        document.getElementById("configurationsettings_error").innerHTML = "";
+		    }, 3000);
+		    getConfiguration();
+		},
+                error: function (jqXHR, textStatus, errorThrown) {
+	            //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
+		}
+	    });
+
+	    return false;
+    }
+
+
+

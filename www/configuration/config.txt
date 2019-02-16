@@ -1,1 +1,1 @@
-{"timezone":"America\/Denver","callsign":"NOCALL","lookbackperiod":"180","iconsize":"24","plottracks":"off"}
+{"timezone":"America\/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "02:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "02:00", "fastturn" : "30", "slowturn": "90", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS"}

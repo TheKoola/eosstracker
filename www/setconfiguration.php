@@ -44,37 +44,15 @@
     else 
 	    $configuration = json_decode($configJSON, true);
 
+    //print_r($defaults);
 
+    foreach(array_keys($defaults) as $key) {
+        if(isset($_POST[$key]))
+  	    $configuration[$key] = $_POST[$key];
+        else if (!isset($configuration[$key]))
+	    $configuration[$key] = $defaults[$key];
+    }
 
-    // Check the timezone parameter
-    if (isset($_POST["timezone"]))
-  	    $configuration["timezone"] = $_POST["timezone"];
-    else if (!isset($configuration["timezone"]))
-	    $configuration["timezone"] = $defaults["timezone"];
-
-    // Check the callsign parameter
-    if (isset($_POST["callsign"]))
-  	    $configuration["callsign"] = $_POST["callsign"];
-    else if (!isset($configuration["callsign"]))
-	    $configuration["callsign"] = $defaults["callsign"];
-
-    // Check the callsign lookbackperiod
-    if (isset($_POST["lookbackperiod"]))
-  	    $configuration["lookbackperiod"] = $_POST["lookbackperiod"];
-    else if (!isset($configuration["lookbackperiod"]))
-	    $configuration["lookbackperiod"] = $defaults["lookbackperiod"];
-
-    // Check the callsign iconsize
-    if (isset($_POST["iconsize"]))
-  	    $configuration["iconsize"] = $_POST["iconsize"];
-    else if (!isset($configuration["iconsize"]))
-	    $configuration["iconsize"] = $defaults["iconsize"];
-
-    // Check the callsign plottracks
-    if (isset($_POST["plottracks"]))
-  	    $configuration["plottracks"] = $_POST["plottracks"];
-    else if (!isset($configuration["plottracks"]))
-	    $configuration["plottracks"] = $defaults["plottracks"];
 
     file_put_contents($documentroot . "/configuration/config.txt", json_encode($configuration));
 

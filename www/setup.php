@@ -60,6 +60,7 @@ include $documentroot . '/common/header-setup.php';
         getPredictions();
         getLaunchSites();
 	getTimeZones();
+	getConfiguration();
         var configuration_a = "#configurationSelectionLink";
         var configuration_l = "#configurationSelectionLinkSign";
         var configuration_e = "#configurationSelection";
@@ -347,17 +348,127 @@ include $documentroot . '/common/header-setup.php';
             </p>
             <div id="configurationSelection" style="display: none;">
             <p class="normal-italic">
-                Use this section to set configuration parameters for the HAB Tracker system.
+                Use this section to set configuration parameters for the HAB Tracker system.  These settings are system-wide and are not configurable on a per user basis.
             </p>
-
+            <p class="header" style="font-size: 1.2em;"> 
+                <img class="bluesquare" style="width: 8px; margin: 0px; padding: 7px; padding-right: 15px;"  src="/images/graphics/smallbluesquare.png">
+                Timezone
             <p class="normal-black"><span id="settimezone_error"></span></p>
             <p class="normal-black">
-                <form name="settimezone_form" id="settimezone_form">
-                <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
-		<tr>
-		   <th class="packetlistheader">Set The Time Zone</th>
+                Changes to the timezone take effect immediately across all web screens, but do not impact the local computer system time.  The timezone setting is persistent across process restarts and computer reboots/power-cycles.
+                <form name="timezone_form" id="timezone_form">
+                <table class="packetlist" style="margin-left: 30px; margin-right: 30px; width: auto;" cellpadding=0 cellspacing=0 border=0>
+		<tr><th class="packetlistheader">Configuration Item</th><th class="packetlistheader" style="text-align: center;">Value</th></tr>
+                <tr><td class="packetlist"><strong>Timezone</strong> used throughout the interface.</td>
+		    <td class="packetlist" style="white-space: nowrap; padding: 5px;">Timezone: <select form="timezone_form" id="settimezone" onchange="setTimeZone(this);"></select></td>
                 </tr>
-		<tr><td class="packetlist"><select form="settimezone_form" id="settimezone" onchange="setTimeZone(this);"></select></td></tr> 
+                </table>
+                </form>
+            </p>
+
+            <p class="header" style="font-size: 1.2em;"> 
+                <img class="bluesquare" style="width: 8px; margin: 0px; padding: 7px; padding-right: 15px;"  src="/images/graphics/smallbluesquare.png">
+                Transmitting and Igating 
+            </p>
+	    <p class="normal-black">
+            These values are <font style="text-decoration: underline;">OPTIONAL</font> and not required for regular, read-only/receive-only operation.  A valid ham radio callsign is mandatory    if igating (ex. uploading of APRS packets to the Internet) or beaconing via APRS is desired (i.e. transmitting APRS packets over radio frequencies).
+            </p>
+	    <p class="normal-black">
+                Changes to settings require the system processes to be restarted (on the <a href="/" class="normal-link-black">Home page</a>) before taking effect.  Settings are persistent across process restarts and computer reboots/power-cycles.
+            </p>
+            <p class="normal-black"><span id="configurationsettings_error"></span></p>
+            <p class="normal-black">
+                <form name="configuration_form" id="configuration_form">
+                <table class="packetlist" style="margin-left: 30px; margin-right: 30px; width: auto;" cellpadding=0 cellspacing=0 border=0>
+		<tr><th colspan=2 class="packetlistheader">Configuration Item</th><th class="packetlistheader" style="text-align: center;">Value</th></tr>
+		<tr><td colspan=2 class="packetlist"><strong>Callsign and SSID</strong>.  Enter your ham radio callsign and select an appropriate SSID.</td>
+		    <td class="packetlist" style="text-align: center; white-space: nowrap;">Callsign: <input type="text" form="configuration_form" id="callsign" oninput="setCustomValidity('');" onchange="validateCallsign();" placeholder="callsign" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}" size="9" maxlength="6" name="callsign" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" >
+                    &nbsp; SSID: 
+                    <select id="ssid" name="ssid" form="configuration_form" onchange="validateCallsign();">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9" selected="selected">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                    </select>
+                    </td>
+                </tr> 
+
+
+		<tr>
+                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps; ">Igating to the Internet</td></tr>
+
+
+		<tr>
+<td class="packetlist" rowspan=2 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">IGating</div></td>
+                    <td class="packetlist"><strong>Enable igating</strong> for received APRS packets.  This assumes the system has Internet connectivity.</td>
+                    <td class="packetlist"  id="igatingtext" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable igating: <input type="checkbox" name="igating" disabled="disabled" id="igating" onchange="checkIgating();"></td>
+                </tr> 
+		<tr>
+                    <td class="packetlist" ><strong>APRS-IS passcode</strong> for connections to APRS-IS systems.</td>
+                    <td class="packetlist" id="passcodetext" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
+                </tr> 
+
+
+                <tr>
+                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS Smart Beaconing</td></tr>
+		<tr>
+<td class="packetlist" rowspan=10 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Beaconing</div></td>
+                    <td class="packetlist"><strong>Enable beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
+                    <td class="packetlist" id="beaconingtext" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
+                    </td>
+                </tr>
+
+		<tr><td class="packetlist"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>
+		    <td class="packetlist" id="beaconingtext1" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="fastspeed" name="fastspeed" required="required" min="1" max="99" placeholder="nn">
+		    Mins:secs <input type="text" form="configuration_form" id="fastrate" name="fastrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="nnn">
+                    </td>
+                </tr>
+		<tr><td class="packetlist"><strong>Slow speed threshold</strong>.  For speeds below this value, beacon this frequently.</td>
+		    <td class="packetlist" id="beaconingtext2" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="slowspeed" name="slowspeed" required="required" min="1" max="99"  placeholder="nn" onchange="validateSlowSpeed();" oninput="setCustomValidity('');">
+		    Mins:secs <input type="text" form="configuration_form" id="slowrate" name="slowrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="nnn">
+                    </td>
+                </tr>
+		<tr><td class="packetlist"><strong>Frequency threshold</strong>.  Never beacon more frequently than this.</td>
+		    <td class="packetlist" id="beaconingtext3" style="text-align: center; color: lightgrey;">Mins:secs <input type="text" form="configuration_form" id="beaconlimit" name="beaconlimit" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
+                    </td>
+                </tr>
+		<tr><td class="packetlist"><strong>Fast speed direction change threshold</strong>.  For speeds above the fast threshold, beacon when the direction travel changes by at least this many degrees.</td>
+		    <td class="packetlist" id="beaconingtext4" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="fastturn" name="fastturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
+                    </td>
+                </tr>
+		<tr><td class="packetlist"><strong>Slow speed direction change threshold</strong>.  For speeds below the slow threshold, beacon when the direction travel changes by at least this many degrees.</td>
+		    <td class="packetlist" id="beaconingtext5" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="slowturn" name="slowturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan=2 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">External Radio Connection</td></tr>
+		<tr>
+		<tr><td class="packetlist"><strong>System audio output device</strong>.  Choose the audio device on this system that will be used to output audio to an external radio.  Device 0 is usually the onboard headphone jack.</td>
+		    <td class="packetlist" id="beaconingtext6" style="text-align: center; color: lightgrey; white-space: nowrap;"><select form="configuration_form" id="audiodev" name="audiodev"></select></td>
+                </tr>
+		<tr><td class="packetlist"><strong>External radio PTT connection</strong>.  Choose the serial device on this system that will be used to trigger the PTT on the external radio. Select "NONE" if using a third party device like SignaLink or VOX on the radio.  See the Dire Wolf User's Guide for details.</td>
+		    <td class="packetlist" id="beaconingtext7" style="text-align: center; color: lightgrey; white-space: nowrap;">Port: <select form="configuration_form" id="serialport" name="serialport"></select>
+			Line Ctrl: <select form="configuration_form" id="serialproto" name="serialproto">
+                            <option value="RTS">RTS</option>
+                            <option value="-RTS">-RTS</option>
+                            <option value="DTR">DTR</option>
+                            <option value="-DTR">-DTR</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><td colspan=3 class="packetlist" style="text-align: center; padding: 10px;"><input style="font-variant: small-caps; font-family:  'Gill Sans', GillSans, Helvetica, san-serif; font-size: 1.4em; background-color: lightsteelblue; color: black;" type="submit" value="Save Settings" onclick="setConfiguration(); return false;"></td></tr>
+
                 </table>
                 </form>
             </p>

@@ -24,32 +24,22 @@
 # This script will start an APRS monitoring session
 ###
 
-############################################
-# Parameters... edit these...
-############################################
-## callsign:  Enter your callsign here WITHOUT any sort of SSID
-#
-# A note about the callsign here...
-#     If you don't replace this with your callsign, then the system will use "E0SS" (as below).  Now this is just fine and dandy.
-#     As a) nothing is transmitted over the air with this system, and b) nothing is transmitted to APRS-IS over the internet.
-#     In the future the mechanism for one's callsign will change for the better, but for now, it's just this one hardcoded 
-#     line in this script. ;)
-#
-CALLSIGN="E0SS"
-
-
-# This is the elevation at the predicted landing location.  This doesn't need to be exact. It represents the altitude floor
-# below which the prediction algorithm will no longer attempt to calculate.  Consequently, this needs to be set at or around
-# ground level at the landing location.
-GROUNDLEVEL=4900
-############################################
-
-
-
 ######################################
 ########### script below ###########
 ###### nothing to edit below #######
 ######################################
+
+# A note about the default callsign here...
+#     This is the catch-all default callsign when operating in read-only (Internet) and receive-only (RF) mode.  It is NOT used
+#     when a user has entered their callsign through the web setup screens (ex. under Setup-->System Configuration).  This doesn't
+#     need to be edited.
+CALLSIGN="E0SS"
+
+
+# This is the elevation at the predicted landing location.  This is a starting value as the algorithm will auto-adjust this to 
+# be equal to the launch site elevation.  This doesn't need to edited.
+GROUNDLEVEL=4900
+
 
 # Locations of things
 HOMEDIR=/eosstracker

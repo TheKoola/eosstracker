@@ -51,6 +51,7 @@ from scipy.interpolate import *
 from scipy.optimize import *
 import signal
 import psutil
+import json
 
 #import local configuration items
 import habconfig 
@@ -1130,7 +1131,7 @@ def aprsTapProcess(callsign, radius, e):
         
         # Connect to the aprsc process 
         # We always append "03" to callsign to ensure were connecting with a reasonably unique callsign (i.e. so we don't conflict with direwolf or other).
-        ais = aprslib.IS(callsign + "03", aprslib.passcode(callsign + "03"), host='127.0.0.1', port='14580')
+        ais = aprslib.IS(callsign + "03", aprslib.passcode(str(callsign) + "03"), host='127.0.0.1', port='14580')
 
         # database connection
         # the writeToDatabase function uses these connect variables
@@ -1204,7 +1205,7 @@ def getNumberOfSDRs():
 ##################################################
 # This creates the configuration file for Direwolf
 ##################################################
-def createDirewolfConfig(callsign, l):
+def createDirewolfConfig(callsign, l, configdata):
 
     # Name of the direwolf configuration file
     filename = "/eosstracker/etc/direwolf.conf" 
@@ -1237,13 +1238,35 @@ def createDirewolfConfig(callsign, l):
                 f.write("###########################################\n\n")
                 rtl = rtl + 1
 
+            if configdata["beaconing"] == "true":
+                f.write("###########################################\n\n")
+                f.write("# This is for beaconing our position\n")
+                f.write("ADEVICE" + str(adevice) + " plughw:" + str(configdata["audiodev"]) + ",0\n")
+                f.write("ARATE 48000\n")
+                f.write("ACHANNELS 1\n")
+                f.write("CHANNEL " + str(channel) + "\n")
+                f.write("MYCALL " + callsign + "\n")
+                f.write("MODEM 1200\n")
+                if configdata["serialport"] != "none":
+                    f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
+                f.write("\n\n")
+                f.write("######### beaconing configuration #########\n")
+                f.write("GPSD\n");
+                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1,EOSS      symbol=/k    comment=\"EOSS Tracker - " + str(callsign) + "\"\n");
+                f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n");
+                f.write("###########################################\n\n")
+
+
             # The rest of the direwolf configuration
             # We're using the localhost address because that's where aprsc is running
             f.write("# APRS-IS Info\n")
             f.write("IGSERVER 127.0.0.1\n")
         
             # Login info for aprsc
-            password = aprslib.passcode(callsign)
+            if configdata["igating"] == "true":
+                password = configdata["passcode"]
+            else:
+                password = aprslib.passcode(str(callsign))
             f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
  
             # The rest of the direwolf configuration
@@ -1306,7 +1329,7 @@ def direwolf(configfile="", logfile="", e = None):
 ##################################################
 # Build the aprsc configuration file
 ##################################################
-def createAprscConfig(filename, callsign):
+def createAprscConfig(filename, callsign, igate):
 
     # Name of the aprsc configuration file.  If not provided then we can't run aprsc.  This should never happen, but just in case.
     if filename == "" or filename is None:
@@ -1317,7 +1340,7 @@ def createAprscConfig(filename, callsign):
     # Create or overwrite the aprsc configuration file
         with open(filename, "w") as f:
             f.write("ServerId " + callsign + "\n")
-            password = aprslib.passcode(callsign)
+            password = aprslib.passcode(str(callsign))
             f.write("PassCode " + str(password) + "\n")
             f.write("MyAdmin \"HAB Tracker\"\n")
             f.write("MyEmail me@emailnotset.local\n")
@@ -1330,11 +1353,12 @@ def createAprscConfig(filename, callsign):
             f.write("Listen \"Client-Defined Filters\"                   igate tcp ::  14580\n")
             f.write("Listen \"\"                                         igate udp ::  14580\n")
             
-            # This is set to be a read only connection to APRS-IS.  That is, we're not going to upload packets to any defined Uplink connections.
-            f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152\n")
-            
-            # Future note:  for uploading packets received over RF (aka from Direwolf), we'll need to set this to "full" instead of "ro". 
-            #f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 10152\n")
+            if igate == "true":
+                # For uploading packets received over RF (aka from Direwolf), set this to "full" instead of "ro". 
+                f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 10152\n")
+            else:
+                # This is set to be a read only connection to APRS-IS.  That is, we're not going to upload packets to any defined Uplink connections.
+                f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152\n")
 
             f.write("HTTPStatus 0.0.0.0 14501\n")
             f.write("FileLimit        10000\n")
@@ -1516,12 +1540,27 @@ def main():
 
     # --------- end of process checking section ----------
 
-   
-    # this is the supplied or the default callsign, but converted to uppercase
-    callsign = options.callsign.upper()
+
+    # --------- Read in the configuration file (if it exists) --------
+    # This is normally in ../www/configuration/config.txt
+    try:
+        with open('/eosstracker/www/configuration/config.txt') as json_data:
+            configuration = json.load(json_data)
+    except:
+        # Otherwise, we assume the callsign from the command line and do NOT perform igating or beaconing
+        configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
+
+    if configuration["igating"] == "true":
+        if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
+            print "Inocorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
+            configuration["igating"] = "false"
+
+
+
+#{"timezone":"America\/Denver","callsign":"N6BA","lookbackperiod":"180","iconsize":"24","plottracks":"on","ssid":"9","igating":"false","beaconing":"true","passcode":"32661","fastspeed":"45","fastrate":"02:00","slowspeed":"5","slowrate":"10:00","beaconlimit":"02:00","fastturn":"30","slowturn":"90","audiodev":"1"}
 
     print "Starting HAB Tracker backend daemon"
-    print "Callsign:  %s" % callsign
+    print "Callsign:  %s" % str(configuration["callsign"])
     print "APRS-IS Radius: %dkm" % options.aprsisRadius
     print "Algorithm Floor: %dft (this will auto-adjust)" % options.algoFloor
     print "Algorithm Interval: %ds" % options.algoInterval
@@ -1563,7 +1602,7 @@ def main():
         # We're assuming the path to this is the standard install path for aprsc, /opt/aprsc/etc/...
         # We always append "01" to the callsign to ensure that it's unique for APRS-IS
         aprsc_configfile = "/opt/aprsc/etc/tracker-aprsc.conf"
-        if createAprscConfig(aprsc_configfile, callsign + "01") < 0:
+        if createAprscConfig(aprsc_configfile, str(configuration["callsign"]) + "01", configuration["igating"]) < 0:
             sys.exit()
        
         # This is the aprsc process
@@ -1609,10 +1648,11 @@ def main():
             processes.append(grprocess)
 
             # Create Direwolf configuration file
-            if callsign == "E0SS":
-                filename = createDirewolfConfig(callsign + "02", direwolfFreqList)
+            #if callsign == "E0SS":
+            if configuration["igating"] == "false" and configuration["beaconing"] == "false":
+                filename = createDirewolfConfig(str(configuration["callsign"]) + "02", direwolfFreqList, configuration)
             else:
-                filename = createDirewolfConfig(callsign, direwolfFreqList)
+                filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
 
             logfile = "/eosstracker/logs/direwolf.out"
 
@@ -1624,13 +1664,15 @@ def main():
             status["rf_mode"] = 0
            
         status["antennas"] = antennas 
+        status["igating"] = configuration["igating"]
+        status["beaconing"] = configuration["beaconing"]
         print "\n"
         print "JSON:", json.dumps(status)
         print "\n"
 
 
         # This is the APRS-IS connection tap.  This is the process that is respoonsible for inserting APRS packets into the database
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(callsign, options.aprsisRadius, stopevent))
+        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
         processes.append(aprstap)

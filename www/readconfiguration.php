@@ -46,25 +46,65 @@
 
 
 
-    // Check the timezone parameter
+    // Check timezone 
     if (!isset($configuration["timezone"]))
 	    $configuration["timezone"] = $defaults["timezone"];
 
-    // Check the callsign parameter
+    // Check callsign 
     if (!isset($configuration["callsign"]))
 	    $configuration["callsign"] = $defaults["callsign"];
 
-    // Check the callsign lookbackperiod
+    // Check lookbackperiod
     if (!isset($configuration["lookbackperiod"]))
 	    $configuration["lookbackperiod"] = $defaults["lookbackperiod"];
 
-    // Check the callsign iconsize
+    // Check iconsize
     if (!isset($configuration["iconsize"]))
 	    $configuration["iconsize"] = $defaults["iconsize"];
 
-    // Check the callsign plottracks
+    // Check plottracks
     if (!isset($configuration["plottracks"]))
 	    $configuration["plottracks"] = $defaults["plottracks"];
+
+    // Check SSID
+    if (!isset($configuration["ssid"]))
+	    $configuration["ssid"] = $defaults["ssid"];
+
+    // Check igating
+    if (!isset($configuration["igating"]))
+	    $configuration["igating"] = $defaults["igating"];
+
+    // Check beaconing
+    if (!isset($configuration["beaconing"]))
+	    $configuration["beaconing"] = $defaults["beaconing"];
+
+    // Check fastspeed
+    if (!isset($configuration["fastspeed"]))
+	    $configuration["fastspeed"] = $defaults["fastspeed"];
+
+    // Check slowspeed
+    if (!isset($configuration["slowspeed"]))
+	    $configuration["slowspeed"] = $defaults["slowspeed"];
+
+    // Check fastrate
+    if (!isset($configuration["fastrate"]))
+	    $configuration["fastrate"] = $defaults["fastrate"];
+
+    // Check slowrate
+    if (!isset($configuration["slowrate"]))
+	    $configuration["slowrate"] = $defaults["slowrate"];
+    
+    // Check beaconlimit
+    if (!isset($configuration["beaconlimit"]))
+	    $configuration["beaconlimit"] = $defaults["beaconlimit"];
+
+    // Check fastturn
+    if (!isset($configuration["fastturn"]))
+	    $configuration["fastturn"] = $defaults["fastturn"];
+
+    // Check slowturn
+    if (!isset($configuration["slowturn"]))
+	    $configuration["slowturn"] = $defaults["slowturn"];
 
     //header("Content-Type:  application/json;");
     printf ("%s", json_encode($configuration));
