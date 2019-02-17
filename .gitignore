@@ -4,3 +4,5 @@ osm/*
 db/*
 logs/*
 lost+found
+www/nodeid.txt
+etc/*
