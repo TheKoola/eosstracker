@@ -62,6 +62,7 @@ su eosstracker -c "git checkout -- etc/README"
 su eosstracker -c "git checkout -- logs/.gitignore"
 su eosstracker -c "git checkout -- logs/README"
 su eosstracker -c "git checkout -- sql/eoss_specifics.sql"
+su eosstracker -c "git checkout -- cleanandstage.bash"
 
 echo
 echo
