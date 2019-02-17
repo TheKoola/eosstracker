@@ -1098,12 +1098,17 @@
 	    $.get("getaudiodevs.php", function(d) {
 		var audioJson = JSON.parse(d);
 		var a;
+		var i = 0;
 
                 $("#audiodev").html("");
                 for (a in audioJson) {
                     $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
+	            i += 1;
                 }
-    	        document.getElementById("audiodev").selectedIndex = selectedAudioDevice;
+		if (selectedAudioDevice >= i)
+    	            document.getElementById("audiodev").selectedIndex = 0;
+		else
+    	            document.getElementById("audiodev").selectedIndex = selectedAudioDevice;
 	    });
 
 	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
@@ -1211,6 +1216,7 @@
 
 	    form_data.append("callsign", callsign.value.toUpperCase());
 	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
+	    document.getElementById("configurationsettings_error").innerHTML = JSON.stringify(audiodev.options[audiodev.selectedIndex]);
 	    form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
 	    form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
 	    form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);

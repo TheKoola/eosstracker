@@ -416,7 +416,7 @@ include $documentroot . '/common/header-setup.php';
                 </tr> 
 		<tr>
                     <td class="packetlist" ><strong>APRS-IS passcode</strong> for connections to APRS-IS systems.</td>
-                    <td class="packetlist" id="passcodetext" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
+                    <td class="packetlist" id="passcodetext" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{1,5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
                 </tr> 
 
 
