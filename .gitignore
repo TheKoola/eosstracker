@@ -3,3 +3,4 @@ maps/*
 osm/*
 db/*
 logs/*
+lost+found
