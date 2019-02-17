@@ -1,7 +1,7 @@
 # Ignore the maps, osm, db, and logs directories
-maps
-osm
-db
+maps/
+osm/
+db/
 logs/*
 lost+found
 www/nodeid.txt
