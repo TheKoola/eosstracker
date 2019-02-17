@@ -1,0 +1,5 @@
+# Ignore the maps, osm, db, and logs directories
+maps/*
+osm/*
+db/*
+logs/*
