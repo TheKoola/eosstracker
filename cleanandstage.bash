@@ -1,12 +1,13 @@
 #!/bin/bash
-
-
+#
 # This script will clean up the /eosstracker directory tree to enable git commands to pull down updated code.
 # 
 # Run this as the root user:
 # 
 #     For example:
 #     $ sudo ./cleanandstage.bash
+#
+#
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
