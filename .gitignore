@@ -6,3 +6,4 @@ logs/*
 lost+found
 www/nodeid.txt
 etc/*
+www/configuration
