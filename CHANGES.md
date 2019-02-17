@@ -18,6 +18,10 @@
 
 - Added APRS beaconing support (through Dire Wolf).  Uses tracker, smart beaconing.
 
+- Added ability to select APRS symbol, optionally add EOSS to APRS beaconing path, and include an APRS comment.
+
+- First portion of the Dire Wolf logs added to the home page.
+
 
 ### Bugs Fixed: ###
 

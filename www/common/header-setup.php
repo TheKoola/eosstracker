@@ -58,6 +58,7 @@ else
 <script src="/common/c3.js"></script>
 <script src="/common/setup.js"></script>
 <script src="/common/trackers.js"></script>
+<script src="/common/symbols.js"></script>
 
 </head>
 

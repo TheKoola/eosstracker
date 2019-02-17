@@ -29,6 +29,7 @@
 
     $logfile = "/eosstracker/logs/start_session.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
+    $direwolffile = "/eosstracker/logs/direwolf.out";
     if (is_readable($logfile)) {
         $log = file($logfile);
         if ($log === false)
@@ -44,6 +45,14 @@
     else
 	$err = "Not available.";
 
-    printf("{\"log\": %s, \"err\": %s}", json_encode($log), json_encode($err));
+    if (is_readable($direwolffile)) {
+        $dw = file($direwolffile);
+	$therest = array_splice($dw, 100);
+        if ($dw === false)
+            $dw = "Not available.";
+    }
+    else
+	$dw = "Not available.";
+    printf("{\"log\": %s, \"err\": %s, \"direwolf\" : %s}", json_encode($log), json_encode($err), json_encode($dw));
 ?>
 

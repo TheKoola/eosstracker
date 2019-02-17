@@ -421,12 +421,29 @@ include $documentroot . '/common/header-setup.php';
 
 
                 <tr>
-                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS Smart Beaconing</td></tr>
+                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS Beaconing</td></tr>
 		<tr>
-<td class="packetlist" rowspan=10 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Beaconing</div></td>
+<td class="packetlist" rowspan=13 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Beaconing</div></td>
                     <td class="packetlist"><strong>Enable beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
                     <td class="packetlist" id="beaconingtext" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
                     </td>
+                </tr>
+
+		<tr><td class="packetlist"><strong>APRS comment</strong>.  For each outgoing packet, this comment will be included (limited to 60 characters).</td>
+		    <td class="packetlist" id="beaconingtext8" style="text-align: center; color: lightgrey; white-space: nowrap;"><input type="text" form="configuration_form" id="comment" name="comment" size="25" maxlength="60" pattern="[^|~]+" placeholder="comment" onchange="validateComment();" oninput="setCustomValidity('');"></td>
+                </tr>
+
+		<tr><td class="packetlist"><strong>Include EOSS within your APRS path</strong> when tracking flights with EOSS.  This system will alway use WIDE1-1,WIDE2-1, but one optionally can append "EOSS" to that path.  For example, WIDE1-1,WIDE2-1,EOSS. </td>
+		    <td class="packetlist" id="beaconingtext9" style="text-align: center; color: lightgrey; white-space: nowrap;">Include EOSS:  <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked></td>
+                </tr>
+
+		<tr><td class="packetlist"><strong>APRS symbol</strong>.  Choosed the appropriate symbol to represent your station.</td>
+		    <td class="packetlist" id="beaconingtext10" style="white-space: nowrap; text-align: center; color: lightgrey; white-space: nowrap;">
+		    <table cellpadding=0 cellspacing=0 border=0>
+		    <tr><td style="vertical-align: middle;"><span style="margin-right: 5px;" id="symbolicon"></span></td>
+                        <td style="vertical-align: middle;"><select style="vertical-align: middle;" form="configuration_form" name="symbol" id="symbol" onchange="changeSymbol();"></select></td>
+                    </tr>
+                    </table>
                 </tr>
 
 		<tr><td class="packetlist"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>

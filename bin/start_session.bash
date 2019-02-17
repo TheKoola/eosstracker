@@ -70,6 +70,16 @@ echo > ${LOGFILE}
 echo "###################" >> ${LOGFILE}
 date >> ${LOGFILE}
 echo "###################" >> ${LOGFILE}
+
+# Start Pulseaudio daemon if it's not already running
+#echo "Starting pulseaudio..." >>${LOGFILE}
+#pulseaudio -k >>${LOGFILE}
+#pulseaudio --start >>${LOGFILE}
+#aplay -l >> ${LOGFILE}
+
+#echo "###################" >> ${LOGFILE}
+#echo "###################" >> ${LOGFILE}
+
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
 nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} --algoFloor=${GROUNDLEVEL} >> ${LOGFILE} 2>${STDERR} &
 

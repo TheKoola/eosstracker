@@ -451,7 +451,7 @@ var symbols = {
       },
       "\\u" : {
          "tocall" : "SU",
-         "description" : "Truck"
+         "description" : "No. Truck"
       },
       "/:" : {
          "tocall" : "MR",

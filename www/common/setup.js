@@ -864,6 +864,9 @@
 	document.getElementById("audiodev").disabled = true;
 	document.getElementById("serialport").disabled = true;
 	document.getElementById("serialproto").disabled = true;
+	document.getElementById("comment").disabled = true;
+	document.getElementById("includeeoss").disabled = true;
+	document.getElementById("symbol").disabled = true;
 	document.getElementById("beaconingtext1").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext2").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext3").style["color"] = "lightgrey";
@@ -871,6 +874,9 @@
 	document.getElementById("beaconingtext5").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext6").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext7").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext8").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext9").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext10").style["color"] = "lightgrey";
     }
 
     
@@ -900,6 +906,36 @@
 
     }
 
+    /***********
+    * validateComment function
+    *
+    * This function will validate the comment field
+    ***********/
+    function validateComment() {
+	var comment = document.GetElementById("comment");
+	
+	if (!comment.checkValidity()) {
+	    comment.setCustomValidity("Invalid character within comment field.  Characters, | and ~ are not allowed.");
+	    return false;
+	}
+ 
+	comment.setCustomValidity("");
+	return true;
+    }
+
+
+    /***********
+    * changeSymbol function
+    *
+    * This function will update the APRS symbol icon when the dropdown value is changed
+    ***********/
+    function changeSymbol() {
+	var symbol = document.getElementById("symbol");
+	var value = symbol.options[symbol.selectedIndex].value;
+	
+        document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + symbols[value].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
+	
+    }
 
 
     /***********
@@ -996,6 +1032,9 @@
 	    document.getElementById("audiodev").disabled = false;
 	    document.getElementById("serialport").disabled = false;
 	    document.getElementById("serialproto").disabled = false;
+	    document.getElementById("comment").disabled = false;
+	    document.getElementById("includeeoss").disabled = false;
+	    document.getElementById("symbol").disabled = false;
 	    document.getElementById("beaconingtext1").style["color"] = "black";
 	    document.getElementById("beaconingtext2").style["color"] = "black";
 	    document.getElementById("beaconingtext3").style["color"] = "black";
@@ -1003,6 +1042,9 @@
 	    document.getElementById("beaconingtext5").style["color"] = "black";
 	    document.getElementById("beaconingtext6").style["color"] = "black";
 	    document.getElementById("beaconingtext7").style["color"] = "black";
+	    document.getElementById("beaconingtext8").style["color"] = "black";
+	    document.getElementById("beaconingtext9").style["color"] = "black";
+	    document.getElementById("beaconingtext10").style["color"] = "black";
 	}
 	else {
 	    disableBeaconing();
@@ -1038,7 +1080,19 @@
             document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);	    
             document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
+	    document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
+	    document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
 	    $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
+
+	    // Update the aprs symbols dropdown box
+	    var sym;
+	    var keys = Object.keys(symbols);
+	    for (sym in keys) {
+		if (typeof(symbols[keys[sym]].description) != "undefined" && typeof(symbols[keys[sym]].tocall) != "undefined" && keys[sym] != "1x")
+  		    $("#symbol").append($("<option></option>").val(keys[sym]).html(symbols[keys[sym]].description));
+	    }
+	    $("#symbol").val(jsonData.symbol);
+            document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + symbols[jsonData.symbol].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	    
 	    var selectedAudioDevice = parseInt(jsonData.audiodev);
 	    $.get("getaudiodevs.php", function(d) {
@@ -1103,8 +1157,11 @@
 	    var ssid = document.getElementById("ssid");
 	    var serialport = document.getElementById("serialport");
 	    var serialproto = document.getElementById("serialproto");
+	    var includeeoss = document.getElementById("includeeoss");
+	    var comment = document.getElementById("comment");
+	    var symbol = document.getElementById("symbol");
 
-	    var fields = [ fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
+	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
 
             if (!callsign.checkValidity()) {
@@ -1138,6 +1195,9 @@
 		    }
 	        }
 		form_data.append("beaconing", beaconing.checked.toString());
+		form_data.append("comment", comment.value);
+		form_data.append("symbol", symbol.value);
+		form_data.append("includeeoss", includeeoss.checked.toString());
 		form_data.append("fastspeed", fastspeed.value);
 		form_data.append("fastrate", fastrate.value);
 		form_data.append("slowspeed", slowspeed.value);

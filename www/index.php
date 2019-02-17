@@ -121,12 +121,14 @@ include $documentroot . '/common/header.php';
               //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
               if (procs >= keys.length - 1)
                   processInTransition = 0;
+              $("#direwolferror").html("");
               return;
           }
           else if (processInTransition == 2) {     // we're shutting down...
               //document.getElementById("debug").innerHTML = "shutting down still...processInTransition: " + processInTransition;
               if (procs <= 1)
                   processInTransition = 0; 
+              $("#direwolferror").html("");
               return;
           }
           else {   // we're either up or shutdown, but we're NOT in transition
@@ -143,6 +145,7 @@ include $documentroot . '/common/header.php';
         if (!statusJson.antennas) {
             //document.getElementById("debug").innerHTML = JSON.stringify(statusJson) + "<br><br>jeff was here";
             $("#antenna-data").html("<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark>Not running...</mark></p>");
+            $("#direwolferror").html("");
             return;
         }
         for (i = 0; i < antennas.length; i++) {
@@ -181,6 +184,12 @@ include $documentroot . '/common/header.php';
           
           $("#logfile").html(logsJson.log);
           $("#errfile").html(logsJson.err);
+          $("#direwolf").html((logsJson.direwolf));
+	  if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
+              $("#direwolferror").html(" &nbsp; <mark style=\"background-color: red;\">[ audio error ]</mark>");
+	  else
+              $("#direwolferror").html("");
+
       });
     }
  
@@ -220,7 +229,7 @@ include $documentroot . '/common/header.php';
                 <tr><td valign="top">
                     <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
                     <tr><td class="packetlistheader" >Process</td><td class="packetlistheader" >Status</td></tr>
-                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
+                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  red;">Not okay</mark></span><span id="direwolferror"></span></td></tr>
 		    <tr><td class="packetlist" >aprsc</td><td class="packetlistright" ><span id="aprsc-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 	  	    <tr><td class="packetlist" >gpsd</td><td class="packetlistright" ><span id="gpsd-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 		    <tr><td class="packetlist" >backend daemon</td><td class="packetlistright" ><span id="habtracker-d-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
@@ -252,6 +261,8 @@ include $documentroot . '/common/header.php';
             <p class="packetdata"><span id="logfile"></span></p>
             <p class="normal-black" style="font-weight: bold;">Stderr</p>
             <p class="packetdata"><span id="errfile"></span></p>
+            <p class="normal-black" style="font-weight: bold;">Direwolf output (limited to the first 100 lines)</p>
+            <p class="packetdata"><span id="direwolf"></span></p>
             <p class="normal-black"><span id="debug"></span></p>
 </div>
 
