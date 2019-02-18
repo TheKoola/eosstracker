@@ -842,8 +842,11 @@
     function disableIgating() {
         document.getElementById("passcode").disabled = true;
         document.getElementById("passcodetext").style["color"] = "lightgrey";
-	//document.getElementById("igating").disabled = true;
-	//document.getElementById("igatingtext").style["color"] = "lightgrey";
+	var beaconing = document.getElementById("beaconing").checked;
+	if (!beaconing) {
+	    document.getElementById("symbol").disabled = true;
+    	    document.getElementById("beaconingtext10").style["color"] = "lightgrey";
+	}
     }
 
     /***********
@@ -866,7 +869,12 @@
 	document.getElementById("serialproto").disabled = true;
 	document.getElementById("comment").disabled = true;
 	document.getElementById("includeeoss").disabled = true;
-	document.getElementById("symbol").disabled = true;
+	
+	var igating = document.getElementById("igating").checked;
+        if (!igating) {
+	    document.getElementById("symbol").disabled = true;
+	    document.getElementById("beaconingtext10").style["color"] = "lightgrey";
+	}
 	document.getElementById("beaconingtext1").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext2").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext3").style["color"] = "lightgrey";
@@ -876,7 +884,6 @@
 	document.getElementById("beaconingtext7").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext8").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext9").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext10").style["color"] = "lightgrey";
     }
 
     
@@ -1016,6 +1023,8 @@
 	if (igating.checked) {
 	    document.getElementById("passcode").disabled = false;
 	    document.getElementById("passcodetext").style["color"] = "black";
+	    document.getElementById("symbol").disabled = false;
+	    document.getElementById("beaconingtext10").style["color"] = "black";
 	}
 	else {
 	    disableIgating();
@@ -1219,7 +1228,6 @@
 	        }
 		form_data.append("beaconing", beaconing.checked.toString());
 		form_data.append("comment", comment.value);
-		form_data.append("symbol", symbol.value);
 		form_data.append("includeeoss", includeeoss.checked.toString());
 		form_data.append("fastspeed", fastspeed.value);
 		form_data.append("fastrate", fastrate.value);
@@ -1232,6 +1240,7 @@
 	    else 
 		form_data.append("beaconing", "false");
 
+	    form_data.append("symbol", symbol.value);
 	    form_data.append("callsign", callsign.value.toUpperCase());
 	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
 	    document.getElementById("configurationsettings_error").innerHTML = JSON.stringify(audiodev.options[audiodev.selectedIndex]);
