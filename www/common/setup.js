@@ -932,8 +932,19 @@
     function changeSymbol() {
 	var symbol = document.getElementById("symbol");
 	var value = symbol.options[symbol.selectedIndex].value;
-	
-        document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + symbols[value].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
+	var sym;
+
+	r = aprssymbols;
+	r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
+
+	var keys = Object.keys(r);
+	var i = 0;
+	var selectedSymbol = value;
+	for (sym in keys) {
+	    if (selectedSymbol == r[sym].symbol)
+	  	i = sym;
+	}
+        document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	
     }
 
@@ -1086,13 +1097,20 @@
 
 	    // Update the aprs symbols dropdown box
 	    var sym;
-	    var keys = Object.keys(symbols);
+	    r = aprssymbols;
+	    r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
+	    var keys = Object.keys(r);
+	    var i = 0;
+	    var selectedSymbol = jsonData.symbol;
 	    for (sym in keys) {
-		if (typeof(symbols[keys[sym]].description) != "undefined" && typeof(symbols[keys[sym]].tocall) != "undefined" && keys[sym] != "1x")
-  		    $("#symbol").append($("<option></option>").val(keys[sym]).html(symbols[keys[sym]].description));
+		if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
+		    if (selectedSymbol == r[sym].symbol)
+			i = sym;
+  		    $("#symbol").append($("<option></option>").val(r[sym].symbol).html(r[sym].description));
+		}
 	    }
 	    $("#symbol").val(jsonData.symbol);
-            document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + symbols[jsonData.symbol].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
+            document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	    
 	    var selectedAudioDevice = parseInt(jsonData.audiodev);
 	    $.get("getaudiodevs.php", function(d) {

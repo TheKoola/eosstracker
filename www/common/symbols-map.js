@@ -789,5 +789,5 @@ var symbols = {
          "tocall" : "1x",
          "description" : "Reticle"
       }
-}
+};
 

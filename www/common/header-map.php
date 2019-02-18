@@ -59,7 +59,7 @@ else
 <script src="/leaflet/leaflet.js"></script>
 <script src="/common/jquery-3.3.1.js"></script>
 <script src="/common/leaflet-realtime.min.js"></script>
-<script src="/common/symbols.js"></script>
+<script src="/common/symbols-map.js"></script>
 <script src="/common/leaflet.groupedlayercontrol.min.js"></script>
 <script src="/common/leaflet-sidebar.js"></script>
 <script src="/common/jquery.flightindicators.js"></script>

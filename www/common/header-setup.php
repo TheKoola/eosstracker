@@ -56,9 +56,9 @@ else
 <!-- <script src="/leaflet/leaflet.js"></script> -->
 <script src="/common/d3.min.js" charset="utf-8"></script>
 <script src="/common/c3.js"></script>
+<script src="/common/aprssymbols.js"></script>
 <script src="/common/setup.js"></script>
 <script src="/common/trackers.js"></script>
-<script src="/common/symbols.js"></script>
 
 </head>
 
