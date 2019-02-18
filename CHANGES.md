@@ -12,15 +12,17 @@
 
 - Added the ability to download GPS position and flight records.
 
-- Timezone support
+- Timezone support.
 
-- Added igating support so that aprsc will upload packets to noam.aprs2.net
+- Added igating support so that aprsc will upload packets to noam.aprs2.net.
 
 - Added APRS beaconing support (through Dire Wolf).  Uses tracker, smart beaconing.
 
 - Added ability to select APRS symbol, optionally add EOSS to APRS beaconing path, and include an APRS comment.
 
 - First portion of the Dire Wolf logs added to the home page.
+
+- When igating is enabled, internet beaconing will be enabled through Dire Wolf.  This is in addition to any RF beaconing the user may have selected.
 
 
 ### Bugs Fixed: ###
