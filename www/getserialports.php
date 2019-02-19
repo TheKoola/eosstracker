@@ -27,7 +27,8 @@
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    $command = "ls -1 /dev/ttyS[0-3]";
+    //$command = "ls -1 /dev/ttyS[0-3]";
+    $command = "ls -1 /dev/ttyUSB*";
     $cmdoutput = shell_exec($command);
     if ($cmdoutput == null) {
         printf ("[]");
@@ -37,8 +38,8 @@
     $a = explode("\n", $cmdoutput);
     $ports = [];
     foreach($a as $line) {
-        $okay = preg_match('/^\/dev\/ttyS[0-9]*/', trim($line));
-	$device = substr(trim($line), 9);
+        $okay = preg_match('/^\/dev\/ttyUSB[0-9]*/', trim($line));
+	$device = substr(trim($line), 11);
 	if ($okay)
 	    $ports[] = array("device" => $device, "serialport" => trim($line));
     }
