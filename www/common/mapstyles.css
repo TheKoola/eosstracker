@@ -28,6 +28,12 @@
 *
 */
 
+.leaflet-control-layers-group-name {
+    font-weight: 700;
+    text-decoration: underline;
+    margin-bottom: .2em;
+    margin-left: 3px;
+}
 
 .logo {
     font-size: 3em;
