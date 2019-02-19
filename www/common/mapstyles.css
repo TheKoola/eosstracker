@@ -53,6 +53,17 @@
     overflow: auto;
 }
 
+.altitudestyle {
+    color: black;
+    font-weight: bold;
+    background-color: yellow;
+}
+
+.commentstyle {
+    color: darkgreen;
+    font-style: italic;
+}
+
 
 .myTooltipLabelStyle {
 /*  background: #F5F5F5;*/

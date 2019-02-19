@@ -170,8 +170,8 @@
 			html = "<strong>" + feature.properties.callsign + "</strong>";
 
                     // Update the popup content to include a number of balloon specific items
-       		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br>" + feature.properties.comment : "")) + 
-		        (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <mark>" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+       		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+		        (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 		        (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		        (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -316,8 +316,8 @@
                 html = "<strong>" + item.properties.callsign + "</strong>";
 
             // Update the popup content to include a number of balloon specific items
-            html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br>" + item.properties.comment : "")) + 
-                (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <mark>" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+            html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+                (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
                 (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
                 (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -412,8 +412,8 @@
 
 
 		    html = "<strong>" + feature.properties.callsign + "</strong>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br>" + feature.properties.comment : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <mark>" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -484,8 +484,8 @@
             var html = "";
 
             html = "<strong>" + item.properties.callsign + "</strong>";
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br>" + item.properties.comment : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <mark>" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -551,8 +551,8 @@
                 if (objecttype == "landingprediction") {
                     var id = feature.properties.id;
 		    html = "<strong>" + feature.properties.callsign + "</strong>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br>" + feature.properties.comment : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <mark>" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -618,8 +618,8 @@
             var html = "";
 
             html = "<strong>" + item.properties.callsign + "</strong>";
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br>" + item.properties.comment : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <mark>" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -669,8 +669,8 @@
 			      "&zoom=" + mapzoom + 
 			      "&showallstations=1\">" + 
 			      "<strong>" + feature.properties.callsign + "</strong></a>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br>" + feature.properties.comment : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <mark>" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -745,8 +745,8 @@
 		      "&showallstations=1\">" + 
                       "<strong>" + item.properties.callsign + "</strong></a>";
 
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br>" + item.properties.comment : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <mark>" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</mark>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
