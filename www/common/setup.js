@@ -1128,16 +1128,19 @@
 		var audioJson = JSON.parse(d);
 		var a;
 		var i = 0;
+		var match = 0;
 
                 $("#audiodev").html("");
                 for (a in audioJson) {
+	            if (selectedAudioDevice == audioJson[a].device)
+			match = i;
                     $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
 	            i += 1;
                 }
-		if (i < 1)
+                if (match)
+		    $("#audiodev").val(selectedAudioDevice);
+		else
     	            document.getElementById("audiodev").selectedIndex = 0;
-		else 
-		    $("#audiodev").val(selectedAudioDevice)
 	    });
 
 	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
@@ -1146,13 +1149,20 @@
 		var a;
 		var i = 0;
 		var idx = 0;
+		var match = 0;
 
                 $("#serialport").html("");
                 $("#serialport").append($("<option></option>").val("none").html("none"));
                 for (a in serialJson) {
+			if (selectedSerialPort == serialJson[a].serialport)
+			    match = i;
                         $("#serialport").append($("<option></option>").val(serialJson[a].serialport).html(serialJson[a].serialport));
+			i += 1;
                 }
-    	        $("#serialport").val(selectedSerialPort);
+		if (match)
+    	            $("#serialport").val(selectedSerialPort);
+		else
+		    document.getElementById("serialport").selectedIndex = 0;
 	    });
             var beaconing = (typeof(jsonData.beaconing) == "undefined" ? false : (jsonData.beaconing == "true" ? true : false));
             var igating = (typeof(jsonData.igating) == "undefined" ? false : (jsonData.igating == "true" ? true : false));
