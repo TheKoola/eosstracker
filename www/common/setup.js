@@ -1123,7 +1123,7 @@
 	    $("#symbol").val(jsonData.symbol);
             document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	    
-	    var selectedAudioDevice = parseInt(jsonData.audiodev);
+	    var selectedAudioDevice = jsonData.audiodev;
 	    $.get("getaudiodevs.php", function(d) {
 		var audioJson = JSON.parse(d);
 		var a;
@@ -1134,10 +1134,10 @@
                     $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
 	            i += 1;
                 }
-		if (selectedAudioDevice >= i)
+		if (i < 1)
     	            document.getElementById("audiodev").selectedIndex = 0;
-		else
-    	            document.getElementById("audiodev").selectedIndex = selectedAudioDevice;
+		else 
+		    $("#audiodev").val(selectedAudioDevice)
 	    });
 
 	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
@@ -1245,7 +1245,6 @@
 	    form_data.append("symbol", symbol.value);
 	    form_data.append("callsign", callsign.value.toUpperCase());
 	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
-	    document.getElementById("configurationsettings_error").innerHTML = JSON.stringify(audiodev.options[audiodev.selectedIndex]);
 	    form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
 	    form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
 	    form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
