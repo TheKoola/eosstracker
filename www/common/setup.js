@@ -1128,39 +1128,47 @@
 		var audioJson = JSON.parse(d);
 		var a;
 		var i = 0;
-		var match = 0;
+		var match = false;
+		var matchidx = 0;
 
                 $("#audiodev").html("");
                 for (a in audioJson) {
-	            if (selectedAudioDevice == audioJson[a].device)
-			match = i;
+	            if (selectedAudioDevice == audioJson[a].device) {
+			match = true;
+			matchidx = i;
+		    }
                     $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
 	            i += 1;
                 }
                 if (match)
-		    $("#audiodev").val(selectedAudioDevice);
+		    document.getElementById("audiodev").selectedIndex = matchidx;
 		else
     	            document.getElementById("audiodev").selectedIndex = 0;
 	    });
 
+
+	    // Get the serial port
 	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
 	    $.get("getserialports.php", function(d) {
 		var serialJson = JSON.parse(d);
 		var a;
 		var i = 0;
 		var idx = 0;
-		var match = 0;
+		var match = false;
+		var matchidx = 0;
 
                 $("#serialport").html("");
                 $("#serialport").append($("<option></option>").val("none").html("none"));
                 for (a in serialJson) {
-			if (selectedSerialPort == serialJson[a].serialport)
-			    match = i;
+			if (selectedSerialPort == serialJson[a].serialport) {
+			    match = true;
+			    matchidx = i+1;
+			}
                         $("#serialport").append($("<option></option>").val(serialJson[a].serialport).html(serialJson[a].serialport));
 			i += 1;
                 }
-		if (match)
-    	            $("#serialport").val(selectedSerialPort);
+                if (match)
+		    document.getElementById("serialport").selectedIndex = matchidx;
 		else
 		    document.getElementById("serialport").selectedIndex = 0;
 	    });
@@ -1173,7 +1181,6 @@
 	    checkBeaconing();
             validateCallsign();
 		
-            //document.getElementById("settimezone_error").innerHTML = "igating[" + document.getElementById("igating").checked + "]: " + jsonData.igating + ", beaconing[" + document.getElementById("beaconing").checked + "]: " + jsonData.beaconing;
 
 	});
     }
