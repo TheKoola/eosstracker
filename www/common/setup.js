@@ -901,6 +901,8 @@
 	var c;
 	var shift;
 
+	
+
 	for (i in thecall){
             c = thecall.charCodeAt(i);
 	    shift = (i % 2 == 0 ? 8 : 0); 
@@ -972,7 +974,7 @@
             return false;
 	}
 
-	if (passcode.value != calculatedPasscode) {
+	if (String(passcode.value) != String(calculatedPasscode) || passcode.value == "") {
 	    passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value + ".");
 	    //throw passcode.validationMessage; 
 	    return false;
@@ -1202,7 +1204,7 @@
 	    }
 
             if (igating.checked) {
-		if (!passcode.checkValidity()) {
+		if (!validatePasscode()) {
                     throw passcode.validationMessage;
                     return false;
 	        }
