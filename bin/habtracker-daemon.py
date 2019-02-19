@@ -1264,6 +1264,7 @@ def createDirewolfConfig(callsign, l, configdata):
             if configdata["igating"] == "true":
                 f.write("########## for internet beaconing #########\n");
                 f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                f.write("IBEACON sendto=IG  delay=5:00 every=5:00 via=WIDE1-1,WIDE2-1" + str(eoss) + "\n")
                 if configdata["beaconing"] == "false":
                     f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
                 f.write("###########################################\n\n")
