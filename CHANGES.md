@@ -24,6 +24,8 @@
 
 - When igating is enabled, internet beaconing will be enabled through Dire Wolf.  This is in addition to any RF beaconing the user may have selected.
 
+- Cosmetic:  Updated the layer selection widget (upper right corner of the map screen) so that categories are underlined for better visibilty.
+
 
 ### Bugs Fixed: ###
 
