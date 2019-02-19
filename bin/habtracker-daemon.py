@@ -1562,6 +1562,10 @@ def main():
         # Otherwise, we assume the callsign from the command line and do NOT perform igating or beaconing
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
+    # If the callsign is empty, we use the default one from the command line.
+    if configuration["callsign"] == "":
+        configuration["callsign"] = options.callsign
+
     if configuration["igating"] == "true":
         if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
             print "Inocorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
