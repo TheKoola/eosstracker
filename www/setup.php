@@ -410,72 +410,89 @@ include $documentroot . '/common/header-setup.php';
 
 
 		<tr>
-<td class="packetlist" rowspan=2 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">IGating</div></td>
-                    <td class="packetlist"><strong>Enable igating</strong> for received APRS packets.  This assumes the system has Internet connectivity.</td>
-                    <td class="packetlist"  id="igatingtext" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable igating: <input type="checkbox" name="igating" disabled="disabled" id="igating" onchange="checkIgating();"></td>
+<td class="packetlist" rowspan=3 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">IGating</div></td>
+                    <td class="packetlist" id="igatingtext1"><strong>Enable igating</strong> for received APRS packets.  This assumes the system has Internet connectivity.</td>
+                    <td class="packetlist"  id="igatingtext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable igating: <input type="checkbox" name="igating" disabled="disabled" id="igating" onchange="checkIgating();"></td>
                 </tr> 
 		<tr>
-                    <td class="packetlist" ><strong>APRS-IS passcode</strong> for connections to APRS-IS systems.</td>
-                    <td class="packetlist" id="passcodetext" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{1,5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
+                    <td class="packetlist" id="passcodetext1"><strong>APRS-IS passcode</strong> for connections to APRS-IS systems.</td>
+                    <td class="packetlist" id="passcodetext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{1,5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
                 </tr> 
 
+		<tr>
+		    <td class="packetlist" id="ibeaconratetext1" ><strong>Beacon to APRS-IS</strong> at this rate, directly over an internet connection.  Instead of relying 
+		      solely on RF beaconing for getting APRS beacons to APRS-IS servers, this system will automatically beacon directly to APRS-IS if igating is enabled.  
+                      If RF beaconing is enabled below, APRS-IS direct beaconing will use those time values instead..</td>
+		    <td class="packetlist" id="ibeaconratetext2" style="white-space: nowrap; text-align: center; color: lightgrey;">
+		    Mins:secs <input type="text" form="configuration_form" id="ibeaconrate" name="ibeaconrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
+                    </td>
+                </tr> 
 
                 <tr>
-                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS Beaconing</td></tr>
+		    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS Comment and Station Symbol</td>
+                </tr>
 		<tr>
-<td class="packetlist" rowspan=13 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Beaconing</div></td>
-                    <td class="packetlist"><strong>Enable beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
-                    <td class="packetlist" id="beaconingtext" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
-                    </td>
+                    <td class="packetlist" rowspan=2 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Comment and Symbol</div></td>
+		<td class="packetlist" id="beaconingtext81"><strong>APRS comment</strong>.  For each outgoing packet, this comment will be included (limited to 60 characters).</td>
+		    <td class="packetlist" id="beaconingtext82" style="text-align: center; color: lightgrey; white-space: nowrap;"><input type="text" form="configuration_form" id="comment" name="comment" size="25" maxlength="60" pattern="[^|~]+" placeholder="comment" onchange="validateComment();" oninput="setCustomValidity('');"></td>
                 </tr>
 
-		<tr><td class="packetlist"><strong>APRS comment</strong>.  For each outgoing packet, this comment will be included (limited to 60 characters).</td>
-		    <td class="packetlist" id="beaconingtext8" style="text-align: center; color: lightgrey; white-space: nowrap;"><input type="text" form="configuration_form" id="comment" name="comment" size="25" maxlength="60" pattern="[^|~]+" placeholder="comment" onchange="validateComment();" oninput="setCustomValidity('');"></td>
-                </tr>
-
-		<tr><td class="packetlist"><strong>Include EOSS within your APRS path</strong> when tracking flights with EOSS.  This system will alway use WIDE1-1,WIDE2-1, but one optionally can append "EOSS" to that path.  For example, WIDE1-1,WIDE2-1,EOSS. </td>
-		    <td class="packetlist" id="beaconingtext9" style="text-align: center; color: lightgrey; white-space: nowrap;">Include EOSS:  <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked></td>
-                </tr>
-
-		<tr><td class="packetlist"><strong>APRS symbol</strong>.  Choosed the appropriate symbol to represent your station.</td>
-		    <td class="packetlist" id="beaconingtext10" style="white-space: nowrap; text-align: center; color: lightgrey; white-space: nowrap;">
+		<tr><td class="packetlist" id="beaconingtext101"><strong>APRS symbol</strong>.  Choosed the appropriate symbol to represent your station.</td>
+		    <td class="packetlist" id="beaconingtext102" style="white-space: nowrap; text-align: center; color: lightgrey; white-space: nowrap;">
 		    <table cellpadding=0 cellspacing=0 border=0>
-		    <tr><td style="vertical-align: middle;"><span style="margin-right: 5px;" id="symbolicon"></span></td>
-                        <td style="vertical-align: middle;"><select style="vertical-align: middle;" form="configuration_form" name="symbol" id="symbol" onchange="changeSymbol();"></select></td>
+		    <tr><td style="vertical-align: middle;"><div style="position: relative; text-align: center; margin-right: 5px;" id="symbolicon"></div></td>
+			<td style="vertical-align: middle; white-space: nowrap;"><span style="color lightgrey;" name="overlaytext" id="overlaytext">Overlay: </span>
+                            <input type="text" form="configuration_form" id="overlay" name="overlay" size="1" maxlength="1" style="text-transform: uppercase;" pattern="[0-9A-Z]" disabled="disabled" placeholder="x" onchange="changeSymbol();">
+                            <br><select style="vertical-align: middle;" form="configuration_form" name="symbol" id="symbol" onchange="changeSymbol();"></select></td>
                     </tr>
                     </table>
                 </tr>
 
-		<tr><td class="packetlist"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>
-		    <td class="packetlist" id="beaconingtext1" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="fastspeed" name="fastspeed" required="required" min="1" max="99" placeholder="nn">
-		    Mins:secs <input type="text" form="configuration_form" id="fastrate" name="fastrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="nnn">
+                <tr>
+		    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">APRS RF Smart Beaconing</td>
+                </tr>
+		<tr>
+                    <td class="packetlist" rowspan=11 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Beaconing</div></td>
+                    <td class="packetlist" id="beaconingtexta"><strong>Enable RF beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
+                    <td class="packetlist" id="beaconingtextb" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
                     </td>
                 </tr>
-		<tr><td class="packetlist"><strong>Slow speed threshold</strong>.  For speeds below this value, beacon this frequently.</td>
-		    <td class="packetlist" id="beaconingtext2" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="slowspeed" name="slowspeed" required="required" min="1" max="99"  placeholder="nn" onchange="validateSlowSpeed();" oninput="setCustomValidity('');">
-		    Mins:secs <input type="text" form="configuration_form" id="slowrate" name="slowrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="nnn">
+
+		<tr><td class="packetlist" id="beaconingtext9a"><strong>Include EOSS within your APRS path</strong> when tracking flights with EOSS.  This system will alway use WIDE1-1,WIDE2-1, but one optionally can append "EOSS" to that path.  For example, WIDE1-1,WIDE2-1,EOSS. </td>
+		    <td class="packetlist" id="beaconingtext9b" style="text-align: center; color: lightgrey; white-space: nowrap;">Include EOSS:  <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked></td>
+                </tr>
+
+
+		<tr><td class="packetlist" id="beaconingtext1a"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>
+		    <td class="packetlist" id="beaconingtext1b" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="fastspeed" name="fastspeed" required="required" min="1" max="99" placeholder="nn">
+		    Mins:secs <input type="text" form="configuration_form" id="fastrate" name="fastrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr>
-		<tr><td class="packetlist"><strong>Frequency threshold</strong>.  Never beacon more frequently than this.</td>
-		    <td class="packetlist" id="beaconingtext3" style="text-align: center; color: lightgrey;">Mins:secs <input type="text" form="configuration_form" id="beaconlimit" name="beaconlimit" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
+		<tr><td class="packetlist" id="beaconingtext2a"><strong>Slow speed threshold</strong>.  For speeds below this value, beacon this frequently.</td>
+		    <td class="packetlist" id="beaconingtext2b" style="white-space: nowrap; text-align: center; color: lightgrey;">Mph <input type="number" form="configuration_form" id="slowspeed" name="slowspeed" required="required" min="1" max="99"  placeholder="nn" onchange="validateSlowSpeed();" oninput="setCustomValidity('');">
+		    Mins:secs <input type="text" form="configuration_form" id="slowrate" name="slowrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr>
-		<tr><td class="packetlist"><strong>Fast speed direction change threshold</strong>.  For speeds above the fast threshold, beacon when the direction travel changes by at least this many degrees.</td>
-		    <td class="packetlist" id="beaconingtext4" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="fastturn" name="fastturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
+		<tr><td class="packetlist" id="beaconingtext3a"><strong>Frequency threshold</strong>.  Never beacon more frequently than this.</td>
+		    <td class="packetlist" id="beaconingtext3b" style="text-align: center; color: lightgrey;">Mins:secs <input type="text" form="configuration_form" id="beaconlimit" name="beaconlimit" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr>
-		<tr><td class="packetlist"><strong>Slow speed direction change threshold</strong>.  For speeds below the slow threshold, beacon when the direction travel changes by at least this many degrees.</td>
-		    <td class="packetlist" id="beaconingtext5" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="slowturn" name="slowturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
+		<tr><td class="packetlist" id="beaconingtext4a"><strong>Fast speed direction change threshold</strong>.  For speeds above the fast threshold, beacon when the direction travel changes by at least this many degrees.</td>
+		    <td class="packetlist" id="beaconingtext4b" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="fastturn" name="fastturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
+                    </td>
+                </tr>
+		<tr><td class="packetlist" id="beaconingtext5a"><strong>Slow speed direction change threshold</strong>.  For speeds below the slow threshold, beacon when the direction travel changes by at least this many degrees.</td>
+		    <td class="packetlist" id="beaconingtext5b" style="text-align: center; color: lightgrey;">Degrees <input type="number" form="configuration_form" id="slowturn" name="slowturn" required="required" size="5" maxlength="5" min="1" max="359" placeholder="nnn" required="required">
                     </td>
                 </tr>
                 <tr>
                     <td colspan=2 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps;">External Radio Connection</td></tr>
 		<tr>
-		<tr><td class="packetlist"><strong>System audio output device</strong>.  Choose the audio device on this system that will be used to output audio to an external radio.  Device 0 is usually the onboard headphone jack.</td>
-		    <td class="packetlist" id="beaconingtext6" style="text-align: center; color: lightgrey; white-space: nowrap;"><select form="configuration_form" id="audiodev" name="audiodev"></select></td>
+		<tr><td class="packetlist" id="beaconingtext6a"><strong>System audio output device</strong>.  Choose the audio device on this system that will be used to output audio to an external radio.  Device 0 is usually the onboard headphone jack.</td>
+		    <td class="packetlist" id="beaconingtext6b" style="text-align: center; color: lightgrey; white-space: nowrap;"><select form="configuration_form" id="audiodev" name="audiodev"></select></td>
                 </tr>
-		<tr><td class="packetlist"><strong>External radio PTT connection</strong>.  Choose the serial device on this system that will be used to trigger the PTT on the external radio. Select "NONE" if using a third party device like SignaLink or VOX on the radio.  See the Dire Wolf User's Guide for details.</td>
-		    <td class="packetlist" id="beaconingtext7" style="text-align: center; color: lightgrey; white-space: nowrap;">Port: <select form="configuration_form" id="serialport" name="serialport"></select>
+		<tr><td class="packetlist" id="beaconingtext7a"><strong>External radio PTT connection</strong>.  Choose the serial device on this system that will be used to trigger the PTT on the external radio. Select "NONE" if using a third party device like SignaLink or VOX on the radio.  See the Dire Wolf User's Guide for details.</td>
+		    <td class="packetlist" id="beaconingtext7b" style="text-align: center; color: lightgrey; white-space: nowrap;">Port: <select form="configuration_form" id="serialport" name="serialport"></select>
 			Line Ctrl: <select form="configuration_form" id="serialproto" name="serialproto">
                             <option value="RTS">RTS</option>
                             <option value="-RTS">-RTS</option>

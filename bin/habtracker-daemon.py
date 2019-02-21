@@ -1243,6 +1243,11 @@ def createDirewolfConfig(callsign, l, configdata):
             else:
                 eoss=""
 
+            if configdata["overlay"] != "":
+                overlay = " overlay=" + str(configdata["overlay"])
+            else:
+                overlay = ""
+
             f.write("GPSD\n\n")
             if configdata["beaconing"] == "true":
                 f.write("###########################################\n\n")
@@ -1257,16 +1262,16 @@ def createDirewolfConfig(callsign, l, configdata):
                     f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
                 f.write("\n\n")
                 f.write("######### beaconing configuration #########\n")
-                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
                 f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
                 f.write("###########################################\n\n")
             
             if configdata["igating"] == "true":
                 f.write("########## for internet beaconing #########\n");
-                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-                f.write("IBEACON sendto=IG  delay=5:00 every=5:00 via=WIDE1-1,WIDE2-1" + str(eoss) + "\n")
-                if configdata["beaconing"] == "false":
-                    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
+                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  via=WIDE1-1,WIDE2-1" + str(eoss) + "\n")
+                #if configdata["beaconing"] == "false":
+                #    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
                 f.write("###########################################\n\n")
 
 
@@ -1564,7 +1569,7 @@ def main():
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expeand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America\/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "\/k"}
+    defaultkeys = {"timezone":"America\/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "\/k", "overlay" : "", "ibeaconrate" : "15:00"}
 
     for the_key, the_value in defaultkeys.iteritems():
         if the_key not in configuration:

@@ -806,7 +806,8 @@
             document.getElementById("beaconing").disabled = true;
             document.getElementById("beaconingtext").style["color"] = "lightgrey";
             document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext").style["color"] = "lightgrey";
+            document.getElementById("igatingtext1").style["color"] = "lightgrey";
+            document.getElementById("igatingtext2").style["color"] = "lightgrey";
             document.getElementById("igating").checked = false;
             document.getElementById("beaconing").checked = false;
             //throw callsign.validationMessage;
@@ -815,16 +816,20 @@
 	if (callsign.value != "") {
             document.getElementById("igating").disabled = false;
             document.getElementById("beaconing").disabled = false;
-	    document.getElementById("igatingtext").style["color"] = "black";
-	    document.getElementById("beaconingtext").style["color"] = "black";
+	    document.getElementById("igatingtext1").style["color"] = "black";
+	    document.getElementById("igatingtext2").style["color"] = "black";
+	    document.getElementById("beaconingtexta").style["color"] = "black";
+	    document.getElementById("beaconingtextb").style["color"] = "black";
         }	
 	else {
 	    disableIgating();
 	    disableBeaconing();
             document.getElementById("beaconing").disabled = true;
-            document.getElementById("beaconingtext").style["color"] = "lightgrey";
+            document.getElementById("beaconingtexta").style["color"] = "lightgrey";
+            document.getElementById("beaconingtextb").style["color"] = "lightgrey";
             document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext").style["color"] = "lightgrey";
+            document.getElementById("igatingtext1").style["color"] = "lightgrey";
+            document.getElementById("igatingtext2").style["color"] = "lightgrey";
             document.getElementById("igating").checked = false;
             document.getElementById("beaconing").checked = false;
 	}
@@ -835,17 +840,34 @@
 
 
     /***********
-    * disablePasscode
+    * disableIgating
     *
     * This function will disable the passcode data entry section
     ***********/
     function disableIgating() {
         document.getElementById("passcode").disabled = true;
-        document.getElementById("passcodetext").style["color"] = "lightgrey";
+        document.getElementById("passcodetext1").style["color"] = "lightgrey";
+        document.getElementById("passcodetext2").style["color"] = "lightgrey";
+	document.getElementById("ibeaconrate").disabled = true;
+	document.getElementById("ibeaconratetext1").style["color"] = "lightgrey";
+	document.getElementById("ibeaconratetext2").style["color"] = "lightgrey";
+
 	var beaconing = document.getElementById("beaconing").checked;
 	if (!beaconing) {
 	    document.getElementById("symbol").disabled = true;
-    	    document.getElementById("beaconingtext10").style["color"] = "lightgrey";
+    	    document.getElementById("beaconingtext101").style["color"] = "lightgrey";
+    	    document.getElementById("beaconingtext102").style["color"] = "lightgrey";
+	    document.getElementById("comment").disabled = true;
+	    document.getElementById("beaconingtext81").style["color"] = "lightgrey";
+	    document.getElementById("beaconingtext82").style["color"] = "lightgrey";
+	    if (checkOverlay()) {
+	        document.getElementById("overlay").disabled = false;
+	        document.getElementById("overlaytext").style["color"] = "black";
+	    }
+            else {
+	        document.getElementById("overlay").disabled = true;
+	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	    }
 	}
     }
 
@@ -867,23 +889,41 @@
 	document.getElementById("audiodev").disabled = true;
 	document.getElementById("serialport").disabled = true;
 	document.getElementById("serialproto").disabled = true;
-	document.getElementById("comment").disabled = true;
 	document.getElementById("includeeoss").disabled = true;
 	
 	var igating = document.getElementById("igating").checked;
         if (!igating) {
 	    document.getElementById("symbol").disabled = true;
-	    document.getElementById("beaconingtext10").style["color"] = "lightgrey";
+	    document.getElementById("beaconingtext101").style["color"] = "lightgrey";
+	    document.getElementById("beaconingtext102").style["color"] = "lightgrey";
+	    document.getElementById("comment").disabled = true;
+	    document.getElementById("beaconingtext81").style["color"] = "lightgrey";
+	    document.getElementById("beaconingtext82").style["color"] = "lightgrey";
+	    if (checkOverlay()) {
+	        document.getElementById("overlay").disabled = false;
+	        document.getElementById("overlaytext").style["color"] = "black";
+	    }
+            else {
+	        document.getElementById("overlay").disabled = true;
+	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	    }
 	}
-	document.getElementById("beaconingtext1").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext2").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext3").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext4").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext5").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext6").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext7").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext8").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext9").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext1a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext1b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext2a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext2b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext3a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext3b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext4a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext4b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext5a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext5b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext6a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext6b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext7a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext7b").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext9a").style["color"] = "lightgrey";
+	document.getElementById("beaconingtext9b").style["color"] = "lightgrey";
     }
 
     
@@ -921,7 +961,7 @@
     * This function will validate the comment field
     ***********/
     function validateComment() {
-	var comment = document.GetElementById("comment");
+	var comment = document.getElementById("comment");
 	
 	if (!comment.checkValidity()) {
 	    comment.setCustomValidity("Invalid character within comment field.  Characters, | and ~ are not allowed.");
@@ -941,6 +981,7 @@
     function changeSymbol() {
 	var symbol = document.getElementById("symbol");
 	var value = symbol.options[symbol.selectedIndex].value;
+	var overlay = document.getElementById("overlay");
 	var sym;
 
 	r = aprssymbols;
@@ -953,8 +994,42 @@
 	    if (selectedSymbol == r[sym].symbol)
 	  	i = sym;
 	}
-        document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
+	//document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	
+	var imagefile;
+	var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
+	var tc;
+	var match = false;
+
+	if (overlay.value != "")
+	    overlay.value = overlay.value.toUpperCase();
+	if (!overlay.checkValidity()) {
+		overlay.value="";
+	}
+	else
+	    overlay.value = overlay.value.toUpperCase();
+	for (tc in validoverlays) {
+	    if (r[i].tocall == validoverlays[tc]) {
+	        match = true;
+	    }
+	}
+
+        if (match) {
+            if (overlay.value != "")
+                 imagefile = "/images/aprs/" + overlay.value + "-" + r[i].tocall + ".png";
+            else
+	         imagefile = "/images/aprs/" + r[i].tocall + ".png";
+            overlay.disabled = false;
+            document.getElementById("overlaytext").style["color"] = "black";
+	}
+	else {
+	    imagefile = "/images/aprs/" + r[i].tocall + ".png";
+            overlay.disabled = true;
+	    overlay.value = "";
+            document.getElementById("overlaytext").style["color"] = "lightgrey";
+	}
+
+        document.getElementById("symbolicon").innerHTML = "<img src=\"" + imagefile + "\" style=\"width: 32px; height: 32px;\">";
     }
 
 
@@ -975,7 +1050,7 @@
 	}
 
 	if (String(passcode.value) != String(calculatedPasscode) || passcode.value == "") {
-	    passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value + ".");
+	    passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value.toUpperCase() + ".");
 	    //throw passcode.validationMessage; 
 	    return false;
 	}
@@ -1012,6 +1087,40 @@
     }
 
 
+    /***********
+    * checkOverlay function
+    *
+    * This function will check if the currently selected symbol is in the "allowed to be overlayed" list
+    ***********/
+    function checkOverlay() {
+        var symbol = document.getElementById("symbol");
+        var currentSymbol = symbol.options[symbol.selectedIndex].value;
+	var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
+
+	var sym;
+        r = aprssymbols;
+        r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
+        var keys = Object.keys(r);
+        var enableOverlay = false;
+	var tc;
+        for (sym in keys) {
+            if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
+                if (currentSymbol == r[sym].symbol) {
+		    for (tc in validoverlays) {
+                        if (r[sym].tocall == validoverlays[tc]) {
+                            enableOverlay = true;
+                        }
+                    }
+		    
+		}
+
+	    }
+	}
+
+	return enableOverlay;
+    }
+	
+	
 
 
     /***********
@@ -1024,9 +1133,25 @@
 	
 	if (igating.checked) {
 	    document.getElementById("passcode").disabled = false;
-	    document.getElementById("passcodetext").style["color"] = "black";
+	    document.getElementById("passcodetext1").style["color"] = "black";
+	    document.getElementById("passcodetext2").style["color"] = "black";
 	    document.getElementById("symbol").disabled = false;
-	    document.getElementById("beaconingtext10").style["color"] = "black";
+	    document.getElementById("beaconingtext101").style["color"] = "black";
+	    document.getElementById("beaconingtext102").style["color"] = "black";
+	    document.getElementById("comment").disabled = false;
+	    document.getElementById("beaconingtext81").style["color"] = "black";
+	    document.getElementById("beaconingtext82").style["color"] = "black";
+	    if (checkOverlay()) {
+	        document.getElementById("overlay").disabled = false;
+	        document.getElementById("overlaytext").style["color"] = "black";
+	    }
+            else {
+	        document.getElementById("overlay").disabled = true;
+	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	    }
+	    document.getElementById("ibeaconrate").disabled = false;
+	    document.getElementById("ibeaconratetext1").style["color"] = "black";
+	    document.getElementById("ibeaconratetext2").style["color"] = "black";
 	}
 	else {
 	    disableIgating();
@@ -1057,16 +1182,34 @@
 	    document.getElementById("comment").disabled = false;
 	    document.getElementById("includeeoss").disabled = false;
 	    document.getElementById("symbol").disabled = false;
-	    document.getElementById("beaconingtext1").style["color"] = "black";
-	    document.getElementById("beaconingtext2").style["color"] = "black";
-	    document.getElementById("beaconingtext3").style["color"] = "black";
-	    document.getElementById("beaconingtext4").style["color"] = "black";
-	    document.getElementById("beaconingtext5").style["color"] = "black";
-	    document.getElementById("beaconingtext6").style["color"] = "black";
-	    document.getElementById("beaconingtext7").style["color"] = "black";
-	    document.getElementById("beaconingtext8").style["color"] = "black";
-	    document.getElementById("beaconingtext9").style["color"] = "black";
-	    document.getElementById("beaconingtext10").style["color"] = "black";
+	    if (checkOverlay()) {
+	        document.getElementById("overlay").disabled = false;
+	        document.getElementById("overlaytext").style["color"] = "black";
+	    }
+            else {
+	        document.getElementById("overlay").disabled = true;
+	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	    }
+	    document.getElementById("beaconingtext1a").style["color"] = "black";
+	    document.getElementById("beaconingtext1b").style["color"] = "black";
+	    document.getElementById("beaconingtext2a").style["color"] = "black";
+	    document.getElementById("beaconingtext2b").style["color"] = "black";
+	    document.getElementById("beaconingtext3a").style["color"] = "black";
+	    document.getElementById("beaconingtext3b").style["color"] = "black";
+	    document.getElementById("beaconingtext4a").style["color"] = "black";
+	    document.getElementById("beaconingtext4b").style["color"] = "black";
+	    document.getElementById("beaconingtext5a").style["color"] = "black";
+	    document.getElementById("beaconingtext5b").style["color"] = "black";
+	    document.getElementById("beaconingtext6a").style["color"] = "black";
+	    document.getElementById("beaconingtext6b").style["color"] = "black";
+	    document.getElementById("beaconingtext7a").style["color"] = "black";
+	    document.getElementById("beaconingtext7b").style["color"] = "black";
+	    document.getElementById("beaconingtext81").style["color"] = "black";
+	    document.getElementById("beaconingtext82").style["color"] = "black";
+	    document.getElementById("beaconingtext9a").style["color"] = "black";
+	    document.getElementById("beaconingtext9b").style["color"] = "black";
+	    document.getElementById("beaconingtext101").style["color"] = "black";
+	    document.getElementById("beaconingtext102").style["color"] = "black";
 	}
 	else {
 	    disableBeaconing();
@@ -1087,6 +1230,7 @@
             var ssid = document.getElementById("ssid");
             var serialport = document.getElementById("serialport");
             var serialproto = document.getElementById("serialproto");
+	    var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 
 
             document.getElementById("callsign").value = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);	    
@@ -1094,6 +1238,7 @@
             //ssid.selectedIndex = (typeof(jsonData.ssid) == "undefined" ? 9 : jsonData.ssid -1 );	    
 
             document.getElementById("passcode").value = (typeof(jsonData.passcode) == "undefined" ? "" : jsonData.passcode);	    
+            document.getElementById("ibeaconrate").value = (typeof(jsonData.ibeaconrate) == "undefined" ? "" : jsonData.ibeaconrate);	    
 
             document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
             document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
@@ -1104,6 +1249,7 @@
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
 	    document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
 	    document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
+            var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
 	    $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
 
 	    // Update the aprs symbols dropdown box
@@ -1113,15 +1259,37 @@
 	    var keys = Object.keys(r);
 	    var i = 0;
 	    var selectedSymbol = jsonData.symbol;
+	    var overlaymatch = false;
+	    var tc;
 	    for (sym in keys) {
 		if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
-		    if (selectedSymbol == r[sym].symbol)
+		    if (selectedSymbol == r[sym].symbol) {
 			i = sym;
+                        if (olay != "") {
+	                    for (tc in validoverlays) {
+	                        if (r[sym].tocall == validoverlays[tc]) {
+	                            overlaymatch = true;
+	                        }
+                            }
+	                }
+		    }
   		    $("#symbol").append($("<option></option>").val(r[sym].symbol).html(r[sym].description));
 		}
 	    }
 	    $("#symbol").val(jsonData.symbol);
-            document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
+	    if (overlaymatch) {
+                 imagefile = "/images/aprs/" + olay + "-" + r[i].tocall + ".png";
+		 document.getElementById("overlay").disabled = false;
+		 document.getElementById("overlay").value = olay;
+                 document.getElementById("overlaytext").style["color"] = "black";
+	    }
+	    else {
+                 imagefile = "/images/aprs/" + r[i].tocall + ".png";
+		 document.getElementById("overlay").value = "";
+		 document.getElementById("overlay").disabled = true;
+                 document.getElementById("overlaytext").style["color"] = "lightgrey";
+	    }
+            document.getElementById("symbolicon").innerHTML = "<img src=\"" + imagefile + "\" style=\"width: 32px; height: 32px;\">";
 	    
 	    var selectedAudioDevice = jsonData.audiodev;
 	    $.get("getaudiodevs.php", function(d) {
@@ -1195,6 +1363,7 @@
 	    var form_data = new FormData();
 	    var callsign = document.getElementById("callsign");
 	    var passcode = document.getElementById("passcode");
+	    var ibeaconrate = document.getElementById("ibeaconrate");
 	    var fastspeed = document.getElementById("fastspeed");
 	    var slowspeed = document.getElementById("slowspeed");
 	    var fastrate = document.getElementById("fastrate");
@@ -1211,6 +1380,8 @@
 	    var includeeoss = document.getElementById("includeeoss");
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
+	    var overlay = document.getElementById("overlay");
+	    var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 
 	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
@@ -1225,9 +1396,14 @@
                     throw passcode.validationMessage;
                     return false;
 	        }
+		else if (!ibeaconrate.checkValidity()) {
+		    throw ibeaconrate.validationMessage;
+		    return false;
+		}
 		else {
 		    form_data.append("passcode", passcode.value);
 		    form_data.append("igating", igating.checked.toString());
+		    form_data.append("ibeaconrate", ibeaconrate.value);
 		}
 	    }
 	    else {
@@ -1246,7 +1422,6 @@
 		    }
 	        }
 		form_data.append("beaconing", beaconing.checked.toString());
-		form_data.append("comment", comment.value);
 		form_data.append("includeeoss", includeeoss.checked.toString());
 		form_data.append("fastspeed", fastspeed.value);
 		form_data.append("fastrate", fastrate.value);
@@ -1259,7 +1434,22 @@
 	    else 
 		form_data.append("beaconing", "false");
 
-	    form_data.append("symbol", symbol.value);
+
+
+	    if (beaconing.checked || igating.checked)  {
+		form_data.append("comment", comment.value);
+	        form_data.append("symbol", symbol.value);
+		if (!overlay.disabled) {
+                    form_data.append("overlay", overlay.value.toUpperCase());
+		}
+		else {
+		    form_data.append("overlay", "");
+		}
+	    }
+	    else {
+		form_data.append("overlay", "");
+	    }
+
 	    form_data.append("callsign", callsign.value.toUpperCase());
 	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
 	    form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
