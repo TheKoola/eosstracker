@@ -31,6 +31,29 @@
 
     $config = readconfiguration();
 
+    function generateJSON($timeseries, $dataseries, $seriesname) {
+         $innerfirsttime = 1;
+         printf ("\"tm-%s\" : [", $seriesname);
+         foreach ($timeseries as $value) {
+             if (! $innerfirsttime)
+                 printf (", ");
+             $innerfirsttime = 0;
+             printf ("\"%s\"", $value);
+         }
+         printf ("], ");
+
+         $innerfirsttime = 1;
+         printf ("\"%s\" : [", $seriesname);
+         foreach ($dataseries as $value) {
+             if (! $innerfirsttime)
+                 printf (", ");
+             $innerfirsttime = 0;
+             printf ("%s", $value);
+         }
+         printf ("] ");
+    }
+
+
     ## Connect to the database
     $link = connect_to_database();
     if (!$link) {
@@ -43,7 +66,8 @@
 date_trunc('day', a.tm)::date as thedate, 
 date_trunc('hour', a.tm)::time as thehour,
 date_trunc('minute', a.tm)::time as theminute,
-count(a.*) as number_of_packets
+sum(case when a.raw like '%qAO,%:%' then 1 else 0 end) as rf_packets,
+sum(case when a.raw not like '%qAO,%:%' then 1 else 0 end) as internet_packets
 
 from 
 packets a
@@ -64,38 +88,22 @@ order by 1,2,3
    
     $tdata = [];
     $adata = [];
+    $rfdata = [];
     $channels = [];
 
     while ($row = sql_fetch_array($result)) {
         $tdata[]= $row['theminute'];
-        $adata[] = $row['number_of_packets'];
+        $adata[] = $row['internet_packets'];
+        $rfdata[] = $row['rf_packets'];
     }    
 
 
     printf (" { ");
-    $outerfirsttime = 1;
-         $innerfirsttime = 1;
-         printf ("\"tm-packets\" : [");
-         foreach ($tdata as $value) {
-             if (! $innerfirsttime)
-                 printf (", ");
-             $innerfirsttime = 0;
-             printf ("\"%s\"", $value);
-         }
-         printf ("], ");
+    generateJSON($tdata, $adata, "Internet_Packets");
+    printf (", ");
+    generateJSON($tdata, $rfdata, "RF_Packets");
 
-         $innerfirsttime = 1;
-         printf ("\"packets\" : [");
-         foreach ($adata as $value) {
-             if (! $innerfirsttime)
-                 printf (", ");
-             $innerfirsttime = 0;
-             printf ("%s", $value);
-         }
-         printf ("] ");
     printf ("}");
 
     sql_close($link);
-
-
 ?>

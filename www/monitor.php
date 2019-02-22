@@ -96,6 +96,10 @@ $config = readconfiguration();
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
+	    <p class="normal-italic">These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
+            the RF packet count series shows the number of packets that were heard over RF that were <strong>not</strong> already known 
+            through an APRS-IS connection.
+            </p>
             <p class="normal-black"><div id="chart1"></div></p>
             <p class="normal-black"><div id="debug1"></div></p>
             <p class="normal-black"><div id="debug2"></div></p>
