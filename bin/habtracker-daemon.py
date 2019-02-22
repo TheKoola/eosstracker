@@ -164,6 +164,7 @@ def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
 ##################################################
 def GpsPoller(e):
     gpsconn = None
+    GPSStatusFile = "/eosstracker/www/gpsstatus.json"
     try: 
         gpsd = gps(mode=WATCH_ENABLE) 
         gpsconn = pg.connect (habconfig.dbConnectionString)
@@ -176,32 +177,42 @@ def GpsPoller(e):
             report = gpsd.next() 
             thetime = datetime.datetime.now()
             timedelta = thetime - timeprev
-            if timedelta.total_seconds() > 1.5 and (round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon):
-                sql = """insert into 
-                    gpsposition values (
-                        (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone 'America/Denver', 
-                        %s::numeric, 
-                        %s::numeric, 
-                        %s::numeric, 
-                        ST_GeometryFromText('POINT(%s %s)', 4326), 
-                        ST_GeometryFromText('POINTZ(%s %s %s)', 4326)
-                    );"""
-                if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
-                    gpscur.execute(sql, [
-                        gpsd.utc, 
-                        round(gpsd.fix.speed * 2.236936, 0), 
-                        gpsd.fix.track, 
-                        round(gpsd.fix.altitude * 3.2808399, 0), 
-                        gpsd.fix.longitude, 
-                        gpsd.fix.latitude, 
-                        gpsd.fix.longitude, 
-                        gpsd.fix.latitude, 
-                        gpsd.fix.altitude 
-                    ])
-                    gpsconn.commit()
-                    timeprev = thetime
-                prevlat = round(gpsd.fix.latitude,4) 
-                prevlon = round(gpsd.fix.longitude,4) 
+            if timedelta.total_seconds() > 1.5:
+                if round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon:
+                    sql = """insert into 
+                        gpsposition values (
+                            (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone 'America/Denver', 
+                            %s::numeric, 
+                            %s::numeric, 
+                            %s::numeric, 
+                            ST_GeometryFromText('POINT(%s %s)', 4326), 
+                            ST_GeometryFromText('POINTZ(%s %s %s)', 4326)
+                        );"""
+                    if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
+                        gpscur.execute(sql, [
+                            gpsd.utc, 
+                            round(gpsd.fix.speed * 2.236936, 0), 
+                            gpsd.fix.track, 
+                            round(gpsd.fix.altitude * 3.2808399, 0), 
+                            gpsd.fix.longitude, 
+                            gpsd.fix.latitude, 
+                            gpsd.fix.longitude, 
+                            gpsd.fix.latitude, 
+                            gpsd.fix.altitude 
+                        ])
+                        gpsconn.commit()
+                        timeprev = thetime
+                    prevlat = round(gpsd.fix.latitude,4) 
+                    prevlon = round(gpsd.fix.longitude,4) 
+
+                ## Need to change this in the future to putting detailed status within the database instead of a text JSON file.  ;)
+                mysats = []
+                mymode = ""
+                with open(GPSStatusFile, "w") as f:
+                    for sat in gpsd.satellites:
+                        mysats.append({ "prn": str(sat.PRN), "elevation" : str(sat.elevation), "azimuth" : str(sat.azimuth), "snr" : str(sat.ss), "used" : str(sat.used) })
+                    gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
+                    f.write(json.dumps(gpsstats))
         print "Shutting down GPS Loop..."
         gpsconn.close()
     except pg.DatabaseError as error:
@@ -1268,8 +1279,8 @@ def createDirewolfConfig(callsign, l, configdata):
             
             if configdata["igating"] == "true":
                 f.write("########## for internet beaconing #########\n");
-                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-                f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  via=WIDE1-1,WIDE2-1" + str(eoss) + "\n")
+                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
                 #if configdata["beaconing"] == "false":
                 #    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
                 f.write("###########################################\n\n")
@@ -1315,7 +1326,7 @@ def direwolf(configfile="", logfile="", e = None):
         return -1
 
     # The command string and arguments for running direwolf
-    df_command = [df_binary, "-t", "0", "-c", configfile]
+    df_command = [df_binary, "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
 
     try:
         # We open the logfile first, for writing
