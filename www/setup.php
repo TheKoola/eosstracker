@@ -420,10 +420,10 @@ include $documentroot . '/common/header-setup.php';
                 </tr> 
 
 		<tr>
-		    <td class="packetlist" id="ibeaconratetext1" ><strong>Beacon to APRS-IS</strong> at this rate, directly over an internet connection.  Instead of relying 
-		      solely on RF beaconing for getting APRS beacons to APRS-IS servers, this system will automatically beacon directly to APRS-IS if igating is enabled.  
-                      If RF beaconing is enabled below, APRS-IS direct beaconing will use those time values instead..</td>
+		    <td class="packetlist" id="ibeaconratetext1" ><strong>Beacon to APRS-IS</strong> at this this rate (i.e. every mins:secs), directly over an internet connection.  Instead of relying 
+		      solely on RF beaconing for getting APRS beacons to APRS-IS servers, this system can beacon directly to APRS-IS if enabled.  <br><strong>Note:</strong>  If RF beaconing is enabled below, APRS-IS direct beaconing will use those beaconing rates instead of the time value listed here.</td>
 		    <td class="packetlist" id="ibeaconratetext2" style="white-space: nowrap; text-align: center; color: lightgrey;">
+                    Enable: <input type="checkbox" name="ibeacon" disabled="disabled" id="ibeacon" onchange="checkIgating();"> &nbsp;
 		    Mins:secs <input type="text" form="configuration_form" id="ibeaconrate" name="ibeaconrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr> 
@@ -473,8 +473,8 @@ include $documentroot . '/common/header-setup.php';
 		    Mins:secs <input type="text" form="configuration_form" id="slowrate" name="slowrate" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr>
-		<tr><td class="packetlist" id="beaconingtext3a"><strong>Frequency threshold</strong>.  Never beacon more frequently than this.</td>
-		    <td class="packetlist" id="beaconingtext3b" style="text-align: center; color: lightgrey;">Mins:secs <input type="text" form="configuration_form" id="beaconlimit" name="beaconlimit" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
+                <tr><td class="packetlist" id="beaconingtext3a"><strong>Frequency threshold</strong>.  Never beacon more frequently than this.</td>
+                    <td class="packetlist" id="beaconingtext3b" style="text-align: center; color: lightgrey;">Mins:secs <input type="text" form="configuration_form" id="beaconlimit" name="beaconlimit" required="required" size="5" maxlength="5" pattern="([0-5][0-9]|[0-9]):[0-5][0-9]" placeholder="mm:ss">
                     </td>
                 </tr>
 		<tr><td class="packetlist" id="beaconingtext4a"><strong>Fast speed direction change threshold</strong>.  For speeds above the fast threshold, beacon when the direction travel changes by at least this many degrees.</td>

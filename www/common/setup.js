@@ -848,6 +848,7 @@
         document.getElementById("passcode").disabled = true;
         document.getElementById("passcodetext1").style["color"] = "lightgrey";
         document.getElementById("passcodetext2").style["color"] = "lightgrey";
+	document.getElementById("ibeacon").disabled = true;
 	document.getElementById("ibeaconrate").disabled = true;
 	document.getElementById("ibeaconratetext1").style["color"] = "lightgrey";
 	document.getElementById("ibeaconratetext2").style["color"] = "lightgrey";
@@ -913,7 +914,7 @@
 	document.getElementById("beaconingtext2a").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext2b").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext3a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext3b").style["color"] = "lightgrey";
+        document.getElementById("beaconingtext3b").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext4a").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext4b").style["color"] = "lightgrey";
 	document.getElementById("beaconingtext5a").style["color"] = "lightgrey";
@@ -1149,6 +1150,7 @@
 	        document.getElementById("overlay").disabled = true;
 	        document.getElementById("overlaytext").style["color"] = "lightgrey";
 	    }
+	    document.getElementById("ibeacon").disabled = false;
 	    document.getElementById("ibeaconrate").disabled = false;
 	    document.getElementById("ibeaconratetext1").style["color"] = "black";
 	    document.getElementById("ibeaconratetext2").style["color"] = "black";
@@ -1195,7 +1197,7 @@
 	    document.getElementById("beaconingtext2a").style["color"] = "black";
 	    document.getElementById("beaconingtext2b").style["color"] = "black";
 	    document.getElementById("beaconingtext3a").style["color"] = "black";
-	    document.getElementById("beaconingtext3b").style["color"] = "black";
+            document.getElementById("beaconingtext3b").style["color"] = "black";
 	    document.getElementById("beaconingtext4a").style["color"] = "black";
 	    document.getElementById("beaconingtext4b").style["color"] = "black";
 	    document.getElementById("beaconingtext5a").style["color"] = "black";
@@ -1238,13 +1240,14 @@
             //ssid.selectedIndex = (typeof(jsonData.ssid) == "undefined" ? 9 : jsonData.ssid -1 );	    
 
             document.getElementById("passcode").value = (typeof(jsonData.passcode) == "undefined" ? "" : jsonData.passcode);	    
+            document.getElementById("ibeacon").checked = (typeof(jsonData.ibeacon) == "undefined" ? false : (jsonData.ibeacon == "true" ? true : false));
             document.getElementById("ibeaconrate").value = (typeof(jsonData.ibeaconrate) == "undefined" ? "" : jsonData.ibeaconrate);	    
 
             document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
             document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
             document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
             document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
-            document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);	    
+	    document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
             document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
 	    document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
@@ -1363,6 +1366,7 @@
 	    var form_data = new FormData();
 	    var callsign = document.getElementById("callsign");
 	    var passcode = document.getElementById("passcode");
+	    var ibeacon = document.getElementById("ibeacon");
 	    var ibeaconrate = document.getElementById("ibeaconrate");
 	    var fastspeed = document.getElementById("fastspeed");
 	    var slowspeed = document.getElementById("slowspeed");
@@ -1396,11 +1400,12 @@
                     throw passcode.validationMessage;
                     return false;
 	        }
-		else if (!ibeaconrate.checkValidity()) {
+		else if (ibeacon.checked && !ibeaconrate.checkValidity()) {
 		    throw ibeaconrate.validationMessage;
 		    return false;
 		}
 		else {
+		    form_data.append("ibeacon", ibeacon.checked.toString());
 		    form_data.append("passcode", passcode.value);
 		    form_data.append("igating", igating.checked.toString());
 		    form_data.append("ibeaconrate", ibeaconrate.value);
