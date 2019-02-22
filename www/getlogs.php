@@ -27,6 +27,7 @@
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
+    //header("Content-type: text/plain;");
     $logfile = "/eosstracker/logs/start_session.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
     $direwolffile = "/eosstracker/logs/direwolf.out";
@@ -45,14 +46,47 @@
     else
 	$err = "Not available.";
 
+    $beacons = [];
+    $matches = [];
     if (is_readable($direwolffile)) {
-        $dw = file($direwolffile);
-	$therest = array_splice($dw, 100);
-        if ($dw === false)
-            $dw = "Not available.";
+        $dw = file_get_contents($direwolffile);
+        //$p = preg_match_all('/^(\[[0-9]+L\]|\[ig\] .*$/m', $dw, $beacons);
+        $p = preg_match_all('/^(\[[0-9]+L [0-9]{1,2}:[0-9]{2}:[0-9]{2}\]|\[ig\]) .*$/m', $dw, $matches);
+	if ($p) {
+           foreach ($matches[0] as $b) { 
+	       if (strpos($b, "aprsc") === false && strpos($b, "logresp") === false)
+	           $beacons[] = preg_replace(array('/^\[ig\] /', '/^\[[0-9]+L /'), array('[internet] ', '[RF '), $b) . "\n";
+	           //printf("b:  %s\n", $b);
+		   //printf ("beacon: %s\n", $beacons[sizeof($beacons) - 1]);
+	   }
+	   if (sizeof($beacons) > 0) { 
+	       $beacons = array_reverse($beacons);
+	       //print_r($beacons);
+	       $disposeof = array_splice($beacons, 10);
+	   }
+	   else 
+	       $beacons = "Not available.";
+	}
+        else 
+	    $beacons = "Not available.";
+	$filearray = explode("\n", $dw);
+	$therest = array_splice($filearray, 100);
+        if ($filearray === false) {
+            $direwolflog = "Not available.";
+        }
+	else {
+            foreach($filearray as $f) {
+	        $direwolflog[] = $f . "\n"; 
+	    }
+	}
     }
-    else
-	$dw = "Not available.";
-    printf("{\"log\": %s, \"err\": %s, \"direwolf\" : %s}", json_encode($log), json_encode($err), json_encode($dw));
+    else {
+	$direwolflog = "Not available.";
+        $beacons = "Not available.";
+    }
+
+ //   print_r($beacons);
+
+    printf("{\"log\": %s, \"err\": %s, \"direwolf\" : %s, \"beacons\" : %s}", json_encode($log), json_encode($err), json_encode($direwolflog), json_encode($beacons));
 ?>
 
