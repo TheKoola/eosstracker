@@ -39,7 +39,23 @@ include $documentroot . '/common/header.php';
     var currentflight;
     var packetcount;
 
+    /***********
+    * escapeHtml
+    *
+    * This function will escape HTML special chars
+    ***********/
+    function escapeHtml(s) {
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          };
 
+       return s.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
     function getIndicesOf(searchStr, str, caseSensitive) {
         var searchStrLen = searchStr.length;
         if (searchStrLen == 0) {
@@ -74,7 +90,7 @@ include $documentroot . '/common/header.php';
            if (operation == "and") {
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 &&
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
            }
@@ -82,7 +98,7 @@ include $documentroot . '/common/header.php';
                //document.getElementById("debug").innerHTML = "in OR section";
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
            }
@@ -91,24 +107,24 @@ include $documentroot . '/common/header.php';
                if (searchstring.length > 0 && searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
                        packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else if (searchstring.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else if (searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
                
@@ -354,7 +370,7 @@ include $documentroot . '/common/header.php';
                 Number of Packets: 
                 <mark><span id="packetcount"></span></mark>
             </p>
-            <div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>
+            <div class="packetdata"><pre class="packetdata"><span id="packetdata"></span></pre></div>
 </div>
 
 <?php

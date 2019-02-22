@@ -143,6 +143,22 @@
 </script>
 <script src="/common/map.js"></script>
 <script>
+    /***********
+    * escapeHtml
+    *
+    * This function will escape HTML special chars
+    ***********/
+    function escapeHtml(s) {
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          };
+
+       return s.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
 
     /***********
     * setConfiguration function
@@ -458,7 +474,7 @@ function getTrackers() {
            if (operation == "and") {
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 &&
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
            }
@@ -466,7 +482,7 @@ function getTrackers() {
                //document.getElementById("debug").innerHTML = "in OR section";
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
            }
@@ -475,24 +491,24 @@ function getTrackers() {
                if (searchstring.length > 0 && searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
                        packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else if (searchstring.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else if (searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + packets[key].packet + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                        i += 1;
                    }
                }
                else {
-                   html = html + packets[key].packet + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
                    i += 1;
                }
                
