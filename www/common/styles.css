@@ -604,6 +604,22 @@ div.packetdata {
     overflow-wrap: break-word;
 }
 
+pre.packetdata {
+    color:  #25262b; 
+/*    color: black; */
+    font-family:  "Lucida Console", Monaco, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-decoration: none;
+    font-size:  .8em;
+    text-align:  left;
+    vertical-align: top;
+    margin-left:  30px;
+    margin-right: 30px;
+    background-color: #d3d3d3;
+}
+
 p.packetdata {
     color:  #25262b; 
 /*    color: black; */
