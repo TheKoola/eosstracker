@@ -1,0 +1,81 @@
+.add_marker_control {
+	background-image: url(/images/SimpleMarkers/add_marker.png);
+	width: 20px;
+    height: 20px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    display: block;
+    padding: 3px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, 0.65);
+    cursor: auto;
+    text-align: center;
+    background-color: #ffffff;
+}
+
+.add_marker_control:hover {
+	/*background-color: #f4f4f4;*/
+	background-color: dodgerblue;
+}
+
+.del_marker_control {
+	background-image: url(/images/SimpleMarkers/del_marker.png);
+	width: 20px;
+    height: 20px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    display: block;
+    padding: 3px;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, 0.65);
+    cursor: auto;
+    text-align: center;
+    background-color: #ffffff;
+}
+
+.del_marker_control:hover {
+	/*background-color: #f4f4f4;*/
+	background-color: dodgerblue;
+}
+.add_marker_source_control {
+    background-image: url(/images/SimpleMarkers/icon-source.png); 
+    width: 20px;
+    height: 20px;
+    background-position: 50% 50%;
+    background-size: 18px,25px;
+    background-repeat: no-repeat;
+    display: block;
+    padding: 3px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, 0.65);
+    cursor: auto;
+    text-align: center;
+    background-color: #ffffff;
+}
+
+.add_marker_destination_control {
+    background-image: url(/image/SimpleMarkers/icon-destination.png);
+    width: 20px;
+    height: 20px;
+    background-position: 50% 50%;
+    background-size: 18px,25px;
+    background-repeat: no-repeat;
+    display: block;
+    padding: 3px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    box-shadow: 0 1px 7px rgba(0, 0, 0, 0.65);
+    cursor: auto;
+    text-align: center;
+    background-color: #ffffff;
+}
