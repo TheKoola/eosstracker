@@ -14,10 +14,15 @@ page.  They do not persist across web page reloads (at least not yet).
 ## Adding a Waypoint To The Map
 
 To add a waypoint onto your map click the ![Add Waypoint](images/add_marker.png) icon on the right hand side of the screen.  
-Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  If you change your mind, just click the ![Add Waypoint](images/add_marker.png) icon a second time and it's color should change back to white indicating that you're no longer in "add a waypoint" mode.
+Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  If you change your mind, just
+click the ![Add Waypoint](images/add_marker.png) icon a second time and it's color should change back to white indicating that
+you're no longer in "add a waypoint" mode.
+
 <img src="images/Click-the-add-waypoint-icon.png" alt="Click the add waypoint button" width="700">
 
+
 Just click on your desired map location to add a waypoint at that spot.
+
 <img src="images/Click-where-you-want-the-waypoint-to-go.png" alt="Click where you want to add the waypoint" width="700">
 
 
@@ -25,14 +30,17 @@ Just click on your desired map location to add a waypoint at that spot.
 ## Edit The Waypoint Popup Content
 
 Just click on your new waypoint to display the initial popup content.
+
 <img src="images/Click-the-marker-to-bring-up-the-popup.png" alt="Click the waypoint to display the popup" width="700">
 
 To tailor the popup content to something more meaningful, just click on it and start typing.  Once satisfied, click anywhere
 else on the map to save your changes.
+
 <img src="images/Click-on-the-popup-text-and-edit-as-desired.png" alt="Edit the popup content" width="700">
 
 Once you click on this waypoint again, you'll see your newly added popup content.  Of course, you can always edit the
 popup content as much as you want.
+
 <img src="images/Click-anywhere-else-on-the-map-to-save-changes.png" alt="Completed popup" width="700">
 
 
@@ -43,5 +51,6 @@ To delete a waypoint click the ![Delete Waypoint](images/del_marker.png) icon on
 Once selected it should turn a blue color to indicate that you're in "delete a waypoint" mode.  Then just click on the waypoint that you want to delete.
 
 If you change your mind, just click the ![Delete Waypoint](images/del_marker.png) icon a second time and it's color should change back to white indicating that you're no longer in "delete a waypoint" mode.
+
 <img src="images/Click-the-delete-waypoint-icon-then-click-on-the-waypoint-you-want-to-delete.png" alt="Click the delete waypoint icon" width="700">
 
