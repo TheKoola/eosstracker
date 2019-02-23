@@ -207,13 +207,19 @@ def GpsPoller(e):
 
                 ## Need to change this in the future to putting detailed status within the database instead of a text JSON file.  ;)
                 mysats = []
+                mysats_sorted = []
                 mymode = ""
                 with open(GPSStatusFile, "w") as f:
                     for sat in gpsd.satellites:
                         mysats.append({ "prn": str(sat.PRN), "elevation" : str(sat.elevation), "azimuth" : str(sat.azimuth), "snr" : str(sat.ss), "used" : str(sat.used) })
-                    gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
+                    if len(gpsd.satellites) > 0:
+                        mysats_sorted = sorted(mysats, key=lambda k: k['used'], reverse=True)
+                    gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats_sorted, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
                     f.write(json.dumps(gpsstats))
         print "Shutting down GPS Loop..."
+        with open(GPSStatusFile, "w") as f:
+            gpsstats = { "utc_time" : "n/a", "mode" : 0, "status" : 0, "lat" : "n/a", "lon" : "n/a", "satellites" : [], "speed_mph" : 0, "altitude" : 0 }
+            f.write(json.dumps(gpsstats))
         gpsconn.close()
     except pg.DatabaseError as error:
         print(error)
@@ -221,6 +227,7 @@ def GpsPoller(e):
         gpsconn.close() 
         print "GPS poller ended"
     finally:
+
         if gpsconn is not None:
             gpsconn.close()
 

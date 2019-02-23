@@ -245,7 +245,7 @@ include $documentroot . '/common/header.php';
 	    theDate = theDate.replace(/.[0]*Z$/g, ""); 
 	    //$("#gpsdata").html("<pre style=\"font-size: 1.1em; font-family: font-family:  'Lucida Console', Monaco, monospace;\">" 
 	    var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
-		    + "<tr><td colspan=\"2\" style=\"text-align: left;\">UTC Time: &nbsp; " + theDate + "</td></tr>"
+		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
 		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
 		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
 		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
@@ -300,11 +300,15 @@ include $documentroot . '/common/header.php';
             <table class="presentation-area" cellpadding=0 cellspacing=0 border=0 style="margin-left: auto; margin-right: auto;">
                 <tr><td>
                     <span id="antenna-data"></span>
-		</td><td style="vertical-align: bottom;">
+		</td><td style="vertical-align: bottom; text-align: left;">
                     <table class="packetlist" cellpadding=0 cellspacing=0 border=0 style="margin-left: auto; margin-right: auto;">
-		    <tr><th class="packetlistheader" >GPS Data</th>
+		    <tr><th class="packetlistheader" >GPS State</th>
                     </tr>
                     <tr><td class="packetlist"><span id="gpsdata" >n/a</span></td>    
+                    </tr>
+                    <tr><td class="packetlist">
+                    <p class="normal-italic" style="text-align: left; margin: 0px; white-space: normal;"><strong>Note:</strong> GPS state is only updated while<br>system processes are running</p>
+                    </td>
                     </tr>
                     </table> 
                 </td>
