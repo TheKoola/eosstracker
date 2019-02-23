@@ -26,6 +26,11 @@
 
 - Cosmetic:  Updated the layer selection widget (upper right corner of the map screen) so that categories are underlined for better visibilty.
 
+- Waypoint markers available as an option on the map.  Markers can be placed at any location, updated with custom popup text, and are movable.
+
+- GPS state data is now available on the Home page of the app.  This is only updated while the system processes are running.
+
+
 
 ### Bugs Fixed: ###
 
