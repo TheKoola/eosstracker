@@ -32,6 +32,6 @@ front-end interface to query and display data independenty, providing a smooth e
 
 
 ### Block Diagram
-The following diagram shows the primary processing change and how data is ultimately presented to the end user.
+The following diagram shows the primary processing chain and how data is ultimately presented to the end user.
 
 <img src="images/Block-diagram.png" alt="The Block Diagram">
