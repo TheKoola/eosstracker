@@ -16,10 +16,11 @@ Primary features:
  - Light weight user interface leverages a web browser
 
 
+
 ### Separation of Data Acquisition and Front-end Interface
 One of the core concepts with the HAB Tracker application is that it provides separation between ongoing data acquisition
 processing tasks and the front-end user interface.  This allows amateur radio APRS packets across multiple frequencies to 
-be processed as they are received without interference from what the end user might be doing on the 
+be processed as they are received without interference from what the end-user might be doing on the 
 front-end interface. 
 
 A key component of the architecture is the centralized database which stores all incoming APRS packet data enabling 
@@ -27,6 +28,7 @@ parallel access for other processing tasks and the end-user interface.  This app
 front-end interface to query and display data independenty, providing a smooth end-user experience.
 
 <img src="images/Core-concept.png" alt="The Core Concept">
+
 
 
 ### Block Diagram
