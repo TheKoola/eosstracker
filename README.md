@@ -16,7 +16,7 @@ Primary features:
  - Light weight user interface leverages a web browser
 
 
-### Separation of Data Acquisition and Frontend Interface
+### Separation of Data Acquisition and Front-end Interface
 One of the core concepts with the HAB Tracker application is that it provides separation between ongoing data acquisition
 processing and the front-end user interface.  This allows amateur radio APRS signals to be readily processed as they are 
 received without interference from what the end user might be doing on the front-end interface.  Conversely, the user 
