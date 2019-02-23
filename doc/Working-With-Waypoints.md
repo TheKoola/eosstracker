@@ -30,7 +30,7 @@ Just click on your new waypoint to display the initial popup content.
 
 To tailor the popup content to something more meaningful, just click on it and start typing.  Once satisfied, click anywhere
 else on the map.
-<img src-="images/Click-on-the-popup-text-and-edit-as-desired.png" alt="Edit the popup content" width="700">
+<img src="images/Click-on-the-popup-text-and-edit-as-desired.png" alt="Edit the popup content" width="700">
 
 Once you click on this waypoint again, you'll see your newly added popup content.  Of course, you can always edit the
 popup content as much as you want.
