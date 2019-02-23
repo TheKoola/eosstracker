@@ -7,7 +7,7 @@ content edited, and can even be moved to different locations.
 It is important to note that waypoints will persist on your map until you either delete them or you reload the web 
 page.  They do not persist across web page reloads (at least not yet).
 
-<img src="images/Im-a-waypoint.png" alt="I'm a waypoint" width="400">
+<img src="images/Im-a-waypoint.png" alt="I'm a waypoint" width="800">
 
 ## Adding a Waypoint To The Map
 
