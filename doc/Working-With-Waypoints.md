@@ -26,7 +26,7 @@ Just click on your desired map location to add a waypoint at that spot.
 ## Edit The Waypoint Popup Content
 
 Just click on your new waypoint to display the initial popup content.
-<img src="images/Click-the-marker-to-bring-up-the-waypoint.png" alt="Click the waypoint to display the popup" width="700">
+<img src="images/Click-the-marker-to-bring-up-the-popup.png" alt="Click the waypoint to display the popup" width="700">
 
 To tailor the popup content to something more meaningful, just click on it and start typing.  Once satisfied, click anywhere
 else on the map.
