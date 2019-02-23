@@ -1,4 +1,4 @@
-### Working With Waypoints
+# Working With Waypoints
 
 Use waypoints to mark rendezvous locations, critical road junctions, or other points on the map to aid navigation 
 and balloon tracking efforts.  They can be added to the map screen with the HAB Tracker application, their popup 
@@ -14,9 +14,8 @@ page.  They do not persist across web page reloads (at least not yet).
 ## Adding a Waypoint To The Map
 
 To add a waypoint onto your map click the ![Add Waypoint](images/add_marker.png) icon on the right hand side of the screen.  
-Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  
-<img src="images/Click-the-add-waypoint-icon.png" alt="Click the add waypont button" width="700">
-
+Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  If you change your mind, just click the ![Add Waypoint](images/add_marker.png) icon a second time and it's color should change back to white indicating that you're no longer in "add a waypoint" mode.
+<img src="images/Click-the-add-waypoint-icon.png" alt="Click the add waypoint button" width="700">
 
 Just click on your desired map location to add a waypoint at that spot.
 <img src="images/Click-where-you-want-the-waypoint-to-go.png" alt="Click where you want to add the waypoint" width="700">
@@ -37,4 +36,12 @@ popup content as much as you want.
 <img src="images/Click-anywhere-else-on-the-map-to-save-changes.png" alt="Completed popup" width="700">
 
 
+
+## Deleting a Waypoint
+
+To delete a waypoint click the ![Delete Waypoint](images/del_marker.png) icon on the right hand side of the screen.
+Once selected it should turn a blue color to indicate that you're in "delete a waypoint" mode.  Then just click on the waypoint that you want to delete.
+
+If you change your mind, just click the ![Delete Waypoint](images/del_marker.png) icon a second time and it's color should change back to white indicating that you're no longer in "delete a waypoint" mode.
+<img src="images/Click-the-delete-waypoint-icon-then-click-on-the-waypoint-you-want-to-delete.png" alt="Click the delete waypoint icon" width="700">
 
