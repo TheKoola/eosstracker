@@ -7,13 +7,15 @@ content edited, and can even be moved to different locations.
 It is important to note that waypoints will persist on your map until you either delete them or you reload the web 
 page.  They do not persist across web page reloads (at least not yet).
 
-<img src="images/Im-a-waypoint.png" alt="I'm a waypoint" width="800">
+![I'm a Waypoint](images/Im-a-waypoint.png)
 
 ## Adding a Waypoint To The Map
 
 To add a waypoint onto your map click the ![Add Waypoint](images/add_marker.png) icon on the right hand side of the screen.  
 Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  
-![Add Waypoint Selected](images/Click-the-add-waypoint-icon.png | width=250)
+<img src="images/Click-the-add-waypoint-icon.png" alt="Click the add waypont button" width="700">
+
 
 Just click on your desired map location to add a waypoint at that spot.
-![Waypoint added](images/Click-where-you-want-the-waypoint-to-go.png | width=250)
+<img src="images/Click-where-you-want-the-waypoint-to-go.png" alt="Click where you want to add the waypoint" width="700">
+
