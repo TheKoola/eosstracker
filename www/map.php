@@ -724,7 +724,7 @@ function getTrackers() {
         var scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
 
 	// add a widget in the upper right hand corner for adding waypoints
-	var marker_control = new L.Control.SimpleMarkers();
+	var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
 	map.addControl(marker_control);
     }
 

@@ -127,10 +127,28 @@
       }
       var marker = L.marker(e.latlng, marker_options);
       if (this.options.allow_popup) {
-        var popupContent = Math.round(e.latlng.lat * 1000) / 1000 + ", " + Math.round(e.latlng.lng * 1000) / 1000;
-        var the_popup = L.popup({ maxWidth: 160, closeButton: false });
+	
+	// Create a unique id for this marker.  This will also be used to identify the HTML element (eg. a span) so that the popup content can be updated.
+	var id = "marker-" + e.latlng.lat.toString() + e.latlng.lng.toString();
+
+	// Set the initial popup content to just the Latitude, Longitude.
+        var popupContent = "<span id=\"" + id + "\" contenteditable=\"true\">" + Math.round(e.latlng.lat * 1000) / 1000 + ", " + Math.round(e.latlng.lng * 1000) / 1000 + "</span>";
+
+	// Create the popup
+        var the_popup = L.popup({ closeButton: false });
+
+	// Add this unique ID to the marker itself so we can identify it during a popupclose event.
+	marker.uniqueId = id;
+
         the_popup.setContent(popupContent);
-        marker.bindPopup(the_popup).openPopup();
+
+        marker.bindPopup(the_popup).on("popupclose", function(e) { 
+		var elemId = e.popup._source.uniqueId;
+                var content = L.DomUtil.get(elemId);
+                var newContent = "<span id=\"" + elemId + "\" contenteditable=\"true\">" + content.innerHTML + "</span>";
+		e.popup.setContent(newContent);
+	}).openPopup();
+
       }
       if (this.options.add_marker_callback) {
         this.options.add_marker_callback(marker);
@@ -164,6 +182,9 @@
       return false;
     }
   });
+
+
+
 /*
   return L.Control.SimpleMarkers
 });
