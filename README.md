@@ -23,7 +23,14 @@ and software components.  Together these form an APRS tracker system that is abl
 - A platform for mobile users to be used in-vehicle
 - A platform for stationary users at home, business, or fixed-location field operations
 
-The inital release included a small industrial computer from [Kansung](https://www.kansung.com/) with ample USB and serial connectivity.  
+The inital release included a small industrial computer from [Kansung](https://www.kansung.com/) with ample USB and serial connectivity as well as:
+- RTL-SDR USB device.  This small USB "thumb stick" provides the software defined radio receiver functionality that when coupled with software running on the mini-computer allows all of the enhanced tracking functionality of the platform.
+- USB attached GPS receiver.  
+- Receiving antenna for the 2m amateur radio band for reception of APRS signals.
+
+<img src="doc/assets/kansung-front.png" alt="Kansung Mini-PC Computer" width="600">
+
+
 
 
 
