@@ -68,7 +68,27 @@
     }
     
     ## get the flights that we want to look at predictions for...
-    $query = 'select f.flightid, p.launchsite, max(p.thedate) as thedate from flights f, predictiondata p where p.flightid = f.flightid and f.active = \'t\' and f.flightid = $1 group by f.flightid, p.launchsite order by f.flightid;';
+    $query = 'select 
+        f.flightid, 
+        p.launchsite, 
+        max(p.thedate) as thedate 
+
+        from 
+        flights f, 
+        predictiondata p 
+       
+        where 
+        p.flightid = f.flightid 
+        and f.active = \'t\' 
+        and f.flightid = $1
+        and p.launchsite = f.launchsite
+        
+        group by 
+        f.flightid, 
+        p.launchsite 
+
+        order by 
+        f.flightid;';
     //$result = sql_query($query);
     $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
     if (!$result) {
@@ -83,7 +103,28 @@
     $numrows = 0;
     ## loop through each row of the prediction data for this specific flight, launchsite, and date combo...
     while ($row = sql_fetch_array($result)) {
-        $query2 = "select flightid, launchsite, thedate, thetime, altitude, latitude, longitude from predictiondata where flightid = $1 and launchsite = $2 and thedate = $3 order by flightid, launchsite, thedate, thetime asc;";
+        $query2 = "select 
+            flightid, 
+            launchsite, 
+            thedate, 
+            thetime, 
+            altitude, 
+            latitude, 
+            longitude 
+
+            from 
+            predictiondata 
+
+            where 
+            flightid = $1 
+            and launchsite = $2 
+            and thedate = $3 
+
+            order by 
+            flightid, 
+            launchsite, 
+            thedate, 
+            thetime asc;";
         $result2 = pg_query_params($link, $query2, array(sql_escape_string($row['flightid']), sql_escape_string($row['launchsite']), sql_escape_string($row['thedate'])));
         if (!$result2) {
             db_error(sql_last_error());
