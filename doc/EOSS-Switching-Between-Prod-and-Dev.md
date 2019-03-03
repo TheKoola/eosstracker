@@ -26,7 +26,20 @@ to the Internet for download of Ubuntu packages.  Follow the
 for getting your system connected to a local/home-based wifi network or connect
 to a local network using an ethernet cable inserted into one of the RJ45 ports.
 
-![Rear of the Kansung](kansung-rear.png)
+![Rear of the Kansung](assets/kansung-rear-ethernet-plugin.png)
+
+### Shutdown The System Processes
+
+If there are system processes running (check status from the `https://eosstracker.local/` Home page), 
+then you will need to stop those prior to executing these steps as the underlying configuration files
+will be changing.
+
+![Click Stop if Processes are Running](assets/Star-stop-buttons-click-stop.png)
+
+
+Make sure no system processes are running prior to contining further:
+
+![No Processes Are Running](assets/System-status-not-running.png)
 
 ### Login Using SSH
 
@@ -222,7 +235,19 @@ eosstracker@eosstracker:/eosstracker$
 You can now switch your EOSS Tracker computer between production (i.e. the 
 GitHub master code branch) and the development (i.e. dev) branches.  Just make 
 sure your computer has access to the Internet, login via SSH as before, and run 
-these commands:
+the following commands.
+
+Prior to switching between branches or pulling down new updates, make sure to 
+stop any system processes if they're running.  
+
+![Click Stop if Processes are Running](assets/Star-stop-buttons-click-stop.png)
+
+
+Once finished with the `git` command processes below, you'll likely need to clear 
+your web browser cache prior to (re)loading the `https://eosstracker.local/` web pages.
+Depending upon the web browser (ex. Internet Explorer, Safari, Firefox, Opera, etc.), one 
+might also need to restart browser all together.
+
 
 ### Switching To The Development Branch
 
@@ -245,6 +270,11 @@ Already up to date.
 eosstracker@eosstracker:/eosstracker$ ./fixperms.bash
 eosstracker@eosstracker:/eosstracker$
 ```
+
+Once your web browser cache has been cleared, you should be able to verify the version of 
+code branch your own by looking at the bottom of the `https://eosstracker.local/` web page.
+
+![Check System Version](assets/system-version.png)
 
 
 ### Switching To The Production Branch
