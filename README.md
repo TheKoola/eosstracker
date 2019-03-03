@@ -15,7 +15,21 @@ Primary features:
  - Receive only, nothing is transmitted over the air or uploaded to the Internet
  - Light weight user interface leverages a web browser
 
-Where to next?  Visit one of these links:
+
+### Initial Platform Release ###
+
+Although what is hosted here on GitHub is software only, the initial release of this system included both hardware
+and software components.  Together these form an APRS tracker system that is able to aid in asset tracking and situational awareness from both offline (no Internet connectivity) and online modes.  This accommodates two primary use cases:
+- A platform for mobile users to be used in-vehicle
+- A platform for stationary users at home, business, or fixed-location field operations
+
+The inital release included a small industrial computer from [Kansung](https://www.kansung.com/) with ample USB and serial connectivity.  
+
+
+
+### Where To Next ###
+
+Important guides and How-To's:
 - [Update your system](doc/EOSS-Upgrades-and-Code-Branches.md) to enable switching to the development code branch.  
 New features are available within the `dev` branch like APRS Igating, external radio connections, map waypoints, and 
 numerous other fixups.  Follow this guide to enable quick switching between production and development code branches.
@@ -24,6 +38,8 @@ Tracker system will automatically start a wifi hotspot for use in the field wher
 where to be found.  However, when not in an offline / out-in-the-sticks condition, it would be nice for the system to join your home or business wifi network.  This guide will help you change your Kansung system so that it can automatically switch between your home-based wifi network and hotspot modes.
 - [Tethering your USB cellphone](doc/EOSS-SDR-USB-Cellphone-Tether.md) to the Kansung computer can be very advantegous if 
 you need to get your system connected to the Internet while out in the field (ex. you're running it as an APRS Igate).  This guide outlines  how to get the Kansung system configured to automatically connect to the Internet through your USB connected, cellphone.
+- [Using the EOSS personal package archive (PPA)](doc/EOSS-Install-PPA.md) with your system will, in the future, allow for a seamless upgrade and distribution system for software changes.  The PPA isn't fully populated with appropriate software as we're still working on this, but a HAB Tracker specific build of [Dire Wolf](https://github.com/wb2osz/direwolf) is available.
+
 
 
 ## Architecture ##
