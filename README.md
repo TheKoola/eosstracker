@@ -28,13 +28,17 @@ The inital release included a small industrial computer from [Kansung](https://w
 - USB attached GPS receiver.  
 - Receiving antenna for the 2m amateur radio band for reception of APRS signals.
 
-Front panel:
+#### Front Panel ####
+
 <img src="doc/assets/kansung-front.png" alt="Kansung Mini-PC Computer Front" width="300">
 
-Rear panel:
+
+#### Rear Panel ####
+
 <img src="doc/assets/kansung-rear.png" alt="Kansung Mini-PC Computer Rear" width="300">
 
 
+#### System Connections ####
 
 
 
