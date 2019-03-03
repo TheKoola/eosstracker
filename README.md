@@ -28,18 +28,25 @@ The inital release included a small industrial computer from [Kansung](https://w
 - USB attached GPS receiver.  
 - Receiving antenna for the 2m amateur radio band for reception of APRS signals.
 
-#### Front Panel ####
+
+#### Kansung K4200UP4 Front Panel ####
 
 <img src="doc/assets/kansung-front.png" alt="Kansung Mini-PC Computer Front" width="300">
 
 
-#### Rear Panel ####
+#### Kansung K4200UP4 Rear Panel ####
 
 <img src="doc/assets/kansung-rear.png" alt="Kansung Mini-PC Computer Rear" width="300">
 
 
-#### System Connections ####
+#### In-Vehicle Connections ####
 
+<img src="doc/assets/kansung-connections-vehicle.png" alt="In-Vehicle Connections" width="400">
+
+
+#### At Home Connections ####
+
+<img src="doc/assets/kansung-connections-home.png" alt="At Home Connections" width="400">
 
 
 
