@@ -26,7 +26,8 @@ to the Internet for download of Ubuntu packages.  Follow the
 for getting your system connected to a local/home-based wifi network or connect
 to a local network using an ethernet cable inserted into one of the RJ45 ports.
 
-![Rear of the Kansung](assets/kansung-rear-ethernet-plugin.png)
+<img src="assets/kansung-rear-ethernet.png" alt="Rear of The Kansung" width="600">
+
 
 ### Shutdown The System Processes
 
@@ -34,12 +35,13 @@ If there are system processes running (check status from the `https://eosstracke
 then you will need to stop those prior to executing these steps as the underlying configuration files
 will be changing.
 
-![Click Stop if Processes are Running](assets/Star-stop-buttons-click-stop.png)
+<img src="assets/Star-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="600">
 
 
 Make sure no system processes are running prior to contining further:
 
-![No Processes Are Running](assets/System-status-not-running.png)
+<img src="assets/System-status-not-running.png" alt="No Processes Are Running" width="600">
+
 
 ### Login Using SSH
 
@@ -240,7 +242,7 @@ the following commands.
 Prior to switching between branches or pulling down new updates, make sure to 
 stop any system processes if they're running.  
 
-![Click Stop if Processes are Running](assets/Star-stop-buttons-click-stop.png)
+<img src="assets/Start-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="600">
 
 
 Once finished with the `git` command processes below, you'll likely need to clear 
@@ -274,7 +276,7 @@ eosstracker@eosstracker:/eosstracker$
 Once your web browser cache has been cleared, you should be able to verify the version of 
 code branch your own by looking at the bottom of the `https://eosstracker.local/` web page.
 
-![Check System Version](assets/system-version.png)
+<img src="assets/system-version.png" alt="Check System Version" width="600">
 
 
 ### Switching To The Production Branch
