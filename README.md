@@ -41,12 +41,12 @@ The inital release included a small industrial computer from [Kansung](https://w
 
 #### In-Vehicle Connections ####
 
-<img src="doc/assets/kansung-connections-vehicle.png" alt="In-Vehicle Connections" width="400">
+<img src="doc/assets/kansung-connections-vehicle.png" alt="In-Vehicle Connections" width="600">
 
 
 #### At Home Connections ####
 
-<img src="doc/assets/kansung-connections-home.png" alt="At Home Connections" width="400">
+<img src="doc/assets/kansung-connections-home.png" alt="At Home Connections" width="600">
 
 
 
