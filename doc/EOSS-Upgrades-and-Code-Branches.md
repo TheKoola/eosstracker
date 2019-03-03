@@ -1,4 +1,4 @@
-# EOSS SDR Tracker:  Switching Between Production and Development
+# EOSS SDR Tracker:  Upgrades and Switching Between Production and Development
 
 Notes by Jeff N6BA,
 Version 1.0, Dated 2019-02-18
