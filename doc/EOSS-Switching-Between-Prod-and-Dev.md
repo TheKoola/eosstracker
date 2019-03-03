@@ -26,7 +26,7 @@ to the Internet for download of Ubuntu packages.  Follow the
 for getting your system connected to a local/home-based wifi network or connect
 to a local network using an ethernet cable inserted into one of the RJ45 ports.
 
-<img src="assets/kansung-rear-ethernet.png" alt="Rear of The Kansung" width="600">
+<img src="assets/kansung-rear-ethernet-plugin.png" alt="Rear of The Kansung" width="600">
 
 
 ### Shutdown The System Processes
@@ -35,12 +35,12 @@ If there are system processes running (check status from the `https://eosstracke
 then you will need to stop those prior to executing these steps as the underlying configuration files
 will be changing.
 
-<img src="assets/Star-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="600">
+<img src="assets/Start-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="300">
 
 
 Make sure no system processes are running prior to contining further:
 
-<img src="assets/System-status-not-running.png" alt="No Processes Are Running" width="600">
+<img src="assets/System-status-not-running.png" alt="No Processes Are Running" width="300">
 
 
 ### Login Using SSH
