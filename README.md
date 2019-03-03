@@ -16,13 +16,13 @@ Primary features:
  - Light weight user interface leverages a web browser
 
 Where to next?  Visit one of these links:
-- [Update your system](docs/EOSS-Upgrades-and-Code-Branches.md) to enable switching to the development code branch.  
+- [Update your system](doc/EOSS-Upgrades-and-Code-Branches.md) to enable switching to the development code branch.  
 New features are available within the `dev` branch like APRS Igating, external radio connections, map waypoints, and 
 numerous other fixups.  Follow this guide to enable quick switching between production and development code branches.
-- [Using a home wifi network](docs/EOSS-SDR-Tracker-WiFi.md) with your Kansung computer system.  The Kansung SDR
+- [Using a home wifi network](doc/EOSS-SDR-Tracker-WiFi.md) with your Kansung computer system.  The Kansung SDR
 Tracker system will automatically start a wifi hotspot for use in the field where network and Internet connectivty is no 
 where to be found.  However, when not in an offline / out-in-the-sticks condition, it would be nice for the system to join your home or business wifi network.  This guide will help you change your Kansung system so that it can automatically switch between your home-based wifi network and hotspot modes.
-- [Tethering your USB cellphone](docs/EOSS-SDR-USB-Cellphone-Tether.md) to the Kansung computer can be very advantegous if 
+- [Tethering your USB cellphone](doc/EOSS-SDR-USB-Cellphone-Tether.md) to the Kansung computer can be very advantegous if 
 you need to get your system connected to the Internet while out in the field (ex. you're running it as an APRS Igate).  This guide outlines  how to get the Kansung system configured to automatically connect to the Internet through your USB connected, cellphone.
 
 
