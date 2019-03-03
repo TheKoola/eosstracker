@@ -3,7 +3,7 @@
 ## Introduction ##
 
 The HAB Tracker application aids tracking and recovery of high altitude balloons by leveraging open source software and the amateur radio 
-[Automatic Packet Reporting System](http://www.aprs.org) to provide near real time status and location updates.
+[Automatic Packet Reporting System](http://www.aprs.org) (APRS) to provide near real time status and location updates.
 
 [Edge Of Space Sciences](https://www.eoss.org) uses the HAB Tracker application to help fulfill their mission of promoting science and education through high altitude balloons and amateur radio.
 
