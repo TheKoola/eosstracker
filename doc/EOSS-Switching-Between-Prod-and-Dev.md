@@ -276,7 +276,7 @@ eosstracker@eosstracker:/eosstracker$
 Once your web browser cache has been cleared, you should be able to verify the version of 
 code branch your own by looking at the bottom of the `https://eosstracker.local/` web page.
 
-<img src="assets/system-version.png" alt="Check System Version" width="800">
+<img src="assets/system-version-beta.png" alt="Check System Version" width="800">
 
 
 ### Switching To The Production Branch
