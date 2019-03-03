@@ -144,6 +144,15 @@ html, body, .map {
     
 }
 
+a.normal-link {
+    color: blue;
+    text-decoration: none;
+    text-align:  left;
+    vertical-align: bottom;
+}
+a.normal-link:link { color:  blue; text-decoration:none; }
+a.normal-link:hover { color: red; text-decoration: underline; }
+
 
 p.instrumentvaluetitle {
     text-align:  center; 

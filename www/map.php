@@ -1054,12 +1054,34 @@ function getTrackers() {
 
 
     /************
+     * dispatchPanToEvent
+     *
+     * This function will emit 
+    *************/
+    function dispatchPanToEvent(lat, lon) {
+        var panToEvent = new CustomEvent("MapPanTo", { detail: { lat: lat, lon: lon } });
+        document.dispatchEvent(panToEvent);
+        return false;
+    }
+
+
+    /************
      * createTheListener
      *
      * This function creates the primary Listener handler for when to update the gauges and other instruments/indicators
     *************/
     function createTheListener() {
 
+        // This the listener for a MapPanTo event.
+        var thePanToListener = document.addEventListener("MapPanTo", function(event) {
+            if (map) {
+                map.panTo(L.latLng(event.detail.lat,event.detail.lon));
+                //map.setZoom(map.zoom);
+            }
+        });
+
+
+        // This is the listener for an UpdateFlightGauges event
         var theListener = document.addEventListener("UpdateFlightGauges", function(event) {
             var flightid = event.detail.properties.flightid;
             var incomingTime = new Date(event.detail.properties.time.replace(/ /g, "T"));
@@ -1079,7 +1101,10 @@ function getTrackers() {
                     var item = jsonData[k];
                
                     $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
-                    $("#" + item.flightid + "_lastcallsign_" + k).text(item.callsign);
+                    //$("#" + item.flightid + "_lastcallsign_" + k).text(item.callsign);
+                    $("#" + item.flightid + "_lastcallsign_" + k).html(
+                        "<a href=\"#\" class=\"normal-link\" onclick=\"dispatchPanToEvent('" + item.latitude + "', '" + item.longitude + "');\">" +  item.callsign + "</a>"
+                    );
                     $("#" + item.flightid + "_lastspeed_" + k).text(Math.round(item.speed * 10 / 10) + " mph");
                     $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
                     $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
