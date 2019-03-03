@@ -57,11 +57,11 @@ A key component of the architecture is the centralized database which stores all
 parallel access for other processing tasks and the presentation layer.  This approach allows the
 front-end interface to query and display data independently, providing a smooth end-user experience.
 
-<img src="images/Core-concept.png" alt="The Core Concept" width="600">
+<img src="doc/assets/Core-concept.png" alt="The Core Concept" width="600">
 
 
 
 ### Block Diagram
 The following diagram shows the primary processing chain and how data is ultimately presented to the end user.
 
-<img src="images/Block-diagram.png" alt="The Block Diagram" width="600">
+<img src="doc/assets/Block-diagram.png" alt="The Block Diagram" width="600">
