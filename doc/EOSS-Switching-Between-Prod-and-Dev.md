@@ -242,7 +242,7 @@ the following commands.
 Prior to switching between branches or pulling down new updates, make sure to 
 stop any system processes if they're running.  
 
-<img src="assets/Start-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="600">
+<img src="assets/Start-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="300">
 
 
 Once finished with the `git` command processes below, you'll likely need to clear 
@@ -276,7 +276,7 @@ eosstracker@eosstracker:/eosstracker$
 Once your web browser cache has been cleared, you should be able to verify the version of 
 code branch your own by looking at the bottom of the `https://eosstracker.local/` web page.
 
-<img src="assets/system-version.png" alt="Check System Version" width="600">
+<img src="assets/system-version.png" alt="Check System Version" width="800">
 
 
 ### Switching To The Production Branch
