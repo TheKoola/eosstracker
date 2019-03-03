@@ -44,6 +44,8 @@
 
 - Fixed issue where map screens were creating two update events for each incoming packet instead of just one.
 
+- Issue where a flight's launch site wasn't being accounted for when querying data from downloaded prediction RAW files.  This would cause concatenation of prediction paths when launch sites are changed for flights.
+
 
 
 ----------
