@@ -38,7 +38,7 @@ will be changing.
 <img src="assets/Start-stop-buttons-click-stop.png" alt="Click Stop if Processes are Running" width="300">
 
 
-Make sure no system processes are running prior to contining further:
+Make sure no system processes are running prior to continuing further:
 
 <img src="assets/System-status-not-running.png" alt="No Processes Are Running" width="300">
 
