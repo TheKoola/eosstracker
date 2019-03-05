@@ -18,12 +18,12 @@ Primary features:
 
 #### Main Page For The Application ####
 
-<img src="doc/assets/home-page.png" alt="Main Screen" width="600">
+<img align="center" src="doc/assets/home-page.png" alt="Main Screen" width="600">
 
 
 #### Map View ####
 
-<img src="doc/assets/map-screen.png" alt="The Map Screen" width="600">
+<img align="center" src="doc/assets/map-screen.png" alt="The Map Screen" width="600">
 
 
 
