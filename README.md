@@ -16,7 +16,7 @@ Primary features:
  - Light weight user interface leverages a web browser
 
 
-#### Home Page For The Application ####
+#### Main Page For The Application ####
 
 <img src="doc/assets/home-page.png" alt="Main Screen" width="600">
 
