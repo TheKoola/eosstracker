@@ -41,24 +41,24 @@ The inital release included a small industrial computer from [Kansung](https://w
 
 
 #### Kansung K4200UP4 Front Panel ####
-
+<p align="center">
 <img src="doc/assets/kansung-front.png" alt="Kansung Mini-PC Computer Front" width="300">
-
+</p>
 
 #### Kansung K4200UP4 Rear Panel ####
-
+<p align="center">
 <img src="doc/assets/kansung-rear.png" alt="Kansung Mini-PC Computer Rear" width="300">
-
+</p>
 
 #### In-Vehicle Connections ####
-
+<p align="center">
 <img src="doc/assets/kansung-connections-vehicle.png" alt="In-Vehicle Connections" width="600">
-
+</p>
 
 #### At Home Connections ####
-
+<p align="center">
 <img src="doc/assets/kansung-connections-home.png" alt="At Home Connections" width="600">
-
+</p>
 
 
 ### Where To Next ###
@@ -90,12 +90,13 @@ front-end interface.
 A key component of the architecture is the centralized database which stores all incoming APRS packet data enabling 
 parallel access for other processing tasks and the presentation layer.  This approach allows the
 front-end interface to query and display data independently, providing a smooth end-user experience.
-
+<p align="center">
 <img src="doc/assets/Core-concept.png" alt="The Core Concept" width="600">
-
+</p>
 
 
 ### Block Diagram
 The following diagram shows the primary processing chain and how data is ultimately presented to the end user.
-
+<p align="center">
 <img src="doc/assets/Block-diagram.png" alt="The Block Diagram" width="600">
+</p>
