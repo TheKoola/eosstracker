@@ -25,9 +25,9 @@ to the Internet for download of Ubuntu packages.  Follow the
 [EOSS-SDR-Tracker-Wifi.md](EOSS-SDR-Tracker-WiFi.md) guide
 for getting your system connected to a local/home-based wifi network or connect
 to a local network using an ethernet cable inserted into one of the RJ45 ports.
-
+<p align="center">
 <img src="assets/kansung-rear-ethernet-plugin.png" alt="Rear of The Kansung" width="600">
-
+</p>
 
 ### Shutdown The System Processes
 
@@ -275,9 +275,9 @@ eosstracker@eosstracker:/eosstracker$
 
 Once your web browser cache has been cleared, you should be able to verify the version of 
 code branch you're running by looking at the bottom of the `https://eosstracker.local/` web page.
-
+<p align="center">
 <img src="assets/system-version-beta.png" alt="Check System Version" width="800">
-
+</p>
 
 ### Switching To The Production Branch
 
