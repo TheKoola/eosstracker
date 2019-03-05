@@ -13,9 +13,9 @@ page.  They do not persist across web page reloads (at least not yet).
 
 ## Adding a Waypoint To The Map
 
-To add a waypoint onto your map click the ![Add Waypoint](images/add_marker.png) icon on the right hand side of the screen.  
+To add a waypoint onto your map click the ![Add Waypoint](assets/add_marker.png) icon on the right hand side of the screen.  
 Once selected it should turn a blue color to indicate that you're in "add a new waypoint" mode.  If you change your mind, just
-click the ![Add Waypoint](images/add_marker.png) icon a second time and its color should change back to white indicating that
+click the ![Add Waypoint](assets/add_marker.png) icon a second time and its color should change back to white indicating that
 you're no longer in "add a waypoint" mode.
 
 <img src="assets/Click-the-add-waypoint-icon.png" alt="Click the add waypoint button" width="600">
