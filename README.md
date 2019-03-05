@@ -18,13 +18,15 @@ Primary features:
 
 #### Main Page For The Application ####
 
-<img align="center" src="doc/assets/home-page.png" alt="Main Screen" width="600">
-
+<p align="center">
+<img src="doc/assets/home-page.png" alt="Main Screen" width="600">
+</p>
 
 #### Map View ####
 
+<p align="center">
 <img align="center" src="doc/assets/map-screen.png" alt="The Map Screen" width="600">
-
+</p>
 
 
 ### Initial Platform Release ###
