@@ -1,4 +1,4 @@
-## System Configuration ##
+# System Configuration #
 
 The System Configuration section of the Setup screen allows one to enable two important features:
 - Timezone - change the timezone used throughout the GUI interface
@@ -7,7 +7,7 @@ The System Configuration section of the Setup screen allows one to enable two im
 
 
 
-### Timezone ###
+## Timezone ##
 
 One can select an appropriate timezone to match the geographic location desired.  The timezone setting only changes the 
 time used throughout the user interface and does not change the underlying system timezone.  All APRS packet data is 
@@ -15,7 +15,9 @@ saved to the database with a timezone which enables time offsets to be added or 
 really doesn't matter what timezone the underlying system and database are natively using as the user can change the displayed
 timezone at anytime!
 
+<p align="center">
 <img src="assets/timezone.png" alt="Timezone setting" width=800>
+</p>
 
 Just select the desired timezone via the dropdown list and the time offset is applied to all user interface screens
 immediately (or more accurately, when the auto-refresh cycle, usually 5 seconds, for individual screens occurs).  One doesn't
@@ -25,7 +27,7 @@ Timezone settings are persistantly saved and will remain in effect across proces
 
 
 
-### Igating ###
+## Igating ##
 
 Igating is the process of uploading APRS packets heard over RF to the Internet (usually noam.aprs2.net or similar).  This
 feature can be optionally enabled and requires the following:
@@ -35,7 +37,9 @@ the usual PPPNSS format and similar permuations (ex. 1x2, 2x1, 2x2, etc.) found 
 
 Obviously in order to igate APRS packets, the system needs to have a valid connection to the Internet.  
 
+<p align="center">
 <img src="assets/igating.png" alt="Enabling igating" width=800>
+</p>
 
 
 #### Enable Igating ####
@@ -52,3 +56,11 @@ Optionally you can also sent position and igate stats beacons to APRS-IS on a re
 
 
 
+## APRS Comment and Symbol ##
+
+If Igating and beaconign to APRS-IS are enabled then one has the option of adding a comment string and a station symbol to
+your APRS outgoing position packets.  A comment is limited to 60 printable, characters.  
+
+<p align="center">
+<img src="assets/aprs-comment-symbol.png" alt="Selecting APRS comment and symbol" width=800>
+</p>
