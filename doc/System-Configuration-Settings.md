@@ -5,6 +5,8 @@ The System Configuration section of the Setup screen allows one to enable two im
 - Igating - automatic uploading of RF APRS packets to the Internet
 - Beaconing - using an external radio to transmit an APRS packet containing one's position 
 
+
+
 ### Timezone ###
 
 One can select an appropriate timezone to match the geographic location desired.  The timezone setting only changes the 
@@ -22,22 +24,30 @@ need to save settings or restart the system processes for changes to take effect
 Timezone settings are persistantly saved and will remain in effect across process restarts or systmem reboots/shutdowns.
 
 
+
 ### Igating ###
 
 Igating is the process of uploading APRS packets heard over RF to the Internet (usually noam.aprs2.net or similar).  This
 feature can be optionally enabled and requires the following:
-- This feature is only available to valid amateur radio operators pocessing a legal call sign.  This is currently limited to
+- This feature is only available to valid amateur radio operators in possession of a legal call sign.  This is currently limited to
 the usual PPPNSS format and similar permuations (ex. 1x2, 2x1, 2x2, etc.) found in North America (other formats soon to be accommodated).
 - An APRS-IS passcode for your callsign
 
+Obviously in order to igate APRS packets, the system needs to have a valid connection to the Internet.  
+
 <img src="assets/igating.png" alt="Enabling igating" width=800>
+
+
+#### Enable Igating ####
 
 Once a valid callsign is entered, the other fields (ex. igating, beaconing, etc.) will then be enabled.  Follow these steps
 when filling out the Igating form:
 1.  Type your callsign into the field, then select an approrpiate SSID from the dropdown box (eg.  -9 for a mobile unit, etc.)
 2.  Check the "Enable Igating" checkbox
 
-Optionally you can also sent position and igate stats beacons to APRS-IS on a regular interval:
+
+#### Beacon to APRS-IS ####
+Optionally you can also sent position and igate stats beacons to APRS-IS on a regular interval over your internet connection:
 - Check the enable checkbox and enter a time in MM:SS format (ex. 34:17 would enable beaconing to APRS-IS every 34 minutes and 17 seconds)
 
 
