@@ -84,7 +84,7 @@ between the tracker computer (ex. the Kansung system) and the radio itself.
 #### Example Using Tigertronics' SignaLink ####
 
 <p align="center">
-<img src="assets'sdr-transmitting-signalink-example.png" alt="SignaLink example" width=800>
+<img src="assets/sdr-transmitting-signalink-example.png" alt="SignaLink example" width=800>
 </p>
 
 
