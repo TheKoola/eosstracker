@@ -49,7 +49,8 @@
     $beacons = [];
     $matches = [];
     if (is_readable($direwolffile)) {
-        $dw = file_get_contents($direwolffile);
+        $dw = shell_exec('head -100 ' . $direwolffile);
+        //$dw = file_get_contents($direwolffile);
         //$p = preg_match_all('/^(\[[0-9]+L\]|\[ig\] .*$/m', $dw, $beacons);
         $p = preg_match_all('/^(\[[0-9]+L [0-9]{1,2}:[0-9]{2}:[0-9]{2}\]|\[ig\]) .*$/m', $dw, $matches);
 	if ($p) {
