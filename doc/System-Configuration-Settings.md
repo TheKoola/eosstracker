@@ -73,3 +73,19 @@ One can select from a wide variety of APRS symbols some of which allow an overla
 
 Transmitting an APRS packet over the air of course requires an external radio in addition to PTT and audio cable connections
 between the tracker computer (ex. the Kansung system) and the radio itself.  
+
+#### Example Using West Mountain Radio's RIGBlaster ####
+
+<p align="center">
+<img src="assets/sdr-transmitting-rigblaster-example.png" alt="West Mountain Radio RIGBlaster example" width=800>
+</p>
+
+
+#### Example Using Tigertronics' SignaLink ####
+
+<p align="center">
+<img src="assets'sdr-transmitting-signalink-example.png" alt="SignaLink example" width=800>
+</p>
+
+
+
