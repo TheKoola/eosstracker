@@ -65,4 +65,6 @@ your APRS outgoing position packets.  A comment is limited to 60 printable, char
 <img src="assets/aprs-comment-symbol.png" alt="Selecting APRS comment and symbol" width=800>
 </p>
 
-One can select from a wide variety of APRS symbols some of which allow an overlay character
+One can select from a wide variety of APRS symbols some of which allow an overlay character (ex. <img src="assets/overlay-character.png" alt="Example overlay character symbol">).
+
+
