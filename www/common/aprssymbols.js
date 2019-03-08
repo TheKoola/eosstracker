@@ -225,3 +225,6 @@ var aprssymbols = [
       {  "symbol" : "1x", "tocall" : "1x", "description" : "Reticle" }
 ];
 
+
+/* These are those symbols upon which we permit an overlay character */
+var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SA", "SI", "SN", "SS", "SZ" ];

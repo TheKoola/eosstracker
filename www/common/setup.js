@@ -998,7 +998,6 @@
 	//document.getElementById("symbolicon").innerHTML = "<img src=\"/images/aprs/" + r[i].tocall + ".png\" style=\"width: 32px; height: 32px;\">";
 	
 	var imagefile;
-	var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 	var tc;
 	var match = false;
 
@@ -1096,7 +1095,6 @@
     function checkOverlay() {
         var symbol = document.getElementById("symbol");
         var currentSymbol = symbol.options[symbol.selectedIndex].value;
-	var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 
 	var sym;
         r = aprssymbols;
@@ -1232,7 +1230,6 @@
             var ssid = document.getElementById("ssid");
             var serialport = document.getElementById("serialport");
             var serialproto = document.getElementById("serialproto");
-	    var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 
 
             document.getElementById("callsign").value = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);	    
@@ -1385,7 +1382,6 @@
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
 	    var overlay = document.getElementById("overlay");
-	    var validoverlays = [ "OD", "OG", "A0", "NV", "AA", "AW", "DW", "SI", "SN", "SS", "SZ" ];
 
 	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
