@@ -68,3 +68,8 @@ your APRS outgoing position packets.  A comment is limited to 60 printable, char
 One can select from a wide variety of APRS symbols some of which allow an overlay character (ex. <img src="assets/overlay-character.png" alt="Example overlay character symbol" width=24>).
 
 
+
+## Beaconing Over RF ##
+
+Transmitting an APRS packet over the air of course requires an external radio in addition to PTT and audio cable connections
+between the tracker computer (ex. the Kansung system) and the radio itself.  
