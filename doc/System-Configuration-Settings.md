@@ -31,8 +31,10 @@ Timezone settings are persistantly saved and will remain in effect across proces
 
 Igating is the process of uploading APRS packets heard over RF to the Internet (usually noam.aprs2.net or similar).  This
 feature can be optionally enabled and requires the following:
-- This feature is only available to valid amateur radio operators in possession of a legal call sign.  This is currently limited to
-the usual PPPNSS format and similar permuations (ex. 1x2, 2x1, 2x2, etc.) found in North America (other formats soon to be accommodated).
+- This feature is only available to valid amateur radio operators in possession of a legal callsign.  This is currently
+limited to the usual PPPNSS format and similar permuations (ex. 1x2, 2x1, 2x2, etc.) found in North America (other formats
+soon to be
+accommodated).
 - An APRS-IS passcode for your callsign
 
 Obviously in order to igate APRS packets, the system needs to have a valid connection to the Internet.  
@@ -72,20 +74,39 @@ One can select from a wide variety of APRS symbols some of which allow an overla
 ## Beaconing Over RF ##
 
 Transmitting an APRS packet over the air of course requires an external radio in addition to PTT and audio cable connections
-between the tracker computer (ex. the Kansung system) and the radio itself.  
+between the tracker computer (ex. the Kansung system) and the radio itself.  However, in order to enable beaconing over RF the
+following is required:
+- This feature is only available to valid amateur radio operators in possession of a legal callsign.  This is currently
+limited to the usual PPPNSS format and similar permuations (ex. 1x2, 2x1, 2x2, etc.) found in North America (other formats
+soon to be
+accommodated).
+ 
+
+
 
 #### Example Using West Mountain Radio's RIGBlaster ####
 
 <p align="center">
-<img src="assets/sdr-transmitting-rigblaster-example.png" alt="West Mountain Radio RIGBlaster example" width=800>
+<img src="assets/sdr-transmitting-rigblaster-example.png" alt="West Mountain Radio RIGBlaster example" width=600>
 </p>
+
+
 
 
 #### Example Using Tigertronics' SignaLink ####
 
 <p align="center">
-<img src="assets/sdr-transmitting-signalink-example.png" alt="SignaLink example" width=800>
+<img src="assets/sdr-transmitting-signalink-example.png" alt="SignaLink example" width=600>
 </p>
+
+
+
+#### RF Beaconing Settings ####
+
+<p align="center">
+<img src="assets/radio-beaconing.png" alt="RF beaconing" width=800>
+</p>
+
 
 
 
