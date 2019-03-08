@@ -57,6 +57,18 @@ Optionally you can also sent position and igate stats beacons to APRS-IS on a re
 - Check the enable checkbox and enter a time in MM:SS format (ex. 34:17 would enable beaconing to APRS-IS every 34 minutes and 17 seconds)
 
 
+#### Save Settings ####
+
+In order for changes to take effect, changes to settings must be saved (ex. igating, aprs comment/symbol, and/or RF beaconing) and the system processes restarted.
+
+<p align="center">
+<img src="assets/save-settings.png" alt="Save settings" width=800>
+</p>
+
+
+Then back on the Home page of the interface, Stop and then Start the system processes.  
+
+
 
 ## APRS Comment and Symbol ##
 
