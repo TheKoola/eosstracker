@@ -1,6 +1,6 @@
 # Downloading GPS and Flight Data #
 
-Notes by Jeff N6BA, Version 1.0, Dated 2019-03-12
+Notes by Jeff N6BA, Dated 2019-03-12
 
 ## Overview ##
 All data collected for flights is available for download from the SDR system through the web-based user interface.  In
