@@ -53,16 +53,16 @@ Your first task is to click on the "Data" menu option within the user interface:
 
 
 Once on the Data screen there is a form that allows for selection of:
-- the type of data one desires to download (ex. GPS logs or flight data)
-- a date and time range that includes a beginning date/time and an ending date/time
+- The type of data one desires to download (ex. GPS logs or flight data)
+- A date and time range that includes a beginning date/time and an ending date/time
 
 
 
 ### Select Desired Data Type ###
 
 Next, select the type of data you want to download from the SDR system by clicking the dropdown menu option.  This dropdown
-will contain selections for GPS log data as well as any flights that are currently being tracked (see the Setup->Flights 
-menu option).
+will contain selections for GPS log data as well as any flights that are currently being tracked 
+(see the Setup->Flights menu option).
 
 
 <p align="center">
@@ -70,13 +70,23 @@ menu option).
 </p>
 
 
-### Enter Desired Time Range ###
+### Enter Desired Date/Time Range ###
 
-Enter the desired date/time range desired to download.  Be aware that entering a very large range will mean downloading a 
+Enter the desired date/time range to download.  Be aware that entering a very large range will mean downloading a 
 potentially large number of rows of CSV data.
 
 <p align="center">
 <img src="assets/enter-dates.png" alt="Enter Date/Time Range" width="800">
+</p>
+
+
+### Click Download ###
+
+Finally click the "Download" button to begin downloading the CSV data selected.  Depending upon the web browser being used,
+a file might be saved to your "Downloads" directory or a new browser tab will be opened containing the CSV data.
+
+<p align="center">
+<img src="assets/click-download.png" alt="Click Download" width="800">
 </p>
 
 
