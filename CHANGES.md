@@ -46,6 +46,9 @@
 
 - Issue where a flight's launch site wasn't being accounted for when querying data from downloaded prediction RAW files.  This would cause concatenation of prediction paths when launch sites are changed for flights.
 
+- Issue where prediction file uploads (eg. the RAW file from [EOSS Predict Page](https://www.eoss.org/predict)) was not getting
+added to the database properly.  The first few lines were getting skipped.
+
 
 
 ----------
