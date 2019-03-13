@@ -1,5 +1,9 @@
 # Working With Waypoints
 
+Notes by Jeff N6BA, Version 1.0, Dated 2019-02-18
+
+## Overview ##
+
 Use waypoints to mark rendezvous locations, critical road junctions, or other points on the map to aid navigation 
 and balloon tracking efforts.  They can be added to the map screen with the HAB Tracker application, their popup 
 content edited, and can even be moved to different locations.
