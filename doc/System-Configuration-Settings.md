@@ -1,5 +1,9 @@
 # System Configuration #
 
+Notes by Jeff N6BA, Version 1.0, Dated 2019-02-18
+
+## Overview ##
+
 The System Configuration section of the Setup screen allows one to enable two important features:
 - Timezone - change the timezone used throughout the GUI interface
 - Igating - automatic uploading of RF APRS packets to the Internet
