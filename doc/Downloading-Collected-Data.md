@@ -6,7 +6,7 @@ the GPS logs, assuming the SDR system was installed within a vehicle, are also a
 delimited format (CSV).
 
 
-#### Example Flight Data ####
+#### Flight Data ####
 
 Flight data contains every APRS packet captured by the SDR system from every callsign (i.e. beacon) listed as belonging to
 this particular flight.  A number of fields are broken out for convenience as well as the raw APRS packet itself.  Regardless 
@@ -23,13 +23,15 @@ Scroll to the right as the flight data table below is too wide for most screens 
 | 2019-03-10 08:30:11 | EOSS-283 | AE0SS-13 | /O | 0 | 0 | 4942 | 40.473867 | 104.962817 | EOSS Baloon | 518a58a8c20fc42d46f6bf9c3f580fba | AE0SS-13>APTT4,EOSS,qAO,N2XGL00:/143010h4028.43N/10457.76WO000/000EOSS Baloon/A=004942!W29! |
 
 
-#### Example GPS Data ####
+#### GPS Logs ####
 
 GPS data is available for download and includes all the usual fields for location and movement data the SDR system 
-is experiencing (i.e. when it's installed within a moving vehicle).  Satellite fix status is not currently captured within the
-SDR system at this time.  Although GPS latitude and longitude data is saved to a 6-digit resolution, a new GPS log entry is 
-only created when the location has changed by greater than approximately 10 meters (or 4 decimal places for lat/lon figures).  
-In addition, the frequency that new GPS log entries are created is limited about 2 seconds.
+has been experiencing (i.e. when it's installed within a moving vehicle).  Satellite fix status is not currently saved within 
+the GPS logs at this time.  
+
+Although GPS latitude and longitude data is saved to a 6-digit resolution, a new GPS log 
+entry is only created when the location has changed by greater than approximately 10 meters (or 4 decimal places for lat/lon 
+figures).  In addition, the frequency that new GPS log entries are created is limited about 2 seconds.
 
 | datetime | speed_mph | bearing | altitude_ft | lat | lon |
 | -------- | --------- | ------- | ----------- | --- | --- |
@@ -41,7 +43,9 @@ In addition, the frequency that new GPS log entries are created is limited about
 
 ## Downloading Data ##
 
-First task is to click on the "Data" menu option within the user interface:
+### Select The "Data" Menu Option ###
+
+Your first task is to click on the "Data" menu option within the user interface:
 
 <p align="center">
 <img src="assets/select-data.png" alt="Select Data Menu option" width="800">
@@ -51,4 +55,28 @@ First task is to click on the "Data" menu option within the user interface:
 Once on the Data screen there is a form that allows for selection of:
 - the type of data one desires to download (ex. GPS logs or flight data)
 - a date and time range that includes a beginning date/time and an ending date/time
+
+
+
+### Select Desired Data Type ###
+
+Next, select the type of data you want to download from the SDR system by clicking the dropdown menu option.  This dropdown
+will contain selections for GPS log data as well as any flights that are currently being tracked (see the Setup->Flights 
+menu option).
+
+
+<p align="center">
+<img src="assets/select-data-to-download.png" alt="Select Data Type To Download" width="800">
+</p>
+
+
+### Enter Desired Time Range ###
+
+Enter the desired date/time range desired to download.  Be aware that entering a very large range will mean downloading a 
+potentially large number of rows of CSV data.
+
+<p align="center">
+<img src="assets/enter-dates.png" alt="Enter Date/Time Range" width="800">
+</p>
+
 
