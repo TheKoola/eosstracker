@@ -1,8 +1,8 @@
 # Downloading GPS and Flight Data #
 
 ## Overview ##
-All data collected for flights is available for download from the SDR system through the web-based user interface.  In addition
-the GPS logs, assuming the SDR system was installed within a vehicle, are also available for download.  All data is in comma
+All data collected for flights is available for download from the SDR system through the web-based user interface.  In
+addition, the GPS logs are also available for download.  All data is in comma
 delimited format (CSV).
 
 
