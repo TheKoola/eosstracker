@@ -9,7 +9,7 @@ delimited format (CSV).
 #### Example Flight Data ####
 
 Flight data contains every APRS packet captured by the SDR system from every callsign (i.e. beacon) listed as belonging to
-this particular flight.  A number of fields are broken out for convinence as well as the raw APRS packet itself.  Regardless 
+this particular flight.  A number of fields are broken out for convenience as well as the raw APRS packet itself.  Regardless 
 of how an APRS packet enters the SDR system (ex. over RF or via an Internet connection to APRS-IS servers), that data is 
 available for download.
 
@@ -25,8 +25,11 @@ Scroll to the right as the flight data table below is too wide for most screens 
 
 #### Example GPS Data ####
 
-GPS data is available for download as well and includes all the usual fields for the location and movement data the SDR system 
-is experiencing (i.e. it's installed within a moving vehicle).  Satellite fix status is not currently captured within the SDR system at this time.  Typically a new GPS log entry is created for movement greater than about 10 meters or 4 decimal places for lat/lon figures.  New GPS log entries are limited to an update frequency of no quicker than about 2 seconds.
+GPS data is available for download and includes all the usual fields for location and movement data the SDR system 
+is experiencing (i.e. when it's installed within a moving vehicle).  Satellite fix status is not currently captured within the
+SDR system at this time.  Although GPS latitude and longitude data is saved to a 6-digit resolution, a new GPS log entry is 
+only created when the location has changed by greater than approximately 10 meters (or 4 decimal places for lat/lon figures).  
+In addition, the frequency that new GPS log entries are created is limited about 2 seconds.
 
 | datetime | speed_mph | bearing | altitude_ft | lat | lon |
 | -------- | --------- | ------- | ----------- | --- | --- |
