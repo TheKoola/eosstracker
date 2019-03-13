@@ -6,6 +6,11 @@ The System Configuration section of the Setup screen allows one to enable two im
 - Beaconing - using an external radio to transmit an APRS packet containing one's position 
 
 
+<p align="center">
+<img src="assets/system-configuration.jpeg" alt="System Configuration" width=800>
+</p>
+
+
 
 ## Timezone ##
 
