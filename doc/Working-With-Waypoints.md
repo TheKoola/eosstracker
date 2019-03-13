@@ -1,6 +1,6 @@
 # Working With Waypoints
 
-Notes by Jeff N6BA, Version 1.0, Dated 2019-02-18
+Notes by Jeff N6BA, Dated 2019-02-18
 
 ## Overview ##
 
