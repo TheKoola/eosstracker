@@ -77,7 +77,29 @@
     }
     
     ## get the landing predictions...
-    $query = 'select l.tm, l.flightid, l.callsign, l.thetype, ST_Y(l.location2d) as lat, ST_X(l.location2d) as long from landingpredictions l, flights f where f.flightid = l.flightid and f.active = \'t\' and l.thetype = $1 and l.flightid = $2 and l.tm > (now() - (to_char(($3)::interval, \'HH24:MI:SS\'))::time)  order by l.tm, l.flightid, l.callsign;';
+    $query = 'select 
+        l.tm, 
+        l.flightid, 
+        l.callsign, 
+        l.thetype, 
+        ST_Y(l.location2d) as lat, 
+        ST_X(l.location2d) as long 
+
+        from 
+        landingpredictions l, 
+        flights f 
+
+        where 
+        f.flightid = l.flightid 
+        and f.active = \'t\' 
+        and l.thetype = $1 
+        and l.flightid = $2 
+        and l.tm > (now() - (to_char(($3)::interval, \'HH24:MI:SS\'))::time)  
+
+        order by 
+        l.tm asc, 
+        l.flightid, 
+        l.callsign;';
     $result = pg_query_params($link, $query, array(sql_escape_string($prediction_type), sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
@@ -85,14 +107,15 @@
         return 0;
     }
     $features = array();
+    header("Content-Type:  application/json;");
     while ($row = sql_fetch_array($result)) {
+        $thetime = $row['tm'];
         $flightid = $row['flightid'];
         $callsign = $row['callsign'];
         $latitude = $row['lat'];
         $longitude = $row['long'];
-        $features[$callsign][$latitude . $longitude] = array($latitude, $longitude);
+        $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude);
     }
-
 
     printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Landing Predictions\" }, \"features\" : [");
 
