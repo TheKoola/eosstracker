@@ -167,17 +167,19 @@ try {
                            $latrate = ($line_data[8] - $latitude_prev) / 60;
                            $longrate = ($line_data[9] - $longitude_prev) / 60;
 
-                           // the database insert statement
-                           $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+                           if ($i > 0) {
+                               // the database insert statement
+                               $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
 
-                           // Execute the database statement
-                           $result = pg_query_params($link, $insertstmt, array(sql_escape_string($flightid), sql_escape_string($launchsite), sql_escape_string($thedate), sql_escape_string($thetime), round($altitude, 6), round($latitude, 8), round($longitude, 8), round($altrate, 8), round($latrate, 8), round($longrate, 8)));
+                               // Execute the database statement
+                               $result = pg_query_params($link, $insertstmt, array(sql_escape_string($flightid), sql_escape_string($launchsite), sql_escape_string($thedate), sql_escape_string($thetime), round($altitude, 6), round($latitude, 8), round($longitude, 8), round($altrate, 8), round($latrate, 8), round($longrate, 8)));
    
-                           // check for errors in the database operation
-                           if (!$result) {
-                               printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
-                               sql_close($link);
-                               return 0;
+                               // check for errors in the database operation
+                               if (!$result) {
+                                   printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
+                                   sql_close($link);
+                                   return 0;
+                               }
                            }
            
                            // set previous values for the next iteration of this loop
