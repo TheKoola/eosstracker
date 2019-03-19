@@ -49,6 +49,12 @@
 - Issue where prediction file uploads (eg. the RAW file from [EOSS Predict Page](https://www.eoss.org/predict)) was not getting
 added to the database properly.  The first few lines were getting skipped.
 
+- When uploading a prediction file, the first few lines would end up with incorrectly calculated ascent/descent rates.
+
+- Issue where the sort order for landing predictions was causing those predictions to be plotted in the wrong locations on the map.
+
+- Fixed issues with the landing prediction functions in that descent times were not being tabulated correctly resulting in incorrect lat/lon predictions.
+
 
 
 ----------
