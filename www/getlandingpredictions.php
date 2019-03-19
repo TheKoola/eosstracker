@@ -92,29 +92,29 @@
         where 
         f.flightid = l.flightid 
         and f.active = \'t\' 
-        and l.thetype = $1 
-        and l.flightid = $2 
-        and l.tm > (now() - (to_char(($3)::interval, \'HH24:MI:SS\'))::time)  
+        and l.flightid = $1 
+        and l.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time)  
 
         order by 
         l.tm asc, 
         l.flightid, 
         l.callsign;';
-    $result = pg_query_params($link, $query, array(sql_escape_string($prediction_type), sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
+    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
         return 0;
     }
     $features = array();
-    header("Content-Type:  application/json;");
     while ($row = sql_fetch_array($result)) {
         $thetime = $row['tm'];
+        $thetype = $row['thetype'];
         $flightid = $row['flightid'];
         $callsign = $row['callsign'];
         $latitude = $row['lat'];
         $longitude = $row['long'];
-        $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude);
+        if ($thetype == "predicted") 
+            $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude);
     }
 
     printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Landing Predictions\" }, \"features\" : [");
@@ -126,7 +126,7 @@
         $firsttimeinloop = 0;
         printf ("{ \"type\" : \"Feature\",");
         printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s },", 
-            json_encode($callsign . "_landing_" . $prediction_type), 
+            json_encode($callsign . "_landing_predicted"), 
             json_encode($callsign . " Predicted Landing"), 
             json_encode($callsign . " Landing"), 
             json_encode("/J"), 
