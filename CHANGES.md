@@ -30,6 +30,7 @@
 
 - GPS state data is now available on the Home page of the app.  This is only updated while the system processes are running.
 
+- The system will now use multiple USB SDRs if attached to the system. So in the case of multi-antenna, multi-SDR setups, all SDRs will be used to listen on the same frequencies.  When there is a desire to have a high gain antenna for horizon level sensitivity as well as a lower gain antenna for vertical sensitivity, the backend daemon will detect each USB SDR and have each listen to the same set of frequencies.  Aka, having the best of both worlds.  
 
 
 ### Bugs Fixed: ###
