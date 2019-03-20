@@ -1147,31 +1147,35 @@ def main():
             # will prevent us from consuming all USB sticks attached to a system.
             k = 0
 
-            print "Using SDR:  ", sdrs[0]
+            while k < i:
 
-            status["rf_mode"] = 1
-            # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-            freqlist = getFrequencies(k)
+                print "Using SDR:  ", sdrs[k]
 
-            # Append this frequency list to our list for later json output
-            ant = {}
-            ant["rtl_id"] = k
-            ant["frequencies"] = []
-            ant["rtl_serialnumber"] = sdrs[k]["serialnumber"]
-            ant["rtl_manufacturer"] = sdrs[k]["manufacturer"]
-            ant["rtl_product"] = sdrs[k]["product"]
-            for freq,udpport in freqlist:
-                ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
-            antennas.append(ant) 
+                status["rf_mode"] = 1
+                # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
+                freqlist = getFrequencies(k)
 
-            # append this frequency/UDP port list to the list for Direwolf
-            direwolfFreqList.append(freqlist)
+                # Append this frequency list to our list for later json output
+                ant = {}
+                ant["rtl_id"] = k
+                ant["frequencies"] = []
+                ant["rtl_serialnumber"] = sdrs[k]["serialnumber"]
+                ant["rtl_manufacturer"] = sdrs[k]["manufacturer"]
+                ant["rtl_product"] = sdrs[k]["product"]
+                for freq,udpport in freqlist:
+                    ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
+                antennas.append(ant) 
 
-            # This is the GnuRadio process
-            grprocess = mp.Process(target=GRProcess, args=(freqlist, k, stopevent))
-            grprocess.daemon = True
-            grprocess.name = "GnuRadio_" + str(k)
-            processes.append(grprocess)
+                # append this frequency/UDP port list to the list for Direwolf
+                direwolfFreqList.append(freqlist)
+
+                # This is the GnuRadio process
+                grprocess = mp.Process(target=GRProcess, args=(freqlist, k, stopevent))
+                grprocess.daemon = True
+                grprocess.name = "GnuRadio_" + str(k)
+                processes.append(grprocess)
+
+                k += 1
 
             # Create Direwolf configuration file
             #if callsign == "E0SS":
