@@ -8,3 +8,4 @@ www/nodeid.txt
 etc/*
 www/configuration
 www/gpsstatus.json
+bin/*.pyc
