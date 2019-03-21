@@ -62,7 +62,7 @@ computer.
 The first time you plug in your device, you will be prompted to trust the
 new computer:
 
-![Trust Computer](USB_Tether_iPhone.png)
+![Trust Computer](assets/USB_Tether_iPhone.png)
 
 Click on "Trust" and you should be all set.  From now on, whenever you plug
 in an iPhone or iPad with personal hotspot turned on, it should be recognzied
