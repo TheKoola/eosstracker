@@ -775,6 +775,9 @@ function getTrackers() {
                 var rel_l = "#" + flightids[flight].flightid + "_relativepositionsign";
                 var rel_e = "#" + flightids[flight].flightid + "_relativeposition";
 
+                var lpp_a = "#" + flightids[flight].flightid + "_lastpacketpathlink";
+                var lpp_l = "#" + flightids[flight].flightid + "_lastpacketpathsign";
+                var lpp_e = "#" + flightids[flight].flightid + "_lastpacketpath";
 
                 $(pos_a).click({element: pos_e, link: pos_l }, toggle);
                 $(stat_a).click({element: stat_e, link: stat_l }, toggle);
@@ -783,6 +786,7 @@ function getTrackers() {
                 $(vert_a).click({element: vert_e, link: vert_l }, toggle);
                 //$(va_a).click({element: va_e, link: va_l }, toggle);
                 $(rel_a).click({element: rel_e, link: rel_l }, toggle);
+                $(lpp_a).click({element: lpp_e, link: lpp_l }, toggle);
 
                 // We use this to determine when the last packet came in for a given flight.
                 $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
@@ -856,6 +860,7 @@ function getTrackers() {
             getLivePackets();
 
             // add timer to update all charts, data, etc..
+            updateAllItems();
             setInterval(updateAllItems, 5000);
 
             // build the Trackers table
@@ -1090,18 +1095,23 @@ function getTrackers() {
             //document.getElementById("error2").innerHTML = JSON.stringify(event.detail.properties);
             // if incoming packet is a later time and it's been at least 4 seconds since the last update...then update the gauges
             //if (incomingTime > lastTime && (incomingTime.getTime() - lastTime.getTime() / 1000) > 4) {
+            //
 
-                // Update the last position packets table
-            $.get("getpositionpackets.php?flightid=" + flightid, function(data) {
-                var jsonData = JSON.parse(data);
+
+            // Update the lastest packet tables
+            $.get("getflightpackets.php?flightid=" + flightid, function(data) {
+                var flightJsonData = JSON.parse(data);
                 var k = 0;
-        
-                    
-                while (k < 5 && jsonData[k]) {
-                    var item = jsonData[k];
-               
+                 
+                var positionPackets = flightJsonData.positionpackets;
+                var statusPackets = flightJsonData.statuspackets;
+                var lastPacketPath = flightJsonData.lastpacketpath;
+
+                k = 0;
+                while (k < 5 && positionPackets[k]) {
+                    var item = positionPackets[k]; 
+
                     $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
-                    //$("#" + item.flightid + "_lastcallsign_" + k).text(item.callsign);
                     $("#" + item.flightid + "_lastcallsign_" + k).html(
                         "<a href=\"#\" class=\"normal-link\" onclick=\"dispatchPanToEvent('" + item.latitude + "', '" + item.longitude + "');\">" +  item.callsign + "</a>"
                     );
@@ -1109,38 +1119,40 @@ function getTrackers() {
                     $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
                     $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
                     k += 1;
-                }
+                } 
+                
+                lastPacket = positionPackets[0];
+                if (lastPacket) {
+                    lastpacketTime = new Date(lastPacket.time.replace(/ /g, "T"));
+                    if (incomingTime >= lastpacketTime && event.detail.properties.callsign == lastPacket.callsign) {
 
-		lastPacket = jsonData[0];
-		lastpacketTime = new Date(lastPacket.time.replace(/ /g, "T"));
-		if (incomingTime >= lastpacketTime && event.detail.properties.callsign == lastPacket.callsign) {
+                                // The telemetry
+                                var thealtitude = Math.round((event.detail.properties.altitude * 10) / 10);
+                                var theheading = Math.round((event.detail.properties.bearing * 10) / 10);
+                                var thespeed = Math.round((event.detail.properties.speed * 10) / 10);
+                                var thevertrate = Math.round((event.detail.properties.verticalrate * 10) / 10);
 
-                    // The telemetry
-                    var thealtitude = Math.round((event.detail.properties.altitude * 10) / 10);
-                    var theheading = Math.round((event.detail.properties.bearing * 10) / 10);
-                    var thespeed = Math.round((event.detail.properties.speed * 10) / 10);
-                    var thevertrate = Math.round((event.detail.properties.verticalrate * 10) / 10);
+                                // The element names for displaying the telemetry
+                                var altitudeValue = "#" + flightid + "_altitudevalue";
+                                var verticalRateValue = "#" + flightid + "_verticalratevalue";
+                                var balloonHeadingValue = "#" + flightid + "_headingvalue";
+                                var speedValue = "#" + flightid + "_speedvalue";
 
-                    // The element names for displaying the telemetry
-                    var altitudeValue = "#" + flightid + "_altitudevalue";
-               	    var verticalRateValue = "#" + flightid + "_verticalratevalue";
-                    var balloonHeadingValue = "#" + flightid + "_headingvalue";
-                    var speedValue = "#" + flightid + "_speedvalue";
+                                // Update altitude and vertical rate, but only if valid values...
+                                if (thealtitude > 0 && thevertrate < 50000 && thevertrate > -50000) {
+                                    $(altitudeValue).data("altimeter").setAltitude(thealtitude);
+                                    $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
+                                    $(altitudeValue).text(thealtitude.toLocaleString());
+                                    $(verticalRateValue).text(thevertrate.toLocaleString());
+                                }
 
-                    // Update altitude and vertical rate, but only if valid values...
-                    if (thealtitude > 0 && thevertrate < 50000 && thevertrate > -50000) {
-                        $(altitudeValue).data("altimeter").setAltitude(thealtitude);
-                        $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
-                        $(altitudeValue).text(thealtitude.toLocaleString());
-                        $(verticalRateValue).text(thevertrate.toLocaleString());
+                        // Update heading and speed
+                                $(balloonHeadingValue).data("heading").setHeading(theheading);
+                                $(speedValue).data("airspeed").setAirSpeed(thespeed);
+                                $(balloonHeadingValue).text(theheading);
+                                $(speedValue).text(thespeed);
                     }
-
-		    // Update heading and speed
-                    $(balloonHeadingValue).data("heading").setHeading(theheading);
-                    $(speedValue).data("airspeed").setAirSpeed(thespeed);
-                    $(balloonHeadingValue).text(theheading);
-                    $(speedValue).text(thespeed);
-		}
+                }
             });
                 
                 // update the time for the last packet
@@ -1275,20 +1287,98 @@ function getTrackers() {
              }
         });
 
-        // Update the last status packets table 
+        // Update the status and RF vs. Internet packets tables
+        var flightid;
         for (flightid in flightids) {
-            $.get("getstatuspackets.php?flightid=" + flightids[flightid].flightid, function(data) {
+            $.get("getflightpackets.php?flightid=" + flightids[flightid].flightid, function(data) {
                 var jsonData = JSON.parse(data);
+                var statusPackets = jsonData.statuspackets;
+                var lastPacketPath = jsonData.lastpacketpath;
+                var fid = jsonData.flightid;
                 var k = 0;
+                var i = 0;
             
-                while (k < 5 && jsonData[k]) {
-                    var item = jsonData[k];
+                while (k < 5 && statusPackets[k]) {
+                    var item = statusPackets[k];
           
                     $("#" + item.flightid + "_statustime_" + k).text(item.time.split(" ")[1]);
                     $("#" + item.flightid + "_statuscallsign_" + k).text(item.callsign);
                     $("#" + item.flightid + "_statuspacket_" + k).text(item.packet);
                     k += 1;
                 }
+
+                //Create a HTML Table element.
+                var table = document.createElement("TABLE");
+                var tablediv = document.getElementById(fid + "_lastpacketpath");
+                table.setAttribute("class", "packetlist");
+                table.setAttribute("style", "width: auto");
+
+                //The columns
+                var columns = ["Callsign", "Receive Time", "Last 10 Packets"];
+
+                //Add the header row.
+                var row = table.insertRow(-1);
+                for (i = 0; i < columns.length; i++) {
+                    var headerCell = document.createElement("TH");
+                    headerCell.innerHTML = columns[i];
+                    headerCell.setAttribute("class", "packetlistheader");
+                    headerCell.setAttribute("style", "white-space: nowrap;");
+                    row.appendChild(headerCell);
+                }
+                
+                // Now add the data rows
+                var keys = Object.keys(lastPacketPath);
+                if (keys.length == 0) {
+                    row = table.insertRow(-1);
+                    var blankcell1 = row.insertCell(0);
+                    var blankcell2 = row.insertCell(1);
+                    blankcell1.setAttribute("class", "packetlist");
+                    blankcell2.setAttribute("class", "packetlist");
+                    blankcell1.innerHTML = "n/a";
+                }
+
+                for (i = 0; i < keys.length; i++) {
+                    row = table.insertRow(-1);
+                    var beacon = lastPacketPath[i].callsign;
+                    var packetsource = lastPacketPath[i].lastpath;
+                    var beaconcell = row.insertCell(0);
+                    var timecell = row.insertCell(1);
+                    var packetcell = row.insertCell(2);
+
+
+                    beaconcell.setAttribute("class", "packetlist");
+                    beaconcell.innerHTML = beacon;
+
+                    timecell.setAttribute("class", "packetlist");
+                    timecell.innerHTML = lastPacketPath[i].time.split(" ")[1];
+
+                    packetcell.setAttribute("class", "packetlist");
+                    packetcell.setAttribute("style", "text-align: right;");
+                    var j = 0;
+                    var html = "";
+                    var bgcolor;
+                    for (j = 0; j < packetsource.length; j++) {
+                        if (packetsource[j] == "R")
+                            bgcolor = "lightgreen";
+                        else
+                            bgcolor = "yellow";
+                        html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
+                    }
+                    packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
+                }
+
+                //Add the legend row
+                row = table.insertRow(-1);
+                var legendcell = row.insertCell(0);
+                legendcell.setAttribute("class", "packetlist");
+                legendcell.setAttribute("colspan", "3");
+                legendcell.innerHTML = "<strong>Legend:</strong> &nbsp; newest----->oldest<br>" 
+                    + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: lightgreen;\">R</mark></span>"
+                    + " - packet received over RF<br>"
+                    + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: yellow;\">I</mark></span>"
+                    + " - packet received over the Internet";
+                tablediv.innerHTML = "";
+                tablediv.appendChild(table);
             });
         }
 
@@ -1506,6 +1596,11 @@ function getTrackers() {
             printf ("        </tr>");
         }
         printf ("    </table>");
+        printf ("</div>");
+
+        // Lastest packet path section
+        printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");
+        printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_lastpacketpath");
         printf ("</div>");
 
         // Altitude Chart
