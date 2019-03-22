@@ -1332,39 +1332,42 @@ function getTrackers() {
                     row = table.insertRow(-1);
                     var blankcell1 = row.insertCell(0);
                     var blankcell2 = row.insertCell(1);
+                    var blankcell3 = row.insertCell(2);
                     blankcell1.setAttribute("class", "packetlist");
                     blankcell2.setAttribute("class", "packetlist");
+                    blankcell3.setAttribute("class", "packetlist");
                     blankcell1.innerHTML = "n/a";
                 }
+                else {
+                    for (i = 0; i < keys.length; i++) {
+                        row = table.insertRow(-1);
+                        var beacon = lastPacketPath[i].callsign;
+                        var packetsource = lastPacketPath[i].lastpath;
+                        var beaconcell = row.insertCell(0);
+                        var timecell = row.insertCell(1);
+                        var packetcell = row.insertCell(2);
 
-                for (i = 0; i < keys.length; i++) {
-                    row = table.insertRow(-1);
-                    var beacon = lastPacketPath[i].callsign;
-                    var packetsource = lastPacketPath[i].lastpath;
-                    var beaconcell = row.insertCell(0);
-                    var timecell = row.insertCell(1);
-                    var packetcell = row.insertCell(2);
 
+                        beaconcell.setAttribute("class", "packetlist");
+                        beaconcell.innerHTML = beacon;
 
-                    beaconcell.setAttribute("class", "packetlist");
-                    beaconcell.innerHTML = beacon;
+                        timecell.setAttribute("class", "packetlist");
+                        timecell.innerHTML = lastPacketPath[i].time.split(" ")[1];
 
-                    timecell.setAttribute("class", "packetlist");
-                    timecell.innerHTML = lastPacketPath[i].time.split(" ")[1];
-
-                    packetcell.setAttribute("class", "packetlist");
-                    packetcell.setAttribute("style", "text-align: right;");
-                    var j = 0;
-                    var html = "";
-                    var bgcolor;
-                    for (j = 0; j < packetsource.length; j++) {
-                        if (packetsource[j] == "R")
-                            bgcolor = "lightgreen";
-                        else
-                            bgcolor = "yellow";
-                        html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
+                        packetcell.setAttribute("class", "packetlist");
+                        packetcell.setAttribute("style", "text-align: right;");
+                        var j = 0;
+                        var html = "";
+                        var bgcolor;
+                        for (j = 0; j < packetsource.length; j++) {
+                            if (packetsource[j] == "R")
+                                bgcolor = "lightgreen";
+                            else
+                                bgcolor = "yellow";
+                            html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
+                        }
+                        packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
                     }
-                    packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
                 }
 
                 //Add the legend row
