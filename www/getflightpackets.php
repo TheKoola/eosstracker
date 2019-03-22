@@ -175,7 +175,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
 
         $allpackets[$callsign][] = array($thetime, $get_flightid, $callsign, $raw);
 
-        if ($ptype == "/" || $ptype == "!") {
+        if ($latitude != '' && $longitude !='' && $altitude != '') {
             // this is a position packet
             //
             // calculate the vertical rate for this callsign
