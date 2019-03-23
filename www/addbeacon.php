@@ -60,7 +60,7 @@ include $documentroot . '/common/functions.php';
 
 
     if ($formerror == false) {
-        $query = "select flightid, description, active from flights where flightid = upper($1);";
+        $query = "select flightid, description, active from flights where flightid = upper(btrim($1));";
         $result = pg_query_params($link, $query, array(sql_escape_string($flightid)));
         if (!$result) {
             printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
@@ -70,7 +70,7 @@ include $documentroot . '/common/functions.php';
         $numrows = sql_num_rows($result);
         if ($numrows > 0) {
             // insert a new row into the flightmap table
-            $query = "insert into flightmap values (upper($1), upper($2), $3, $4);";
+            $query = "insert into flightmap values (upper(btrim($1)), upper(btrim($2)), $3, $4);";
             $result = pg_query_params($link, $query, array(sql_escape_string($flightid), sql_escape_string($callsign), sql_escape_string($description), $frequency));
             if (!$result) {
                 printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));

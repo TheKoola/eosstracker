@@ -66,7 +66,7 @@
         return 0;
     }
 
-    $query = "insert into trackers values (upper($1), $2, $3);";
+    $query = "insert into trackers values (upper(btrim($1)), $2, $3);";
     $result = pg_query_params($link, $query, array(sql_escape_string($get_callsign), sql_escape_string($get_team), sql_escape_string($get_notes)));
     if (!$result) {
         printf ("{\"result\" : 0, \"error\": %s}", json_encode(sql_last_error()));

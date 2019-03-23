@@ -102,7 +102,7 @@ include $documentroot . '/common/functions.php';
         }
         else {
             // insert a new row into the flights table
-            $query = "insert into flights values (upper($1), $2, now()::date, $3, $4);";
+            $query = "insert into flights values (upper(btrim($1)), $2, now()::date, $3, $4);";
             $result = pg_query_params($link, $query, array(sql_escape_string($flightid), sql_escape_string($description), sql_escape_string($active), sql_escape_string($launchsite)));
             if (!$result) {
                 printf ("{\"result\": \"0\", \"error\": %s}", json_encode(sql_last_error()));
@@ -111,7 +111,7 @@ include $documentroot . '/common/functions.php';
             }
 
             // insert rows into the flightmap table
-            $query = "insert into flightmap values (upper($1), upper($2), $3, $4);";
+            $query = "insert into flightmap values (upper(btrim($1)), upper(btrim($2)), $3, $4);";
             //print_r($beacons);
             foreach ($beacons as $bray) {
                 $result = pg_query_params($link, $query, $bray);
