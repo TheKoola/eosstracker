@@ -27,7 +27,33 @@
 
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
 
-    $fallbackJSON = "{ \"timezone\" : \"America\/Denver\", \"callsign\" : \"NOCALL\", \"lookbackperiod\" : \"180\", \"iconsize\" : \"24\", \"plottracks\" : \"off\" }";
+    $ray = array();
+    $ray["timezone"] = "America/Denver";
+    $ray["callsign"] = "";
+    $ray["lookbackperiod"] = "180";
+    $ray["iconsize"] = "24";
+    $ray["plottracks"] = "off";
+    $ray["ssid"] = "9";
+    $ray["igating"] =  "false";
+    $ray["beaconing"] = "false";
+    $ray["passcode"] = "";
+    $ray["fastspeed"] = "45";
+    $ray["fastrate"] = "01:00";
+    $ray["slowspeed"] = "5";
+    $ray["slowrate"] = "10:00";
+    $ray["beaconlimit"] = "02:00";
+    $ray["fastturn"] = "20";
+    $ray["slowturn"] = "60";
+    $ray["audiodev"] = "0";
+    $ray["serialport"] = "none";
+    $ray["serialproto"] = "RTS";
+    $ray["comment"] = "EOSS Tracker";
+    $ray["includeeoss"] = "true";
+    $ray["symbol"] = "/k";
+    $ray["overlay"] = "";
+    $ray["ibeaconrate"] = "15:00";
+    $ray["ibeacon"] = "false";
+    $fallbackJSON = json_encode($ray);
 
     // Defaults
     $defaultsJSON = file_get_contents($documentroot . "/configuration/defaults.txt");

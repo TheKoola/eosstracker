@@ -1068,8 +1068,8 @@ def main():
         # Otherwise, we assume the callsign from the command line and do NOT perform igating or beaconing
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
-    ## Now check for default values for all of the configuration keys we care about.  Might need to expeand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America\/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "\/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false"}
+    ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
+    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false"}
 
     for the_key, the_value in defaultkeys.iteritems():
         if the_key not in configuration:
