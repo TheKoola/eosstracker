@@ -265,12 +265,19 @@ def landingPredictor(altitude_floor, configuration):
                 ascent_rates = d[0:(idx+1),0:]
                 ascent_rates_pristine = d[0:(idx+1),0:]
 
-                # ascent_rates columns: altitude, latitude, longitude, elevation change rate , latitude change rate, longitude change rate
-                if ascent_rates.shape[0] > 1:
+                # Loop through the ascent rates heard thus far until we find a value where the ascent rate (ft/s) is > 5.  This eliminates
+                # those early packets from the beacons prior to actual launch...we don't want those.
+                loop_counter = 0
+                while ascent_rates[loop_counter, 3] < 5:
+                    loop_counter += 1
+                
+                if loop_counter > 0:
+                    ascent_rates = ascent_rates[(loop_counter-1):,0:]
+                    # ascent_rates columns: altitude, latitude, longitude, elevation change rate , latitude change rate, longitude change rate
                     ascent_rates[0,3] = ascent_rates[1,3]
                     ascent_rates[0,4] = ascent_rates[1,4]
                     ascent_rates[0,5] = ascent_rates[1,5]
-    
+
                 # Need to find out if this flight is descending yet...
                 # 1.  find max altitude
                 # 2.  split array into ascending and descending portions
@@ -288,8 +295,6 @@ def landingPredictor(altitude_floor, configuration):
                 descent_portion = balloon_data[idx:, 0:]
         
                 np.set_printoptions(threshold=np.nan)
-        
-                
                 
                 # If the index of max altitude is less than the length of the of the flight...implies we've seen an alitude "hump" and are now descending
                 # ...AND we've seen at least 2 packets since the max altitude value was hit...
@@ -514,7 +519,7 @@ def landingPredictor(altitude_floor, configuration):
                     landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x) ])
                     landingconn.commit()
 
-                    print callsign, " [", descent_portion[-1,0], " alt: ", descent_portion[-1,1],  " v: ", round(balloon_velocities[-1], 2), "],   pred_floor: ", prediction_floor, "  coef: ", str(parachute_coef), "  est. lat/lon:  ", round(float(x),6), ", ", round(float(y), 6)
+                    #print callsign, " [", descent_portion[-1,0], " alt: ", descent_portion[-1,1],  " v: ", round(balloon_velocities[-1], 2), "],   pred_floor: ", prediction_floor, "  coef: ", str(parachute_coef), "  est. lat/lon:  ", round(float(x),6), ", ", round(float(y), 6)
         
             i += 1
         
