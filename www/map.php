@@ -1355,7 +1355,7 @@ function getTrackers() {
                         timecell.innerHTML = lastPacketPath[i].time.split(" ")[1];
 
                         packetcell.setAttribute("class", "packetlist");
-                        packetcell.setAttribute("style", "text-align: right;");
+                        packetcell.setAttribute("style", "text-align: left; white-space: nowrap;");
                         var j = 0;
                         var html = "";
                         var bgcolor;
@@ -1366,7 +1366,10 @@ function getTrackers() {
                                 bgcolor = "yellow";
                             html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
                         }
-                        packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
+                        if (packetsource.length > 0)
+                            packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
+                        else
+                            packetcell.innerHTML = "n/a";
                     }
                 }
 
