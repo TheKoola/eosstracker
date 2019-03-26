@@ -11,16 +11,13 @@
     .sidebar {
       top: 10px;
       bottom: 10px;
-      width: 460px; 
       transition: width 500ms; } }
   @media (min-width: 768px) and (max-width: 991px) {
     .sidebar {
-      /*width: 305px; } } */
-      width: 460px; } }
+      width: 305px; } }
   @media (min-width: 992px) and (max-width: 1199px) {
     .sidebar {
-      /*width: 390px; } } */
-      width: 460px; } }
+      width: 390px; } }
   @media (min-width: 1200px) {
     .sidebar {
       width: 460px; } }
@@ -99,7 +96,6 @@
     overflow-y: hidden; }
 
 .sidebar-pane {
-  overflow: scroll;
   display: none;
   left: 0;
   right: 0;
@@ -109,12 +105,10 @@
     display: block; }
   @media (min-width: 768px) and (max-width: 991px) {
     .sidebar-pane {
-      /*min-width: 265px; } } */
-      min-width: 420px; } }
+      min-width: 265px; } }
   @media (min-width: 992px) and (max-width: 1199px) {
     .sidebar-pane {
-      /* min-width: 350px; } } */
-      min-width: 420px; } }
+      min-width: 350px; } }
   @media (min-width: 1200px) {
     .sidebar-pane {
       min-width: 420px; } }
