@@ -142,13 +142,13 @@ tracker computer.  Hundreds of prerequisite software packages must be
 downloaded and installed.  Fortunately, a simple script is included to
 automatically install all the required packages.
 ```
-eosstracker@tracker:~$ cd ~/src/eosstracer/sbin
+eosstracker@tracker:~$ cd ~/src/eosstracker/sbin
 eosstracker@tracker:~/src/eosstracker/sbin$ sudo ./install-packages.bash
 
   [... many lines deleted here ...]
 
 All packages installed successfully.
-eosstracker@tracker:~/src/eosstracer/sbin$
+eosstracker@tracker:~/src/eosstracker/sbin$
 ```
 
 To transfer the contents of the EOSS tracker software to the `/eosstracker`
@@ -202,7 +202,7 @@ updated libraries and modules are loaded.
 The EOSS SDR Tracker software uses a local APRS-IS server written in C: 
 [aprsc](http://he.fi/aprsc/).  As of the time of this writing, a pre-compiled
 package for aprsc was not available on Ubuntu 18.04, so we will build and
-install the application from source.  Start with libevent:
+install the application from source.  Start with [libevent](http://libevent.org/):
 
 ```
 eosstracker@tracker:~$ cd ~/src
