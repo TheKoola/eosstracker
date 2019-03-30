@@ -28,9 +28,10 @@ This application note is written in XXX parts in two sections:
 4. Configure the firewall
 5. Install aprsc
 6. Create PostgreSQL/PostGIS databases with PostGIS extensions
-7. Install 
 
 ### Section 2
+7. Install OpenStreetMap tile server
+8. x
 9. Configure Apache for SSL (optional)
 10. Configure Apache mod_tile
 11. 
@@ -358,7 +359,8 @@ eosstracker@tracker:/eosstracker/sql$
 
 The default locating PostgreSQL stores its databases is
 `/var/lib/postgresql/10/main` which may be on a partition
-that limited in size.  Moving the default database 
+that limited in size. The EOSS installation moves the database to
+`/eosstracker/db` which is a separate partition. 
 The folks at Digital Ocean provide a nice
 [tutorial](https://www.digitalocean.com/community/tutorials/how-to-move-a-postgresql-data-directory-to-a-new-location-on-ubuntu-18-04)
 on how to move the PostgreSQL database.
