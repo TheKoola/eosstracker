@@ -1,4 +1,4 @@
-# EOSS SDR Tracker Bare Metal Install
+# EOSS SDR Tracker Bare Metal Install Part 1
 
 Notes by Jeff N2XGL,
 Version 1.0, Dated 2019-03-01
