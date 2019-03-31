@@ -180,7 +180,7 @@ To transfer the contents of the EOSS tracker software to the `/eosstracker`
 directory, as well as set up permissions, enter the following command
 from the same directory:
 
-`eosstracker@tracker:~/src/eosstracker/sbin$ sudo ./cleanandstage.bash`
+`eosstracker@tracker:~/src/eosstracker/sbin$ sudo ./initial-stage.bash`
 
 This script will also configure the `/eosstracker` directory with GitHub
 and put the `eosstracker` user into the audio and dialout groups.
