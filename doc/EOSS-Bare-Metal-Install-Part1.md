@@ -274,12 +274,30 @@ databases must be set up and given the appropriate schema.
 Start by setting the default timezone for the database.  The
 EOSS tracker software assumes the US Mountain time zone.  While the
 web-based user interface will allow for the user to set any time
-zone while displaying the data, the data itself is stored consistently
+zone to display the data, the data itself is stored consistently
 in the database with date/time stamps in the US Mountain time zone.
 
-Edit the PostgreSQL configuration files to set the default time zone:
+First set the system time zone:
 
-Begin setting up the databases by switching to the `postgres` 
+`sudo timedatectl set-timezone America/Denver`
+
+Next, edit the PostgreSQL configuration file located at 
+`/etc/postgresql/10/main/postgresql.conf` to set the default time zone.
+Find and change the following lines (around lines 475 and 571) to match
+the following:
+
+```
+log_timezone = 'America/Denver'
+
+timezone = 'America/Denver'
+```
+
+Finally, restart the PostgreSQL service to force the changes to
+take effect:
+
+`sudo service postgresql restart`
+
+Now begin setting up the databases by switching to the `postgres` 
 master database user:
 
 ```

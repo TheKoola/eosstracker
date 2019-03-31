@@ -31,7 +31,7 @@ This application note is written in 12 parts in two sections:
 
 ### Section 2
 7. [Install OpenStreetMap tile server](#7-install-openstreetmap-tile-server)
-8. Install and configure renderd
+8. Configure renderd
 9. Configure Apache for SSL (optional)
 10. Configure Apache mod_tile
 11. Configure GPSd
