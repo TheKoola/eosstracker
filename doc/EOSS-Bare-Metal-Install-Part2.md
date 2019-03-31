@@ -30,7 +30,7 @@ This application note is written in 12 parts in two sections:
 6. Create PostgreSQL/PostGIS databases with PostGIS extensions
 
 ### Section 2
-7. Install OpenStreetMap tile server
+7. [Install OpenStreetMap tile server](#7-install-openstreetmap-tile-server)
 8. Install and configure renderd
 9. Configure Apache for SSL (optional)
 10. Configure Apache mod_tile
@@ -40,7 +40,7 @@ This application note is written in 12 parts in two sections:
 ## 7. Install OpenStreetMap tile server
 
 EOSS uses OpenStreetMap to provide offline map information while tracker
-vehicles are out of range from cellular data or other Internet connectivity.  
+vehicles are out of range from cellular data or other Internet connectivity. 
 Building the OpenStreetMap database and tiles follows the helpful 
 [tutorial](https://switch2osm.org/manually-building-a-tile-server-18-04-lts/) at
 Switch2OSM with a few changes for North America map tiles.
@@ -48,8 +48,8 @@ Switch2OSM with a few changes for North America map tiles.
 > This will take a while.  On a 4-CPU at 2.6 GHz with 8GB RAM it took 44325s (12.31 hr).
 > This will create a very large PostgreSQL database (133G).
 
-Begin by installing the OpenStreetMap to PostgreSQL tool.  
-[Osm2pgsql](https://github.com/openstreetmap/osm2pgsql) is a tool for loading 
+Begin by installing the OpenStreetMap to PostgreSQL 
+tool. [Osm2pgsql](https://github.com/openstreetmap/osm2pgsql) is a tool for loading 
 OpenStreetMap data into a PostgreSQL / PostGIS database suitable for applications like 
 rendering into a map, geocoding with Nominatim, or general analysis.
 

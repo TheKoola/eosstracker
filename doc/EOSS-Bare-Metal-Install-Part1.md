@@ -22,7 +22,7 @@ Tracker computer once completed.
 This application note is written in XXX parts in two sections:
 
 ### Section 1
-1. Install the baseline Operating System
+1. [Install the baseline Operating System](#1-install-the-baseline-operating-system)
 2. Configure the user environment
 3. Install necessary packages
 4. Configure the firewall
