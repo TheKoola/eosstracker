@@ -59,7 +59,7 @@ have to give this user full sudo privileges, but it makes it easier overall
 and will match these instructions.
 
 Log in as root and add the [EOSS Personal Package Archive](https://launchpad.net/~eoss).
-This will allow for easy updated of the `eosstracker` software as they are
+This will allow for easy updates of the `eosstracker` software as they are
 released.
 
 `root@tracker:~# add-apt-repository ppa:eoss/ppa`
@@ -182,7 +182,7 @@ from the same directory:
 
 `eosstracker@tracker:~/src/eosstracker/sbin$ sudo ./cleanandstage.bash`
 
-This script will also configure the `/eosstracer` directory with GitHub
+This script will also configure the `/eosstracker` directory with GitHub
 and put the `eosstracker` user into the audio and dialout groups.
 
 ## 4. Configure the firewall
