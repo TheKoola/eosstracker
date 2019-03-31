@@ -71,8 +71,14 @@ apt-get -y install gnuradio gnuradio-dev
 echo ""
 
 sleep 1
-echo "Instaling GPSd and gr-osmosdr..."
+echo "Installing GPSd and gr-osmosdr..."
 apt-get -y install gpsd gpsd-clients gr-osmosdr
+echo ""
+
+sleep 1
+echo "Installing alsa-utils and removing pulseaudio..."
+apt-get -y install alsa-utils
+apt-get -y remove pulseaudio
 echo ""
 
 sleep 1
