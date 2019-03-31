@@ -16,7 +16,7 @@ Tracker computer once completed.
 
 > These instructions are for advanced users and will take several hours,
 > depending on how much of the map tile server you want to build.
-> Advanced users can modify to suit their own taste (YMMV).  
+> Advanced users can modify to suit their own taste (YMMV). 
 > EOSS does not provide support for this bare metal approach.
 
 This application note is written in 12 parts in two sections:
@@ -59,9 +59,9 @@ eosstracker@tracker:~$ cd ~/src
 eosstracker@tracker:~/src$ git clone git://github.com/openstreetmap/osm2pgsql.git
 eosstracker@tracker:~/src$ cd osm2pgsql
 eosstracker@tracker:~/src/osm2pgsql$ mkdir build && cd build
-eosstracker@tracker:~/src/osm2pgsql$ cmake ..
-eosstracker@tracker:~/src/osm2pgsql$ make
-eosstracker@tracker:~/src/osm2pgsql$ sudo make install
+eosstracker@tracker:~/src/osm2pgsql/build$ cmake ..
+eosstracker@tracker:~/src/osm2pgsql/build$ make
+eosstracker@tracker:~/src/osm2pgsql/build$ sudo make install
 ```
 
 Next install the SomeoneElseOSM [fork](https://github.com/SomeoneElseOSM/mod_tile) of 
