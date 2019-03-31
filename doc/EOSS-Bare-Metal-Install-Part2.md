@@ -23,7 +23,7 @@ This application note is written in 12 parts in two sections:
 
 ### Section 1
 1. Install the baseline Operating System
-2. Configure the user environment
+2. Configure the EOSS PPA and user environment
 3. Install necessary packages
 4. Configure the firewall
 5. Install aprsc
@@ -34,7 +34,8 @@ This application note is written in 12 parts in two sections:
 8. Install and configure renderd
 9. Configure Apache for SSL (optional)
 10. Configure Apache mod_tile
-11. 
+11. Configure GPSd
+12. Install Direwolf
 
 
 ## 7. Install OpenStreetMap tile server

@@ -23,7 +23,7 @@ This application note is written in XXX parts in two sections:
 
 ### Section 1
 1. [Install the baseline Operating System](#1-install-the-baseline-operating-system)
-2. Configure the user environment
+2. Configure the EOSS PPA and user environment
 3. Install necessary packages
 4. Configure the firewall
 5. Install aprsc
@@ -50,7 +50,7 @@ complete most of the remaining steps.  You may also want to configure
 the machine hostname and any networking at this point.  The computer
 does need a connection to the Internet to download packages.
 
-## 2. Configure the user environment
+## 2. Configure the EOSS PPA and user environment
 
 The EOSS SDR Tracker software is designed to operate under the `eosstracker` 
 user with some elevated privileges.  You don't necessarily have to run under
@@ -58,7 +58,31 @@ this user, but connections to the database assume this username.  You don't
 have to give this user full sudo privileges, but it makes it easier overall
 and will match these instructions.
 
-Log in as root, create the `eosstracker` user and configure with sudo
+Log in as root and add the [EOSS Personal Package Archive](https://launchpad.net/~eoss).
+This will allow for easy updated of the `eosstracker` software as they are
+released.
+
+`root@tracker:~# add-apt-repository ppa:eoss/ppa`
+
+You will get some output similar to:
+```
+Edge of Space Sciences (EOSS) https://www.eoss.org/ software package repository.
+More info: https://launchpad.net/~eoss/+archive/ubuntu/ppa
+Press [ENTER] to continue or Ctrl-c to cancel adding it.
+Hit:1 http://archive.ubuntu.com/ubuntu bionic InRelease
+Get:2 http://archive.ubuntu.com/ubuntu bionic-updates InRelease [88.7 kB]
+Get:3 http://archive.ubuntu.com/ubuntu bionic-backports InRelease [74.6 kB]
+Get:4 http://archive.ubuntu.com/ubuntu bionic-security InRelease [88.7 kB]
+Get:5 http://archive.ubuntu.com/ubuntu bionic-updates/main amd64 Packages [523 kB]
+Get:6 http://archive.ubuntu.com/ubuntu bionic-updates/universe amd64 Packages [727 kB]
+Get:7 http://ppa.launchpad.net/eoss/ppa/ubuntu bionic InRelease [15.9 kB]
+Get:8 http://ppa.launchpad.net/eoss/ppa/ubuntu bionic/main amd64 Packages [484 B]
+Get:9 http://ppa.launchpad.net/eoss/ppa/ubuntu bionic/main Translation-en [316 B]
+Fetched 1,518 kB in 11s (138 kB/s)
+Reading package lists... Done
+```
+
+Continuing as root, create the `eosstracker` user and configure with sudo
 privileges:
 
 `root@tracker:~# useradd -c "EOSS Tracker" -m eosstracker`
