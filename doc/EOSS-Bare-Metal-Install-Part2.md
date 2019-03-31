@@ -41,15 +41,15 @@ This application note is written in 12 parts in two sections:
 
 EOSS uses OpenStreetMap to provide offline map information while tracker
 vehicles are out of range from cellular data or other Internet connectivity.  
-Building the OpenStreetMap database and tiles follows the helpful [tutorial]
-(https://switch2osm.org/manually-building-a-tile-server-18-04-lts/) at
+Building the OpenStreetMap database and tiles follows the helpful 
+[tutorial](https://switch2osm.org/manually-building-a-tile-server-18-04-lts/) at
 Switch2OSM with a few changes for North America map tiles.
 
 > This will take a while.  On a 4-CPU at 2.6 GHz with 8GB RAM it took 44325s (12.31 hr).
 > This will create a very large PostgreSQL database (133G).
 
-Begin by installing the OpenStreetMap to PostgreSQL tool.  [Osm2pgsql]
-(https://github.com/openstreetmap/osm2pgsql) is a tool for loading 
+Begin by installing the OpenStreetMap to PostgreSQL tool.  
+[Osm2pgsql](https://github.com/openstreetmap/osm2pgsql) is a tool for loading 
 OpenStreetMap data into a PostgreSQL / PostGIS database suitable for applications like 
 rendering into a map, geocoding with Nominatim, or general analysis.
 
@@ -116,18 +116,20 @@ eosstracker@tracker:/eosstracker/osm/data$ wget https://download.geofabrik.de/no
 These are quite large downloads...
 
 ```
- 1.2G us-midwest-latest.osm.pbf
- 759M us-northeast-latest.osm.pbf
- 2.0G us-south-latest.osm.pbf
- 1.7G us-west-latest.osm.pbf
+ 1.2G   us-midwest-latest.osm.pbf
+ 759M   us-northeast-latest.osm.pbf
+ 2.0G   us-south-latest.osm.pbf
+ 1.7G   us-west-latest.osm.pbf
 ```
 
 Now use the osmconvert tool combine the shape files into one file:
 
+```
 eosstracker@tracker:/eosstracker/osm/data$ osmconvert us-midwest-latest.osm.pbf --out-o5m | osmconvert - us-northeast-latest.osm.pbf -o=us1.osm.pbf
 eosstracker@tracker:/eosstracker/osm/data$ osmconvert us1.osm.pbf --out-o5m | osmconvert - us-south-latest.osm.pbf -o=us2.osm.pbf
 eosstracker@tracker:/eosstracker/osm/data$ osmconvert us2.osm.pbf --out-o5m | osmconvert - us-west-latest.osm.pbf -o=us.osm.pbf
 eosstracker@tracker:/eosstracker/osm/data$ rm us1.osm.pbf us2.osm.pbf
+```
 
 The final step in the process is to populate the shape file into the PostgreSQL `gis` database.  
 
