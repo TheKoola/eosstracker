@@ -32,6 +32,15 @@ cp -rpa ../www /eosstracker/
 cp -rpa ../.git /eosstracker/
 cp -pa ../.gitignore /eosstracker/
 
+mkdir /eosstracker/osm
+chown -R eosstracker:eosstracker /eosstracker/osm
+
+mkdir /eosstracker/maps
+chown -R eosstracker:eosstracker /eosstracker/maps
+
+mkdir /eosstracker/db
+chown -R postgres:postgres /eosstracker/db
+
 cd /eosstracker
 
 rm bin/COPYING
