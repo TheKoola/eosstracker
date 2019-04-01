@@ -52,6 +52,7 @@ from scipy.optimize import *
 import signal
 import psutil
 import json
+import random
 
 #import local configuration items
 import habconfig 
@@ -84,7 +85,7 @@ class aprs_receiver(gr.top_block):
         ##################################################
         # Variables
         ##################################################
-        self.mtusize = 9000 
+        self.mtusize = 9000
         self.samp_rate = self.direwolf_audio_rate * 42
         self.transition_width = 1000
         self.lowpass_freq = 5000
@@ -166,6 +167,7 @@ def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
 def GpsPoller(e):
     gpsconn = None
     GPSStatusFile = "/eosstracker/www/gpsstatus.json"
+    GPSStatusTempFile = "/eosstracker/www/gpsstatus.json.tmp"
     try: 
         gpsd = gps(mode=WATCH_ENABLE) 
         gpsconn = pg.connect (habconfig.dbConnectionString)
@@ -210,17 +212,21 @@ def GpsPoller(e):
                 mysats = []
                 mysats_sorted = []
                 mymode = ""
-                with open(GPSStatusFile, "w") as f:
+                with open(GPSStatusTempFile, "w") as f:
                     for sat in gpsd.satellites:
                         mysats.append({ "prn": str(sat.PRN), "elevation" : str(sat.elevation), "azimuth" : str(sat.azimuth), "snr" : str(sat.ss), "used" : str(sat.used) })
                     if len(gpsd.satellites) > 0:
                         mysats_sorted = sorted(mysats, key=lambda k: k['used'], reverse=True)
                     gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats_sorted, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
                     f.write(json.dumps(gpsstats))
+                if os.path.isfile(GPSStatusTempFile):
+                    os.rename(GPSStatusTempFile, GPSStatusFile)
         print "Shutting down GPS Loop..."
-        with open(GPSStatusFile, "w") as f:
+        with open(GPSStatusTempFile, "w") as f:
             gpsstats = { "utc_time" : "n/a", "mode" : 0, "status" : 0, "lat" : "n/a", "lon" : "n/a", "satellites" : [], "speed_mph" : 0, "altitude" : 0 }
             f.write(json.dumps(gpsstats))
+        if os.path.isfile(GPSStatusTempFile):
+            os.rename(GPSStatusTempFile, GPSStatusFile)
         gpsconn.close()
     except pg.DatabaseError as error:
         print(error)
@@ -593,8 +599,8 @@ def aprsFilterThread(callsign, a, r, e):
         #while True:
         while not e.is_set():
             # Sleep for delta seconds
-            time.sleep(delta)
-            #e.wait(delta)
+            #time.sleep(delta)
+            e.wait(delta)
 
             # Get a new APRS-IS filter string (i.e. our lat/lon location could have changed, beacon callsigns could have changed, etc.)
             filterstring = getAPRSFilter(r, callsign) 
@@ -643,9 +649,7 @@ def aprsTapProcess(callsign, radius, e):
         ais.set_filter(getAPRSFilter(radius, callsign))
  
         # wait for 5 seconds to give aprsc time to start
-        # Future note:  need to change this to use Lock's....
-        time.sleep(5)
-        #e.wait(5)
+        e.wait(5)
         
         ais.connect()
 
@@ -1128,7 +1132,12 @@ def main():
         # We're assuming the path to this is the standard install path for aprsc, /opt/aprsc/etc/...
         # We always append "01" to the callsign to ensure that it's unique for APRS-IS
         aprsc_configfile = "/opt/aprsc/etc/tracker-aprsc.conf"
-        if createAprscConfig(aprsc_configfile, str(configuration["callsign"]) + "01", configuration["igating"]) < 0:
+
+        # This generates a random number to append to the callsign and pads to such that the server ID is always 9 characters in length
+        numRandomDigits = 9 - len(configuration["callsign"])
+        aprscServerId = str(configuration["callsign"]) + str(random.randint(5,numRandomDigits * 10)).zfill(numRandomDigits)
+
+        if createAprscConfig(aprsc_configfile, aprscServerId, configuration["igating"]) < 0:
             sys.exit()
        
         # This is the aprsc process

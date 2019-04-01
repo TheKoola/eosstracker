@@ -545,8 +545,8 @@ def runLandingPredictor(schedule, altitude_floor, e, config):
         #while True:
         while not e.is_set():
             landingPredictor(altitude_floor, config)
-            time.sleep(schedule)
-            #e.wait(schedule)
+            #time.sleep(schedule)
+            e.wait(schedule)
         print "Prediction scheduler ended"
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         print "Prediction scheduler ended"
