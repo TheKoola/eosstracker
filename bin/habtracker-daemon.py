@@ -1135,7 +1135,7 @@ def main():
 
         # This generates a random number to append to the callsign and pads to such that the server ID is always 9 characters in length
         numRandomDigits = 9 - len(configuration["callsign"])
-        aprscServerId = str(configuration["callsign"]) + str(random.randint(5,numRandomDigits * 10)).zfill(numRandomDigits)
+        aprscServerId = str(configuration["callsign"]) + str(random.randint(5, 10 ** numRandomDigits - 1)).zfill(numRandomDigits)
 
         if createAprscConfig(aprsc_configfile, aprscServerId, configuration["igating"]) < 0:
             sys.exit()
