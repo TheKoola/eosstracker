@@ -34,6 +34,8 @@
 
 - Added a new section in the sidebar on the map screen that displays the source of the prior 10 APRS packets from the beacons for a flight.  This will help the user to determine at a glance, where the packets for a beacon were sourced from (i.e. from RF or Internet connections).
 
+- The landing prediction algorithm now attempts to use the current GPS determined elevation of the system as the landing prediction floor if the flight is < 75 miles from the system's current location.
+
 
 ### Bugs Fixed: ###
 
@@ -58,6 +60,11 @@ added to the database properly.  The first few lines were getting skipped.
 
 - Fixed issues with the landing prediction functions in that descent times were not being tabulated correctly resulting in incorrect lat/lon predictions.
 
+- Fixed an issue where sleep functions were being used instead of event wait calls within habtracker-daemon.py.
+
+- Changed the serverID that aprsc will use to pad random numbers to at the end of one's callsign (or the default callsign if one isn't entered) so that it's always 9 characters in length.  This avoids naming collisions where the same aprsc serverID might be used across several different systems.
+
+- Fixed an issue where the FM demodulation was using a maximum deviation of 2.5KHz which is a bit too small if systems are transmitting with a higher deviation.  This fix changes the max deviation for FM demodulation.
 
 
 ----------
