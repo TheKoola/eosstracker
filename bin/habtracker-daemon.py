@@ -88,12 +88,11 @@ class aprs_receiver(gr.top_block):
         self.mtusize = 9000
         self.samp_rate = self.direwolf_audio_rate * 42
         self.transition_width = 1000
-        self.lowpass_freq = 5000
+        self.lowpass_freq = 5500
         self.decimation = self.samp_rate / (self.direwolf_audio_rate)
-        #self.scale = 32767
-        self.scale = 10240
+        self.scale = 14336
         self.quadrate = self.samp_rate / self.decimation
-        self.max_deviation = 2500
+        self.max_deviation = 3300
         self.lowpass_filter_0 = firdes.low_pass(20, self.samp_rate, self.lowpass_freq, self.transition_width, firdes.WIN_HANN, 6.76)
         self.center_freq = 145000000
 
