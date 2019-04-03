@@ -268,8 +268,9 @@ def landingPredictor(altitude_floor, configuration):
                 # Loop through the ascent rates heard thus far until we find a value where the ascent rate (ft/s) is > 5.  This eliminates
                 # those early packets from the beacons prior to actual launch...we don't want those.
                 loop_counter = 0
-                while ascent_rates[loop_counter, 3] < 5:
-                    loop_counter += 1
+                if ascent_rates.shape[0] > 0:
+                    while ascent_rates[loop_counter, 3] < 5:
+                        loop_counter += 1
                 
                 if loop_counter > 0:
                     ascent_rates = ascent_rates[(loop_counter-1):,0:]
@@ -303,7 +304,7 @@ def landingPredictor(altitude_floor, configuration):
                 alt_sanity_threshold = 14999
                 if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
 
-
+                    # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
                     gps_sql = """select 
                         tm::timestamp without time zone as time, 
                         round(speed_mph) as speed_mph, 
@@ -322,6 +323,8 @@ def landingPredictor(altitude_floor, configuration):
                     # Execute the SQL statment and get all rows returned
                     landingcur.execute(gps_sql)
                     gpsrows = landingcur.fetchall()
+
+                    # There should only be one row returned from the above query, but just in case we loop through each row saving our last altitude, latitude, and longitude
                     for gpsrow in gpsrows:
                         my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
                         my_lat = gpsrow[4]
@@ -330,12 +333,9 @@ def landingPredictor(altitude_floor, configuration):
                     # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet received from the balloon
                     dist_to_balloon = distance(my_lat, my_lon, descent_portion[-1,2], descent_portion[-1, 3])
 
-                    # NEED TO REMOVE THIS AFTER TESTING!!!
-                    dist_to_balloon = 25
-                    my_alt = 4301
-                    my_alt = round(float(my_alt / 100.0)) * 100.0 - 50.0
-
-                    # If we're close to the balloon, then we want to adjust our prediction_floor to our current elevation
+                    # If we're close to the balloon (ex. < 75 miles), then we want to adjust our prediction_floor to our current elevation.  The idea being that if 
+                    # we're close to the balloon, then our current elevation is likely close to the elevation of the balloon's ultimate landing location.  ...and we 
+                    # want to have the prediction algorithm calculate predicitons down to that elevation.  This should increase landing prediction accuracy a small amount.
                     if dist_to_balloon < 75:
                         prediction_floor = float(my_alt)
                     else:
@@ -352,6 +352,7 @@ def landingPredictor(altitude_floor, configuration):
                         # Reverse the ascent_rates array so the highest altitude is first and the lowest altitude is last
                         ascent_rates_rev = ascent_rates[::-1]
 
+                        # Some example rows from the launch site table in the database...
                         # flightid | callsign | launchsite |  lat   |   lon    | alt
                         #----------+----------+------------+--------+----------+------
                         # TEST-001 | AE0SS-13 | Wiggins    | 40.228 | -104.075 | 4500
