@@ -41,7 +41,6 @@ import logging
 import usb.core
 import usb.util
 from gps import *
-import time
 import threading as th
 import sys
 import numpy as np
@@ -1204,6 +1203,11 @@ def main():
         status["antennas"] = antennas 
         status["igating"] = configuration["igating"]
         status["beaconing"] = configuration["beaconing"]
+        status["active"] = 1
+
+        ts = datetime.datetime.now()
+        status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+        status["timezone"] = str(configuration["timezone"])
         print "\n"
         print "JSON:", json.dumps(status)
         print "\n"
@@ -1228,12 +1232,21 @@ def main():
         processes.append(landingprocess)
 
 
-
         # Loop through each process starting it
         for p in processes:
             #print "Starting:  %s" % p.name
             p.start()
+
+
+        # Save the operating mode and status to a JSON file
+        jsonStatusFile = "/eosstracker/www/daemonstatus.json"
+        jsonStatusTempFile = "/eosstracker/www/daemonstatus.json.tmp"
+        with open(jsonStatusTempFile, "w") as f:
+            f.write(json.dumps(status))
+        if os.path.isfile(jsonStatusTempFile):
+            os.rename(jsonStatusTempFile, jsonStatusFile)
     
+
         # Join each process (which blocks until the sub-process ends)
         for p in processes:
             p.join()
@@ -1244,6 +1257,18 @@ def main():
         for p in processes:
             print "Waiting for [%s] %s to end..." % (p.pid, p.name)
             p.join()
+
+    # Save the operating mode and status to a JSON file...as basically empty as we're now shuttingn down
+    jsonStatusFile = "/eosstracker/www/daemonstatus.json"
+    jsonStatusTempFile = "/eosstracker/www/daemonstatus.json.tmp"
+    status = {}
+    status["antennas"] = []
+    status["rf_mode"] = 0
+    status["active"] = 0
+    with open(jsonStatusTempFile, "w") as f:
+        f.write(json.dumps(status))
+    if os.path.isfile(jsonStatusTempFile):
+        os.rename(jsonStatusTempFile, jsonStatusFile)
 
     print "\nDone."
 

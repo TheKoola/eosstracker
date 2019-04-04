@@ -50,7 +50,7 @@ $config = readconfiguration();
         chart = c3.generate({
             bindto: '#chart1',
             size: { width: 800, height: 350 },
-            data: { type: 'area', json: jsondata, xs: columns, xFormat: '%H:%M:%S'  },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             grid: { x: { show: true }, y: { show: true } }
             //grid: { x: { show: true }, y: { show: true } }

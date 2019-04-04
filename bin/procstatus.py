@@ -26,7 +26,7 @@ import os
 import json
 
 myprocname = os.path.basename(sys.argv[0].lower()).split(".")[0]
-sessionlogfile = "/eosstracker/logs/start_session.log"
+daemonstatusfile = "/eosstracker/www/daemonstatus.json"
 
 listOfProcesses = list()
 
@@ -55,23 +55,21 @@ for proc in psutil.process_iter():
 for p in procstatus:
     isrunning += p["status"]
 
-a = {"antennas": [], "rf_mode": 0}
+# Default status
+a = {"antennas": [], "rf_mode": 0, "active": 0}
 
-# Only read the log file if all the processes are running...
-# Get the JSON output from the most recent start.
+# Get the JSON status output from the most recent invocation of habtracker-daemon.py
 try:
-    for line in open(sessionlogfile).readlines():
-        if line.rstrip().startswith("JSON:"):
-            a = json.loads(line.rstrip().split("JSON:")[1])
+    with open(daemonstatusfile) as json_data:
+        a = json.load(json_data)
 except Exception as err:
     pass
 
-
+# Build the status object
 status = {}
 status["processes"] = procstatus
 status.update(a)
 
 
-# this is the process status
-#print json.dumps(procstatus)
+# Print out JSON for the status
 print json.dumps(status)
