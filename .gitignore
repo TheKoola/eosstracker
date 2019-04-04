@@ -7,5 +7,6 @@ lost+found
 www/nodeid.txt
 etc/*
 www/configuration
-www/gpsstatus.json
+www/gpsstatus.json*
+www/daemonstatus.json*
 bin/*.pyc
