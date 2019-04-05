@@ -211,7 +211,7 @@
     function addFlight() {
         var flightid = document.getElementById("newflightid").value;
         var notes = document.getElementById("newflightnotes").value;
-        var monitoring = (document.getElementById("newflightmonitoring").checked == "true" ? "t" : "f");
+        var monitoring = (document.getElementById("newflightmonitoring").checked == true ? "t" : "f");
         var newflightid = document.getElementById("newflightid");
         var beacon1 = document.getElementById("beacon1_call");
         var beacon1_desc = document.getElementById("beacon1_description");
