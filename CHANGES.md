@@ -70,6 +70,9 @@ added to the database properly.  The first few lines were getting skipped.
 
 - Updated the way the habtracker-daemon status was being saved to create a file, daemonstatus.json.  Which fixes some latency issues in getting the daemon's status updated within various sections on web pages."
 
+- Fixed an issue where the "Tracking" checkbox wasn't being honored when adding a new flight.
+
+
 ----------
 
 ## Version 1.0 -- February 2019 ##
