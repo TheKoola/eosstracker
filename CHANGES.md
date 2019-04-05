@@ -66,7 +66,7 @@ added to the database properly.  The first few lines were getting skipped.
 
 - Fixed an issue where the FM demodulation was using a maximum deviation of 2.5KHz which is a bit too small if systems are transmitting with a higher deviation.  This fix changes the max deviation for FM demodulation.
 
-- Corrected an issue with the Performance graph with how it was splitting out packet counts for RF vs. Internet."
+- Corrected an issue with the Performance graph with how it was splitting out packet counts for RF vs. Internet.
 
 - Updated the way the habtracker-daemon status was being saved to create a file, daemonstatus.json.  Which fixes some latency issues in getting the daemon's status updated within various sections on web pages.
 
