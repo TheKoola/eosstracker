@@ -52,10 +52,12 @@ include $documentroot . '/common/functions.php';
     else
         $formerror = true;
 
-    if (isset($_GET["monitoring"]))
-        $active = "t";
-    else
-        $active = "f";
+    if (isset($_GET["monitoring"])) {
+        if ($_GET["monitoring"] == "t")
+            $active = "t";
+        else
+            $active = "f";
+    }
 
     if ($flightid == "" || $description == "" || $launchsite == "")
         $formerror = true;
