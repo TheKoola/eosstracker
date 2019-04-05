@@ -68,7 +68,7 @@ added to the database properly.  The first few lines were getting skipped.
 
 - Corrected an issue with the Performance graph with how it was splitting out packet counts for RF vs. Internet."
 
-- Updated the way the habtracker-daemon status was being saved to create a file, daemonstatus.json.  Which fixes some latency issues in getting the daemon's status updated within various sections on web pages."
+- Updated the way the habtracker-daemon status was being saved to create a file, daemonstatus.json.  Which fixes some latency issues in getting the daemon's status updated within various sections on web pages.
 
 - Fixed an issue where the "Tracking" checkbox wasn't being honored when adding a new flight.
 
