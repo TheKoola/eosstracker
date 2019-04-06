@@ -817,7 +817,7 @@ def direwolf(configfile="", logfile="", e = None):
         return -1
 
     # The command string and arguments for running direwolf
-    df_command = [df_binary, "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
+    df_command = [df_binary, "-d", "u", "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
 
     try:
         # We open the logfile first, for writing
@@ -1185,11 +1185,12 @@ def main():
                 k += 1
 
             # Create Direwolf configuration file
-            #if callsign == "E0SS":
             if configuration["igating"] == "false" and configuration["beaconing"] == "false":
                 filename = createDirewolfConfig(str(configuration["callsign"]) + "02", direwolfFreqList, configuration)
+                status["direwolfcallsign"] = str(configuration["callsign"]) + "02"
             else:
                 filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
+                status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
             logfile = "/eosstracker/logs/direwolf.out"
 
@@ -1199,6 +1200,7 @@ def main():
             processes.append(dfprocess)
         else:
             status["rf_mode"] = 0
+            status["direwolfcallsign"] = ""
            
         status["antennas"] = antennas 
         status["igating"] = configuration["igating"]

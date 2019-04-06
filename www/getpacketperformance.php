@@ -36,6 +36,7 @@
     $ray["active"] = 0;
     $ray["rf_mode"] = 0;
     $ray["timezone"] = $config["timezone"];
+    $ray["direwolfcallsign"] = $config["callsign"];
 
     $d = mktime(00, 00, 00, 1, 1, 2000);
     $ray["starttime"] = date("Y-m-d H:i:s", $d);
@@ -51,6 +52,8 @@
             $status["starttime"] = $ray["starttime"];
         if (!array_key_exists("timezone", $status))
             $status["timezone"] = $ray["timezone"];
+        if (!array_key_exists("direwolfcallsign", $status))
+            $status["direwolfcallsign"] = $ray["direwolfcallsign"];
     }
         
     # if the habtracker-daemon is not running then don't return any rows...technically we could return rows, but we dont know 
@@ -91,13 +94,10 @@
         return 0;
     }
 
-    if ($config["callsign"] == "")
+    if ($status["direwolfcallsign"] == "")
         $mycallsign = "E0SS";
     else {
-        if ($config["ssid"] == "")
-            $mycallsign = $config["callsign"];
-        else 
-            $mycallsign = $config["callsign"] . "-" . $config["ssid"];
+        $mycallsign = $status["direwolfcallsign"];
     }
 
 
