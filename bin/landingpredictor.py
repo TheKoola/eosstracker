@@ -202,9 +202,7 @@ def landingPredictor(altitude_floor, configuration):
                                    and ST_Y(a.location2d) != 0 
                                    and a.altitude > 0
                                    and a.callsign = %s
-                                   --and a.tm > now()::date
-                                   and a.tm > '4-6-2019 06:00:00'
-                                   and a.tm < '4-6-2019 06:25:00'
+                                   and a.tm > now()::date
         
                                    order by 
                                    thetime asc
