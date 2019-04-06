@@ -202,7 +202,9 @@ def landingPredictor(altitude_floor, configuration):
                                    and ST_Y(a.location2d) != 0 
                                    and a.altitude > 0
                                    and a.callsign = %s
-                                   and a.tm > now()::date
+                                   --and a.tm > now()::date
+                                   and a.tm > '4-6-2019 06:00:00'
+                                   and a.tm < '4-6-2019 06:25:00'
         
                                    order by 
                                    thetime asc
@@ -267,9 +269,10 @@ def landingPredictor(altitude_floor, configuration):
 
                 # Loop through the ascent rates heard thus far until we find a value where the ascent rate (ft/s) is > 5.  This eliminates
                 # those early packets from the beacons prior to actual launch...we don't want those.
+                loop_limit = ascent_rates.shape[0] - 1
                 loop_counter = 0
                 if ascent_rates.shape[0] > 0:
-                    while ascent_rates[loop_counter, 3] < 5:
+                    while ascent_rates[loop_counter, 3] < 5 and loop_counter < loop_limit:
                         loop_counter += 1
                 
                 if loop_counter > 0:
