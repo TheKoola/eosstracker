@@ -226,53 +226,41 @@ include $documentroot . '/common/header.php';
     function getgps() {
         $.get("getgps.php", function(data) {
             var jsonData = JSON.parse(data);
-	    var gpsfix;
+            var gpsfix;
 
-	    if (jsonData.mode == 0)
-		gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ NO FIX ]</mark>";
-	    else if (jsonData.mode == 1)
-		gpsfix = "<mark style=\"background-color: yellow; font-variant: small-caps; font-size: .9em;\">[ 2D FIX ]</mark>";
-	    else if (jsonData.mode == 3)
-		gpsfix = "<mark style=\"background-color: lightgreen; font-variant: small-caps; font-size: .9em;\">[ 3D FIX ]</mark>";
-	    else
-		gpsfix = "n/a";
+            if (jsonData.mode == 0)
+                gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ NO FIX ]</mark>";
+            else if (jsonData.mode == 1)
+                gpsfix = "<mark style=\"background-color: yellow; font-variant: small-caps; font-size: .9em;\">[ 2D FIX ]</mark>";
+            else if (jsonData.mode == 3)
+                gpsfix = "<mark style=\"background-color: lightgreen; font-variant: small-caps; font-size: .9em;\">[ 3D FIX ]</mark>";
+            else
+                gpsfix = "n/a";
 
-	    //{"status": 0, "satellites": [{"snr": 17, "prn": 1, "elevation": 11, "used": false, "azimuth": 130}, {"snr": 21, "prn": 4, "elevation": 43, "used": false, "azimuth": 194}, {"snr": 17, "prn": 5, "elevation": 3, "used": false, "azimuth": 279}, {"snr": 26, "prn": 7, "elevation": 71, "used": true, "azimuth": 86}, {"snr": 29, "prn": 8, "elevation": 42, "used": true, "azimuth": 53}, {"snr": 19, "prn": 9, "elevation": 28, "used": true, "azimuth": 182}, {"snr": 13, "prn": 11, "elevation": 36, "used": true, "azimuth": 122}, {"snr": 18, "prn": 13, "elevation": 17, "used": false, "azimuth": 319}, {"snr": 21, "prn": 17, "elevation": 12, "used": true, "azimuth": 201}, {"snr": 23, "prn": 18, "elevation": 19, "used": true, "azimuth": 103}, {"snr": 0, "prn": 23, "elevation": 3, "used": false, "azimuth": 164}, {"snr": 20, "prn": 27, "elevation": 13, "used": true, "azimuth": 40}, {"snr": 26, "prn": 28, "elevation": 49, "used": true, "azimuth": 268}, {"snr": 20, "prn": 30, "elevation": 66, "used": true, "azimuth": 323}, {"snr": 32, "prn": 135, "elevation": 36, "used": true, "azimuth": 220}, {"snr": 30, "prn": 138, "elevation": 44, "used": true, "azimuth": 184}], "speed_mph": 1.0, "mode": 3, "lat": 39.348804833, "altitude": 6684.0, "lon": -104.797621667, "utc_time": "2019-02-21T22:28:38.000Z"}
-	    //
-
-	    var theDate = jsonData.utc_time;
-	    theDate = theDate.replace(/T/g, " "); 
-	    theDate = theDate.replace(/.[0]*Z$/g, ""); 
-	    //$("#gpsdata").html("<pre style=\"font-size: 1.1em; font-family: font-family:  'Lucida Console', Monaco, monospace;\">" 
-	    var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
-		    + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix+ "</td></tr></table>";
- 
-	    var i = 0;
+            var theDate = jsonData.utc_time;
+            theDate = theDate.replace(/T/g, " "); 
+            theDate = theDate.replace(/.[0]*Z$/g, ""); 
+            var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr></table>";
+     
+            var i = 0;
             var satellites = jsonData.satellites;
-	    //var satellite_html = "<pre style=\"font-size: 1.1em; font-family: font-family:  'Lucida Console', Monaco, monospace;\">";
-	    //var satellite_html = "<table class=\"packetlist\"cellpadding=0 cellspacing=0 border=0><tr><th class=\"packetlistheader\">PRN:</th><th class=\"packetlistheader\">Elev:</th><th class=\"packetlistheader\">Azim:</th><th class=\"packetlistheader\">SNR:</th><th class=\"packetlistheader\">Used:</th></tr>"; 
-	    var satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
-	    for (i = 0; i < satellites.length; i++) {
-                //satellite_html = satellite_html + "<tr><td class=\"packetlist\">" + satellites[i].prn + "</td><td class=\"packetlist\">" + satellites[i].elevation + "</td><td class=\"packetlist\">" + satellites[i].azimuth + "</td><td class=\"packetlist\">" + satellites[i].snr + "</td><td class=\"packetlist\">" + (satellites[i].used == true ? "y" : "n") + "</td></tr>";
-                satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
-	    }
-	    
-	    satellite_html = satellite_html + "</table>";
+            var satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
+            for (i = 0; i < satellites.length; i++) {
+                    satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
+            }
+            
+            satellite_html = satellite_html + "</table>";
 
-	    if (satellites.length > 0)
-		gpshtml = gpshtml + satellite_html;
-    	    //    $("#satellites").html(satellite_html);
-	    //else
-    	    //    $("#satellites").html("n/a");
-	    $("#gpsdata").html(gpshtml);
-
-
-	});
+            if (satellites.length > 0)
+            gpshtml = gpshtml + satellite_html;
+            $("#gpsdata").html(gpshtml);
+   	    });
     }
 
 
