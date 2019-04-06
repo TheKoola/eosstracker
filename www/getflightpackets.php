@@ -30,6 +30,32 @@
 
     $config = readconfiguration();
 
+    # read in the status JSON file from the habtracker-daemon
+    $ray = array();
+    $ray["active"] = 0;
+    $ray["rf_mode"] = 0;
+    $ray["timezone"] = $config["timezone"];
+    $ray["direwolfcallsign"] = $config["callsign"];
+
+    $d = mktime(00, 00, 00, 1, 1, 2000);
+    $ray["starttime"] = date("Y-m-d H:i:s", $d);
+    $defaultStatusJSON = json_encode($ray);
+
+    $statusJsonFile = "daemonstatus.json";
+    $s = file_get_contents($documentroot . "/" . $statusJsonFile);
+    if ($s === false) 
+        $status = $ray;
+    else {
+        $status = json_decode($s, true);
+        if (!array_key_exists("starttime", $status))
+            $status["starttime"] = $ray["starttime"];
+        if (!array_key_exists("timezone", $status))
+            $status["timezone"] = $ray["timezone"];
+        if (!array_key_exists("direwolfcallsign", $status))
+            $status["direwolfcallsign"] = $ray["direwolfcallsign"];
+    }
+
+
     if (isset($_GET["flightid"])) {
         $get_flightid = $_GET["flightid"];
     }
@@ -275,7 +301,8 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         foreach ($c_rev as $row) {
             if ($i >= 10)
                 break;
-            $rf = preg_match('/qAO,.*:.*/i', $row[3]);
+            $pattern = '/qAO,' . $status["direwolfcallsign"] . '*:.*/i';
+            $rf = preg_match($pattern, $row[3]);
             if ($rf == true)
                 $lastpath = $lastpath . "R";
             else
