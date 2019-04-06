@@ -72,6 +72,8 @@ added to the database properly.  The first few lines were getting skipped.
 
 - Fixed an issue where the "Tracking" checkbox wasn't being honored when adding a new flight.
 
+- Fixed an issue with the landing predictor function in that an initial loop was allowed to run unchecked causing landing predictions to no longer run.
+
 
 ----------
 
