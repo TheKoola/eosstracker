@@ -274,8 +274,13 @@ def landingPredictor(altitude_floor, configuration):
                         loop_counter += 1
                 
                 if loop_counter > 0:
+                    # We trim off those packets from the beginning of the flight that don't matter.  Only want to keep those packets from just before
+                    # the balloon is launched (aka the altitude starts to rise).  If this flight has yet to start ascending, then this array will only have 
+                    # one two packets.
                     ascent_rates = ascent_rates[(loop_counter-1):,0:]
+
                     # ascent_rates columns: altitude, latitude, longitude, elevation change rate , latitude change rate, longitude change rate
+                    # This sets the first packet for our ascent_rates array to have the same altitude, latitude, and longitude change rates.
                     ascent_rates[0,3] = ascent_rates[1,3]
                     ascent_rates[0,4] = ascent_rates[1,4]
                     ascent_rates[0,5] = ascent_rates[1,5]
