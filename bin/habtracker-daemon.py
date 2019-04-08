@@ -817,7 +817,7 @@ def direwolf(configfile="", logfile="", e = None):
         return -1
 
     # The command string and arguments for running direwolf
-    df_command = [df_binary, "-d", "u", "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
+    df_command = [df_binary, "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
 
     try:
         # We open the logfile first, for writing
