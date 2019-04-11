@@ -610,17 +610,17 @@ def aprsFilterThread(callsign, a, r, e):
             #print "Filter now: ", a.filter
 
     except (StopIteration, GracefulExit, KeyboardInterrupt, SystemExit): 
-        pass
+        print "Aprsc filter thread ended"
 
 
 
 ##################################################
 # Process for connecting to APRS-IS
 ##################################################
-def aprsTapWatchDog(a, e):
-    e.wait()
-    print "Watchdog closing APRS-IS tap..."
-    raise StopIteration("telling aprslib to stop")
+#def aprsTapWatchDog(a, e):
+#    e.wait()
+#    print "Watchdog closing APRS-IS tap..."
+#    raise StopIteration("telling aprslib to stop")
 
 
 ##################################################
@@ -670,14 +670,15 @@ def aprsTapProcess(callsign, radius, e):
         aprsfilter.setDaemon(True)
         aprsfilter.start()
 
-        watchdog = th.Thread(name="APRS-IS Tap Watchdog", target=aprsTapWatchDog, args=(ais, e))
-        watchdog.setDaemon(True)
-        watchdog.start()
+        #watchdog = th.Thread(name="APRS-IS Tap Watchdog", target=aprsTapWatchDog, args=(ais, e))
+        #watchdog.setDaemon(True)
+        #watchdog.start()
 
         # The consumer function blocks forever, calling the writeToDatabase function upon receipt of each APRS packet
         ais.consumer(writeToDatabase, blocking=True, raw=True)
             
-    except (StopIteration, aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
+    #except (StopIteration, aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
+    except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
         print "Closing APRS Tap: ", error
         ais.close()
         tapcur.close()
@@ -693,7 +694,7 @@ def aprsTapProcess(callsign, radius, e):
         tapcur.close()
         tapconn.close()
         ais.close()
-        print "aprsTap ended 2"
+        print "aprsTap ended"
 
 
 ##################################################
@@ -933,8 +934,8 @@ def aprsc(configfile, e):
         p = sb.Popen(aprsc_command)
         
         # Wait for it to finish
-        #p.wait()
-        e.wait()
+        p.wait()
+        #e.wait()
         if p.poll() is None:
             print "aprsc is still running..."
             killem = ["sudo", "pkill", "aprsc"]
@@ -1267,14 +1268,24 @@ def main():
         for p in processes:
             p.join()
 
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
-        print "Setting stop event..."
-        stopevent.set()
+    except (KeyboardInterrupt): 
+        # The KeyboardInterrupt event is caught by all of the individual threads/processes so we just need to wait for them to finish
         for p in processes:
             print "Waiting for [%s] %s to end..." % (p.pid, p.name)
             p.join()
 
-    # Save the operating mode and status to a JSON file...as basically empty as we're now shuttingn down
+    except (GracefulExit, SystemExit): 
+        # Set this event to be as graceful as we can for shutdown...
+        print "Setting stop event..."
+
+        stopevent.set()
+        # For catching a kill signal, we need to tell the individual processes to terminate
+        for p in processes:
+            print "Waiting for [%s] %s to end..." % (p.pid, p.name)
+            p.terminate()
+            p.join()
+
+    # Save the operating mode and status to a JSON file...as basically empty as we're now shutting down
     jsonStatusFile = "/eosstracker/www/daemonstatus.json"
     jsonStatusTempFile = "/eosstracker/www/daemonstatus.json.tmp"
     status = {}
