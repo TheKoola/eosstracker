@@ -57,12 +57,11 @@ cp -pa /tmp/eosstracker/.gitignore /eosstracker
 
 su eosstracker -c "git checkout -- LICENSE"
 su eosstracker -c "git checkout -- README.md"
-su eosstracker -c "git checkout -- doc/EOSS-Install-PPA.md"
-su eosstracker -c "git checkout -- doc/EOSS-SDR-Tracker-WiFi.md"
-su eosstracker -c "git checkout -- etc/README"
-su eosstracker -c "git checkout -- logs/.gitignore"
-su eosstracker -c "git checkout -- logs/README"
-su eosstracker -c "git checkout -- sql/eoss_specifics.sql"
+su eosstracker -c "git checkout -- doc"
+su eosstracker -c "git checkout -- etc"
+su eosstracker -c "git checkout -- logs"
+su eosstracker -c "git checkout -- sql"
+su eosstracker -c "git checkout -- sbin"
 su eosstracker -c "git checkout -- cleanandstage.bash"
 su eosstracker -c "git pull"
 
