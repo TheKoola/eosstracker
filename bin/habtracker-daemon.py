@@ -646,10 +646,24 @@ def aprsTapProcess(callsign, radius, e):
         # ...see the getAPRSFilter function
         ais.set_filter(getAPRSFilter(radius, callsign))
  
-        # wait for 5 seconds to give aprsc time to start
-        e.wait(5)
+        # Try to connect to the locally running aprsc instance...we attempt multiple times before giving up.
+        trycount = 0
+        while trycount < 5:
+            try:
+                # wait for 5 seconds before trying to connect
+                e.wait(5)
         
-        ais.connect()
+                # Try to connect to aprsc
+                ais.connect()
+
+                # If connection was successful, then break out of this loop
+                print "Aprsc tap connection to local aprsc successful"
+                break
+            except aprslib.ConnectionError as error:
+                print "Aprsc tap error connecting to local aprsc, attempt #", trycount, ":  ", error
+
+            # Increment trycount each time through the loop
+            trycount += 1
 
         # This is the thread which updates the filter used with the APRS-IS connectipon
         aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ais, radius, e))
