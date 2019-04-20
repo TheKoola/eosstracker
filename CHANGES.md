@@ -1,7 +1,7 @@
 # Revision History #
 
 
-## Version 1.1 -- currently under development ##
+## Version 1.1 ##
 
 
 ### New Features: ###
