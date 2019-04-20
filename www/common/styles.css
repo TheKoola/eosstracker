@@ -72,7 +72,31 @@ table.packetlist {
     padding:  0px;
 }
 
+table.trackerlist {
+    text-align: left;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin: 0px;
+    padding:  0px;
+}
+
 .packetlist {
+    text-align: left;
+    /*white-space: nowrap;*/
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+}
+
+.trackerlist {
     text-align: left;
     /*white-space: nowrap;*/
     white-space: normal;
@@ -117,6 +141,23 @@ td.packetlistright {
     background-color: lightsteelblue;
 }
 
+.trackerlistheader {
+/*    color:  #d4b377;*/
+    color: white;
+    text-decoration:none;
+    /*white-space: nowrap;*/
+    white-space: normal;
+    word-wrap: break-word;
+    font-variant:  small-caps;
+    font-weight:  normal;
+    border:  solid 1px black;
+    /*background-color: #1f2127;*/
+    background-color: #2460f7;
+    background-color: #939cad;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
 
 .packetlistheader {
 /*    color:  #d4b377;*/

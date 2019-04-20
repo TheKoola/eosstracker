@@ -240,6 +240,31 @@ div.lowerinstrumentpanel {
 }
 
 
+.trackerlist {
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1em;
+    width:  auto;
+}
+
+.trackerlistheader {
+    color:  white;
+    text-decoration:none;
+    white-space: normal;
+    font-variant:  small-caps;
+    border:  solid 1px black;
+    background-color: #0074d9;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
 
 .packetlist {
     text-align: left;
@@ -267,6 +292,7 @@ td.packetlistright {
     padding-left:  5px;
     font-size:  .9em;
 }
+
 
 
 
