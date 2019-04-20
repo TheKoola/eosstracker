@@ -1,7 +1,7 @@
 # Revision History #
 
 
-## Version 1.1 ##
+## Version 1.1 -- April 2019 ##
 
 
 ### New Features: ###
