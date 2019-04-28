@@ -76,7 +76,9 @@ Once that is complete, enter the command:
 This will tell the tracker computer to pull down the latest list of software
 from each package archive it knows about, including the PPA you just added.
 
-Finally, the first time you add the PPA, you need to install the `eosstracker` package.  This will add it to the list of packages that are installed on your machine.  Enter the command:
+Finally, the first time you add the PPA, you need to install the `eosstracker`
+package.  This will add it to the list of packages that are installed on your
+machine.  Enter the command:
 
 `sudo apt-get install eosstracker`
 
