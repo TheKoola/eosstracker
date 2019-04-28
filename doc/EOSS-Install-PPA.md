@@ -1,7 +1,7 @@
 # EOSS SDR Tracker Personal Package Archive
 
 Notes by Jeff N2XGL,
-Version 1.0, Dated 2019-02-10
+Version 1.1, Dated 2019-04-28
 
 ## Upgrading your SDR Tracker to the EOSS PPA
 
