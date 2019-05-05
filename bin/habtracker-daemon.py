@@ -1098,7 +1098,7 @@ def main():
 
     if configuration["igating"] == "true":
         if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
-            print "Inocorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
+            print "Incorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
             configuration["igating"] = "false"
 
 
@@ -1131,12 +1131,12 @@ def main():
  
         print "Number of SDRs: ", i
 
-        #  RF mode:  
+        #  Online-only mode:  
         #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
         #      - we don't start GnuRadio processes
         #      - we don't start Direwolf
         #   
-        #  Online-only mode: 
+        #  RF mode: 
         #      - we do start aprsc, and connect in "read-only" mode (unless, future-tense here, we want to upload packets to the internet)
         #      - we do start GnuRadio processes
         #      - we do start Direwolf and have it connect to the aprsc instance via "localhost" 
@@ -1146,7 +1146,7 @@ def main():
         # We always append "01" to the callsign to ensure that it's unique for APRS-IS
         aprsc_configfile = "/opt/aprsc/etc/tracker-aprsc.conf"
 
-        # This generates a random number to append to the callsign and pads to such that the server ID is always 9 characters in length
+        # This generates a random number to append to the callsign and pads it such that the server ID is always 9 characters in length
         numRandomDigits = 9 - len(configuration["callsign"])
         aprscServerId = str(configuration["callsign"]) + str(random.randint(5, 10 ** numRandomDigits - 1)).zfill(numRandomDigits)
 
@@ -1164,16 +1164,13 @@ def main():
 
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
-            # For the first SDR dongle found, start a separate GnuRadio listening process
-            # We only want to start a single GnuRadio process so that we're only going to use the first USB dongle present. This
-            # will prevent us from consuming all USB sticks attached to a system.
+            # For each SDR dongle found, start a separate GnuRadio listening process
             k = 0
-
             while k < i:
 
                 print "Using SDR:  ", sdrs[k]
-
                 status["rf_mode"] = 1
+                
                 # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
                 freqlist = getFrequencies(k)
 
@@ -1201,14 +1198,18 @@ def main():
 
             # Create Direwolf configuration file
             if configuration["igating"] == "false" and configuration["beaconing"] == "false":
+                # If we're not igating or beaconing then for direwolf we use a callsign of the form: <MYCALL>02.  We append "02" to the end of it.
                 filename = createDirewolfConfig(str(configuration["callsign"]) + "02", direwolfFreqList, configuration)
                 status["direwolfcallsign"] = str(configuration["callsign"]) + "02"
             else:
+                # If we're igating and/or geaconing, then direwolf requires the user's actual callsign-ssid.  
                 filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
                 status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
+            # where we want stdout from direwolf output to go
             logfile = "/eosstracker/logs/direwolf.out"
 
+            # The direwolf process
             dfprocess = mp.Process(target=direwolf, args=(filename, logfile, stopevent))
             dfprocess.daemon = True
             dfprocess.name = "Direwolf"
@@ -1225,10 +1226,6 @@ def main():
         ts = datetime.datetime.now()
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
-        print "\n"
-        print "JSON:", json.dumps(status)
-        print "\n"
-
 
         # This is the APRS-IS connection tap.  This is the process that is respoonsible for inserting APRS packets into the database
         aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), options.aprsisRadius, stopevent))
@@ -1263,7 +1260,6 @@ def main():
         if os.path.isfile(jsonStatusTempFile):
             os.rename(jsonStatusTempFile, jsonStatusFile)
     
-
         # Join each process (which blocks until the sub-process ends)
         for p in processes:
             p.join()
