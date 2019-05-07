@@ -1516,7 +1516,7 @@ function getTrackers() {
         printf ("       </div>");
         printf ("       <div class=\"rowbottom\">");
         printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_heading");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\"><span id=\"%s\"></span> deg</p></div></center>", $row['flightid'] . "_headingvalue");
+        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\"><span id=\"%s\"></span>&#176;</p></div></center>", $row['flightid'] . "_headingvalue");
         printf ("       </div>");
         printf ("   </div>");
         printf ("   <div class=\"column\">");
@@ -1540,14 +1540,14 @@ function getTrackers() {
         printf ("       <div class=\"rowtop\" style=\"padding-top: 3px;\">");
         printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\">&nbsp;</p></div></center>");
         printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_relativeelevationangle");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Angle: <span id=\"%s\"></span> deg</p></div></center>", $row['flightid'] . "_relativeelevationanglevalue");
+        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Angle: <span id=\"%s\"></span>&#176;</p></div></center>", $row['flightid'] . "_relativeelevationanglevalue");
         printf ("       </div>");
         printf ("   </div>");
         printf ("   <div class=\"column\" style=\"height: 235px;\">");
         printf ("       <div class=\"rowtop\" style=\"padding-top:  3px;\">");
-        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\">Hdng: <span id=\"%s\"></span> deg</p></div></center>", $row['flightid'] . "_myheadingvalue");
+        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\">Hdng: <span id=\"%s\"></span>&#176;</p></div></center>", $row['flightid'] . "_myheadingvalue");
         printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_relativebearing");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Brng: <span id=\"%s\"></span> deg</p></div></center>", $row['flightid'] . "_relativebearingvalue");
+        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Brng: <span id=\"%s\"></span>&#176;</p></div></center>", $row['flightid'] . "_relativebearingvalue");
         printf ("       </div>");
         printf ("   </div>");
 //        printf ("   <center><div class=\"readoutbottom\" style=\"width: 360px;\"><p class=\"instrumentvalue\" style=\"width:  360px;\">Distance: <span id=\"%s\"></span> &nbsp; B. Coords: <span id=\"%s\"</span></p></div></center>", $row['flightid'] . "_relativepositiondistance", $row['flightid'] . "_relativeballooncoords");
