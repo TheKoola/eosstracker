@@ -182,19 +182,22 @@
                 data: form_data,
                 type: 'post',
                 success: function(data, textStatus, jqXHR) {
-		    var jsonData = data;
+		            var jsonData = data;
 
-		    document.getElementById("iconsize").value = jsonData.iconsize;
-		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
-		    if (jsonData.plottracks == "on")
-			    document.getElementById("plottracks").checked = true;
-		    else
-			    document.getElementById("plottracks").checked = false;
-		    window.location.reload(true);
+		            document.getElementById("iconsize").value = jsonData.iconsize;
+		            document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
+		            if (jsonData.plottracks == "on")
+			            document.getElementById("plottracks").checked = true;
+		            else
+			            document.getElementById("plottracks").checked = false;
+                    document.getElementById("systemsettings_error").innerHTML = "Settings saved.";
+                    setTimeout(function() {
+                        document.getElementById("systemsettings_error").innerHTML = "";
+                    }, 3000);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
-	            alert("error: " + textStatus);
+	                alert("error: " + textStatus);
                 }
             });
 	    return false;
@@ -1481,17 +1484,15 @@ function getTrackers() {
             <div class="sidebar-pane" id="settings">
                 <h1 class="sidebar-header">Settings<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="section-header">Preferences:</p>
+                <p class="lorem">Changes to these settings affect all users and viewers of the map.</p>
                 <form id="userpreferences" action="preferences.php" name="userpreferences">
                 <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
 		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences"> minutes</td></tr>
                     <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" placeholder="nn"> pixels</td></tr>
                     <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
-                    <tr><td colspan=2><input type="submit" value="Submit" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"></td></tr>
+                    <tr><td colspan=2><input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"> &nbsp; <span id="systemsettings_error" style="background-color: yellow; color: black;"></span></td></tr>
                 </table>
                 </p>
-                <div id="error"></div>
-                <div id="error2"></div>
-                <div id="error3"></div>
                 <div style="position: absolute; bottom: 10px; width: 360px;">
                     <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
                     <p class="lorem">This is the version of the HAB Tracker application.</p>

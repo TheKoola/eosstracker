@@ -137,6 +137,11 @@ html, body, .map {
     color: gray;
 }
 
+.buttonstyle {
+    font: 1em  "Helvetica Neue", Arial, Helvetica, sans-serif;
+    color: black;
+}
+
 
 .flightlink {
     text-decoration:  none;
