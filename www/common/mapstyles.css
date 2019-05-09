@@ -138,8 +138,12 @@ html, body, .map {
 }
 
 .buttonstyle {
-    font: 1em  "Helvetica Neue", Arial, Helvetica, sans-serif;
+    font-size: 1.2em;
+    font-family:  "Helvetica Neue", Arial, Helvetica, sans-serif;
     color: black;
+    background-color: lightsteelblue;
+    text-align: center;
+    padding 10px;
 }
 
 
