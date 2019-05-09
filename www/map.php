@@ -1483,7 +1483,7 @@ function getTrackers() {
 
             <div class="sidebar-pane" id="settings">
                 <h1 class="sidebar-header">Settings<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
-                <p class="section-header">Preferences:</p>
+                <p class="section-header">Global Map Preferences:</p>
                 <p class="lorem">Changes to these settings affect all users and viewers of the map.</p>
                 <form id="userpreferences" action="preferences.php" name="userpreferences">
                 <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
