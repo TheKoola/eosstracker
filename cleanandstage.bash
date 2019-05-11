@@ -60,6 +60,7 @@ rm -f www/images/aprs/tocalls.bash
 rm -f www/images/aprs/tocalls.txt
 rm -f www/images/aprs/tocalls2.bash
 rm -f www/images/aprs/tocalls3.bash
+rm -f www/images/flightindicators/flightindicators
 rm -rf /eosstracker/.git
 cp -rpa /tmp/eosstracker/.git /eosstracker
 cp -pa /tmp/eosstracker/.gitignore /eosstracker
