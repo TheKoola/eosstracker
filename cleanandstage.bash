@@ -80,6 +80,7 @@ su eosstracker -c "git checkout -- cleanandstage.bash"
 su eosstracker -c "git checkout -- fixperms.bash"
 su eosstracker -c "git pull"
 
+./fixperms.bash
 
 echo
 echo
