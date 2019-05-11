@@ -63,6 +63,7 @@ rm -f www/images/aprs/tocalls3.bash
 rm -rf /eosstracker/.git
 cp -rpa /tmp/eosstracker/.git /eosstracker
 cp -pa /tmp/eosstracker/.gitignore /eosstracker
+chown -R eosstracker:eosstracker /eosstracker/.git*
 
 su eosstracker -c "git checkout -- LICENSE"
 su eosstracker -c "git checkout -- README.md"
