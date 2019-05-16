@@ -1495,7 +1495,6 @@ function getTrackers() {
                 </p>
                 <div style="position: absolute; bottom: 10px; width: 360px;">
                     <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
-                    <p class="lorem">This is the version of the EOSS Tracker application.</p>
                     <p class="lorem">Copyright (C) 2019, Jeff Deaton (N6BA)</p>
                 </div>
             </div>
