@@ -1427,7 +1427,7 @@ function getTrackers() {
                 <p class="logo" style="margin-top:  30px; margin-bottom: 0px;"><?php if (isset($logo)) printf("%s", $logo); else printf("No Logo"); ?><br>
                 </p>
                 <p style="margin-top: 0px; font-size: 1.1em; color:  #0052cc; font-style:  italic; text-shadow: 5px 5px 10px gray; margin-bottom:  30px;">Tracking High Altitude Balloons</p>
-                <p class="lorem">Welcome to the map utilty for the HAB Tracker application.  From these screens one can monitor positions of APRS objects and their repsective paths.</p>
+                <p class="lorem">Welcome to the map utilty for the EOSS Tracker application.  From these screens one can monitor positions of APRS objects and their repsective paths.</p>
                 <p class="section-header">System: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?>
                     <br>System Status: <span id="systemstatus"></span></p>
                 <table class="packetlist">
@@ -1495,7 +1495,8 @@ function getTrackers() {
                 </p>
                 <div style="position: absolute; bottom: 10px; width: 360px;">
                     <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
-                    <p class="lorem">This is the version of the HAB Tracker application.</p>
+                    <p class="lorem">This is the version of the EOSS Tracker application.</p>
+                    <p class="lorem">Copyright (C) 2019, Jeff Deaton (N6BA)</p>
                 </div>
             </div>
 
