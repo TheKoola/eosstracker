@@ -37,8 +37,8 @@
                 <tr valign="middle" align="center">
                     <td align="center"><a href="/index.php" class="navbar">Home</a></td>
                     <td align="center"><a href="/setup.php" class="navbar">Setup</a></td>
-                    <td align="center"><a href="/monitor.php" class="navbar">Performance</a></td>
                     <td align="center"><a href="/rawdata.php" class="navbar">Data</a></td>
+                    <td align="center"><a href="/dashboard.php" target="_blank" class="navbar">Dashboard</a></td>
                     <td align="center"><a href="/map.php" target="_blank" class="navbar">Map</a></td>
                     <td align="center"><a href="/about.php" class="navbar">About</a></td>
                 </tr>

@@ -25,12 +25,62 @@
 
 
 session_start();
-$pagetitle="APRS:  Raw Data";
+$pagetitle="APRS:  Data";
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
 include $documentroot . '/common/header.php';
+$config = readconfiguration();
 ?>
 <script>
+    // This grabs the session variables
+    var chart;
+
+    function coord_distance(lat1, lon1, lat2, lon2) {
+        var p = 0.017453292519943295;    // Math.PI / 180
+        var c = Math.cos;
+        var a = 0.5 - c((lat2 - lat1) * p)/2 + 
+                c(lat1 * p) * c(lat2 * p) * 
+                (1 - c((lon2 - lon1) * p))/2;
+
+        return Math.round((12742 * Math.asin(Math.sqrt(a)))*.6213712 * 100)/100; // 2 * R; R = 6371 km
+    }
+
+
+    function createchart (jsondata, columns) {
+        chart = c3.generate({
+            bindto: '#chart1',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+    
+
+    function updatechart (jsondata, columns) {
+         chart.load ({ json:  jsondata });
+    }
+    
+
+    function getchartdata(chartupdatefunction) {
+        $.get("getpacketperformance.php", function(data) {
+            var jsonOutput = JSON.parse(data);
+            var mycolumns = {};
+            var i = 0;
+            var thekeys = Object.keys(jsonOutput);
+            for (i = 0; i < thekeys.length; i++) {
+                if (! thekeys[i].startsWith("tm-")) {
+                    mycolumns[thekeys[i]] = "tm-" + thekeys[i];
+                }
+            }
+            //document.getElementById("debug1").innerHTML = JSON.stringify(mycolumns, null, 4);
+            //document.getElementById("debug2").innerHTML = flightlist;
+            chartupdatefunction(jsonOutput, mycolumns);
+        });
+    }
+
+    
     // This grabs the session variables
     var selectedFlight;
     var packetdata;
@@ -291,8 +341,6 @@ include $documentroot . '/common/header.php';
 
     }
 
-
-
     $(document).ready(function () {
         updatePacketsEvent = new CustomEvent("updatepackets");
         document.body.addEventListener("updatepackets", displaypackets, false);
@@ -310,8 +358,9 @@ include $documentroot . '/common/header.php';
         e.onpropertychange = e.oninput;
 
         initialize();
-	initializeDataSelection();
-        setInterval(getrecentdata, 5000);
+    	initializeDataSelection();
+        getchartdata(createchart);
+        setInterval(function() { getrecentdata(); getchartdata(updatechart); }, 5000);
     });
     
     
@@ -344,6 +393,18 @@ include $documentroot . '/common/header.php';
                 </table>
                 </form>
             </p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                Packet Performance 
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+   	        <p class="normal-italic">These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
+            the RF packet count series shows the number of packets that were heard over RF that were <strong>not</strong> already known 
+            through an APRS-IS connection.
+            </p>
+            <p class="normal-black"><div id="chart1"></div></p>
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 Live APRS Packets
