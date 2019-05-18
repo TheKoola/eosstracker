@@ -10,3 +10,4 @@ www/configuration/config.txt
 www/gpsstatus.json*
 www/daemonstatus.json*
 bin/*.pyc
+www/audio/*.mp3
