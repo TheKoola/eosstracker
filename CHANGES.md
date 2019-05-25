@@ -2,8 +2,22 @@
 
 ## Version 1.2 - Under Development ##
 
-Under development.
+### New Features: ###
 
+- Added the ability to edit the list of frequencies used by beacons.  There is a new section on the Setup screen that allows for adding/deleting from this list of frequencies.  
+  In addition, it is now possible to specifically select 144.390 MHz as the frequency for a beacon.  
+
+- Added a new Dashboard feature that will pop-out a new browser pane that will display incoming packets in very large font.  This also allowed for consolidation 
+  of the performance graph onto the Data screen.
+
+
+### Bugs Fixed: ###
+
+- Updates to the flight instrument panel so that the units of degrees are properly displayed with the "&#176" symbol instead of "deg".
+
+- Updated copyright info so that it is properly displayed at the bottom of every page and is visible on the map.  Also added the GNU GPL reference to that footer section.
+
+- Adjustments to the Settings pane within the Map screen to allow for dynamic settings changes (instead of a page reload) when hitting the "Save Settings" button.  
 
 
 ## Version 1.1 - April 2019 ##
