@@ -13,7 +13,7 @@
 
 ### Bugs Fixed: ###
 
-- Updates to the flight instrument panel so that the units of degrees are properly displayed with the "&#176" symbol instead of "deg".
+- Updates to the flight instrument panel so that the units of degrees are properly displayed with the "˚" symbol instead of "deg".
 
 - Updated copyright info so that it is properly displayed at the bottom of every page and is visible on the map.  Also added the GNU GPL reference to that footer section.
 
