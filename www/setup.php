@@ -33,6 +33,7 @@ include $documentroot . '/common/header-setup.php';
 ?>
 <script>
 
+
     /************
      * toggle
      *
@@ -59,8 +60,9 @@ include $documentroot . '/common/header-setup.php';
         getFlights();
         getPredictions();
         getLaunchSites();
-	getTimeZones();
-	getConfiguration();
+        getFrequencies();
+	    getTimeZones();
+	    getConfiguration();
         var configuration_a = "#configurationSelectionLink";
         var configuration_l = "#configurationSelectionLinkSign";
         var configuration_e = "#configurationSelection";
@@ -91,6 +93,10 @@ include $documentroot . '/common/header-setup.php';
         var map_e = "#mapSelection";
         $(map_a).click({element: map_e, link: map_l }, toggle);
 
+        var freq_a = "#freqSelectionLink";
+        var freq_l = "#freqSelectionLinkSign";
+        var freq_e = "#freqSelection";
+        $(freq_a).click({element: freq_e, link: freq_l }, toggle);
     });
 
 
@@ -159,80 +165,35 @@ include $documentroot . '/common/header-setup.php';
                 <tr>
                     <td class="packetlist" style="text-align: center;">1</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon1" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
-                    <td class="packetlist"><select form"addnewflight_form" id="beacon1_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form"addnewflight_form" id="beacon1_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">2</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td>
-                    <td class="packetlist"><select form"addnewflight_form" id="beacon2_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form"addnewflight_form" id="beacon2_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">3</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon3" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
-                    <td class="packetlist"><select form"addnewflight_form" id="beacon3_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form"addnewflight_form" id="beacon3_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">4</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon4" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
-                    <td class="packetlist"><select form"addnewflight_form" id="beacon4_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form"addnewflight_form" id="beacon4_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">5</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon5" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
-                    <td class="packetlist"><select form"addnewflight_form" id="beacon5_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form"addnewflight_form" id="beacon5_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
@@ -250,16 +211,7 @@ include $documentroot . '/common/header-setup.php';
                 <tr><td class="packetlist"><input type="image" form="addnewbeacon_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addBeacon(); return false;" ></td>
                     <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_flightid"></td>
                     <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="addnewbeacon_call" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
-                    <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_frequency">
-                        <option value="144.340">144.340MHz</option>
-                        <option value="144.360">144.360MHz</option>
-                        <option value="144.905">144.905MHz</option>
-                        <option value="145.045">145.045MHz</option>
-                        <option value="145.535">145.535MHz</option>
-                        <option value="145.645">145.645MHz</option>
-                        <option value="145.710">145.710MHz</option>
-                        <option value="145.765">145.765MHz</option>
-                        </select>
+                    <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_frequency"></select>
                     </td> 
                     <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
                 </tr>
@@ -340,6 +292,42 @@ include $documentroot . '/common/header-setup.php';
             </p>
             <p class="normal-black">
                 <span id="launchsites"></span>
+            </p>
+            </div>
+
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                <a href="#freq" class="header" id="freqSelectionLink">(<span style="color: red;" id="freqSelectionLinkSign">+</span>) Frequencies</a>
+            </p>
+            <p class="normal-black"><span id="debug"></span></p>
+            <div id="freqSelection" style="display: none;">
+            <p class="normal-italic">
+                Use this section to manage the frequencies used for APRS beacons.  Added frequencies must be between 144MHz and 148MHz.  The standard North American 
+                APRS frequency of 144.390MHz is fixed and not editable.
+            </p>
+            <p class="normal-black" style="font-weight: bold;">
+                Add a New Frequency:
+            </p>
+            <p class="normal-black"><span id="addfrequencyerror"></span></p>
+            <p class="normal-black">
+                <form name="addnewfreq_form" id="addnewfreq_form">
+                <table class="packetlist" style="margin-left: 30px; width: 30%;" cellpadding=0 cellspacing=0 border=0>
+                <tr><th class="packetlistheader">Action</th><th class="packetlistheader" style="text-align: center;">Frequency</th></tr>
+                <tr><td class="packetlist"><input type="image" form="addnewfreq_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addFrequency(); return false;" ></td>
+                    <td class="packetlist" style="text-align: center;">
+                        <input type="text" form="addnewfreq_form" id="newfrequency" oninput="setCustomValidity('');" onchange="validateFrequency();"
+                            placeholder="14x.xxx" pattern="14[0-9]{1}\.[0-9]{1,3}" size="8" maxlength="7" name="newfrequency" autocomplete="off" 
+                            autocapitalize="off" spellcheck="false" autocorrect="off" required="required">
+                    </td>
+                </tr>
+                </table>
+                </form>
+            </p>
+            <p class="normal-black" style="font-weight: bold;">
+                Existing Frequencies:
+            </p>
+            <p class="normal-black">
+                <span id="frequencies"></span>
             </p>
             </div>
 

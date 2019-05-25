@@ -27,6 +27,167 @@
 *
 */
 
+    /*********
+     * This is a global variable that contains the list of frequencies.
+    *********/
+     var frequencies = [];
+
+
+    /***********
+    * validateFrequency function
+    *
+    * This function will add validate that the frequency entered is betwee 144MHz and 148MHz.
+    ***********/
+    function validateFrequency() {
+        var freq = document.getElementById("newfrequency");
+        var thefreq = freq.value * 10 / 10;
+
+        if (thefreq < 144 || thefreq > 148) {
+	        freq.setCustomValidity("Frequency range must be between 144MHz and 148MHz.");
+            return false;
+        }
+
+        if (thefreq == 144.390) {
+	        freq.setCustomValidity("The standard APRS frequency of 144.390MHz is already included within the system.");
+            return false;
+        }
+
+	    freq.setCustomValidity("");
+        return true;
+    }
+
+
+    /***********
+    * deleteFrequency function
+    *
+    * This function will delete the specified frequency.
+    ***********/
+    function deleteFrequency(freq) {
+        var retVal = confirm("This will delete the frequency, " + freq + ".   Are you sure?");
+        if (retVal == true)
+            $.get("deletefrequency.php?freq=" + freq, function(data) {
+                var jsonData = JSON.parse(data);
+
+                if (jsonData.result == 0)
+                    document.getElementById("addfrequencyerror").innerHTML = "<mark>" + jsonData.error + "</mark>";
+                else
+                    document.getElementById("addfrequencyerror").innerHTML = "";
+                getFrequencies();
+                getLaunchSites();
+                getPredictions();
+                getFlights();
+            });
+    }
+
+    /***********
+    * addFrequency function
+    *
+    * This function will add a new frequency.
+    ***********/
+    function addFrequency() {
+        var freq = document.getElementById("newfrequency");
+        var thefreq = freq.value;
+
+        //document.getElementById("addnewbeaconerror").innerHTML = flightid + ", " + freq + ", " + call + ", " + beacon_desc;
+        if (!freq.checkValidity()) {
+            throw freq.validationMessage;
+            return false;
+        }
+
+        $.get("addfrequency.php?freq=" + thefreq, function(data) {
+            var jsonData = JSON.parse(data);
+
+            if (jsonData.result == 0)
+                document.getElementById("addfrequencyerror").innerHTML = "<mark>" + jsonData.error + "</mark>";
+            else
+                document.getElementById("addfrequencyerror").innerHTML = "";
+            getFrequencies();
+            getLaunchSites();
+            getPredictions();
+            getFlights();
+            document.getElementById("newfrequency").value = "";
+        });
+ 
+    }
+
+
+    /***********
+    * getFrequencies function
+    *
+    * This function will get the list of frequencies.
+    ***********/
+    function getFrequencies() {
+        $.get("getfrequencies.php", function(data) {
+            var freqJson = JSON.parse(data);
+            var keys = Object.keys(freqJson);
+
+            //document.getElementById("errors").innerHTML = JSON.stringify(keys);
+
+            //Create a HTML Table element.
+            var tablediv = document.getElementById("frequencies");
+            var table = document.createElement("TABLE");
+            table.setAttribute("class", "packetlist");
+            //table.setAttribute("style", "width: 75%;");
+            tablediv.innerHTML = "";
+
+
+            // Create the header row
+            var headerRow = table.insertRow(-1);
+            var headerCell0 = headerRow.insertCell(-1);
+            var headerCell1 = headerRow.insertCell(-1);
+            headerCell0.setAttribute("class", "packetlistheader");
+            headerCell1.setAttribute("class", "packetlistheader");
+            headerCell1.setAttribute("style", "text-align: center;"); 
+            headerCell0.innerHTML = "Action";
+            headerCell1.innerHTML = "Frequency";
+            headerRow.appendChild(headerCell0);
+            headerRow.appendChild(headerCell1);
+
+
+            //Add the data rows.
+            frequencies = [];
+            $("#addnewbeacon_frequency").html("");
+            $("#beacon1_frequency").html("");
+            $("#beacon2_frequency").html("");
+            $("#beacon3_frequency").html("");
+            $("#beacon4_frequency").html("");
+            $("#beacon5_frequency").html("");
+            for (i = 0; i < keys.length; i++) {
+                var freq = freqJson[i].freq * 10 / 10;
+                frequencies.push(freq); 
+                $("#addnewbeacon_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+                $("#beacon1_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+                $("#beacon2_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+                $("#beacon3_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+                $("#beacon4_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+                $("#beacon5_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
+
+                // Create the row
+                var freqrow = table.insertRow(-1);
+                var freqcell0 = freqrow.insertCell(-1);
+                var freqcell1 = freqrow.insertCell(-1);
+
+                freqcell0.setAttribute("class", "packetlist");
+                freqcell1.setAttribute("class", "packetlist");
+                freqcell1.setAttribute("style", "text-align: center;"); 
+
+                // If this is 144.39, then we don't want to allow deletions.
+                if (freq == 144.390) {
+                    freqcell0.innerHTML = "Standard";
+                    freqcell0.setAttribute("style", "height: 22px;");
+                }
+                else 
+                    freqcell0.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"width: 22px; height: 22px;\" onclick=\'deleteFrequency(\"" + freq + "\")\'> &nbsp; ";
+                
+                freqcell1.innerHTML = freq.toFixed(3) + " MHz";
+                freqrow.appendChild(freqcell0);
+                freqrow.appendChild(freqcell1);
+
+            }
+            tablediv.appendChild(table);
+
+        });
+    }
 
     /***********
     * deleteLaunchSite function
@@ -44,6 +205,7 @@
                 else
                     document.getElementById("addlaunchsiteerror").innerHTML = "";
                 getLaunchSites();
+                getFrequencies();
                 getPredictions();
                 getFlights();
             });
@@ -74,6 +236,7 @@
             else
                 document.getElementById("addlaunchsiteerror").innerHTML = "";
             getLaunchSites();
+            getFrequencies();
             getPredictions();
             getFlights();
             document.getElementById("launchsite_name").value = "";
@@ -96,7 +259,6 @@
             var keys = Object.keys(siteJson);
 
             //document.getElementById("errors").innerHTML = JSON.stringify(keys);
-            //document.getElementById("errors").innerHTML = "Jeff was here";
 
             //Create a HTML Table element.
             var tablediv = document.getElementById("launchsites");
@@ -271,6 +433,7 @@
             getFlights();
             getPredictions();
             getLaunchSites();
+            getFrequencies();
             getTrackers();
             document.getElementById("newflightid").value = "";
             document.getElementById("newflightnotes").value = "";
@@ -422,7 +585,6 @@
                 var keys = Object.keys(flightsJson);
 
                 //document.getElementById("errors").innerHTML = JSON.stringify(keys);
-                //document.getElementById("errors").innerHTML = "Jeff was here";
 
                 //Create a HTML Table element.
                 var tablediv = document.getElementById("flights");
@@ -515,7 +677,7 @@
     
                         action.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"width: 22px; height: 22px;\" onclick=\'deleteBeacon(\"" + flight + "\", \"" + flightsJson[i].beacons[b].callsign + "\")\'> &nbsp; ";
                         call.innerHTML = flightsJson[i].beacons[b].callsign;
-                        freq.innerHTML = flightsJson[i].beacons[b].frequency;
+                        freq.innerHTML = flightsJson[i].beacons[b].frequency + " MHz";
                         desc.innerHTML = flightsJson[i].beacons[b].location;
                         
                         row.appendChild(action);
@@ -670,7 +832,6 @@
                 var keys = Object.keys(predictionJson);
 
                 //document.getElementById("errors").innerHTML = JSON.stringify(keys);
-                //document.getElementById("errors").innerHTML = "Jeff was here";
         
                 //Create a HTML Table element.
                 var tablediv = document.getElementById("predictiondata");
