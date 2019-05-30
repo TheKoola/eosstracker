@@ -128,7 +128,7 @@ include $documentroot . '/common/header-setup.php';
                 <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
                 <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Callsign</th><th class="packetlistheader">Notes</th><th class="packetlistheader">Team Assignment</th></tr>
                 <tr><td class="packetlist"><input type="image" form="addnewtracker_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addTracker(); return false;" ></td>
-                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="call" style="text-transform: uppercase;" pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="callsign" style="text-transform: uppercase;" pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
 
                     <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackernotes" size="15" maxlength="64" required="required"></td>
                     <td class="packetlist"><select form="addnewtracker_form" id="newtrackerteam"></select>
@@ -164,35 +164,45 @@ include $documentroot . '/common/header-setup.php';
                 <tr><td colspan=4 class="packetlist" style="background-color: lightsteelblue; text-align: center;">Beacons</td></tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">1</td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon1" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_call" placeholder="callsign" style="text-transform: uppercase;"  
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                        size="9" maxlength="9" name="newbeacon1" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon1_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">2</td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_call" placeholder="callsign" style="text-transform: uppercase;"  
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                        size="9" maxlength="9" name="newbeacon2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon2_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">3</td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon3" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_call" placeholder="callsign" style="text-transform: uppercase;"  
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                        size="9" maxlength="9" name="newbeacon3" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon3_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">4</td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon4" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_call" placeholder="callsign" style="text-transform: uppercase;"  
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                        size="9" maxlength="9" name="newbeacon4" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon4_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_description" placeholder="Description" size="15" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">5</td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="newbeacon5" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_call" placeholder="callsign" style="text-transform: uppercase;"  
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                        size="9" maxlength="9" name="newbeacon5" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon5_frequency"></select>
                     </td> 
                     <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_description" placeholder="Description" size="15" maxlength="64" ></td>
@@ -210,7 +220,11 @@ include $documentroot . '/common/header-setup.php';
                 <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Flight ID</th><th class="packetlistheader">Callsign</th><th class="packetlistheader">Frequency</th><th class="packetlistheader">Description</th></tr>
                 <tr><td class="packetlist"><input type="image" form="addnewbeacon_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addBeacon(); return false;" ></td>
                     <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_flightid"></td>
-                    <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_call" placeholder="call-xx" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}" size="9" maxlength="9" name="addnewbeacon_call" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                    <td class="packetlist">
+                        <input type="text" form="addnewbeacon_form" id="addnewbeacon_call" placeholder="callsign" style="text-transform: uppercase;"  
+                            pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
+                            size="9" maxlength="9" name="addnewbeacon_call" autocomplete="off" 
+                            autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_frequency"></select>
                     </td> 
                     <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
@@ -302,8 +316,8 @@ include $documentroot . '/common/header-setup.php';
             <p class="normal-black"><span id="debug"></span></p>
             <div id="freqSelection" style="display: none;">
             <p class="normal-italic">
-                Use this section to manage the frequencies used for APRS beacons.  Added frequencies must be between 144MHz and 148MHz.  The standard North American 
-                APRS frequency of 144.390MHz is fixed and not editable.
+                Use this section to manage the frequencies used for APRS beacons.  Added frequencies must be part of the 2m Ham band and between 144MHz and 146MHz.  
+                The standard North American APRS frequency of 144.390MHz is fixed and not editable.
             </p>
             <p class="normal-black" style="font-weight: bold;">
                 Add a New Frequency:

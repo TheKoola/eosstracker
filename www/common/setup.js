@@ -42,13 +42,24 @@
         var freq = document.getElementById("newfrequency");
         var thefreq = freq.value * 10 / 10;
 
-        if (thefreq < 144 || thefreq > 148) {
-	        freq.setCustomValidity("Frequency range must be between 144MHz and 148MHz.");
+        var min = Math.min(...frequencies, thefreq);
+        var max = Math.max(...frequencies, thefreq);
+        var range = max - min;
+
+        //document.getElementById("addfrequencyerror").innerHTML = "range:  " + range + ", min: " + min + ", max: " + max;
+
+        if (thefreq < 144 || thefreq > 146) {
+	        freq.setCustomValidity("Frequency range must be between 144MHz and 146MHz.");
             return false;
         }
 
         if (thefreq == 144.390) {
 	        freq.setCustomValidity("The standard APRS frequency of 144.390MHz is already included within the system.");
+            return false;
+        }
+
+        if (range > 2) {
+	        freq.setCustomValidity("The range of frequencies must be within 2MHz.");
             return false;
         }
 
