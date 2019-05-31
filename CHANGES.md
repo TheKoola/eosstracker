@@ -4,11 +4,13 @@
 
 ### New Features: ###
 
-- Added the ability to edit the list of frequencies used by beacons.  There is a new section on the Setup screen that allows for adding/deleting from this list of frequencies.  
+- Added the ability to edit the list of frequencies used by beacons.  There is a new section on the Setup screen that allows for adding/deleting from this list of frequencies.  They must be within 144MHz and 146MHz.
   In addition, it is now possible to specifically select 144.390 MHz as the frequency for a beacon.  
 
 - Added a new Dashboard feature that will pop-out a new browser pane that will display incoming packets in very large font.  This also allowed for consolidation 
   of the performance graph onto the Data screen.
+
+- Callsigns without an SSID are now allowed for beacons on a flight.  This was limited to the form of <callsign-ssid>, but this update allows for either form:  <callsign> or <callsign-ssid>.
 
 
 ### Bugs Fixed: ###
