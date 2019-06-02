@@ -14,7 +14,6 @@
 
 
 
-
 ### Bugs Fixed: ###
 
 - Updates to the flight instrument panel so that the units of degrees are properly displayed with the "˚" symbol instead of "deg".
