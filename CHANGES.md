@@ -13,6 +13,8 @@
 - Callsigns without an SSID are now allowed for beacons on a flight.  This was limited to the form of <callsign-ssid>, but this update allows for either form:  <callsign> or <callsign-ssid>.
 
 
+
+
 ### Bugs Fixed: ###
 
 - Updates to the flight instrument panel so that the units of degrees are properly displayed with the "˚" symbol instead of "deg".
