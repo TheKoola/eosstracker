@@ -736,7 +736,7 @@ function getTrackers() {
             lastposition = JSON.parse(data);
             initialize();
 
-	    getConfiguration();
+	        getConfiguration();
             buildGauges();
             buildCharts();
             createTheListener();

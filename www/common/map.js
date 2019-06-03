@@ -177,35 +177,32 @@
 		        (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
 
                     // bind the popup content to a popup object using our predefined CSS style
-    		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+    		        layer.bindPopup(html, {className:  'myPopupStyle'} );
 
 
                     var mappane;
                     var tipclass;
-                    var offset;
-		    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
                     if (objecttype == "balloon") {
                         mappane = "flightTooltipPane";
                         tipclass = "flightTooltipLabelStyle";
-                        theoffset = - (iconsize * 1.1 );
                     }
                     else if (objecttype == "balloonmarker") {
                         mappane = "flightTooltipPane";
                         tipclass = "flightBreadCrumbStyle";
-                        theoffset = -iconsize/1.45;
                     }
                     else {
                         mappane = "otherTooltipPane";
                         tipclass = "myTooltipLabelStyle";
-                        theoffset = -iconsize/1.3;
                     }
+
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center", offset: [0,theoffset], opacity: .9, pane: mappane }).openTooltip();
+                                //layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center", offset: [0,theoffset], opacity: .9, pane: mappane }).openTooltip();
+                                layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center",  opacity: .9, pane: mappane }).openTooltip();
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -251,30 +248,30 @@
                    if (feature.properties.label)
                        var markercolor = 'black';
 
-		   return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
-
+		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
                }
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
-                   var localiconsize = iconsize;
-                   var mappane = "otherStationsPane";
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize_center = Math.trunc(iconsize/2);
+                   var tipanchor = iconsize_center + 10;
+                   if (feature.properties.objecttype == "balloon")
+                       tipanchor += 5;
 
+	    	       var myIcon = L.icon({
+	    	           iconUrl: filename,
+        		       iconSize: [iconsize, iconsize],
+        		       iconAnchor: [iconsize_center, iconsize_center], 
+        		       popupAnchor: [0, -iconsize_center],
+        		       tooltipAnchor: [0, tipanchor]
+        		   }); 
+
+                   var mappane = "otherStationsPane";
                    if (feature.properties.objecttype == "balloon")
                        mappane = "flightPane";
 
-                   if (feature.properties.symbol) 
-                       if ((feature.properties.symbol.charAt(0) == '\/' && feature.properties.symbol.charAt(1) == 'O') || id.indexOf("_landing") >= 0) 
-                           localiconsize = iconsize;
-		   var myIcon = L.icon({
-		       iconUrl: filename,
-		       iconSize: [localiconsize, localiconsize],
-		       iconAnchor: [localiconsize/2, localiconsize/2],
-		       popupAnchor: [0, -localiconsize / 2],
-		       tooltipAnchor: [localiconsize/2, 0]
-		   }); 
-		   return L.marker(latlon, { icon: myIcon, pane: mappane, riseOnHover: true });
+		           return L.marker(latlon, { icon: myIcon, pane: mappane, riseOnHover: true });
                } 
            }
         }).on('update', function(ev) { updateActiveFlights(ev, this); });
@@ -325,6 +322,29 @@
             layer.setPopupContent(html, { className: 'myPopupStyle' });
             //updatelist.push(item.properties.callsign);
  
+            // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
+            if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
+               var filename;
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
+               else 
+                   filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
+               if (item.properties.objecttype == "balloon")
+                   tipanchor += 8;
+
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+               layer.setIcon(myIcon);
+            }
 
             // Check if we should update the tooltip contents...if this object has a tooltip or label defined...
             if (item.properties.tooltip && layer.getTooltip()) {
@@ -411,23 +431,26 @@
                     var id = feature.properties.id;
 
 
-		    html = "<strong>" + feature.properties.callsign + "</strong>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
-			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
-			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
+		            html = "<strong>" + feature.properties.callsign + "</strong>";
+        		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
+			              (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
+        			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
 
-		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+	        	    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
+                    // If this object has a tooltip or label defined...
+                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  That's because we'll use a "circleMarker" object 
+                    // instead of a bonfied marker with custom icon.
+                    var theoffset = [0, 0];
+                    if (feature.properties.objecttype == "balloonmarker")
+                        theoffset = [0, -12];
 
-                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
-
-                    // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: [0,-iconsize/1.3], opacity: .9, pane: "otherTooltipPane"}).openTooltip();
+                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: "otherTooltipPane"}).openTooltip();
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -440,7 +463,6 @@
            pointToLayer:  function (feature, latlon) {
                var filename;
                var id = feature.properties.id;
-               var localiconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
                var markercolor = 'navy';
 
                // Determine what the APRS symbol is for this object, then determine path to the corresponding icon file.
@@ -452,18 +474,24 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-		   return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+
+		           return cm;
                }
                
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var myIcon = L.icon({
-                       iconUrl: filename,
-                       iconSize: [localiconsize, localiconsize],
-                       iconAnchor: [localiconsize/2, localiconsize/2],
-                       popupAnchor: [0, -localiconsize / 2],
-                       tooltipAnchor: [localiconsize/2, 0]
-                   });
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize_center = Math.trunc(iconsize/2);
+                   var tipanchor = iconsize_center + 10;
+
+	    	       var myIcon = L.icon({
+	    	           iconUrl: filename,
+        		       iconSize: [iconsize, iconsize],
+        		       iconAnchor: [iconsize_center, iconsize_center], 
+        		       popupAnchor: [0, -iconsize_center],
+        		       tooltipAnchor: [0, tipanchor]
+        		   }); 
                    return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
                } 
            }
@@ -492,6 +520,28 @@
 
             // Update the popup content
             layer.setPopupContent(html, { className: 'myPopupStyle' });
+
+            // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
+            if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
+               var filename;
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
+               else 
+                   filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
+
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+               layer.setIcon(myIcon);
+            }
 
             // Check if we should update the tooltip contents...if this object has a tooltip or label defined...
             if (item.properties.tooltip && layer.getTooltip()) {
@@ -583,19 +633,18 @@
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
-               var localiconsize = iconsize;
+               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
 
-               if (feature.properties.symbol) 
-                   if ((feature.properties.symbol.charAt(0) == '\/' && feature.properties.symbol.charAt(1) == 'O') || id.indexOf("_landing") >= 0) 
-                       localiconsize = iconsize;
-               var myIcon = L.icon({
-                   iconUrl: filename,
-                   iconSize: [localiconsize, localiconsize],
-                   iconAnchor: [localiconsize/2, localiconsize/2],
-                   popupAnchor: [0, -localiconsize / 2],
-                   tooltipAnchor: [localiconsize/2, 0]
-               }); 
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+
                return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
            }
         }).on('update', function(ev) { updateLandingPredictions(ev, this); });
@@ -628,18 +677,39 @@
             layer.setPopupContent(html, { className: 'myPopupStyle' });
             //updatelist.push(item.properties.callsign);
 
+            // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
+            if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
+               var filename;
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
+               else 
+                   filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
+
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+               layer.setIcon(myIcon);
+            }
+
             // Check if we should update the tooltip contents...if this object has a tooltip or label defined...
             if (item.properties.tooltip && layer.getTooltip()) {
-                if (item.properties.label) {
-                    if (item.properties.label != "")
-                        layer.setTooltipContent(item.properties.label);
-                }
-                else {
-                    if (item.properties.tooltip != "")
-                        layer.setTooltipContent(item.properties.tooltip);
-                }
-            }
-   
+               if (item.properties.label) {
+                   if (item.properties.label != "")
+                       layer.setTooltipContent(item.properties.label);
+               }
+               else {
+                   if (item.properties.tooltip != "")
+                       layer.setTooltipContent(item.properties.tooltip);
+               }
+            } 
         }
     }
 
@@ -684,7 +754,8 @@
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: [0,-iconsize/1.2], opacity: .9, pane: "otherTooltipPane" }).openTooltip();
+                                //layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: [0,-iconsize/1.2], opacity: .9, pane: "otherTooltipPane" }).openTooltip();
+                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -702,20 +773,18 @@
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
-               var localiconsize = iconsize;
+               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
 
-                   if (feature.properties.symbol) 
-                       if ((feature.properties.symbol.charAt(0) == '\/' && feature.properties.symbol.charAt(1) == 'O') || id.indexOf("_landing") >= 0) 
-                           localiconsize = iconsize; 
-		   var myIcon = L.icon({
-		       iconUrl: filename,
-		       iconSize: [localiconsize, localiconsize],
-		       iconAnchor: [localiconsize/2, localiconsize/2],
-		       popupAnchor: [0, -localiconsize / 2],
-		       tooltipAnchor: [localiconsize/2, 0]
-		   }); 
-		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+    		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
             } 
         }).on('update', function(ev) { updatemap(ev, this); });
     }
@@ -730,6 +799,7 @@
     function updatemap(ev, realtimelayer) {
         var mapcenter = map.getCenter();
         var mapzoom = map.getZoom(); 
+        var myiconsize;
 
         for (var key in ev.update) {
             var item = ev.update[key];
@@ -754,6 +824,29 @@
             // Update the popup content
             layer.setPopupContent(html, { className: 'myPopupStyle' });
    
+
+            // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
+            if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
+               var filename;
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
+               else 
+                   filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize_center = Math.trunc(iconsize/2);
+               var tipanchor = iconsize_center + 10;
+
+		       var myIcon = L.icon({
+		           iconUrl: filename,
+    		       iconSize: [iconsize, iconsize],
+    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       popupAnchor: [0, -iconsize_center],
+    		       tooltipAnchor: [0, tipanchor]
+    		   }); 
+               layer.setIcon(myIcon);
+            }
+
             // Check if we should update the tooltip contents...if this object has a tooltip or label defined...
             if (item.properties.tooltip && layer.getTooltip()) {
                 if (item.properties.label) {
@@ -774,5 +867,4 @@
                 }
             }
         }
-        //document.getElementById("error").innerHTML = JSON.stringify(flightids);
     }
