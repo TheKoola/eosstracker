@@ -106,37 +106,6 @@ include $documentroot . '/common/header-setup.php';
             <div id="errors"></div>
             <div id="errors2"></div>
 
-            <p class="header" style="clear:  none;">
-                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-                <a href="#trackers" class="header" id="trackersSelectionLink">(<span style="color: red;" id="trackersSelectionLinkSign">+</span>) Trackers</a>
-            </p>
-            <p class="normal-black"><span id="debug"></span></p>
-            <div id="trackersSelection" style="display: none;">
-            <p class="normal-italic">
-                Use this section to add new trackers or update existing ones.  Trackers can be assigned to teams and teams assigned to a flight. 
-            </p>
-            <p class="normal-black">
-                <span id="trackers"></span>
-                
-            </p>
-            <p class="normal-black" style="font-weight: bold;">
-                Add a New Tracker:
-            </p>
-            <p class="normal-black"><span id="newtrackererror"></span></p>
-            <p class="normal-black">
-                <form name="addnewtracker_form" id="addnewtracker_form">
-                <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
-                <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Callsign</th><th class="packetlistheader">Notes</th><th class="packetlistheader">Team Assignment</th></tr>
-                <tr><td class="packetlist"><input type="image" form="addnewtracker_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addTracker(); return false;" ></td>
-                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="callsign" style="text-transform: uppercase;" pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
-
-                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackernotes" size="15" maxlength="64" required="required"></td>
-                    <td class="packetlist"><select form="addnewtracker_form" id="newtrackerteam"></select>
-                </td></tr>
-                </table>
-                </form>
-            </p>
-            </div>
             <div id="error"></div>
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
@@ -237,6 +206,37 @@ include $documentroot . '/common/header-setup.php';
             </p>
             <p class="normal-black">
                 <span id="flights"></span>
+            </p>
+            </div>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                <a href="#trackers" class="header" id="trackersSelectionLink">(<span style="color: red;" id="trackersSelectionLinkSign">+</span>) Trackers</a>
+            </p>
+            <p class="normal-black"><span id="debug"></span></p>
+            <div id="trackersSelection" style="display: none;">
+            <p class="normal-italic">
+                Use this section to add new trackers or update existing ones.  Trackers can be assigned to teams and teams assigned to a flight. 
+            </p>
+            <p class="normal-black">
+                <span id="trackers"></span>
+                
+            </p>
+            <p class="normal-black" style="font-weight: bold;">
+                Add a New Tracker:
+            </p>
+            <p class="normal-black"><span id="newtrackererror"></span></p>
+            <p class="normal-black">
+                <form name="addnewtracker_form" id="addnewtracker_form">
+                <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
+                <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Callsign</th><th class="packetlistheader">Notes</th><th class="packetlistheader">Team Assignment</th></tr>
+                <tr><td class="packetlist"><input type="image" form="addnewtracker_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addTracker(); return false;" ></td>
+                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="callsign" style="text-transform: uppercase;" pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+
+                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackernotes" size="15" maxlength="64" required="required"></td>
+                    <td class="packetlist"><select form="addnewtracker_form" id="newtrackerteam"></select>
+                </td></tr>
+                </table>
+                </form>
             </p>
             </div>
             <p class="header" style="clear:  none;">
