@@ -573,6 +573,8 @@
             var objecttype = feature.properties.objecttype;                    
             if (objecttype == "landingpredictionpath") 
                 localstyle = { dashArray: "2 4", weight: 1, color : 'magenta', pane: 'pathsPane' };
+            else if (objecttype == "landingpredictionflightpath") 
+                localstyle = { dashArray: "3 6", weight: 2, color : 'darkslategray', pane: 'pathsPane' };
             else
                 localstyle = {};
         }
