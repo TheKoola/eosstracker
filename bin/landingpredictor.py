@@ -450,6 +450,12 @@ def landingPredictor(altitude_floor, configuration):
                     function_weight = (float(last_heard_altitude) - prediction_floor) / (float(descent_portion[0, 1]) - prediction_floor)
                     k_idx = 0
                     first_time = 0
+
+                    # this is the list of points that comprise the flight path
+                    flightpath_points = [(x, y)]
+                    flightpath_deltas = []
+
+                    # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
                     for k in prediction_descent_data:
                         if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
                            if k[0] < last_heard_altitude:
@@ -481,8 +487,9 @@ def landingPredictor(altitude_floor, configuration):
                             
                                dx = t * k[4]
                                dy = t * k[5]
-                               x = x + dx
-                               y = y + dy
+                               x += dx
+                               y += dy
+                               flightpath_deltas.append((dx, dy))
                            else:
                                #print "else k[0]: ", k[0], "   first_time: ", first_time
                                if first_time == 0 and last_heard_altitude > backstop:
@@ -517,13 +524,40 @@ def landingPredictor(altitude_floor, configuration):
                                    dy = t * k[5]
                                    x += dx
                                    y += dy
+                                   flightpath_deltas.append((dx, dy))
+
+                           #if len(flightpath_points) > 0:
+                           #    if x != flightpath_points[-1][0] or y != flightpath_points[-1][1]:
+                           #        flightpath_points.append((x, y))
+                           #else:
+                           #    flightpath_points.append((x, y))
 
                         backstop = k[0]
                         k_idx += 1
                         
                     # construct SQL for inserting the landing prediction into the landingpredictions table
-                    landingprediction_sql = """insert into landingpredictions values (date_trunc('second', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326));"""
-                    landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x) ])
+
+                    prev_x = flightpath_points[-1][0] 
+                    prev_y = flightpath_points[-1][1]
+                    for u,v in flightpath_deltas[::-1]:
+                        pos_x = prev_x + u 
+                        pos_y = prev_y + v 
+                        flightpath_points.insert(0, (pos_x, pos_y))
+                        prev_x = pos_x
+                        prev_y = pos_y
+
+                    flightpath_points.insert(0, (x, y))
+
+                    linestring_text = ""
+                    m = 0
+                    for u,v in flightpath_points:
+                        if m > 0:
+                            linestring_text = linestring_text + ", "
+                        linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                        m += 1
+                    linestring_text = "LINESTRING(" + linestring_text + ")"
+                    landingprediction_sql = """insert into landingpredictions values (date_trunc('second', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326));"""
+                    landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x), linestring_text ])
                     landingconn.commit()
 
                     #print callsign, " [", descent_portion[-1,0], " alt: ", descent_portion[-1,1],  " v: ", round(balloon_velocities[-1], 2), "],   pred_floor: ", prediction_floor, "  coef: ", str(parachute_coef), "  est. lat/lon:  ", round(float(x),6), ", ", round(float(y), 6)
@@ -548,6 +582,40 @@ def landingPredictor(altitude_floor, configuration):
 ##################################################
 def runLandingPredictor(schedule, altitude_floor, e, config):
     try:
+        # we need to see if the existing landing predictions table has the flightpath column and add it if not.
+        try:
+            print "Checking the 'landingpredictions' table for the 'flightpath' column..."
+            # Database connection 
+            dbconn = None
+            dbconn = pg.connect (habconfig.dbConnectionString)
+            dbcur = dbconn.cursor()
+
+            # SQL to check if the "flightpath" column exists or not
+            check_column_sql = "select column_name from information_schema.columns where table_name='landingpredictions' and column_name='flightpath';"
+            dbcur.execute(check_column_sql)
+            rows = dbcur.fetchall()
+
+            # if the number of rows returned is zero, then we need to create the column
+            if len(rows) == 0:
+                print "Column, 'flightpath', does not exist within the 'landingpredictions' table.  Adding now."
+                
+                # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                alter_table_sql = "alter table landingpredictions add column flightpath geometry(LINESTRING, 4326);"
+                dbcur.execute(alter_table_sql)
+                dbconn.commit()
+                print "Column, 'flightpath', added to the 'landingpredictions' table."
+
+            else:
+                print "Column, 'flightpath', already exists."
+
+            # Close DB connection
+            dbcur.close()
+            dbconn.close()
+        except pg.DatabaseError as error:
+            dbcur.close()
+            dbconn.close()
+            print(error)
+
         # run the landing predictor function continuously, every "schedule" seconds.
         #while True:
         while not e.is_set():
