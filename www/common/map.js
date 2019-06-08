@@ -201,7 +201,6 @@
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                //layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center", offset: [0,theoffset], opacity: .9, pane: mappane }).openTooltip();
                                 layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center",  opacity: .9, pane: mappane }).openTooltip();
                         }    
                         else {
@@ -257,7 +256,7 @@
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
                    if (feature.properties.objecttype == "balloon")
-                       tipanchor += 5;
+                       tipanchor += 8;
 
 	    	       var myIcon = L.icon({
 	    	           iconUrl: filename,
@@ -615,7 +614,7 @@
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: [0,-iconsize/1.25], opacity: .9, pane: "otherTooltipPane" }).openTooltip();
+                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -754,7 +753,6 @@
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                //layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: [0,-iconsize/1.2], opacity: .9, pane: "otherTooltipPane" }).openTooltip();
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
                         }    
                         else {
