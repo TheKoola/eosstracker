@@ -61,6 +61,12 @@ rm -f www/images/aprs/tocalls.txt
 rm -f www/images/aprs/tocalls2.bash
 rm -f www/images/aprs/tocalls3.bash
 rm -f www/images/flightindicators/flightindicators
+rm -f www/common/COPYING
+rm -f www/common/sessionvariables.php
+rm -f www/common/symbols.js
+rm -f www/images/graphics/eosslogo.png
+rm -f www/predictiondata/*.txt
+rm -f www/preferences.php
 rm -rf /eosstracker/.git
 cp -rpa /tmp/eosstracker/.git /eosstracker
 cp -pa /tmp/eosstracker/.gitignore /eosstracker
