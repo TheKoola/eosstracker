@@ -110,14 +110,13 @@
     $flightpath = array();
     while ($row = sql_fetch_array($result)) {
         $thetime = $row['tm'];
-        $thetype = $row['thetype'];
         $flightid = $row['flightid'];
         $callsign = $row['callsign'];
+        $thetype[$callsign] = $row['thetype'];
         $latitude = $row['lat'];
         $longitude = $row['long'];
         $flightpath[$callsign] = $row['flightpath'];
-        if ($thetype == "predicted") 
-            $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude);
+        $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude, $row['thetype']);
     }
 
 
@@ -144,10 +143,17 @@
         printf ("}");
 
         // This is the linestring for the path the landing prediction point itself has taken over the life of the flight
-        if (count($ray) > 1) {
+        if (array_key_exists($callsign, $thetype)) {
+            if ($thetype[$callsign] == "predicted")
+                $okay = 1;
+            else
+                $okay = 0;
+        }
+        if (count($ray) > 1 && $okay) {
             printf (", ");
             foreach ($ray as $k => $elem) {
-                $linestring[] = array($elem[1], $elem[0]);
+                if ($elem[2] == "predicted")
+                    $linestring[] = array($elem[1], $elem[0]);
             }
             printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing" . $prediction_type));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
