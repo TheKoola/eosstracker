@@ -321,14 +321,18 @@ def getFrequencies(rtl=0):
 ##################################################
 # Create an APRS-IS filter string
 ##################################################
-def getAPRSFilter(aprsRadius, callsign):
+def getAPRSFilter(aprsRadius, callsign, ssid):
     try:
         # Adjust inital APRS-IS filter if a callsign was given.
         # ...we do this so that we ingest packets that were heard directly as well as those via a radius, etc..
         #if callsign == "E0SS" or callsign == "":
         #    aprsFilter = ""
         #else:
-        aprsFilter = "e/" + callsign + "*"
+        if ssid != "" and callsign != "E0SS":
+            aprsFilter = "e/" + callsign + "-" + ssid 
+        else:
+            aprsFilter = "e/" + callsign + "*"
+
 
         # Database connection
         pgConnection = pg.connect(habconfig.dbConnectionString)
@@ -586,7 +590,7 @@ def writeToDatabase(x):
 ##################################################
 # Thread for updating the APRS-IS filter
 ##################################################
-def aprsFilterThread(callsign, a, r, e):
+def aprsFilterThread(callsign, ssid, a, r, e):
     
     # The time in seconds in between updating the APRS-IS filter.
     # 
@@ -601,7 +605,7 @@ def aprsFilterThread(callsign, a, r, e):
             e.wait(delta)
 
             # Get a new APRS-IS filter string (i.e. our lat/lon location could have changed, beacon callsigns could have changed, etc.)
-            filterstring = getAPRSFilter(r, callsign) 
+            filterstring = getAPRSFilter(r, callsign, ssid) 
  
             #print "setting aprs filter:  ", filterstring
 
@@ -626,7 +630,7 @@ def aprsFilterThread(callsign, a, r, e):
 ##################################################
 # Process for connecting to APRS-IS
 ##################################################
-def aprsTapProcess(callsign, radius, e):
+def aprsTapProcess(callsign, ssid, radius, e):
     global tapcur
 
     try:
@@ -644,7 +648,7 @@ def aprsTapProcess(callsign, radius, e):
         tapcur = tapconn.cursor()
 
         # ...see the getAPRSFilter function
-        ais.set_filter(getAPRSFilter(radius, callsign))
+        ais.set_filter(getAPRSFilter(radius, callsign, ssid))
  
         # Try to connect to the locally running aprsc instance...we attempt multiple times before giving up.
         trycount = 0
@@ -666,7 +670,7 @@ def aprsTapProcess(callsign, radius, e):
             trycount += 1
 
         # This is the thread which updates the filter used with the APRS-IS connectipon
-        aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ais, radius, e))
+        aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ssid, ais, radius, e))
         aprsfilter.setDaemon(True)
         aprsfilter.start()
 
@@ -1228,7 +1232,7 @@ def main():
         status["timezone"] = str(configuration["timezone"])
 
         # This is the APRS-IS connection tap.  This is the process that is respoonsible for inserting APRS packets into the database
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), options.aprsisRadius, stopevent))
+        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), str(configuration["ssid"]), options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
         processes.append(aprstap)
