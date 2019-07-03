@@ -12,7 +12,7 @@
 
 - Callsigns without an SSID are now allowed for beacons on a flight.  This was limited to the form of "callsign-ssid", but this update allows for either form:  "callsign" or "callsign-ssid".
 
-- Landing predictions will now plot the predicted flight path on the map during the flight.  During the ascent, this will only occur if a valid predict file has been uploaded.  Once descending the flight path is calculated based on the landing algorithm and will be displayed on the map regardless if a predict file has been uploaded or not.
+- Landing predictions will now plot the predicted flight path on the map during the flight in addition to the usual, "+ marks the spot".  During the ascent, this will only occur if a valid predict file has been uploaded.  Once descending the flight path is calculated based on the landing algorithm and will be displayed on the map regardless if a predict file has been uploaded or not.
 
 
 ### Bugs Fixed: ###
