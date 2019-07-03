@@ -10,10 +10,9 @@
 - Added a new Dashboard feature that will pop-out a new browser pane that will display incoming packets in very large font.  This also allowed for consolidation 
   of the performance graph onto the Data screen.
 
-- Callsigns without an SSID are now allowed for beacons on a flight.  This was limited to the form of <callsign-ssid>, but this update allows for either form:  <callsign> or <callsign-ssid>.
+- Callsigns without an SSID are now allowed for beacons on a flight.  This was limited to the form of "callsign-ssid", but this update allows for either form:  "callsign" or "callsign-ssid".
 
 - Landing predictions will now plot (on the map) the predicted descent path along with the predicted landing location (i.e. X marks the spot) so a user can see the predited path a flight is calculated to take as it descends to the ground.
-
 
 
 ### Bugs Fixed: ###
@@ -23,6 +22,8 @@
 - Updated copyright info so that it is properly displayed at the bottom of every page and is visible on the map.  Also added the GNU GPL reference to that footer section.
 
 - Adjustments to the Settings pane within the Map screen to allow for dynamic settings changes (instead of a page reload) when hitting the "Save Settings" button.  
+
+- Adjustment to the callsign used for the APRS-IS packet filter used when connecting to the locally running aprsc daemon.  This prevents the filter from including packets from igates that use the same callsign as the EOSS Tracker user, but a different SSID.  The aprsc filter now uses the callsign as well as the ssid.  
 
 
 ## Version 1.1 - April 2019 ##
