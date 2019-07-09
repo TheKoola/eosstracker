@@ -52,6 +52,8 @@ else
 <link href="/common/leaflet-sidebar.css" rel="stylesheet">
 <link href="/common/flightindicators.css" rel="stylesheet">
 <link href="/common/Control.SimpleMarkers.css" rel="stylesheet">
+<link href="/common/MarkerCluster.css" rel="stylesheet">
+<link href="/common/MarkerCluster.Default.css" rel="stylesheet">
 <link href="/common/mapstyles.css" rel="stylesheet">
 
 <!-- Load js -->
@@ -64,6 +66,7 @@ else
 <script src="/common/leaflet.groupedlayercontrol.min.js"></script>
 <script src="/common/leaflet-sidebar.js"></script>
 <script src="/common/jquery.flightindicators.js"></script>
+<script src="/common/leaflet.markercluster.js"></script>
 <script src="/common/Control.SimpleMarkers.js"></script>
 
 </head>

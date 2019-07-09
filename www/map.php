@@ -643,8 +643,10 @@ function getTrackers() {
         //document.getElementById("error").innerHTML = "lat:  " + latitude + "   Long:  " + longitude + "  zoom:  " + zoom;
 
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        var allstations = L.layerGroup();
+        //var allstations = L.layerGroup();
+        var allstations = L.markerClusterGroup();
         var mystation = L.layerGroup();
+
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
