@@ -33,33 +33,42 @@
     $config = readconfiguration();
 
 
-    if (isset($_GET["followfeatureid"]))  {
-        $get_followfeatureid=$_GET["followfeatureid"];
-        $pagetitle = "APRS:  " .  $get_followfeatureid;
-    }
-    else
-        $get_followfeatureid = "";
+    // The followfeatureid HTML GET variable
+    $get_followfeatureid = "";
+    if (isset($_GET["followfeatureid"]))  
+        // Make sure this string only contains alphanumeric chars, hyphens, or underscores, and is <= 20 chars in length.
+        if (preg_match("#^[a-zA-Z0-9_-]+$#", $_GET["followfeatureid"]) && strlen($_GET["followfeatureid"]) <= 20) {
+            $get_followfeatureid=$_GET["followfeatureid"];
+            $pagetitle = "APRS:  " .  $get_followfeatureid;
+        }
 
+    // The showallstations HTML GET variable
     if (isset($_GET["showallstations"]))
         $get_showallstations = 1;
     else
         $get_showallstations = 0;
     
-    if (isset($_GET["latitude"]))
-        $get_latitude = $_GET["latitude"];
-    else 
-        $get_latitude = "";
+    // Sanitize the latitude HTML GET variable
+    $get_latitude = "";
+    if (isset($_GET["latitude"])) 
+        if (is_numeric($_GET["latitude"]))
+            if ($_GET["latitude"] < 90 && $_GET["latitude"] > -90)
+                $get_latitude = floatval($_GET["latitude"]);
 
+    // Sanitize the longitude HTML GET variable
+    $get_longitude = "";
     if (isset($_GET["longitude"]))
-        $get_longitude = $_GET["longitude"];
-    else 
-        $get_longitude = "";
+        if (is_numeric($_GET["longitude"]))
+            if ($_GET["longitude"] < 180 && $_GET["longitude"] > -180)
+                $get_longitude = floatval($_GET["longitude"]);
 
+
+    // Sanitize the zoom HTML GET variable
+    $get_zoom = "";
     if (isset($_GET["zoom"]))
-        $get_zoom = $_GET["zoom"];
-    else 
-        $get_zoom = "";
-
+        if (is_numeric($_GET["zoom"]))
+            if ($_GET["zoom"] <= 20 && $_GET["zoom"] > 0)
+                $get_zoom = intval($_GET["zoom"]);
 
 
     $link = connect_to_database();
