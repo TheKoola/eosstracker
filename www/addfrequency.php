@@ -23,19 +23,20 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
-
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
 
+    // Check the freq HTML GET variable and make sure it's between 144.00 and 146.00 for our SDR system.
     if (isset($_GET["freq"])) {
-        $get_freq = $_GET["freq"];
+        if (check_number($_GET["freq"], 144.0, 146.0))
+            $get_freq = floatval($_GET["freq"]);
+        else
+            $get_freq = "";
     }
-    else {
+    else
         $get_freq = "";
-    }
 
 
     ## if any of the GET parameters are not supplied, then exit...
