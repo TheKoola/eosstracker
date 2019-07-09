@@ -125,7 +125,9 @@ include $documentroot . '/common/header-setup.php';
                 <tr><th class="packetlistheader">Action</th><th colspan=4 class="packetlistheader" style="text-align: center;">Enter Flight and Associated Beacons</th></tr>
                 <tr><td colspan=5 class="packetlist" style="background-color: lightsteelblue; text-align: center;">Flight</td></tr>
                 <tr><td rowspan=2 class="packetlist"><input type="image" form="addnewflight_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addFlight(); return false;" ></td>
-                    <td class="packetlist"><input type="text" form="addnewflight_form" id="newflightid" placeholder="EOSS-xxx" style="text-transform: uppercase" pattern="[a-zA-Z]{1,4}-[0-9]{1,3}" size="8" maxlength="8" name="newflightid" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewflight_form" id="newflightid" placeholder="FLIGHTID-xxx" style="text-transform: uppercase;" 
+                        pattern="[a-zA-Z0-9]{1,10}-[0-9]{1,3}" size="24" maxlength="23" title="must be alphanumeric, 1-10 chars in length, endng with a suffix of '-xxx' consisting of 3 digits" 
+                        name="newflightid" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="newflightnotes" placeholder="Description" size="15" maxlength="64" required="required"></td>
                     <td class="packetlist" style="text-align: center;">Launch Site: <select form="addnewflight_form" id="newflightlaunchsite"></select></td>
                     <td class="packetlist" style="text-align: center;">Tracking: <input type="checkbox" form="addnewflight_form" id="newflightmonitoring" checked></td>
@@ -134,47 +136,47 @@ include $documentroot . '/common/header-setup.php';
                 <tr>
                     <td class="packetlist" style="text-align: center;">1</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_call" placeholder="callsign" style="text-transform: uppercase;"  
-                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                        size="9" maxlength="9" name="newbeacon1" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                        pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                        size="21" maxlength="20" name="newbeacon1" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon1_frequency"></select>
                     </td> 
-                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
+                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon1_description" placeholder="Description" size="21" maxlength="64" required="required"></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">2</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_call" placeholder="callsign" style="text-transform: uppercase;"  
-                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                        size="9" maxlength="9" name="newbeacon2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td>
+                        pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                        size="21" maxlength="20" name="newbeacon2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon2_frequency"></select>
                     </td> 
-                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_description" placeholder="Description" size="15" maxlength="64" ></td>
+                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon2_description" placeholder="Description" size="21" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">3</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_call" placeholder="callsign" style="text-transform: uppercase;"  
-                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                        size="9" maxlength="9" name="newbeacon3" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                        pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                        size="21" maxlength="20" name="newbeacon3" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon3_frequency"></select>
                     </td> 
-                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_description" placeholder="Description" size="15" maxlength="64" ></td>
+                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon3_description" placeholder="Description" size="21" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">4</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_call" placeholder="callsign" style="text-transform: uppercase;"  
-                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                        size="9" maxlength="9" name="newbeacon4" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                        pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                        size="21" maxlength="20" name="newbeacon4" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon4_frequency"></select>
                     </td> 
-                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_description" placeholder="Description" size="15" maxlength="64" ></td>
+                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon4_description" placeholder="Description" size="21" maxlength="64" ></td>
                 </tr>
                 <tr>
                     <td class="packetlist" style="text-align: center;">5</td>
                     <td class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_call" placeholder="callsign" style="text-transform: uppercase;"  
-                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                        size="9" maxlength="9" name="newbeacon5" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
+                        pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                        size="21" maxlength="20" name="newbeacon5" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" ></td>
                     <td class="packetlist"><select form"addnewflight_form" id="beacon5_frequency"></select>
                     </td> 
-                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_description" placeholder="Description" size="15" maxlength="64" ></td>
+                    <td colspan=2 class="packetlist"><input type="text" form="addnewflight_form" id="beacon5_description" placeholder="Description" size="21" maxlength="64" ></td>
                 </tr>
                 </table>
                 </form>
@@ -191,12 +193,12 @@ include $documentroot . '/common/header-setup.php';
                     <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_flightid"></td>
                     <td class="packetlist">
                         <input type="text" form="addnewbeacon_form" id="addnewbeacon_call" placeholder="callsign" style="text-transform: uppercase;"  
-                            pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3})" 
-                            size="9" maxlength="9" name="addnewbeacon_call" autocomplete="off" 
+                            pattern="[a-zA-Z0-9_-]{1,20}" title="must be alphanumeric, 1-20 chars in length, and can include underscores ('_') and hyphens ('-')"
+                            size="21" maxlength="20" name="addnewbeacon_call" autocomplete="off" 
                             autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form="addnewbeacon_form" id="addnewbeacon_frequency"></select>
                     </td> 
-                    <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_description" placeholder="Description" size="15" maxlength="64" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewbeacon_form" id="addnewbeacon_description" placeholder="Description" size="21" maxlength="64" required="required"></td>
                 </tr>
                 </table>
                 </form>
