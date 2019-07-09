@@ -33,4 +33,28 @@ function db_error($string) {
 }
 
 
+// This checks that the string is made up of only alpha chars and is <= some length limit.  If successful it returns the string, otherwise it returns a null string.
+function check_string($string, $string_length) {
+    if (preg_match("#^[a-zA-Z0-9_-]+$#", $string) && strlen($string) <= $string_length)
+        return $string;
+    else
+        return "";
+}
+
+
+// This checks if a value is a number and that it is within certain range limits.  Returns 1 if true, or 0 if false.
+function check_number($var, $lower_limit, $upper_limit) {
+    if (is_numeric($var)) {
+        $v = floatval($var);
+        if ($v >= $lower_limit && $v <= $upper_limit)
+            return 1;
+        else
+            return 0;
+    }
+    else
+        return 0;
+}
+
+
+
 ?>
