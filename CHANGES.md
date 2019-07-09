@@ -14,6 +14,8 @@
 
 - Landing predictions will now plot the predicted flight path on the map during the flight in addition to the usual, "+ marks the spot".  During the ascent, this will only occur if a valid predict file has been uploaded.  Once descending the flight path is calculated based on the landing algorithm and will be displayed on the map regardless if a predict file has been uploaded or not.
 
+- Changed the "All other stations" layer on the map so that bundles of APRS stations are grouped together in "bubbles".  This clustering reduces the number of icons that are on that layer, improves web browser performance, and provides a cleaner view of the map.
+
 
 ### Bugs Fixed: ###
 
