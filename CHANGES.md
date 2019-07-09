@@ -16,6 +16,8 @@
 
 - Changed the "All other stations" layer on the map so that bundles of APRS stations are grouped together in "bubbles".  This clustering reduces the number of icons that are on that layer, improves web browser performance, and provides a cleaner view of the map.
 
+- Updated the data entry fields for flight identifiers and callsigns allowing for more descriptive names.  Fields allow for longer identifiers as well as relaxed restrictions on Ham callsign formats.
+
 
 ### Bugs Fixed: ###
 
