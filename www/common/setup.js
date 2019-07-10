@@ -228,18 +228,17 @@
     * This function will add a new launch site
     ***********/
     function addLaunchSite() {
-        var launchsite = document.getElementById("launchsite_name").value;
+        var launchsite = document.getElementById("launchsite_name");
         var lat = document.getElementById("launchsite_lat").value;
         var lon = document.getElementById("launchsite_lon").value;
         var alt = document.getElementById("launchsite_alt").value;
 
-        //document.getElementById("addnewbeaconerror").innerHTML = flightid + ", " + freq + ", " + call + ", " + beacon_desc;
-/*        if (!lat.checkValidity()) {
-            throw lat.validationMessage;
+        if (!launchsite.checkValidity()) {
+            throw launchsite.validationMessage;
             return false;
         }
-*/
-        $.get("addlaunchsite.php?launchsite=" + launchsite + "&lat=" + lat + "&lon=" + lon + "&alt=" + alt, function(data) {
+
+        $.get("addlaunchsite.php?launchsite=" + launchsite.value + "&lat=" + lat + "&lon=" + lon + "&alt=" + alt, function(data) {
             var jsonData = JSON.parse(data);
 
             if (jsonData.result == 0)
@@ -251,7 +250,7 @@
             getPredictions();
             getFlights();
             document.getElementById("launchsite_name").value = "";
-	    document.getElementById("launchsite_lat").value = "";
+	        document.getElementById("launchsite_lat").value = "";
             document.getElementById("launchsite_lon").value = "";
             document.getElementById("launchsite_alt").value = "";
   
