@@ -123,7 +123,7 @@ try {
     // Check the launchsite HTML POST variable
     $launchsite = "";
     if (isset($_POST["launchsite"])) {
-        if (($launchsite = check_string($_POST["launchsite"], 20)) == "")
+        if (($launchsite = check_string($_POST["launchsite"], 64)) == "")
             $formerror = true;
     }
     else

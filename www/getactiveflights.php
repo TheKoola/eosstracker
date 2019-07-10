@@ -23,7 +23,6 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
@@ -31,22 +30,31 @@
 
     $config = readconfiguration();
 
+    $formerror = false;
+
+    // Check the flightid HTML GET variable
+    $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
     }
-    else {
-        $get_flightid = "";
+    else
+        $formerror = true;
+
+    // Check the callsign HTML GET variable
+    $get_callsign = "";
+    if (isset($_GET["callsign"])) {
+        if (($get_callsign = strtoupper(check_string($_GET["callsign"], 20))) == "")
+            $formerror = true;
+    }
+    else
+        $formerror = true;
+
+
+    if ($formerror == true) {
         printf ("[]");
         return 0;
     }
-    
-    if (isset($_GET["callsign"])) {
-        $get_callsign = $_GET["callsign"];
-    }
-    else {
-        $get_callsign = "";
-    }
-
 
     ## Connect to the database
     $link = connect_to_database();

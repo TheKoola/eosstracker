@@ -39,7 +39,7 @@
 
     // Check the callsign HTML GET variable
     if (isset($_GET["callsign"])) {
-        $get_callsign = check_string($_GET["callsign"], 20);
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
     }
     else
         $get_callsign = "";

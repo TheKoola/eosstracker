@@ -36,10 +36,15 @@ include $documentroot . '/common/functions.php';
     }
 
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = $_GET["flightid"];
+
+    // Check the flightid HTML GET variable
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($formerror == false) {
         $query = "select f.flightid from flights f where f.flightid = $1;";

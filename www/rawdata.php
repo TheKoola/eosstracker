@@ -387,8 +387,12 @@ $config = readconfiguration();
                         <select form="data_download_form" id="data_type_selection">
                         </select>
                     </td>
-		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
-		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
+            <td class="packetlist"><input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm/dd/yyyy HH:MM:SS" 
+                autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
+                pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" title="enter date/time value using, mm/dd/yyyy HH:MM:SS"></td>
+            <td class="packetlist"><input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm/dd/yyyy HH:MM:SS" 
+                autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
+                pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" title="enter date/time value using, mm/dd/yyyy HH:MM:SS"></td>
                 </tr>
                 </table>
                 </form>

@@ -36,22 +36,35 @@ include_once $documentroot . '/common/functions.php';
     }
 
     $formerror = false;
-    if (isset($_GET["datatype"])) 
-        $datatype = strtoupper($_GET["datatype"]);
+
+    // Check the datatype HTML GET variable
+    if (isset($_GET["datatype"])) {
+        if (($datatype = strtoupper(check_string($_GET["datatype"], 64))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["beginning"]))
-        $beginning = $_GET["beginning"];
+
+    // Check the beginning HTML GET variable
+    $beginning = "";
+    if (isset($_GET["beginning"])) {
+        if (($beginning = check_datetime($_GET["beginning"])) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["ending"]))
-        $ending = $_GET["ending"];
+
+    // Check the ending HTML GET variable
+    $ending = "";
+    if (isset($_GET["ending"])) {
+        if (($ending = check_datetime($_GET["ending"])) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
 
     if ($datatype == "" || $beginning == "" || $ending == "")
         $formerror = true;
-
 
     if ($formerror == false) {
 

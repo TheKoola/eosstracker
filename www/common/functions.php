@@ -35,8 +35,8 @@ function db_error($string) {
 
 // This checks that the string is made up of only alpha chars and is <= some length limit.  If successful it returns the string, otherwise it returns a null string.
 function check_string($string, $string_length) {
-    if (preg_match("#^[a-zA-Z0-9_-]+$#", $string) && strlen($string) <= $string_length)
-        return $string;
+    if (preg_match("#^[a-zA-Z0-9\., _-]+$#", htmlspecialchars_decode($string)) && strlen(htmlspecialchars_decode($string)) <= $string_length)
+        return htmlspecialchars_decode($string);
     else
         return "";
 }
@@ -56,9 +56,9 @@ function check_number($var, $lower_limit, $upper_limit) {
 }
 
 
-// This checks if a value a date format (ex. YYYY-MM-DD, DD/MM/YYY, DD/MM/YY, etc.).
+// This checks if a value a date format (ex. YYYY-MM-DD, DD/MM/YYYY, etc.).
 function check_date($d) {
-    $v = date_create($d);
+    $v = date_create(htmlspecialchars_decode($d));
     if ($v) {
         $year = date_format($v, 'Y');
         $month = date_format($v, 'm');
@@ -73,5 +73,22 @@ function check_date($d) {
         return "";
 }
 
+
+// This checks if a value a datetime format (ex. YYYY-MM-DD hh:mm:ss, DD/MM/YYYY hh:mm:ss, etc.)
+function check_datetime($d) {
+    $v = date_create(htmlspecialchars_decode($d));
+    if ($v) {
+        $year = date_format($v, 'Y');
+        $month = date_format($v, 'm');
+        $day = date_format($v, 'd');
+        $thedate = date_format($v, 'Y-m-d H:i:s');
+        if (checkdate($month, $day, $year)) 
+            return $thedate;
+        else
+            return "";
+    }
+    else
+        return "";
+}
 
 ?>

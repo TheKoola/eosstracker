@@ -38,7 +38,7 @@
 
     // Check the flightid HTML GET variable
     if (isset($_GET["flightid"])) {
-        $get_flightid = check_string($_GET["flightid"], 20);
+        $get_flightid = strtoupper(check_string($_GET["flightid"], 20));
     }
     else
         $get_flightid = "";

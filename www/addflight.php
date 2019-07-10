@@ -69,6 +69,8 @@ include $documentroot . '/common/functions.php';
             $active = "f";
     }
 
+
+
     if ($flightid == "" || $description == "" || $launchsite == "")
         $formerror = true;
 

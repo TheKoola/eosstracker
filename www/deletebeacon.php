@@ -36,14 +36,23 @@ include $documentroot . '/common/functions.php';
     }
 
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = $_GET["flightid"];
+
+    // Check the flightid HTML GET variable
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["callsign"]))
-        $callsign = $_GET["callsign"];
+
+    // Check the callsign HTML GET variable
+    if (isset($_GET["callsign"])) {
+        if (($callsign = strtoupper(check_string($_GET["callsign"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($formerror == false) {
         $query = "select f.flightid, fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.flightid = $1 and fm.callsign = $2;";

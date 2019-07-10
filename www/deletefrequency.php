@@ -36,10 +36,17 @@ include $documentroot . '/common/functions.php';
     }
 
     $formerror = false;
-    if (isset($_GET["freq"])) 
-        $freq = $_GET["freq"];
+
+    // Check the freq HTML GET variable and make sure it's between 144.00 and 146.00 for our SDR system.
+    if (isset($_GET["freq"])) {
+        if (check_number($_GET["freq"], 144.0, 146.0))
+            $freq = floatval($_GET["freq"]);
+        else
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($formerror == false) {
         $query = "select freq from freqs where freq = $1;";
