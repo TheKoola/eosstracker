@@ -35,7 +35,7 @@ function db_error($string) {
 
 // This checks that the string is made up of only alpha chars and is <= some length limit.  If successful it returns the string, otherwise it returns a null string.
 function check_string($string, $string_length) {
-    if (preg_match("#^[a-zA-Z0-9\., _-]+$#", htmlspecialchars_decode($string)) && strlen(htmlspecialchars_decode($string)) <= $string_length)
+    if (preg_match("#^[a-zA-Z0-9.(), _-]+$#", htmlspecialchars_decode($string)) && strlen(htmlspecialchars_decode($string)) <= $string_length)
         return htmlspecialchars_decode($string);
     else
         return "";

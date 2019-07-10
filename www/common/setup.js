@@ -350,7 +350,7 @@
         var freq = freqelem.options[freqelem.selectedIndex].value;
         var beacon_call = document.getElementById("addnewbeacon_call");
         var call = document.getElementById("addnewbeacon_call").value;
-        var beacon_desc = document.getElementById("addnewbeacon_description").value;
+        var beacon_desc = document.getElementById("addnewbeacon_description");
        
         //document.getElementById("addnewbeaconerror").innerHTML = flightid + ", " + freq + ", " + call + ", " + beacon_desc;
         if (!beacon_call.checkValidity()) {
@@ -358,7 +358,12 @@
             return false;
         }
 
-        $.get("addbeacon.php?flightid=" + flightid + "&callsign=" + call + "&description=" + beacon_desc + "&frequency=" + freq, function(data) {
+        if (!beacon_desc.checkValidity()) {
+            throw beacon_desc.validationMessage;
+            return false;
+        }
+
+        $.get("addbeacon.php?flightid=" + flightid + "&callsign=" + call + "&description=" + beacon_desc.value + "&frequency=" + freq, function(data) {
             var jsonData = JSON.parse(data);
   
             if (jsonData.result == 0)
@@ -383,7 +388,7 @@
     ***********/
     function addFlight() {
         var flightid = document.getElementById("newflightid").value;
-        var notes = document.getElementById("newflightnotes").value;
+        var notes = document.getElementById("newflightnotes");
         var monitoring = (document.getElementById("newflightmonitoring").checked == true ? "t" : "f");
         var newflightid = document.getElementById("newflightid");
         var beacon1 = document.getElementById("beacon1_call");
@@ -396,6 +401,11 @@
        
         if (!newflightid.checkValidity()) {
             throw newflightid.validationMessage;
+            return false;
+        }
+
+        if (!notes.checkValidity()) {
+            throw notes.validationMessage;
             return false;
         }
 
@@ -433,7 +443,7 @@
             url = url + "&beacon" + i + "_description=" + desc.value;
         }
 
-        $.get("addflight.php?flightid=" + flightid + "&description=" + notes + "&monitoring=" + monitoring + "&launchsite=" + launchsite + url, function(data) {
+        $.get("addflight.php?flightid=" + flightid + "&description=" + notes.value + "&monitoring=" + monitoring + "&launchsite=" + launchsite + url, function(data) {
             var jsonData = JSON.parse(data);
   
             if (jsonData.result == 0)
