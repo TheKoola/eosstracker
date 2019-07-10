@@ -101,18 +101,34 @@ try {
 }
 
     $formerror = false;
-    if (isset($_POST["flightid"])) 
-        $flightid = strtoupper($_POST["flightid"]);
+
+    // Check the flightid HTML POST variable
+    $flightid = "";
+    if (isset($_POST["flightid"])) {
+        if (($flightid = strtoupper(check_string($_POST["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_POST["thedate"]))
-        $thedate = $_POST["thedate"];
+
+    // Check the thedate HTML POST variable
+    $thedate = "";
+    if (isset($_POST["thedate"])) { 
+        if (($thedate = check_date($_POST["thedate"])) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_POST["launchsite"]))
-        $launchsite = $_POST["launchsite"];
+
+    // Check the launchsite HTML POST variable
+    $launchsite = "";
+    if (isset($_POST["launchsite"])) {
+        if (($launchsite = check_string($_POST["launchsite"], 20)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($thedate == "" || $flightid == "" || $launchsite == "")
         $formerror = true;
