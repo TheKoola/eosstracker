@@ -170,12 +170,23 @@
     * This function will call the backend PHP script to set a SESSION variable to the timezone selected
     ***********/
     function setConfiguration() {
-            var iconsize = document.getElementById("iconsize").value;
-            var lookbackperiod = document.getElementById("lookbackperiod").value;
+            var iconsize = document.getElementById("iconsize");
+            var lookbackperiod = document.getElementById("lookbackperiod");
             var plottracks = document.getElementById("plottracks").checked;
             var form_data = new FormData();
-            form_data.append("iconsize", iconsize);
-            form_data.append("lookbackperiod", lookbackperiod);
+
+            if (!iconsize.checkValidity()) {
+                throw iconsize.validationMessage;
+                return false;
+            }
+
+            if (!lookbackperiod.checkValidity()) {
+                throw lookbackperiod.validationMessage;
+                return false;
+            }
+
+            form_data.append("iconsize", iconsize.value);
+            form_data.append("lookbackperiod", lookbackperiod.value);
             form_data.append("plottracks", (plottracks == true ? "on" : "off"));
             $.ajax({
                 url: "setconfiguration.php",
@@ -1493,8 +1504,8 @@ function getTrackers() {
                 <p class="lorem">Changes to these settings affect all users and viewers of the map.</p>
                 <form id="userpreferences" action="preferences.php" name="userpreferences">
                 <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
-		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences"> minutes</td></tr>
-                    <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" placeholder="nn"> pixels</td></tr>
+		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences" title="from 1 to 999 minutes"> minutes</td></tr>
+                    <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels</td></tr>
                     <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
                     <tr><td colspan=2><input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"> &nbsp; <span id="systemsettings_error" style="background-color: yellow; color: black;"></span></td></tr>
                 </table>

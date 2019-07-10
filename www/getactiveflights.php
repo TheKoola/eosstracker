@@ -43,13 +43,8 @@
 
     // Check the callsign HTML GET variable
     $get_callsign = "";
-    if (isset($_GET["callsign"])) {
-        if (($get_callsign = strtoupper(check_string($_GET["callsign"], 20))) == "")
-            $formerror = true;
-    }
-    else
-        $formerror = true;
-
+    if (isset($_GET["callsign"])) 
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
 
     if ($formerror == true) {
         printf ("[]");
