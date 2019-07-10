@@ -240,9 +240,11 @@ include $documentroot . '/common/header-setup.php';
                 <table class="packetlist" style="margin-left: 30px; width:  75%;" cellpadding=0 cellspacing=0 border=0>
                 <tr><th class="packetlistheader">Action</th><th class="packetlistheader">Callsign</th><th class="packetlistheader">Notes</th><th class="packetlistheader">Team Assignment</th></tr>
                 <tr><td class="packetlist"><input type="image" form="addnewtracker_form" src="/images/graphics/addicon.png" style="width: 22px; height: 22px;" onclick="addTracker(); return false;" ></td>
-                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="callsign" style="text-transform: uppercase;" pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
-
-                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackernotes" size="15" maxlength="64" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackercall" placeholder="callsign" style="text-transform: uppercase;" 
+                        pattern="([a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}|[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}-[0-9]{1,2})" size="9" maxlength="9" name="newtrackercall" 
+                        autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
+                    <td class="packetlist"><input type="text" form="addnewtracker_form" id="newtrackernotes" size="15" maxlength="64" required="required"
+                        pattern="[a-zA-Z0-9.(), _-]{1,64}" title="valid characters include: a-zA-Z0-9 _-,.()"></td>
                     <td class="packetlist"><select form="addnewtracker_form" id="newtrackerteam"></select>
                 </td></tr>
                 </table>
