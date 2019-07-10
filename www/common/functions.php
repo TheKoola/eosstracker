@@ -56,5 +56,22 @@ function check_number($var, $lower_limit, $upper_limit) {
 }
 
 
+// This checks if a value a date format (ex. YYYY-MM-DD, DD/MM/YYY, DD/MM/YY, etc.).
+function check_date($d) {
+    $v = date_create($d);
+    if ($v) {
+        $year = date_format($v, 'Y');
+        $month = date_format($v, 'm');
+        $day = date_format($v, 'd');
+        $thedate = date_format($v, 'Y-m-d');
+        if (checkdate($month, $day, $year)) 
+            return $thedate;
+        else
+            return "";
+    }
+    else
+        return "";
+}
+
 
 ?>
