@@ -36,19 +36,36 @@ include_once $documentroot . '/common/functions.php';
         return 0;
     }
 
+
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = $_GET["flightid"];
+
+    // Check the flightid HTML GET variable
+    $flightid = "";
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["thedate"])) 
-        $thedate = $_GET["thedate"];
+
+    // Check the thedate HTML GET variable
+    $thedate = "";
+    if (isset($_GET["thedate"])) { 
+        if (($thedate = check_date($_GET["thedate"])) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["launchsite"])) 
-        $launchsite = $_GET["launchsite"];
+
+    // Check the launchsite HTML GET variable
+    $launchsite = "";
+    if (isset($_GET["launchsite"])) {
+        if (($launchsite = check_string($_GET["launchsite"], 64)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+ 
 
     if ($formerror == false) {
         #$query = "select distinct flightid, launchsite, thedate from predictiondata where flightid = '" . sql_escape_string($flightid) . "' and launchsite = '" . sql_escape_string($launchsite) . "' and thedate = '" . sql_escape_string($thedate) . "'";

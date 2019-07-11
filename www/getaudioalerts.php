@@ -38,8 +38,15 @@
     # Check the timestamp parameter
     $get_timestamp = 0;
     if (isset($_GET["timestamp"])) {
-        $get_timestamp = (int) $_GET["timestamp"];
+        if (check_number($_GET["timestamp"], 0, 2147483647 ))
+            $get_timestamp = intval($_GET["timestamp"]);
+        else
+            $get_timestamp = 0;
     }
+    else
+        $get_timestamp = 0;
+ 
+
 
     ## Connect to the database
     $link = connect_to_database();

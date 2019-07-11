@@ -55,31 +55,33 @@
             $status["direwolfcallsign"] = $ray["direwolfcallsign"];
     }
 
-
+    $formerror = false;
+    // Check the flightid HTML GET variable
+    $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
     }
-    else {
-        $get_flightid = "";
+    else
+        $formerror = true; 
+ 
+    // If there isn't a flightid, then exit.
+    if ($formerror == true) {
         printf ("[]");
         return 0;
     }
-    
-    if (isset($_GET["callsign"])) {
-        $get_callsign = $_GET["callsign"];
-    }
-    else {
-        $get_callsign = "";
-    }
 
-    if (isset($_GET["num"])) {
-        $get_num = $_GET["num"];
-    }
-    else
-        $get_num = 5;
+    // Check the callsign HTML GET variable
+    $get_callsign = "";
+    if (isset($_GET["callsign"])) 
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
 
-
-    #header("Content-Type:  application/json;");
+    // Check the num HTML GET variable
+    $get_num = 5;
+    if (isset($_GET["num"])) 
+        if (check_number($_GET["num"], 0, 1000))
+            $get_num = intval($_GET["num"]);
+        
 
     ## Connect to the database
     $link = connect_to_database();

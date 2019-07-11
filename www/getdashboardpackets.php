@@ -53,10 +53,11 @@
 
     $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
-        if ($get_flightid == "allpackets")
-            $get_flightid = "";
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) != "")
+            if ($get_flightid == "ALLPACKETS")
+                $get_flightid = ""; 
     }
+
 
     ## Connect to the database
     $link = connect_to_database();

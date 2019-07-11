@@ -61,11 +61,21 @@
     // For future use...
     $prediction_type = "predicted"; 
     
+    
+    // Check the flightid HTML GET variable
+    $formerror = false;
+    $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
     }
-    else {
-        $get_flightid = "";
+    else
+        $formerror = true;
+
+
+    // If the flightid wasn't given the exit.
+    if ($formerror == true) {
+        printf ("[]");
         return 0;
     }
 

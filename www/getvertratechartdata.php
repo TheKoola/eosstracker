@@ -23,7 +23,6 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
@@ -32,22 +31,22 @@
     $config = readconfiguration();
 
 
-   ## Look for the variable "flightid" to be set. 
+    ## Look for the variable "flightid" to be set. 
     $flightstring = "";
     if (isset($_GET["flightid"])) {
-        $flightid=$_GET["flightid"];
-        $flightarray = explode(',', $flightid); 
-        $flightstring = " and f.flightid in (";
-        $firsttime = 1;
-        foreach($flightarray as $flight) {
-            if (! $firsttime)
-                $flightstring = $flightstring . ",";
-            $firsttime = 0;
-            $flightstring = $flightstring . "'" . $flight . "'"; 
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") {
+            $flightarray = explode(',', $flightid); 
+            $flightstring = " and f.flightid in (";
+            $firsttime = 1;
+            foreach($flightarray as $flight) {
+                if (! $firsttime)
+                    $flightstring = $flightstring . ",";
+                $firsttime = 0;
+                $flightstring = $flightstring . "'" . $flight . "'"; 
+            }
+            $flightstring = $flightstring . ") ";
         }
-        $flightstring = $flightstring . ") ";
     }
-
 
 
     ## Connect to the database

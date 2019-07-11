@@ -35,17 +35,26 @@ include $documentroot . '/common/functions.php';
         return 0;
     }
 
-    //print_r($_GET);
-
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = $_GET["flightid"];
+
+    // Check the flightid HTML GET variable
+    $flightid = "";
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["active"]))
-        $active = $_GET["active"];
+
+    // Check the active HTML GET variable
+    $active = "";
+    if (isset($_GET["active"])) { 
+        if (($active = check_string($_GET["active"], 20)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($formerror == false) {
         // perform SQL updates to the flights and flightmap tables here...
