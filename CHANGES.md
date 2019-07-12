@@ -29,6 +29,8 @@
 
 - Adjustment to the callsign used for the APRS-IS packet filter used when connecting to the locally running aprsc daemon.  This prevents the filter from including packets from igates that use the same callsign as the EOSS Tracker user, but a different SSID.  The aprsc filter now uses the callsign as well as the ssid.  
 
+- Much improved GPS status reporting on the main web, home page.  The GPS monitoring thread improved to withstand GPS devices being removed/added.
+
 
 ## Version 1.1 - April 2019 ##
 
