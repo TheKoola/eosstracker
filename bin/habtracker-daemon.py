@@ -40,7 +40,6 @@ import aprslib
 import logging
 import usb.core
 import usb.util
-from gps import *
 import threading as th
 import sys
 import numpy as np
@@ -56,6 +55,7 @@ import random
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
+import gpspoller
 
 
 class GracefulExit(Exception):
@@ -160,85 +160,6 @@ def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
 
 
 ##################################################
-# GpsPoller process
-##################################################
-def GpsPoller(e):
-    gpsconn = None
-    GPSStatusFile = "/eosstracker/www/gpsstatus.json"
-    GPSStatusTempFile = "/eosstracker/www/gpsstatus.json.tmp"
-    try: 
-        gpsd = gps(mode=WATCH_ENABLE) 
-        gpsconn = pg.connect (habconfig.dbConnectionString)
-        gpscur = gpsconn.cursor()
-        timeprev = datetime.datetime.now()
-        prevlat = 0
-        prevlon = 0
-        #while True:
-        while not e.is_set():
-            report = gpsd.next() 
-            thetime = datetime.datetime.now()
-            timedelta = thetime - timeprev
-            if timedelta.total_seconds() > 1.5:
-                if round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon:
-                    sql = """insert into 
-                        gpsposition values (
-                            (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone 'America/Denver', 
-                            %s::numeric, 
-                            %s::numeric, 
-                            %s::numeric, 
-                            ST_GeometryFromText('POINT(%s %s)', 4326), 
-                            ST_GeometryFromText('POINTZ(%s %s %s)', 4326)
-                        );"""
-                    if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
-                        gpscur.execute(sql, [
-                            gpsd.utc, 
-                            round(gpsd.fix.speed * 2.236936, 0), 
-                            gpsd.fix.track, 
-                            round(gpsd.fix.altitude * 3.2808399, 0), 
-                            gpsd.fix.longitude, 
-                            gpsd.fix.latitude, 
-                            gpsd.fix.longitude, 
-                            gpsd.fix.latitude, 
-                            gpsd.fix.altitude 
-                        ])
-                        gpsconn.commit()
-                        timeprev = thetime
-                    prevlat = round(gpsd.fix.latitude,4) 
-                    prevlon = round(gpsd.fix.longitude,4) 
-
-                ## Need to change this in the future to putting detailed status within the database instead of a text JSON file.  ;)
-                mysats = []
-                mysats_sorted = []
-                mymode = ""
-                with open(GPSStatusTempFile, "w") as f:
-                    for sat in gpsd.satellites:
-                        mysats.append({ "prn": str(sat.PRN), "elevation" : str(sat.elevation), "azimuth" : str(sat.azimuth), "snr" : str(sat.ss), "used" : str(sat.used) })
-                    if len(gpsd.satellites) > 0:
-                        mysats_sorted = sorted(mysats, key=lambda k: k['used'], reverse=True)
-                    gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats_sorted, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
-                    f.write(json.dumps(gpsstats))
-                if os.path.isfile(GPSStatusTempFile):
-                    os.rename(GPSStatusTempFile, GPSStatusFile)
-        print "Shutting down GPS Loop..."
-        with open(GPSStatusTempFile, "w") as f:
-            gpsstats = { "utc_time" : "n/a", "mode" : 0, "status" : 0, "lat" : "n/a", "lon" : "n/a", "satellites" : [], "speed_mph" : 0, "altitude" : 0 }
-            f.write(json.dumps(gpsstats))
-        if os.path.isfile(GPSStatusTempFile):
-            os.rename(GPSStatusTempFile, GPSStatusFile)
-        gpsconn.close()
-    except pg.DatabaseError as error:
-        print(error)
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
-        gpsconn.close() 
-        print "GPS poller ended"
-    finally:
-
-        if gpsconn is not None:
-            gpsconn.close()
-
-
-
-##################################################
 # Determine what frequencies and ports GnuRadio should listen on and which UDP ports to send audio over
 ##################################################
 def getFrequencies(rtl=0):
@@ -290,7 +211,7 @@ def getFrequencies(rtl=0):
     except pg.DatabaseError as error:
         grcur.close()
         grconn.close()
-        print(error)
+        print error
         return None
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         grcur.close()
@@ -1238,7 +1159,7 @@ def main():
         processes.append(aprstap)
 
         # This is the GPS position tracker process
-        gpsprocess = mp.Process(target=GpsPoller, args=(stopevent,))
+        gpsprocess = mp.Process(target=gpspoller.GpsPoller, args=(stopevent,))
         gpsprocess.daemon = True
         gpsprocess.name = "GPS Position Tracker"
         processes.append(gpsprocess)

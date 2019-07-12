@@ -228,25 +228,32 @@ include $documentroot . '/common/header.php';
             var jsonData = JSON.parse(data);
             var gpsfix;
 
-            if (jsonData.mode == 0)
+            gpsMode = jsonData.mode * 10 / 10;
+            if (gpsMode == 0)
+                gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ no data ]</mark>";
+            else if (gpsMode == 1)
                 gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ NO FIX ]</mark>";
-            else if (jsonData.mode == 1)
+            else if (gpsMode == 2)
                 gpsfix = "<mark style=\"background-color: yellow; font-variant: small-caps; font-size: .9em;\">[ 2D FIX ]</mark>";
-            else if (jsonData.mode == 3)
+            else if (gpsMode == 3)
                 gpsfix = "<mark style=\"background-color: lightgreen; font-variant: small-caps; font-size: .9em;\">[ 3D FIX ]</mark>";
             else
                 gpsfix = "n/a";
 
             var theDate = jsonData.utc_time;
             theDate = theDate.replace(/T/g, " "); 
-            theDate = theDate.replace(/.[0]*Z$/g, ""); 
+            theDate = theDate.replace(/.[0-9]*Z$/g, ""); 
             var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
                 + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
                 + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
                 + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
                 + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
                 + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
-                + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr></table>";
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Status:</td><td>" 
+                + (jsonData.status == "normal" ? jsonData.status : "<mark style=\"background-color: yellow;\">" + jsonData.status + "</mark>")
+                + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr></table>";
      
             var i = 0;
             var satellites = jsonData.satellites;
