@@ -1124,10 +1124,12 @@ def main():
             # Create Direwolf configuration file
             if configuration["igating"] == "false" and configuration["beaconing"] == "false":
                 # If we're not igating or beaconing then for direwolf we use a callsign of the form: <MYCALL>02.  We append "02" to the end of it.
-                filename = createDirewolfConfig(str(configuration["callsign"]) + "02", direwolfFreqList, configuration)
-                status["direwolfcallsign"] = str(configuration["callsign"]) + "02"
+                # However, we limit the length of the callsign string including the "02" suffix to be 6 chars - direwolf imposes this restriction.
+                sixCharLimitedCallsign = str(configuration["callsign"])[:4] + "02"
+                filename = createDirewolfConfig(sixCharLimitedCallsign, direwolfFreqList, configuration)
+                status["direwolfcallsign"] = sixCharLimitedCallsign
             else:
-                # If we're igating and/or geaconing, then direwolf requires the user's actual callsign-ssid.  
+                # If we're igating and/or beaconing, then direwolf requires the user's actual callsign-ssid.  
                 filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
                 status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
