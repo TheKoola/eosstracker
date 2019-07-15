@@ -21,7 +21,7 @@
     "slowrate": "10:00",
     "slowspeed": "5",
     "slowturn": "60",
-    "ssid": "9",
+    "ssid": "2",
     "symbol": "/k",
     "timezone": "America/Denver"
 }

@@ -246,9 +246,6 @@ def getAPRSFilter(aprsRadius, callsign, ssid):
     try:
         # Adjust inital APRS-IS filter if a callsign was given.
         # ...we do this so that we ingest packets that were heard directly as well as those via a radius, etc..
-        #if callsign == "E0SS" or callsign == "":
-        #    aprsFilter = ""
-        #else:
         if ssid != "" and callsign != "E0SS":
             aprsFilter = "e/" + callsign + "-" + ssid 
         else:
@@ -723,10 +720,14 @@ def createDirewolfConfig(callsign, l, configdata):
             f.write("IGSERVER 127.0.0.1\n")
         
             # Login info for aprsc
+            # If igating is enabled, then the user has supplied their own callsign-ssid along with APRS-IS passcode for use as the APRS-IS login name that direwolf uses.
+            # Note that this APRS-IS login name is different than the callsign-ssid that is tagged as having "igated" a packet.  That is defined above with the MYCALL parameter.
             if configdata["igating"] == "true":
                 password = configdata["passcode"]
             else:
+                # Okay, we're not igating, so we need to generate a passcode for this callsign.
                 password = aprslib.passcode(str(callsign))
+
             f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
  
             # The rest of the direwolf configuration
@@ -1011,7 +1012,7 @@ def main():
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false"}
+    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false"}
 
     for the_key, the_value in defaultkeys.iteritems():
         if the_key not in configuration:
@@ -1020,6 +1021,10 @@ def main():
     # If the callsign is empty, we use the default one from the command line.
     if configuration["callsign"] == "":
         configuration["callsign"] = options.callsign
+
+    # If the ssid is empty, we use "2" as the default
+    if configuration["ssid"] == "":
+        configuration["ssid"] = 2
 
     if configuration["igating"] == "true":
         if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
@@ -1122,16 +1127,8 @@ def main():
                 k += 1
 
             # Create Direwolf configuration file
-            if configuration["igating"] == "false" and configuration["beaconing"] == "false":
-                # If we're not igating or beaconing then for direwolf we use a callsign of the form: <MYCALL>02.  We append "02" to the end of it.
-                # However, we limit the length of the callsign string including the "02" suffix to be 6 chars - direwolf imposes this restriction.
-                sixCharLimitedCallsign = str(configuration["callsign"])[:4] + "02"
-                filename = createDirewolfConfig(sixCharLimitedCallsign, direwolfFreqList, configuration)
-                status["direwolfcallsign"] = sixCharLimitedCallsign
-            else:
-                # If we're igating and/or beaconing, then direwolf requires the user's actual callsign-ssid.  
-                filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
-                status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
+            filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
+            status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
             # where we want stdout from direwolf output to go
             logfile = "/eosstracker/logs/direwolf.out"
