@@ -1482,14 +1482,14 @@ function getTrackers() {
             <div class="sidebar-pane" id="settings">
                 <h1 class="sidebar-header">Settings<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="section-header">Preferences:</p>
-                <form id="userpreferences" action="preferences.php" name="userpreferences">
+<!--            <form id="userpreferences" action="preferences.php" name="userpreferences">
                 <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
 		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences"> minutes</td></tr>
                     <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" placeholder="nn"> pixels</td></tr>
                     <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
                     <tr><td colspan=2><input type="submit" value="Submit" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"></td></tr>
                 </table>
-                </p>
+-->             </p>
                 <div id="error"></div>
                 <div id="error2"></div>
                 <div id="error3"></div>
