@@ -1072,6 +1072,7 @@
 	document.getElementById("serialport").disabled = true;
 	document.getElementById("serialproto").disabled = true;
 	document.getElementById("includeeoss").disabled = true;
+	document.getElementById("eoss_string").disabled = true;
 	
 	var igating = document.getElementById("igating").checked;
         if (!igating) {
@@ -1362,6 +1363,7 @@
 	    document.getElementById("serialproto").disabled = false;
 	    document.getElementById("comment").disabled = false;
 	    document.getElementById("includeeoss").disabled = false;
+	    document.getElementById("eoss_string").disabled = false;
 	    document.getElementById("symbol").disabled = false;
 	    if (checkOverlay()) {
 	        document.getElementById("overlay").disabled = false;
@@ -1397,6 +1399,19 @@
 	}
     }
 
+    /***********
+    * checkEOSS function
+    *
+    * This function will check that the checkbox "Include EOSS" is checked and if so, enable some input fields.
+    ***********/
+    function checkEOSS() {
+        var eoss = document.getElementById("includeeoss");
+
+        if (eoss.checked) 
+	        document.getElementById("eoss_string").disabled = false;
+        else
+	        document.getElementById("eoss_string").disabled = true;
+    }
 
     /***********
     * getConfiguration function
@@ -1425,11 +1440,12 @@
             document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
             document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
             document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
-	    document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
+	        document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
             document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
-	    document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
-	    document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
+	        document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
+            document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
+	        document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
             var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
 	    $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
 
@@ -1528,10 +1544,9 @@
             document.getElementById("beaconing").checked = beaconing;
 	    checkIgating();
 	    checkBeaconing();
-            validateCallsign();
-		
+        validateCallsign();
 
-	});
+	    });
     }
 
 
@@ -1560,6 +1575,7 @@
 	    var serialport = document.getElementById("serialport");
 	    var serialproto = document.getElementById("serialproto");
 	    var includeeoss = document.getElementById("includeeoss");
+        var eoss = document.getElementById("eoss_string");
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
 	    var overlay = document.getElementById("overlay");
@@ -1605,6 +1621,7 @@
 	        }
 		form_data.append("beaconing", beaconing.checked.toString());
 		form_data.append("includeeoss", includeeoss.checked.toString());
+		form_data.append("eoss_string", eoss.value);
 		form_data.append("fastspeed", fastspeed.value);
 		form_data.append("fastrate", fastrate.value);
 		form_data.append("slowspeed", slowspeed.value);

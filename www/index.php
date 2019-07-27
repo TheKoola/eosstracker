@@ -69,8 +69,9 @@ include $documentroot . '/common/header.php';
 		    var i = (igating == "true" ? "yes" : "no");
 		    var i2 = (i == "yes" ? "<mark>" + i + "</mark>" : i);
 		    var beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
+            var eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
 		    var b = (beaconing == "true" ? "yes" : "no");
-		    var b2 = (b == "yes" ? "<mark>" + b + "</mark>" : b);
+		    var b2 = (b == "yes" ? "<mark>" + b + (eoss != "" ? "</mark><br>Path String: <mark>" + eoss + " " : "") + "</mark>" : b);
 		    var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
 
 		    document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);

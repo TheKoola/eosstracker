@@ -475,8 +475,21 @@ include $documentroot . '/common/header-setup.php';
                     </td>
                 </tr>
 
-		<tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.</td>
-		    <td class="packetlist" id="beaconingtext9b" style="text-align: center; color: lightgrey; white-space: nowrap;">Prepend EOSS:  <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked></td>
+		<tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" or "EOSSx" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.</td>
+            <td class="packetlist" id="beaconingtext9b" style="text-align: center; color: lightgrey; white-space: nowrap;">
+            Prepend EOSS: <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked onchange="checkEOSS();">
+            &nbsp; String: <select form="configuration_form" name="eoss_string" id="eoss_string">
+                <option value="EOSS" selected="selected">EOSS</option>
+                <option value="EOSSA">EOSSA</option>
+                <option value="EOSSB">EOSSB</option>
+                <option value="EOSSC">EOSSC</option>
+                <option value="EOSSD">EOSSD</option>
+                <option value="EOSSE">EOSSE</option>
+                <option value="EOSSF">EOSSF</option>
+                <option value="EOSSG">EOSSG</option>
+                <option value="EOSSH">EOSSH</option>
+            </select>
+            </td>
                 </tr>
 
 
