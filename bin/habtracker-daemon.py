@@ -890,10 +890,10 @@ def createAprscConfig(filename, callsign, igate):
 
             if igate == "true":
                 # For uploading packets received over RF (aka from Direwolf), set this to "full" instead of "ro".
-                f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 10152\n")
+                f.write("Uplink \"Core rotate\" full  tc  noam.aprs2.net 10152 r/39.75/-103.5/380\n")
             else:
                 # This is set to be a read only connection to APRS-IS.  That is, we're not going to upload packets to any defined Uplink connections.
-                f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152\n")
+                f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152 r/39.75/-103.5/380\n")
 
             f.write("HTTPStatus 0.0.0.0 14501\n")
             f.write("FileLimit        10000\n")
