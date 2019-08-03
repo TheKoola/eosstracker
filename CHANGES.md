@@ -18,6 +18,8 @@
 
 - Updated the data entry fields for flight identifiers and callsigns allowing for more descriptive names.  Fields allow for longer identifiers as well as relaxed restrictions on Ham callsign formats.
 
+- Added the ability to choose which "EOSSx" string to add to the APRS path for APRS position transmissions when the brick is connected to an external radio.  The string is now placed at the front of the APRS path instead of being appended to the end.
+
 
 ### Bugs Fixed: ###
 
@@ -30,6 +32,14 @@
 - Adjustment to the callsign used for the APRS-IS packet filter used when connecting to the locally running aprsc daemon.  This prevents the filter from including packets from igates that use the same callsign as the EOSS Tracker user, but a different SSID.  The aprsc filter now uses the callsign as well as the ssid.  
 
 - Much improved GPS status reporting on the main web, home page.  The GPS monitoring thread improved to withstand GPS devices being removed/added.
+
+- Corrected an error with an out of bounds array index when choosing the color for balloon tracks.
+
+- Fixed some incorrect HTML that could cause popups on the map for balloon icons to render incorrectly.
+
+- Changed how updates occur for the map so that calls to the backend web server are consolidated to reduce the amount of unecessary browser churn.  Flight gauges, tables, and charts are now only updated when new data for a flight is available.  This significantly reduces data pulls from the backend webserver.
+
+- Fixed an issue where the MarkerCluster Leaflet plugin was installed incorrectly.
 
 
 ## Version 1.1 - April 2019 ##
