@@ -232,7 +232,7 @@ and a.callsign = fm.callsign '
             json_encode($ray[10]), 
             json_encode($ray[1]), 
             json_encode($ray[4]), 
-            json_encode("Flight: <strong>" . $get_flightid. "</strong><br>" . $ray[5] . "<br>Speed: " . $ray[6] . " mph<br>Heading: " . $ray[7] . "&#176;<br>Vert Rate: " . number_format($ray[8]) . " ft/min"), 
+            json_encode("Flight: <strong>" . $get_flightid. "</strong>" . ($ray[5] == "" ? "" : "<br>" . $ray[5]) . "<br>Speed: " . $ray[6] . " mph<br>Heading: " . $ray[7] . "&#176;<br>Vert Rate: " . number_format($ray[8]) . " ft/min"), 
             //json_encode("bla bla"),
             json_encode($callsign), 
             json_encode($ray[6]), 
