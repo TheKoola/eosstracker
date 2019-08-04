@@ -77,12 +77,12 @@ instance_action () {
 
 echo "Adding filter to aprsc config file."
 if test -e "$CONFIG_DIR/$CONFIG_FILE" ; then
-	sed -i 's,net 10152.*,net 10152 '"$FILTER"',g' $CONFIG_DIR/$CONFIG_FILE
+	sed -i 's,net 10152.*,net 14580 filter '"$FILTER"',g' $CONFIG_DIR/$CONFIG_FILE
 else
 	echo "Error:  $CONFIG_DIR/$CONFIG_FILE not found.  No filter added."
 fi
 
-echo "Reloading $DESC configuration files." 
+echo "Reloading $DESC configuration files."
 SIGNAL=USR1
 instance_action "signal_aprsc" "Reloading" $@
 
