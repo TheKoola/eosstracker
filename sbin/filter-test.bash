@@ -72,7 +72,7 @@ instance_action () {
 
 # Uplink "Core rotate" full  tcp  noam.aprs2.net 10152
 # Changes to
-# Uplink "Core rotate" full  tcp  noam.aprs2.net 10152 r/39.75/-103.5/380
+# Uplink "Core rotate" full  tcp  noam.aprs2.net 14580 filter r/39.75/-103.5/380
 # Then reload aprsc daemon
 
 echo "Adding filter to aprsc config file."
