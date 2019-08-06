@@ -45,11 +45,9 @@ include $documentroot . '/common/header-setup.php';
         ele.slideToggle('fast', function() {
             if (ele.is(':visible')) {
                 signEle.text('-');
-                //document.getElementById("error-JEFF-275").innerHTML = "toggling...minus:  " + divId + ", " + switchTag;
              }
              else  {
                 signEle.text('+');
-                //document.getElementById("error-JEFF-275").innerHTML = "toggling...plus:  " + divId + ", " + switchTag;
              }
         });
     }
@@ -272,7 +270,6 @@ include $documentroot . '/common/header-setup.php';
                     <td class="packetlist"><select form="newprediction_form" name="newprediction_flightids" id="newprediction_flightids"></select></td>
                     <td class="packetlist"><input type="date"  form="newprediction_form" name="newprediction_thedate" id="newprediction_thedate" placeholder="yyyy-mm-dd" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required"></td>
                     <td class="packetlist"><select form="newprediction_form" name="newprediction_launchsite" id="newprediction_launchsite"></select>
-                    <!--<td class="packetlist"><input type="text"  form="newprediction_form" size="25" name="newprediction_url" id="newprediction_url" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" placeholder="url"> -->
                     <td class="packetlist"><input type="file"  form="newprediction_form" name="newprediction_file" id="newprediction_file" required="required" >
                 </td></tr>
                 </table>
@@ -422,18 +419,26 @@ include $documentroot . '/common/header-setup.php';
                 </tr> 
 
 
-		<tr>
-                    <td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps; ">Igating to the Internet</td></tr>
+		<tr><td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps; ">APRS-IS Internet Uplink</td></tr>
+        <tr> <td class="packetlist" rowspan=1 style="background-color: #ffbf00;">
+             <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">APRS-IS</div></td>
+             <td class="packetlist" id="aprstext1"><strong>Additional Area of Interest</strong>. An optional, additional area of interest can be added so that when connected to an Internet connection, the system will have access to packets in this geographic area as well.  The default coordinates are approximately at Last Chance, Colorado (39.75, -103.60).  All coordinates should be entered in decimal degrees and radius values in kilometers.</td>
+             <td class="packetlist"  id="aprstext2" style="text-align: right;">
+                    Latitude: <input type="number"  form="configuration_form" style="text-align: right;" size="6" name="filter_lat" id="filter_lat" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" placeholder="latitude" min="-90" max="90" step=".01"><br>
+                    Longitude: <input type="number"  form="configuration_form" style="text-align: right;" size="6" name="filter_lon" id="filter_lon" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"  placeholder="longitude" min="-180" max="180" step=".01"><br>
+                    Radius (km): <input type="number"  form="configuration_form" style="text-align: right;" size="6" name="filter_radius" id="filter_radius" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"  placeholder="radius" max="5000" min="100" step="50">
+             </td>
+        </tr> 
 
-
+		<tr><td colspan=3 class="packetlist" style="background-color: lightsteelblue; text-align: center; font-size: 1.1em; font-variant: small-caps; ">Igating to the Internet</td></tr>
 		<tr>
 <td class="packetlist" rowspan=3 style="background-color: #ffbf00;"><div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">IGating</div></td>
                     <td class="packetlist" id="igatingtext1"><strong>Enable igating</strong> for received APRS packets.  This assumes the system has Internet connectivity.</td>
-                    <td class="packetlist"  id="igatingtext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable igating: <input type="checkbox" name="igating" disabled="disabled" id="igating" onchange="checkIgating();"></td>
+                    <td class="packetlist"  id="igatingtext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Enable igating: <input type="checkbox" form="configuration_form" name="igating" disabled="disabled" id="igating" onchange="checkIgating();"></td>
                 </tr> 
 		<tr>
                     <td class="packetlist" id="passcodetext1"><strong>APRS-IS passcode</strong> for connections to APRS-IS systems.</td>
-                    <td class="packetlist" id="passcodetext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{1,5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
+                    <td class="packetlist" id="passcodetext2" style="text-align: center; white-space: nowrap; color: lightgrey;">Passcode: <input type="text" disabled="disabled" form="configuration_form" name="passcode" id="passcode"  placeholder="nnnnn" pattern="[0-9]{1,5}" onchange="validatePasscode();" size="5" maxlength="5" oninput="setCustomValidity('');"></td>
                 </tr> 
 
 		<tr>
@@ -531,7 +536,9 @@ include $documentroot . '/common/header-setup.php';
                         </select>
                     </td>
                 </tr>
-                <tr><td colspan=3 class="packetlist" style="text-align: center; padding: 10px;"><input style="font-variant: small-caps; font-family:  'Gill Sans', GillSans, Helvetica, san-serif; font-size: 1.4em; background-color: lightsteelblue; color: black;" type="submit" value="Save Settings" onclick="setConfiguration(); return false;"></td></tr>
+                <tr><td colspan=3 class="packetlist" style="text-align: center; padding: 10px;"><input style="font-variant: small-caps; font-family:  'Gill Sans', GillSans, Helvetica, san-serif; font-size: 1.4em; background-color: lightsteelblue; color: black;" type="submit" value="Save Settings" onclick="setConfiguration(); return false;">
+            <p class="normal-black" style="text-align: center;"><span id="configurationsettings_error2"></span></p>
+            </td></tr>
 
                 </table>
                 </form>

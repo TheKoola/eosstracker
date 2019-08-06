@@ -4,6 +4,7 @@
     "beaconlimit": "02:00",
     "callsign": "",
     "comment": "EOSS Tracker",
+    "customfilter": "r/39.75/-103.6/400",
     "eoss_string": "EOSS",
     "fastrate": "01:00",
     "fastspeed": "45",

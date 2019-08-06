@@ -46,7 +46,6 @@
         var max = Math.max(...frequencies, thefreq);
         var range = max - min;
 
-        //document.getElementById("addfrequencyerror").innerHTML = "range:  " + range + ", min: " + min + ", max: " + max;
 
         if (thefreq < 144 || thefreq > 146) {
 	        freq.setCustomValidity("Frequency range must be between 144MHz and 146MHz.");
@@ -99,7 +98,6 @@
         var freq = document.getElementById("newfrequency");
         var thefreq = freq.value;
 
-        //document.getElementById("addnewbeaconerror").innerHTML = flightid + ", " + freq + ", " + call + ", " + beacon_desc;
         if (!freq.checkValidity()) {
             throw freq.validationMessage;
             return false;
@@ -132,13 +130,11 @@
             var freqJson = JSON.parse(data);
             var keys = Object.keys(freqJson);
 
-            //document.getElementById("errors").innerHTML = JSON.stringify(keys);
 
             //Create a HTML Table element.
             var tablediv = document.getElementById("frequencies");
             var table = document.createElement("TABLE");
             table.setAttribute("class", "packetlist");
-            //table.setAttribute("style", "width: 75%;");
             tablediv.innerHTML = "";
 
 
@@ -268,7 +264,6 @@
             var siteJson = JSON.parse(data);
             var keys = Object.keys(siteJson);
 
-            //document.getElementById("errors").innerHTML = JSON.stringify(keys);
 
             //Create a HTML Table element.
             var tablediv = document.getElementById("launchsites");
@@ -351,7 +346,6 @@
         var call = document.getElementById("addnewbeacon_call").value;
         var beacon_desc = document.getElementById("addnewbeacon_description");
        
-        //document.getElementById("addnewbeaconerror").innerHTML = flightid + ", " + freq + ", " + call + ", " + beacon_desc;
         if (!beacon_call.checkValidity()) {
             throw beacon_call.validationMessage;
             return false;
@@ -764,25 +758,6 @@
 
         var i = 1;
  
-        //document.getElementById("addpredictionerror").innerHTML = flightid + ", " + thedate + ", " + launchsite + ", " + url;
-       
-/*	   
-        $.get("addpredictiondata.php?flightid=" + flightid + "&thedate=" + thedate + "&launchsite=" + launchsite + "&url=" + url, function(data) {
-            var jsonData = JSON.parse(data);
-  
-            if (jsonData.result)
-                if (jsonData.result == 1)
-                    document.getElementById("addpredictionerror").innerHTML = "<mark>" + jsonData.error + "</mark>";
-                else
-                    document.getElementById("addpredictionerror").innerHTML = "";
-            getPredictions();
-            document.getElementById("newprediction_flightids").selectedIndex = 0;
-            document.getElementById("newprediction_launchsite").selectedIndex = 0;
-            document.getElementById("newprediction_thedate").value = "";
-            document.getElementById("newprediction_launchsite").value = "";
-            document.getElementById("newprediction_url").value = "";
-        });
-	*/
         return false;
     }
 
@@ -979,7 +954,6 @@
     function validateCallsign() {
         var callsign = document.getElementById("callsign");
 	    
-	//console.log("callsign:  " + callsign.value + ", passcode:  " + generatePasscode(callsign.value));
 
         if (!callsign.checkValidity()) {
             disableIgating();
@@ -1420,8 +1394,8 @@
     ***********/
     function getConfiguration() {
         $.get("readconfiguration.php", function(data) {
-	    var jsonData = JSON.parse(data);
-	    var keys = Object.keys(jsonData);
+            var jsonData = JSON.parse(data);
+            var keys = Object.keys(jsonData);
             var i;
             var ssid = document.getElementById("ssid");
             var serialport = document.getElementById("serialport");
@@ -1429,123 +1403,142 @@
 
 
             document.getElementById("callsign").value = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);	    
-	    $("#ssid").val(jsonData.ssid);
+            $("#ssid").val(jsonData.ssid);
             //ssid.selectedIndex = (typeof(jsonData.ssid) == "undefined" ? 9 : jsonData.ssid -1 );	    
 
             document.getElementById("passcode").value = (typeof(jsonData.passcode) == "undefined" ? "" : jsonData.passcode);	    
             document.getElementById("ibeacon").checked = (typeof(jsonData.ibeacon) == "undefined" ? false : (jsonData.ibeacon == "true" ? true : false));
             document.getElementById("ibeaconrate").value = (typeof(jsonData.ibeaconrate) == "undefined" ? "" : jsonData.ibeaconrate);	    
-
             document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
             document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
             document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
             document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
-	        document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
+            document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
             document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
-	        document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
+            document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
             document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
-	        document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
+            document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
             var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
-	    $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
+            $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
 
-	    // Update the aprs symbols dropdown box
-	    var sym;
-	    r = aprssymbols;
-	    r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
-	    var keys = Object.keys(r);
-	    var i = 0;
-	    var selectedSymbol = jsonData.symbol;
-	    var overlaymatch = false;
-	    var tc;
-	    for (sym in keys) {
-		if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
-		    if (selectedSymbol == r[sym].symbol) {
-			i = sym;
+            // Get the custom filter
+            if (typeof(jsonData.customfilter) != "undefined") {
+                var customfilter = jsonData.customfilter;
+                var splitfilter = customfilter.split("/");
+
+                var lat = parseFloat(splitfilter[1]);
+                var lon = parseFloat(splitfilter[2]);
+                var rad = parseFloat(splitfilter[3]);
+
+                document.getElementById("filter_lat").value = lat;
+                document.getElementById("filter_lon").value = lon;
+                document.getElementById("filter_radius").value = rad;
+            }
+
+            // Update the aprs symbols dropdown box
+            var sym;
+            r = aprssymbols;
+            r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
+            var keys = Object.keys(r);
+            var i = 0;
+            var selectedSymbol = jsonData.symbol;
+            var overlaymatch = false;
+            var tc;
+            for (sym in keys) {
+                if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
+                    if (selectedSymbol == r[sym].symbol) {
+                        i = sym;
                         if (olay != "") {
-	                    for (tc in validoverlays) {
-	                        if (r[sym].tocall == validoverlays[tc]) {
-	                            overlaymatch = true;
-	                        }
+                            for (tc in validoverlays) {
+                                if (r[sym].tocall == validoverlays[tc]) {
+                                    overlaymatch = true;
+                                }
                             }
-	                }
-		    }
-  		    $("#symbol").append($("<option></option>").val(r[sym].symbol).html(r[sym].description));
-		}
-	    }
-	    $("#symbol").val(jsonData.symbol);
-	    if (overlaymatch) {
-                 imagefile = "/images/aprs/" + olay + "-" + r[i].tocall + ".png";
-		 document.getElementById("overlay").disabled = false;
-		 document.getElementById("overlay").value = olay;
-                 document.getElementById("overlaytext").style["color"] = "black";
-	    }
-	    else {
-                 imagefile = "/images/aprs/" + r[i].tocall + ".png";
-		 document.getElementById("overlay").value = "";
-		 document.getElementById("overlay").disabled = true;
-                 document.getElementById("overlaytext").style["color"] = "lightgrey";
-	    }
+                        }
+                    }
+                    $("#symbol").append($("<option></option>").val(r[sym].symbol).html(r[sym].description));
+                }
+            }
+            $("#symbol").val(jsonData.symbol);
+            if (overlaymatch) {
+                imagefile = "/images/aprs/" + olay + "-" + r[i].tocall + ".png";
+                document.getElementById("overlay").disabled = false;
+                document.getElementById("overlay").value = olay;
+                document.getElementById("overlaytext").style["color"] = "black";
+            }
+            else {
+                imagefile = "/images/aprs/" + r[i].tocall + ".png";
+                document.getElementById("overlay").value = "";
+                document.getElementById("overlay").disabled = true;
+                document.getElementById("overlaytext").style["color"] = "lightgrey";
+            }
             document.getElementById("symbolicon").innerHTML = "<img src=\"" + imagefile + "\" style=\"width: 32px; height: 32px;\">";
-	    
-	    var selectedAudioDevice = jsonData.audiodev;
-	    $.get("getaudiodevs.php", function(d) {
-		var audioJson = JSON.parse(d);
-		var a;
-		var i = 0;
-		var match = false;
-		var matchidx = 0;
+
+            
+            var selectedAudioDevice = jsonData.audiodev;
+            $.get("getaudiodevs.php", function(d) {
+                var audioJson = JSON.parse(d);
+                var a;
+                var i = 0;
+                var match = false;
+                var matchidx = 0;
 
                 $("#audiodev").html("");
                 for (a in audioJson) {
-	            if (selectedAudioDevice == audioJson[a].device) {
-			match = true;
-			matchidx = i;
-		    }
+                    if (selectedAudioDevice == audioJson[a].device) {
+                        match = true;
+                        matchidx = i;
+                    }
                     $("#audiodev").append($("<option></option>").val(audioJson[a].device).html("Device " + audioJson[a].device + ": " + audioJson[a].description));
-	            i += 1;
+                    i += 1;
                 }
                 if (match)
-		    document.getElementById("audiodev").selectedIndex = matchidx;
-		else
-    	            document.getElementById("audiodev").selectedIndex = 0;
-	    });
+                    document.getElementById("audiodev").selectedIndex = matchidx;
+                else
+                document.getElementById("audiodev").selectedIndex = 0;
+
+            // getaudiodevs
+            });
 
 
-	    // Get the serial port
-	    var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
-	    $.get("getserialports.php", function(d) {
-		var serialJson = JSON.parse(d);
-		var a;
-		var i = 0;
-		var idx = 0;
-		var match = false;
-		var matchidx = 0;
+            // Get the serial port
+            var selectedSerialPort = (typeof(jsonData.serialport) == "undefined" ? "none" : jsonData.serialport);
+            $.get("getserialports.php", function(d) {
+                var serialJson = JSON.parse(d);
+                var a;
+                var i = 0;
+                var idx = 0;
+                var match = false;
+                var matchidx = 0;
 
                 $("#serialport").html("");
                 $("#serialport").append($("<option></option>").val("none").html("none"));
                 for (a in serialJson) {
-			if (selectedSerialPort == serialJson[a].serialport) {
-			    match = true;
-			    matchidx = i+1;
-			}
-                        $("#serialport").append($("<option></option>").val(serialJson[a].serialport).html(serialJson[a].serialport));
-			i += 1;
+                    if (selectedSerialPort == serialJson[a].serialport) {
+                        match = true;
+                        matchidx = i+1;
+                    }
+                    $("#serialport").append($("<option></option>").val(serialJson[a].serialport).html(serialJson[a].serialport));
+                    i += 1;
                 }
                 if (match)
-		    document.getElementById("serialport").selectedIndex = matchidx;
-		else
-		    document.getElementById("serialport").selectedIndex = 0;
-	    });
+                    document.getElementById("serialport").selectedIndex = matchidx;
+                else
+                    document.getElementById("serialport").selectedIndex = 0;
+
+            // getserialports
+            });
             var beaconing = (typeof(jsonData.beaconing) == "undefined" ? false : (jsonData.beaconing == "true" ? true : false));
             var igating = (typeof(jsonData.igating) == "undefined" ? false : (jsonData.igating == "true" ? true : false));
-            
+                    
             document.getElementById("igating").checked = igating;
             document.getElementById("beaconing").checked = beaconing;
-	    checkIgating();
-	    checkBeaconing();
-        validateCallsign();
+            checkIgating();
+            checkBeaconing();
+            validateCallsign();
 
+        // readconfiguration
 	    });
     }
 
@@ -1579,102 +1572,131 @@
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
 	    var overlay = document.getElementById("overlay");
+        var filter_lat = document.getElementById("filter_lat");
+        var filter_lon = document.getElementById("filter_lon");
+        var filter_radius = document.getElementById("filter_radius");
 
 	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
 
-            if (!callsign.checkValidity()) {
-                throw callsign.validationMessage;
-                return false;
+        if (!filter_lat.checkValidity()) {
+            throw filter_lat.validationMessage;
+            return false;
+	    }
+        
+        if (!filter_lon.checkValidity()) {
+            throw filter_lon.validationMessage;
+            return false;
 	    }
 
-            if (igating.checked) {
-		if (!validatePasscode()) {
-                    throw passcode.validationMessage;
-                    return false;
-	        }
-		else if (ibeacon.checked && !ibeaconrate.checkValidity()) {
-		    throw ibeaconrate.validationMessage;
-		    return false;
-		}
-		else {
-		    form_data.append("ibeacon", ibeacon.checked.toString());
-		    form_data.append("passcode", passcode.value);
-		    form_data.append("igating", igating.checked.toString());
-		    form_data.append("ibeaconrate", ibeaconrate.value);
-		}
+        if (!filter_radius.checkValidity()) {
+            throw filter_radius.validationMessage;
+            return false;
+	    }
+
+        if (filter_lat.value == null || filter_lat.value == 0 || filter_lat.value == "", 
+            filter_lon.value == null || filter_lon.value == 0 || filter_lon.value == "",
+            filter_radius.value == null || filter_radius.value == 0 || filter_radius.value == "") {
+            customfilter = "";
+        }
+        else
+            customfilter = "r/" + filter_lat.value + "/" + filter_lon.value + "/" + filter_radius.value;
+        form_data.append("customfilter", customfilter);
+
+
+        if (!callsign.checkValidity()) {
+            throw callsign.validationMessage;
+            return false;
+	    }
+
+        if (igating.checked) {
+		    if (!validatePasscode()) {
+                throw passcode.validationMessage;
+                return false;
+            }
+            else if (ibeacon.checked && !ibeaconrate.checkValidity()) {
+                throw ibeaconrate.validationMessage;
+                return false;
+            }
+            else {
+                form_data.append("ibeacon", ibeacon.checked.toString());
+                form_data.append("passcode", passcode.value);
+                form_data.append("igating", igating.checked.toString());
+                form_data.append("ibeaconrate", ibeaconrate.value);
+		    }
 	    }
 	    else {
-		form_data.append("igating", "false");
-		form_data.append("passcode", "");
-            }
+		    form_data.append("igating", "false");
+		    form_data.append("passcode", "");
+        }
 	        
 
 
 	    if (beaconing.checked) {
-		for (f of fields) {
-	            //alert("checking: " + f.name);
+		    for (f of fields) {
 	            if (!f.checkValidity()) {
-			throw f.validationMessage;
-			return false;
-		    }
+			        throw f.validationMessage;
+			        return false;
+		        }
 	        }
-		form_data.append("beaconing", beaconing.checked.toString());
-		form_data.append("includeeoss", includeeoss.checked.toString());
-		form_data.append("eoss_string", eoss.value);
-		form_data.append("fastspeed", fastspeed.value);
-		form_data.append("fastrate", fastrate.value);
-		form_data.append("slowspeed", slowspeed.value);
-		form_data.append("slowrate", slowrate.value);
-		form_data.append("beaconlimit", beaconlimit.value);
-		form_data.append("fastturn", fastturn.value);
-		form_data.append("slowturn", slowturn.value);
-	    }
-	    else 
-		form_data.append("beaconing", "false");
+
+            form_data.append("beaconing", beaconing.checked.toString());
+            form_data.append("includeeoss", includeeoss.checked.toString());
+            form_data.append("eoss_string", eoss.value);
+            form_data.append("fastspeed", fastspeed.value);
+            form_data.append("fastrate", fastrate.value);
+            form_data.append("slowspeed", slowspeed.value);
+            form_data.append("slowrate", slowrate.value);
+            form_data.append("beaconlimit", beaconlimit.value);
+            form_data.append("fastturn", fastturn.value);
+            form_data.append("slowturn", slowturn.value);
+            }
+            else 
+            form_data.append("beaconing", "false");
 
 
 
-	    if (beaconing.checked || igating.checked)  {
-		form_data.append("comment", comment.value);
-	        form_data.append("symbol", symbol.value);
-		if (!overlay.disabled) {
-                    form_data.append("overlay", overlay.value.toUpperCase());
-		}
-		else {
-		    form_data.append("overlay", "");
-		}
-	    }
-	    else {
-		form_data.append("overlay", "");
-	    }
+            if (beaconing.checked || igating.checked)  {
+            form_data.append("comment", comment.value);
+                form_data.append("symbol", symbol.value);
+            if (!overlay.disabled) {
+                        form_data.append("overlay", overlay.value.toUpperCase());
+            }
+            else {
+                form_data.append("overlay", "");
+            }
+            }
+            else {
+            form_data.append("overlay", "");
+            }
 
-	    form_data.append("callsign", callsign.value.toUpperCase());
-	    form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
-	    form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
-	    form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
-	    form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
-            $.ajax({
-                url: "setconfiguration.php",
-                dataType: 'json',
-                cache: false,
-                contentType: false,
-                processData: false,
-                data: form_data,
-                type: 'post',
-		success: function(jsonData, textStatus, jqXHR) {
-	            document.getElementById("configurationsettings_error").innerHTML = "<mark>Settings saved.</mark>";
-		    setTimeout(function() {
-		        document.getElementById("configurationsettings_error").innerHTML = "";
-		    }, 3000);
-		    getConfiguration();
-		},
-                error: function (jqXHR, textStatus, errorThrown) {
-	            //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
-		}
-	    });
+            form_data.append("callsign", callsign.value.toUpperCase());
+            form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
+            form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+            form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
+            form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
+                $.ajax({
+                    url: "setconfiguration.php",
+                    dataType: 'json',
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    data: form_data,
+                    type: 'post',
+            success: function(jsonData, textStatus, jqXHR) {
+                    document.getElementById("configurationsettings_error").innerHTML = "<mark>Settings saved.</mark>";
+                    document.getElementById("configurationsettings_error2").innerHTML = "<mark>Settings saved.</mark>";
+                setTimeout(function() {
+                    document.getElementById("configurationsettings_error").innerHTML = "";
+                    document.getElementById("configurationsettings_error2").innerHTML = "";
+                }, 3000);
+                getConfiguration();
+            },
+                    error: function (jqXHR, textStatus, errorThrown) {
+            }
+            });
 
-	    return false;
+            return false;
     }
 
 
