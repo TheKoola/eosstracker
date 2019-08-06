@@ -1,7 +1,7 @@
 # Installing the EOSS-modified aprsc
 
 Notes by Jeff N2XGL,
-Version 1.0, Dated 2019-08-05
+Version 1.1, Dated 2019-08-06
 
 ## Installing the modified EOSS aprsc software from source
 
@@ -34,9 +34,9 @@ make a source directory (if it does not exist).  Download the EOSS-modified
 version of `aprsc`:
 
 ```
-eosstracker@tracker:~$ mkdir -p src
-eosstracker@tracker:~$ cd ~/src
-eosstracker@tracker:~/src$ git clone https://github.com/edgeofspace/aprsc.git
+eosstracker@eosstracker:~$ mkdir -p src
+eosstracker@eosstracker:~$ cd ~/src
+eosstracker@eosstracker:~/src$ git clone https://github.com/edgeofspace/aprsc.git
 
 Cloning into 'aprsc'...
 remote: Enumerating objects: 26, done.
@@ -49,8 +49,8 @@ Resolving deltas: 100% (5167/5167), done.
 Change to the `src` directory within the newly created `aprsc` directory and
 configure the Makefile.
 ```
-eosstracker@tracker:~/src$ cd aprsc/src
-eosstracker@tracker:~/src/aprsc/src$ ./configure
+eosstracker@eosstracker:~/src$ cd aprsc/src
+eosstracker@eosstracker:~/src/aprsc/src$ ./configure
 
      [... lines deleted ...]
 configure: creating ./config.status
@@ -59,7 +59,7 @@ config.status: creating ac-hdrs.h
 ```
 Now compile the modified `aprsc` into the binary applications by running `make`.
 ```
-eosstracker@tracker:~/src/aprsc/src$ make
+eosstracker@eosstracker:~/src/aprsc/src$ make
 
      [... lines deleted ...]
 perl -ne "s{\@DATEVERSION\@}{2.1.4-g80f1dea - 2019 August 06}g; \
@@ -72,7 +72,7 @@ perl -ne "s{\@DATEVERSION\@}{2.1.4-g80f1dea - 2019 August 06}g; \
 Finally, install the binaries into their proper locations, overwriting the
 old versions.  Run the command `make install` as the superuser.
 ```
-eosstracker@tracker:~/src/aprsc/src$ sudo make install
+eosstracker@eosstracker:~/src/aprsc/src$ sudo make install
 [sudo] password for eosstracker:
 
     [... lines deleted ...]
