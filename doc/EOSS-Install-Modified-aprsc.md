@@ -34,7 +34,7 @@ make a source directory (if it does not exist).  Download the EOSS-modified
 version of `aprsc`:
 
 ```
-eosstracker@eosstracker:~$ mkdir -p src
+eosstracker@eosstracker:~$ mkdir -p ~/src
 eosstracker@eosstracker:~$ cd ~/src
 eosstracker@eosstracker:~/src$ git clone https://github.com/edgeofspace/aprsc.git
 
