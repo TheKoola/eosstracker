@@ -85,6 +85,39 @@
         db_error(sql_last_error());
         return 0;
     }
+
+    ## Determine how many seconds have elapsed since the last packet from the flight.
+    $query = "select
+        extract(epoch from (now() - max(a.tm))) as secs
+
+        from
+        packets a,
+        flights f,
+        flightmap fm
+
+        where
+        f.flightid = $1
+        and fm.flightid = f.flightid
+        and a.callsign = fm.callsign;";
+
+    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    $rows = sql_fetch_all($result);
+    $seconds_since_last_packet = $rows[0]['secs'];
+
+    # If the last packet from the flight is older than the lookback period, then we just return.  
+    # We don't want to display landing predictions for older stuff.
+    if ($seconds_since_last_packet > $config["lookbackperiod"] * 60) {
+        printf ("[]");
+        sql_close($link);
+        return 0;
+    }
+
     
     ## get the landing predictions...
     $query = 'select 
