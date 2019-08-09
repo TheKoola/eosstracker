@@ -48,6 +48,7 @@
     var otherStationsPane;
     var lastposition;
     var activeflights = [];
+    var globalUpdateCounter = 0;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1853,13 +1854,12 @@ function getTrackers() {
     function updateAllItems(fullupdate) {
 
         // Check if this is a full update (i.e. user reloaded the web page)...in that case, update everything.
-        if (fullupdate) 
+        if (fullupdate) {
             fullupdate="full";
+            globalUpdateCounter = 0;
+        }
         else
             fullupdate = "";
-
-        //var d = new Date();
-        //console.log("[" + d.toLocaleTimeString() + "] updateAllItems: " + fullupdate);
 
         // Update the realtime layers that aren't flight layers (aka everything else...mylocation, trackers, landing predictions, other stations, etc.)
         var rl;
@@ -2169,8 +2169,20 @@ function getTrackers() {
         // Update the live packet stream tab
         getLivePackets();
 
-        // Now set updateAllItems to run again in 5 seconds.
-        setTimeout(updateAllItems, 5000);
+        //setTimeout(updateAllItems, 5000);
+
+        // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
+        // ...the idea being that ever so often, we should try to update everything on the map.
+        if (globalUpdateCounter > 12) {
+            // Set updateAllItems to run again in 5 seconds, but as a full.
+            setTimeout(function() {updateAllItems("full")}, 5000);
+        }
+        else {
+            // Set updateAllItems to run again in 5 seconds.
+            setTimeout(updateAllItems, 5000);
+        }
+
+        globalUpdateCounter += 1;
 
     }
 
