@@ -48,13 +48,13 @@ else
     printf ("<title>%s</title>\n", $pagetitle);
 ?>
 <!-- Load css -->
-<link href="/common/c3.css" rel="stylesheet">
+<link href="/common/c3.min.css" rel="stylesheet">
 <link href="/common/dashboard.css" rel="stylesheet">
 
 <!-- Load js -->
-<script src="/common/jquery-3.3.1.js"></script>
+<script src="/common/jquery-3.4.1.min.js"></script>
 <script src="/common/d3.min.js" charset="utf-8"></script>
-<script src="/common/c3.js"></script>
+<script src="/common/c3.min.js"></script>
 <script src="/common/symbols.js"></script>
 <script src="/common/dashboard.js"></script>
 </head>
