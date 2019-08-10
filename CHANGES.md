@@ -20,6 +20,8 @@
 
 - Added the ability to choose which "EOSSx" string to add to the APRS path for APRS position transmissions when the brick is connected to an external radio.  The string is now placed at the front of the APRS path instead of being appended to the end.
 
+- Time-to-live values (in minutes) are not displayed for each flight on the left side, slideout bar.  When a flight is descending the number of estimated minutes until landing is displayed.
+
 
 ### Bugs Fixed: ###
 
