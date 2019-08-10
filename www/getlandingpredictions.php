@@ -127,7 +127,8 @@
         l.thetype, 
         ST_Y(l.location2d) as lat, 
         ST_X(l.location2d) as long,
-        ST_AsGeoJSON(l.flightpath) as flightpath
+        ST_AsGeoJSON(l.flightpath) as flightpath,
+        l.ttl
 
         from 
         landingpredictions l, 
@@ -159,6 +160,7 @@
         $latitude = $row['lat'];
         $longitude = $row['long'];
         $flightpath[$callsign] = $row['flightpath'];
+        $ttl[$callsign] = $row['ttl'];
         $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude, $row['thetype']);
     }
 
@@ -173,14 +175,15 @@
 
         // This is the point for the landing prediction itself
         printf ("{ \"type\" : \"Feature\",");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s },", 
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s, \"ttl\" : %s },", 
             json_encode($callsign . "_landing_predicted"), 
             json_encode($callsign . " Predicted Landing"), 
             json_encode($callsign . " Landing"), 
             json_encode("/J"), 
             json_encode("Landing prediction"),
 	        json_encode($callsign . " Landing"),
-	        json_encode($config["iconsize"])
+            json_encode($config["iconsize"]),
+            json_encode($ttl[$callsign])
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}", end($features[$callsign])[1], end($features[$callsign])[0]);
         printf ("}");

@@ -228,6 +228,35 @@ div.lowerinstrumentpanel {
     width: 360px;
 }
 
+.ttlcontainer{
+    text-align: left;
+    margin: 0px;
+    padding:  0px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background-color:  black;
+    vertical-align: middle;
+    width: 360px;
+}
+
+
+.ttl {
+    padding:  5px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+    /*border:  1px solid black; */
+}
+
+
+.ttlvalue {
+    background-color:  black;
+    font-family:  "Lucida Console", Monaco, monospace;
+    font-weight: bold;
+    color:  white;
+}
+
+
 .column {
     float: left;
     width:  180;

@@ -262,6 +262,7 @@
         printf ("       </div>");
         printf ("   </div>");
         printf ("</div>");
+        printf ("   <div class=\"ttlcontainer\"><div class=\"ttl\">Time to live: &nbsp; <span class=\"ttlvalue\" id=\"%s\">n/a mins</span></div></div>", $row['flightid'] . "_ttl");
         printf ("</div>");
 
         // Relative position section

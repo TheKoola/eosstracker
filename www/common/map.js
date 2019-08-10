@@ -2136,6 +2136,19 @@ function getTrackers() {
                 });
 
 
+                // Get the latest Time-to-Live values for this flightid
+                $.get("getttl.php?flightid=" + theflight, function(data) {
+                    var thejsondata = JSON.parse(data);
+                    var ttl = thejsondata.ttl + " mins";
+                    var elem = "#" + thejsondata.flightid + "_ttl";
+                    
+                    $(elem).text(ttl);
+
+                // getttl.php
+                });
+
+
+
                 // Calculate our relative position to each flight's latest position packet
                 $.get("getrelativeposition.php?flightid=" + theflight, function(data) {
                     var thejsondata;
