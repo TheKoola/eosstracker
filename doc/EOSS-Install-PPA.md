@@ -26,13 +26,20 @@ team and placed on the PPA repository.  All a user needs to do is connect
 their SDR Tracker computer to the Internet and issue the update/upgrade
 commands.  The steps are described below.
 
+> Note:  If you have already enabled the EOSS PPA repository, or if you
+> are not sure if the repository is enabled or not, there is no concern running
+> the one-time steps again.  Simply follow the one-time steps anyway and
+> your software will be updated.
+
 ## Connecting your SDR Tracker to the EOSS PPA (one-time)
 
 To be able to download EOSS packages and install them, you need to perform
 a one-time setup to connect to the EOSS PPA.  This will require having your
 tracker computer connected to the Intenet in some fashion (e.g. Ethernet or
-WiFi to home network).  You will also need to be logged into the computer at
-the command line.  
+WiFi to home network).  See
+[here](https://github.com/TheKoola/eosstracker/blob/master/doc/EOSS-SDR-Tracker-WiFi.md)
+for instructions on connecting your tracker computer to the Internet via home
+WiFi. You will also need to be logged into the computer at the command line.  
 
 Note that these steps are for Ubuntu >= 9.10 only. Further information
 regarding installing PPAs can be found
