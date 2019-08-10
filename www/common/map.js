@@ -49,6 +49,7 @@
     var lastposition;
     var activeflights = [];
     var globalUpdateCounter = 0;
+    var updateTimeout;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1622,6 +1623,11 @@ function getTrackers() {
             else
                 updateAllItems("full");
 
+            // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
+            $(window).on('focus', function() { 
+                updateAllItems("full", true);
+            });
+
         });
     }
 
@@ -1851,15 +1857,28 @@ function getTrackers() {
      * This function updates other parts of the instrumentation, charts, and tables.
      * This will update every chart/graph/table globally.
     *************/
-    function updateAllItems(fullupdate) {
+    function updateAllItems(fullupdate, fromFocus) {
+
+        // If the fromFocus parameter was not supplied then we set it to false, otherwise true.
+        if (typeof(fromFocus) == "undefined")
+            fromFocus = false;
+        else
+            fromFocus = true;
+
+        // If this update was called from an "onFocus" event and there's already a timer set, then clear that...we'll reset again at the end of this function.
+        if (fromFocus && updateTimeout) {
+            clearTimeout(updateTimeout);
+        }
+
 
         // Check if this is a full update (i.e. user reloaded the web page)...in that case, update everything.
-        if (fullupdate) {
+        if (typeof(fullupdate) != "undefined") {
             fullupdate="full";
             globalUpdateCounter = 0;
         }
-        else
+        else {
             fullupdate = "";
+        }
 
         // Update the realtime layers that aren't flight layers (aka everything else...mylocation, trackers, landing predictions, other stations, etc.)
         var rl;
@@ -2169,19 +2188,17 @@ function getTrackers() {
         // Update the live packet stream tab
         getLivePackets();
 
-        //setTimeout(updateAllItems, 5000);
 
         // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
         // ...the idea being that ever so often, we should try to update everything on the map.
-        if (globalUpdateCounter > 12) {
+        if (globalUpdateCounter > 16) {
             // Set updateAllItems to run again in 5 seconds, but as a full.
-            setTimeout(function() {updateAllItems("full")}, 5000);
+            updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
         }
         else {
             // Set updateAllItems to run again in 5 seconds.
-            setTimeout(updateAllItems, 5000);
+            updateTimeout = setTimeout(updateAllItems, 5000);
         }
-
         globalUpdateCounter += 1;
 
     }
