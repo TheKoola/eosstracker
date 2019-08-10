@@ -43,6 +43,8 @@
 
 - Fixed an issue where the MarkerCluster Leaflet plugin was installed incorrectly.
 
+- Updated landing predictions so that the algorithm floor was adjusted to use the original launch location as the floor if the GPS location of the SDR system was greater than 35miles from the flight.  The prior threshold was set to 75miles which was a bit too far away.
+
 
 ## Version 1.1 - April 2019 ##
 
