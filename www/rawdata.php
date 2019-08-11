@@ -50,7 +50,7 @@ $config = readconfiguration();
         chart = c3.generate({
             bindto: '#chart1',
             size: { width: 800, height: 350 },
-            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%H:%M:%S'  },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             grid: { x: { show: true }, y: { show: true } }
             //grid: { x: { show: true }, y: { show: true } }
@@ -279,39 +279,6 @@ $config = readconfiguration();
             return false;
         }
 	
-	/*
-        var form_data = new FormData();
-        form_data.append("datatype", data_type_selection.value);
-        form_data.append("beginning", data_beginning.value);
-        form_data.append("ending", data_ending.value);
-        $.ajax({
-                url: "downloaddata.php",
-                dataType: 'json',
-                cache: false,
-                contentType: false,
-                processData: false,
-                data: form_data,
-                type: 'post',
-                success: function(jsonData, textStatus, jqXHR) {
-                    if (jsonData.result == 1)
-                        document.getElementById("data_download_error").innerHTML = "<mark>" + jsonData.error + "</mark>";
-                    else
-                        document.getElementById("data_download_error").innerHTML = "";
-                    document.getElementById("data_beginning").value = "";
-                    document.getElementById("data_ending").value = "";
-		    initializeDataSelection();
-                    document.getElementById("data_type_selection").selectedIndex = 0;
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    document.getElementById("errors").innerHTML = "<mark>" + textStatus + ": " + errorThrown + "</mark>";
-                    document.getElementById("data_beginning").value = "";
-                    document.getElementById("data_ending").value = "";
-		    initializeDataSelection();
-                    document.getElementById("data_type_selection").selectedIndex = 0;
-                }
-        });
-	 */
-
 
 	var url="downloaddata.php?datatype=" + data_type_selection.options[data_type_selection.selectedIndex].value + "&beginning=" + data_beginning.value + "&ending=" + data_ending.value;
 	//document.getElementById("data_download_error").innerHTML = url;

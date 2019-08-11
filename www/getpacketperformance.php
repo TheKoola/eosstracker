@@ -137,7 +137,7 @@ order by 1,2,3
     $channels = [];
 
     while ($row = sql_fetch_array($result)) {
-        $tdata[]= $row['theminute'];
+        $tdata[]= $row['thedate'] . " " . $row['theminute'];
         $adata[] = $row['internet_packets'];
         $rfdata[] = $row['rf_packets'];
     }    
