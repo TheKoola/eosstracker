@@ -45,6 +45,8 @@
 
 - Updated landing predictions so that the algorithm floor was adjusted to use the original launch location as the floor if the GPS location of the SDR system was greater than 35miles from the flight.  The prior threshold was set to 75miles which was a bit too far away.
 
+- Corrected an issue where the Packet Performance graph would display gaps when data would cross a day boundary.
+
 
 ## Version 1.1 - April 2019 ##
 
