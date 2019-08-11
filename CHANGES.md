@@ -47,6 +47,8 @@
 
 - Corrected an issue where the Packet Performance graph would display gaps when data would cross a day boundary.
 
+- Fixed a bug in the landing predictor process that would cause predictions to fail. It would attempt to calculate a landing prediction even if no packets from a flight's ascent were available.
+
 
 ## Version 1.1 - April 2019 ##
 
