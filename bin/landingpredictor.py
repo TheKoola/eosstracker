@@ -305,9 +305,10 @@ def landingPredictor(altitude_floor, configuration):
                 # If the index of max altitude is less than the length of the of the flight...implies we've seen an alitude "hump" and are now descending
                 # ...AND we've seen at least 2 packets since the max altitude value was hit...
                 # ...AND the max altitude is > 14,999 feet (sanity check)...
+                # ...AND we've got at least three packets from the ascent portion (without hearing packets on the way up we can't really predict anything)...
                 # ...THEN continue on and try to predict a landing location for this flight
                 alt_sanity_threshold = 14999
-                if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
+                if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold and ascent_rates.shape[0] > 2:
 
                     # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
                     gps_sql = """select 
