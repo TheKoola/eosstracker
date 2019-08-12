@@ -32,8 +32,10 @@ include $documentroot . '/common/header.php';
 $config = readconfiguration();
 ?>
 <script>
-    // This grabs the session variables
+    // The variables for the charts.
     var chart;
+    var chart2;
+    
 
     function coord_distance(lat1, lon1, lat2, lon2) {
         var p = 0.017453292519943295;    // Math.PI / 180
@@ -56,15 +58,31 @@ $config = readconfiguration();
             //grid: { x: { show: true }, y: { show: true } }
         });
     }
+
+    function createchart2 (jsondata, columns) {
+        chart2 = c3.generate({
+            bindto: '#chart2',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'bar', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
+            bar: { width: { ratio: 0.9 } }, 
+            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' } }, y: { label: { text: 'Average Speed (MPH)', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
     
 
     function updatechart (jsondata, columns) {
          chart.load ({ json:  jsondata });
     }
     
+    function updatechart2 (jsondata, columns) {
+         chart2.load ({ json:  jsondata });
+    }
+    
 
-    function getchartdata(chartupdatefunction) {
-        $.get("getpacketperformance.php", function(data) {
+    function getchartdata(chartupdatefunction, url) {
+        $.get(url, function(data) {
             var jsonOutput = JSON.parse(data);
             var mycolumns = {};
             var i = 0;
@@ -326,8 +344,9 @@ $config = readconfiguration();
 
         initialize();
     	initializeDataSelection();
-        getchartdata(createchart);
-        setInterval(function() { getrecentdata(); getchartdata(updatechart); }, 5000);
+        getchartdata(createchart, "getpacketperformance.php");
+        getchartdata(createchart2, "getspeedvsaltitude.php");
+        setInterval(function() { getrecentdata(); getchartdata(updatechart, "getpacketperformance.php"); getchartdata(updatechart2, "getspeedvsaltitude.php"); }, 5000);
     });
     
     
@@ -376,6 +395,19 @@ $config = readconfiguration();
             through an APRS-IS connection.
             </p>
             <p class="normal-black"><div id="chart1"></div></p>
+
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                Winds Aloft
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+   	        <p class="normal-italic">This chart displays the average speed of a flight, as reported through APRS packets, for each 5000ft altitude strata.  Although not perfectly correlated (flight speed vs. wind speed), it can provide a general indicator as to wind strength at higher altitude levels.  Altitude values for a flight are rounded to the nearest 5000ft.  For example, a speed value at an altitude of 33,000ft would be counted with the 35,000ft bar.
+            </p>
+            <p class="normal-black"><div id="chart2"></div></p>
+
+
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 Live APRS Packets
