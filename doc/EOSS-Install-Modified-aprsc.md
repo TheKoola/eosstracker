@@ -29,9 +29,13 @@ provided below.
 > installation. These steps will overwrite your original `aprsc` installation.  
 
 Begin by shutting down the `eosstracker` software if it is running.  Click the
-"Stop" button on the Home page.  Next log in to the tracker computer and
+"Stop" button on the Home page.  
+
+Next log in to the tracker computer and
 make a source directory (if it does not exist) by entering the command
-`mkdir -p ~/src` followed by `cd ~/src`.  Download the EOSS-modified version
+`mkdir -p ~/src` followed by `cd ~/src`.  
+
+Download the EOSS-modified version
 of `aprsc` by using `git clone https://github.com/edgeofspace/aprsc.git`.  
 
 ```
@@ -48,7 +52,9 @@ Receiving objects: 100% (9692/9692), 5.65 MiB | 1.16 MiB/s, done.
 Resolving deltas: 100% (5167/5167), done.
 ```
 Change to the new `src` directory within the newly created `aprsc` directory by
-entering the command `cd aprsc/src`.  Next, configure the Makefile by entering
+entering the command `cd aprsc/src`.  
+
+Next, configure the Makefile by entering
 the command `./configure`.  It is important to include the period and slash
 before the `configure`.
 ```
@@ -83,6 +89,7 @@ if [ ! -f  /opt/aprsc/etc/aprsc.conf ] ; then \
         ./install-sh  -m 644 aprsc.conf /opt/aprsc/etc/aprsc.conf ; \
 else true ; fi
 ```
+
 The new modified version of `aprsc` is now installed.  You can pull the latest
 branch of the `eosstracker` software, refresh your browser window, and
 start up the processes by clicking on the "Start" button on the Home page.
