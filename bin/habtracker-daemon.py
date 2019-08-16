@@ -562,6 +562,7 @@ def writeToDatabase(x):
     except (ValueError, UnicodeEncodeError) as error:
         print "Encoding error: ", error
         print "Skipping DB insert for: ", x
+        sys.stdout.flush()
         pass
 
     except pg.DatabaseError as error:
@@ -639,8 +640,10 @@ def aprsTapProcess(callsign, ssid, radius, e):
         ais.set_filter(getAPRSFilter(radius, callsign, ssid))
  
         # Try to connect to the locally running aprsc instance...we attempt multiple times before giving up.
+        # This will attempt a connection multiples times (ie. the following while loop), waiting 5 seconds in between tries.
+        # Attempting this loop for 18 times is equivalent to about 90 seconds.
         trycount = 0
-        while trycount < 8:
+        while trycount < 18:
             try:
                 # wait for 5 seconds before trying to connect
                 e.wait(5)
