@@ -22,6 +22,8 @@
 
 - Time-to-live values (in minutes) are not displayed for each flight on the left side, slideout bar.  When a flight is descending the number of estimated minutes until landing is displayed.
 
+- The absolute bearing (relative to N) is now displayed along side the distance to a balloon on the map within the Relative Position section of the sidebar.
+
 
 ### Bugs Fixed: ###
 
