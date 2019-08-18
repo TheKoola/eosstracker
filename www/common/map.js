@@ -2180,7 +2180,7 @@ function getTrackers() {
 
                             $(hvelement).data("relativebearing").setRelativeHeading(flight.myheading, flight.bearing);
                             $(evelement).data("relativeangle").setElevationAngle(flight.angle);
-                            $(delement).text(flight.distance + " mi");
+                            $(delement).html(flight.distance + " mi" + " @ " + flight.bearing + "&#176;");
                             $(celement).text(flight.latitude + ", " + flight.longitude);
                             $(evelement).text(flight.angle);
                             $(hvelement).text(relativeBearing);
