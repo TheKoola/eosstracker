@@ -63,7 +63,7 @@ $config = readconfiguration();
         chart2 = c3.generate({
             bindto: '#chart2',
             size: { width: 800, height: 350 },
-            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'bar', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
+            data: { empty : { label: { text: "No Data Available / No Active Flights" } }, type: 'bar', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
             axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' } }, y: { label: { text: 'Average Speed (MPH)', position: 'outer-middle' } } },
             grid: { x: { show: true }, y: { show: true } }
             //grid: { x: { show: true }, y: { show: true } }
