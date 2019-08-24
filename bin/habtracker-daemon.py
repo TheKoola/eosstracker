@@ -479,7 +479,7 @@ def writeToDatabase(x):
         ppart = packet["raw"].partition(":")
         if ppart[2] != "":
             ptype = ppart[2][0]
-            info = ppart[2][1:] 
+            info = ppart[2][0:] 
         else:
             ptype = ""
             info = ""
