@@ -719,7 +719,7 @@ def getNumberOfSDRs():
 ##################################################
 # This creates the configuration file for Direwolf
 ##################################################
-def createDirewolfConfig(callsign, l, configdata):
+def createDirewolfConfig(callsign, l, configdata, dbsupport = False):
 
     # Name of the direwolf configuration file
     filename = "/eosstracker/etc/direwolf.conf" 
@@ -733,6 +733,7 @@ def createDirewolfConfig(callsign, l, configdata):
             rtl = 0
             adevice = 0
             channel = 0
+            freqmapstring = "";
            
             # Loop through the frequency/port lists creating the audio device sections
             for freqlist in l:
@@ -747,8 +748,13 @@ def createDirewolfConfig(callsign, l, configdata):
                     f.write("MYCALL " + callsign + "\n")
                     f.write("MODEM 1200\n")
                     f.write("FIX_BITS 0\n\n")
+                    
+                    # this string is used for the dbsupport capability (if enabled) below
+                    freqmapstring = freqmapstring + " " + str(rtl) + " " + str(channel) + " " + str(freq)
+
                     channel = channel + 2
                     adevice = adevice + 1
+
                 f.write("###########################################\n\n")
                 rtl = rtl + 1
 
@@ -808,6 +814,16 @@ def createDirewolfConfig(callsign, l, configdata):
             # The rest of the direwolf configuration
             f.write("AGWPORT 8000\n")
             f.write("KISSPORT 8001\n")
+
+            # Database connection parameters
+            if dbsupport:
+                f.write("\n### Database connection parameters if running custom direwolf\n")
+                f.write("INSTANCE 0\n");
+                f.write("PGUSER " + str(habconfig.dbUser) + "\n");
+                f.write("PGPASSWORD " + str(habconfig.dbPassword) + "\n");
+                f.write("PGDBNAME " + str(habconfig.dbName) + "\n");
+                f.write("FREQMAP " + freqmapstring + "\n");
+
             f.close()
         return filename
 
@@ -822,19 +838,71 @@ def createDirewolfConfig(callsign, l, configdata):
 ##################################################
 # Run direwolf
 ##################################################
-def direwolf(configfile="", logfile="", e = None):
+def direwolf(e, callsign, freqlist, config):
     # Location of the direwolf binary
     df_binary = "/usr/local/bin/direwolf"
 
-    # if we don't have a proper configfile or logfile then we can't run Direwolf.  This should never happen, but just in case.
-    # The "logfile" referenced here is really just the redirected STDOUT from the direwolf instance.  This is different from the CSV log file... 
-    # ...that is selectable from the direwolf command line.  
-    if configfile == "" or configfile is None or logfile == "" or logfile is None:
-        return -1
+    # The location of the direwolf log file
+    logfile = "/eosstracker/logs/direwolf.out"
 
-    # The command string and arguments for running direwolf
-    df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
+    # The command string and arguments for running direwolf.  This is will get assigned values below.
+    df_command = []
 
+    # Direwolf command to test for "-Q" functionality
+    df_test_Q = [df_binary, "-Q", "-U" ]
+
+
+    # Run direwolf to test for support of the -Q parameter
+    try:
+        # Run the aprsc command, but we redirect output to /dev/null because we only care about the return code
+        devnull = open(os.devnull, "w")
+        p = sb.Popen(df_test_Q, stdout=devnull, stderr=sb.STDOUT)
+        
+        # Wait for it to finish and grab the return code.
+        r = p.wait()
+
+        # Make sure devnull is closed
+        devnull.close()
+
+        # If the return code is zero, then we can continue on using the custom filter on the Uplink connection.  If not zero, then
+        # there was an error with the aprsc configuration file syntax, presumably because of our custom filter on the uplink port.
+        if r != 0:
+            print "INFO:  direwolf doesn't support the -Q paramter, running without"
+            sys.stdout.flush()
+
+            # (re)create the direwolf configuration file without database support
+            configfile = createDirewolfConfig(callsign, freqlist, config)
+
+            # The command string and arguments for running direwolf without the -Q parameter
+            df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
+            
+        else:
+            print "INFO:  direwolf seems to support the -Q parameter"
+            sys.stdout.flush()
+
+            # (re)create the direwolf configuration file with database support
+            configfile = createDirewolfConfig(callsign, freqlist, config, True)
+
+            # The command string and arguments for running direwolf without the -Q parameter
+            df_command = [df_binary, "-t", "0", "-T", "%D %T", "-Q", "-c", configfile]
+
+
+        # The direwolf process should NOT be running, but if it is, we need to kill it.
+        if p.poll() is None:
+            print "Terminating direwolf..."
+            p.terminate()
+            print "Waiting for direwolf to end.."
+            p.wait()
+            print "Direwolf ended"
+    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+        if p.poll() is None:
+            print "Terminating direwolf..."
+            p.terminate()
+            print "Waiting for direwolf to end.."
+            p.wait()
+            print "Direwolf ended"
+
+    # Now run direwolf for real...
     try:
         # We open the logfile first, for writing
         l = open(logfile, "w")
@@ -843,15 +911,19 @@ def direwolf(configfile="", logfile="", e = None):
         p = sb.Popen(df_command, stdout=l, stderr=l)
 
         # Wait for it to finish
-        #p.wait()
         e.wait()
+
+        # Direwolf should not be running, but if it is, we need to kill it
         if p.poll() is None:
             print "Terminating direwolf..."
             p.terminate()
             print "Waiting for direwolf to end.."
             p.wait()
             print "Direwolf ended"
+
+        # Close the log file
         l.close()
+
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         if p.poll() is None:
             print "Terminating direwolf..."
@@ -859,6 +931,8 @@ def direwolf(configfile="", logfile="", e = None):
             print "Waiting for direwolf to end.."
             p.wait()
             print "Direwolf ended"
+
+        # Close the log file
         l.close()
 
 
@@ -1272,15 +1346,10 @@ def main():
 
                 k += 1
 
-            # Create Direwolf configuration file
-            filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
             status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
-            # where we want stdout from direwolf output to go
-            logfile = "/eosstracker/logs/direwolf.out"
-
             # The direwolf process
-            dfprocess = mp.Process(target=direwolf, args=(filename, logfile, stopevent))
+            dfprocess = mp.Process(target=direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration))
             dfprocess.daemon = True
             dfprocess.name = "Direwolf"
             processes.append(dfprocess)
