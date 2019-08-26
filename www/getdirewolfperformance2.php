@@ -23,8 +23,6 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
-
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
@@ -94,6 +92,36 @@
         return 0;
     }
 
+
+    # SQL to determine if the dw_packets table exists
+    $dw_packets_sql = "select exists(select * from information_schema.tables where table_name='dw_packets');";
+
+    # We assume that the dw_packets table does not exist by default
+    $dw_packets = false;
+
+    # Execute the SQL statement and make sure there wasn't an error
+    $result = pg_query($link, $dw_packets_sql);
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    # Get the number of rows return...there should be just one.
+    $num_rows = pg_num_rows($result);
+
+    # If the number of rows was > 0 then grab them, and check the result
+    if ($num_rows > 0) {
+        $rows = sql_fetch_all($result);
+
+        # Check of the dw_packets table exists
+        if ($rows[0]['exists'] == 't')
+            $dw_packets = 1;
+        else
+            $dw_packets = 0;
+    }
+    
+
     if ($status["direwolfcallsign"] == "")
         $mycallsign = "E0SS";
     else {
@@ -101,57 +129,72 @@
     }
 
 
-    $query = " select 
-date_trunc('day', a.tm)::date as thedate, 
-date_trunc('hour', a.tm)::time as thehour,
-date_trunc('minute', a.tm)::time as theminute " . 
-($status["rf_mode"] == 1 ? 
-", sum(case when a.raw like '%qAO," . $mycallsign . "%:%' then 1 else 0 end) as rf_packets,
-sum(case when a.raw not like '%qAO," . $mycallsign . "%:%' then 1 else 0 end) as internet_packets " 
-: 
-", count(a.*) as internet_packets, 
-   0 as rf_packets ") . 
+    # if the dw_packets table exists, then we need to run a different query
+    # ...that's because direwolf itself populates that table with packets heard over RF.
+    #
+    # ...if the dw_packets table doesn't exist then we're running a version of direwolf that doesn't populate that table and 
+    # therefore will need to determine RF-based packets (sortof) from a different query.
+    #
+    if ($dw_packets) {
+        # We DO have a dw_packets table
+        $query = "select 
+               round(a.altitude /500.0)*500 as altitude, 
+               a.sdr,
+               a.freq,
+               count(a.*)
 
-"from 
-packets a
+               from 
+               dw_packets a
 
-where 
-a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
-and a.tm > $2
+               where 
+               a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
+               and a.tm > $2
+               and a.altitude != 0
+               and a.heardfrom = a.sourcename 
 
+               group by 1,2,3
+               order by a.sdr, a.freq, altitude
 
-group by 1,2,3
-order by 1,2,3
-;";
+            ;";
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
+        $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute"), 
+        sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+        if (!$result) {
+            db_error(sql_last_error());
+            sql_close($link);
+            return 0;
+        }
+       
+        $tdata = [];
+        $rfdata = [];
+        $channels = [];
+
+        while ($row = sql_fetch_array($result)) {
+            $tdata["sdr" . $row['sdr'] . "_" . round($row['freq'] / 1000000, 3) . "MHz" ][] = $row['altitude'];
+            $rfdata["sdr" . $row['sdr'] . "_" . round($row['freq'] / 1000000, 3) . "MHz" ][] = $row['count'];
+        }    
+
+        if (sql_num_rows($result) > 0) {
+            printf (" { ");
+            $firsttime = 1;
+            foreach ($rfdata as $key => $series) {
+                if ($firsttime == 0)
+                    printf (", ");
+                $firsttime = 0;
+                $xdata = $rfdata[$key];
+                $timeseries = $tdata[$key];
+                generateJSON($timeseries, $series, $key);
+            }
+            printf ("}");
+        }
+        else
+            printf ("[]");
+
     }
-   
-    $tdata = [];
-    $adata = [];
-    $rfdata = [];
-    $channels = [];
-
-    while ($row = sql_fetch_array($result)) {
-        $tdata[]= $row['thedate'] . " " . $row['theminute'];
-        $adata[] = $row['internet_packets'];
-        $rfdata[] = $row['rf_packets'];
-    }    
-
-
-    if (sql_num_rows($result) > 0) { 
-        printf (" { ");
-        generateJSON($tdata, $adata, "Internet_Packets");
-        printf (", ");
-        generateJSON($tdata, $rfdata, "RF_Packets");
-        printf ("}");
-    }
-    else
+    else 
         printf ("[]");
 
     sql_close($link);
+
 ?>

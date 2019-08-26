@@ -35,6 +35,8 @@ $config = readconfiguration();
     // The variables for the charts.
     var chart;
     var chart2;
+    var chart3;
+    var chart4;
     
 
     function coord_distance(lat1, lon1, lat2, lon2) {
@@ -48,6 +50,7 @@ $config = readconfiguration();
     }
 
 
+    // This is the APRS-IS packet counts chart.
     function createchart (jsondata, columns) {
         chart = c3.generate({
             bindto: '#chart1',
@@ -59,6 +62,7 @@ $config = readconfiguration();
         });
     }
 
+    // This is the Winds Aloft chart.
     function createchart2 (jsondata, columns) {
         chart2 = c3.generate({
             bindto: '#chart2',
@@ -70,15 +74,45 @@ $config = readconfiguration();
         });
     }
     
+    // This is the Direwolf RF Packets chart.
+    function createchart3 (jsondata, columns) {
+        chart3 = c3.generate({
+            bindto: '#chart3',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
 
+    // This is the RF Packets vs. Altitude chart
+    function createchart4 (jsondata, columns) {
+        chart4 = c3.generate({
+            bindto: '#chart4',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
+            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' } }, y: { label: { text: 'Packets Heard Direct', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+    
     function updatechart (jsondata, columns) {
-         chart.load ({ json:  jsondata });
+         chart.load ({ json:  jsondata, xs: columns });
     }
     
     function updatechart2 (jsondata, columns) {
-         chart2.load ({ json:  jsondata });
+         chart2.load ({ json:  jsondata, xs: columns });
     }
-    
+
+    function updatechart3 (jsondata, columns) {
+         chart3.load ({ json:  jsondata, xs : columns});
+    }
+
+    function updatechart4 (jsondata, columns) {
+         chart4.load ({ json:  jsondata, xs: columns });
+    }
 
     function getchartdata(chartupdatefunction, url) {
         $.get(url, function(data) {
@@ -86,13 +120,12 @@ $config = readconfiguration();
             var mycolumns = {};
             var i = 0;
             var thekeys = Object.keys(jsonOutput);
+
             for (i = 0; i < thekeys.length; i++) {
                 if (! thekeys[i].startsWith("tm-")) {
                     mycolumns[thekeys[i]] = "tm-" + thekeys[i];
                 }
             }
-            //document.getElementById("debug1").innerHTML = JSON.stringify(mycolumns, null, 4);
-            //document.getElementById("debug2").innerHTML = flightlist;
             chartupdatefunction(jsonOutput, mycolumns);
         });
     }
@@ -345,7 +378,9 @@ $config = readconfiguration();
     	initializeDataSelection();
         getchartdata(createchart, "getpacketperformance.php");
         getchartdata(createchart2, "getspeedvsaltitude.php");
-        setInterval(function() { getrecentdata(); getchartdata(updatechart, "getpacketperformance.php"); getchartdata(updatechart2, "getspeedvsaltitude.php"); }, 5000);
+        getchartdata(createchart3, "getdirewolfperformance.php");
+        getchartdata(createchart4, "getdirewolfperformance2.php");
+        setInterval(function() { getrecentdata(); getchartdata(updatechart, "getpacketperformance.php"); getchartdata(updatechart2, "getspeedvsaltitude.php"); getchartdata(updatechart3, "getdirewolfperformance.php"); getchartdata(updatechart4, "getdirewolfperformance2.php"); }, 5000);
     });
     
     
@@ -384,17 +419,40 @@ $config = readconfiguration();
             </p>
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-                Packet Performance 
+                APRS-IS Packets
 <?php 
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
    	        <p class="normal-italic">These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
-            the RF packet count series shows the number of packets that were heard over RF that were <strong>not</strong> already known 
-            through an APRS-IS connection.
+            the RF packet count shows the number of packets that were heard over RF that were <strong>not</strong> already known 
+            through an APRS-IS connection - it's a subtle distinction not to be confused with absolute packet counts <strong>heard</strong> over an RF channel.
             </p>
             <p class="normal-black"><div id="chart1"></div></p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                RF Packets
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+            <p class="normal-italic">This chart shows total RF packet counts (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
+            These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
+            </p>
+            <p class="normal-black"><div id="chart3"></div></p>
 
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                RF Packets vs. Altitude
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+            <p class="normal-italic">This chart shows RF packet counts vs. altitude for every packet decoded by Dire Wolf that has reported an altitude and also heard 
+            directly (i.e. not digipeated).  These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
+            Altitude values are rounded to the nearest 500ft.  For example, a packet with an altitude of 7,201ft would be counted with the 7,000ft bar.
+            </p>
+            <p class="normal-black"><div id="chart4"></div></p>
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 Winds Aloft
@@ -402,7 +460,9 @@ $config = readconfiguration();
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
-   	        <p class="normal-italic">This chart displays the average speed of a flight, as reported through APRS packets, for each 5000ft altitude strata.  Although not perfectly correlated (flight speed vs. wind speed), it can provide a general indicator as to wind strength at higher altitude levels.  Altitude values for a flight are rounded to the nearest 5000ft.  For example, a speed value at an altitude of 33,000ft would be counted with the 35,000ft bar.
+            <p class="normal-italic">This chart displays the average speed of a flight, as reported through APRS packets, for each 5000ft altitude strata.  
+            Although not perfectly correlated (flight speed vs. wind speed), it can provide a general indicator as to wind strength at higher altitude levels.  
+            Altitude values for a flight are rounded to the nearest 5000ft.  For example, a speed value at an altitude of 33,000ft would be counted with the 35,000ft bar.
             </p>
             <p class="normal-black"><div id="chart2"></div></p>
 
