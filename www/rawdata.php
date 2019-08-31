@@ -436,7 +436,7 @@ $config = readconfiguration();
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
-            <p class="normal-italic">This chart shows total RF packet counts (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
+            <p class="normal-italic">This chart shows total RF packet count (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
             These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
             </p>
             <p class="normal-black"><div id="chart3"></div></p>
@@ -448,14 +448,14 @@ $config = readconfiguration();
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
-            <p class="normal-italic">This chart shows RF packet counts vs. altitude for every packet decoded by Dire Wolf that has reported an altitude and also heard 
+            <p class="normal-italic">This chart shows RF packet count vs. altitude for every packet decoded by Dire Wolf that has reported an altitude and also heard 
             directly (i.e. not digipeated).  These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
-            Altitude values are rounded to the nearest 500ft.  For example, a packet with an altitude of 7,201ft would be counted with the 7,000ft bar.
+            Altitude values are rounded to the nearest 500ft.  For example, a packet with an altitude of 7,201ft would be counted with the 7,000ft point.
             </p>
             <p class="normal-black"><div id="chart4"></div></p>
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-                Winds Aloft
+                Flight Speed vs. Altitude
 <?php 
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
