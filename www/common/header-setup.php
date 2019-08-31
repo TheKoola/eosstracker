@@ -48,14 +48,14 @@ else
     printf ("<title>%s</title>\n", $pagetitle);
 ?>
 <!-- Load css -->
-<link href="/common/c3.css" rel="stylesheet">
+<link href="/common/c3.min.css" rel="stylesheet">
 <!--<link href="/leaflet/leaflet.css" rel="stylesheet"> -->
 
 <!-- Load js -->
-<script src="/common/jquery-3.3.1.js"></script>
+<script src="/common/jquery-3.4.1.min.js"></script>
 <!-- <script src="/leaflet/leaflet.js"></script> -->
 <script src="/common/d3.min.js" charset="utf-8"></script>
-<script src="/common/c3.js"></script>
+<script src="/common/c3.min.js"></script>
 <script src="/common/aprssymbols.js"></script>
 <script src="/common/setup.js"></script>
 <script src="/common/trackers.js"></script>

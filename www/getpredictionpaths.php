@@ -49,12 +49,18 @@
         return $speed;
     }
 
-
+    $formerror = false;
+    // Check the flightid HTML GET variable
+    $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
     }
-    else {
-        $get_flightid = "";
+    else
+        $formerror = true; 
+ 
+    // If there isn't a flightid, then exit.
+    if ($formerror == true) {
         printf ("[]");
         return 0;
     }

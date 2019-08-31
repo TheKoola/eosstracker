@@ -23,7 +23,6 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
@@ -31,22 +30,26 @@
 
     $config = readconfiguration();
 
+    $formerror = false;
+
+    // Check the flightid HTML GET variable
+    $get_flightid = "";
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
     }
-    else {
-        $get_flightid = "";
+    else
+        $formerror = true;
+
+    // Check the callsign HTML GET variable
+    $get_callsign = "";
+    if (isset($_GET["callsign"])) 
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
+
+    if ($formerror == true) {
         printf ("[]");
         return 0;
     }
-    
-    if (isset($_GET["callsign"])) {
-        $get_callsign = $_GET["callsign"];
-    }
-    else {
-        $get_callsign = "";
-    }
-
 
     ## Connect to the database
     $link = connect_to_database();
@@ -229,7 +232,7 @@ and a.callsign = fm.callsign '
             json_encode($ray[10]), 
             json_encode($ray[1]), 
             json_encode($ray[4]), 
-            json_encode("Flight: <strong>" . $get_flightid. "</strong><br>" . $ray[5] . "<br>Speed: " . $ray[6] . " mph<br>Heading: " . $ray[7] . " deg<br>Vert Rate: " . number_format($ray[8]) . " ft/min"), 
+            json_encode("Flight: <strong>" . $get_flightid. "</strong>" . ($ray[5] == "" ? "" : "<br>" . $ray[5]) . "<br>Speed: " . $ray[6] . " mph<br>Heading: " . $ray[7] . "&#176;<br>Vert Rate: " . number_format($ray[8]) . " ft/min"), 
             //json_encode("bla bla"),
             json_encode($callsign), 
             json_encode($ray[6]), 
@@ -366,7 +369,7 @@ and a.callsign = fm.callsign '
                         json_encode($get_flightid), 
                         json_encode($callsign), 
                         json_encode($elem[2]),  
-                        json_encode("Flight: <strong>" . $get_flightid . "</strong><br>Speed: " . $elem[3] . " mph<br>Heading: " . $elem[4] . " deg<br>Vert Rate: " . number_format($elem[6]) . " ft/min"), 
+                        json_encode("Flight: <strong>" . $get_flightid . "</strong><br>Speed: " . $elem[3] . " mph<br>Heading: " . $elem[4] . "&#176;<br>Vert Rate: " . number_format($elem[6]) . " ft/min"), 
                         json_encode(($i < $peak_altitude_idx ? "true" : "false")), 
                         json_encode($elem[3]), 
                         json_encode($elem[4]), 

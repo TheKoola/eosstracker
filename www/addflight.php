@@ -35,20 +35,30 @@ include $documentroot . '/common/functions.php';
         return 0;
     }
 
-    //print_r($_GET);
-
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = strtoupper($_GET["flightid"]);
-    else
-        $formerror = true;
-    if (isset($_GET["description"]))
-        $description = $_GET["description"];
+
+
+     // Check the flightid HTML GET variable
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
 
-    if (isset($_GET["launchsite"]))
-        $launchsite = $_GET["launchsite"];
+    // Check the description HTML GET variable
+    if (isset($_GET["description"])) {
+        if (($description = check_string($_GET["description"], 64)) == "")
+            $formerror = true;
+    }
+    else
+        $formerror = true;
+
+    // Check the launchsite HTML GET variable
+    if (isset($_GET["launchsite"])) {
+        if (($launchsite = check_string($_GET["launchsite"], 64)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
 
@@ -58,6 +68,8 @@ include $documentroot . '/common/functions.php';
         else
             $active = "f";
     }
+
+
 
     if ($flightid == "" || $description == "" || $launchsite == "")
         $formerror = true;
@@ -70,8 +82,10 @@ include $documentroot . '/common/functions.php';
     $fstr = "beacon" . $i . "_frequency";
     $dstr = "beacon" . $i . "_description";
     if (isset($_GET[$cstr]) && isset($_GET[$fstr]) && isset($_GET[$dstr])) {
-        if ($_GET[$cstr] != "" && $_GET[$fstr] != "" && $_GET[$dstr] != "") {
-            $beacons[] = array(sql_escape_string($flightid), sql_escape_string($_GET[$cstr]), sql_escape_string($_GET[$dstr]), $_GET[$fstr]);
+        $c = check_string($_GET[$cstr], 20);
+        $d = check_string($_GET[$dstr], 64);
+        if ($c != "" && $d != "" && check_number($_GET[$fstr], 144.0, 146.0)) {
+            $beacons[] = array(sql_escape_string($flightid), sql_escape_string($c), sql_escape_string($d), floatval($_GET[$fstr]));
         } 
         else 
             $formerror = true;
@@ -85,10 +99,11 @@ include $documentroot . '/common/functions.php';
         $fstr = "beacon" . $i . "_frequency";
         $dstr = "beacon" . $i . "_description";
         if (isset($_GET[$cstr]) && isset($_GET[$fstr]) && isset($_GET[$dstr]))
-            if ($_GET[$cstr] != "" && $_GET[$fstr] != "" && $_GET[$dstr] != "")
-                $beacons[] = array(sql_escape_string($flightid), sql_escape_string($_GET[$cstr]), sql_escape_string($_GET[$dstr]), $_GET[$fstr]);
+            $c = check_string($_GET[$cstr], 20);
+            $d = check_string($_GET[$dstr], 64);
+            if ($c != "" && $d != "" && check_number($_GET[$fstr], 144.0, 146.0))
+                $beacons[] = array(sql_escape_string($flightid), sql_escape_string($c), sql_escape_string($d), floatval($_GET[$fstr]));
     }
-
 
     if ($formerror == false) {
         $query = "select flightid, description, active from flights where flightid = $1;";

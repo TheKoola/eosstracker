@@ -40,7 +40,6 @@ import aprslib
 import logging
 import usb.core
 import usb.util
-from gps import *
 import threading as th
 import sys
 import numpy as np
@@ -56,6 +55,7 @@ import random
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
+import gpspoller
 
 
 class GracefulExit(Exception):
@@ -160,85 +160,6 @@ def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
 
 
 ##################################################
-# GpsPoller process
-##################################################
-def GpsPoller(e):
-    gpsconn = None
-    GPSStatusFile = "/eosstracker/www/gpsstatus.json"
-    GPSStatusTempFile = "/eosstracker/www/gpsstatus.json.tmp"
-    try: 
-        gpsd = gps(mode=WATCH_ENABLE) 
-        gpsconn = pg.connect (habconfig.dbConnectionString)
-        gpscur = gpsconn.cursor()
-        timeprev = datetime.datetime.now()
-        prevlat = 0
-        prevlon = 0
-        #while True:
-        while not e.is_set():
-            report = gpsd.next() 
-            thetime = datetime.datetime.now()
-            timedelta = thetime - timeprev
-            if timedelta.total_seconds() > 1.5:
-                if round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon:
-                    sql = """insert into 
-                        gpsposition values (
-                            (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone 'America/Denver', 
-                            %s::numeric, 
-                            %s::numeric, 
-                            %s::numeric, 
-                            ST_GeometryFromText('POINT(%s %s)', 4326), 
-                            ST_GeometryFromText('POINTZ(%s %s %s)', 4326)
-                        );"""
-                    if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
-                        gpscur.execute(sql, [
-                            gpsd.utc, 
-                            round(gpsd.fix.speed * 2.236936, 0), 
-                            gpsd.fix.track, 
-                            round(gpsd.fix.altitude * 3.2808399, 0), 
-                            gpsd.fix.longitude, 
-                            gpsd.fix.latitude, 
-                            gpsd.fix.longitude, 
-                            gpsd.fix.latitude, 
-                            gpsd.fix.altitude 
-                        ])
-                        gpsconn.commit()
-                        timeprev = thetime
-                    prevlat = round(gpsd.fix.latitude,4) 
-                    prevlon = round(gpsd.fix.longitude,4) 
-
-                ## Need to change this in the future to putting detailed status within the database instead of a text JSON file.  ;)
-                mysats = []
-                mysats_sorted = []
-                mymode = ""
-                with open(GPSStatusTempFile, "w") as f:
-                    for sat in gpsd.satellites:
-                        mysats.append({ "prn": str(sat.PRN), "elevation" : str(sat.elevation), "azimuth" : str(sat.azimuth), "snr" : str(sat.ss), "used" : str(sat.used) })
-                    if len(gpsd.satellites) > 0:
-                        mysats_sorted = sorted(mysats, key=lambda k: k['used'], reverse=True)
-                    gpsstats = { "utc_time" : str(gpsd.utc), "mode" : str(gpsd.fix.mode), "status" : str(gpsd.status), "lat" : str(round(gpsd.fix.latitude, 6)), "lon" : str(round(gpsd.fix.longitude, 6)), "satellites" : mysats_sorted, "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)), "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0)) }
-                    f.write(json.dumps(gpsstats))
-                if os.path.isfile(GPSStatusTempFile):
-                    os.rename(GPSStatusTempFile, GPSStatusFile)
-        print "Shutting down GPS Loop..."
-        with open(GPSStatusTempFile, "w") as f:
-            gpsstats = { "utc_time" : "n/a", "mode" : 0, "status" : 0, "lat" : "n/a", "lon" : "n/a", "satellites" : [], "speed_mph" : 0, "altitude" : 0 }
-            f.write(json.dumps(gpsstats))
-        if os.path.isfile(GPSStatusTempFile):
-            os.rename(GPSStatusTempFile, GPSStatusFile)
-        gpsconn.close()
-    except pg.DatabaseError as error:
-        print(error)
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
-        gpsconn.close() 
-        print "GPS poller ended"
-    finally:
-
-        if gpsconn is not None:
-            gpsconn.close()
-
-
-
-##################################################
 # Determine what frequencies and ports GnuRadio should listen on and which UDP ports to send audio over
 ##################################################
 def getFrequencies(rtl=0):
@@ -290,7 +211,7 @@ def getFrequencies(rtl=0):
     except pg.DatabaseError as error:
         grcur.close()
         grconn.close()
-        print(error)
+        print error
         return None
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         grcur.close()
@@ -298,37 +219,131 @@ def getFrequencies(rtl=0):
         return None
     
 
-
 ##################################################
-# Return the hash of a ham callsign.  This is the passcode used with APRS-IS
+# Create an APRS-IS filter string for the aprsc Uplink port.
+# This filter is used to limit the amount of data downloaded from the
+# APRS-IS servers.  This is not the "vampire tap" filter.
 ##################################################
-#def hashCall(call):
-#    thehash = 0x73e2
-#
-#    localCall = call.upper().split("-")[0]
-#    
-#    i = 0
-#    thelen = len(localCall)
-#    while i < thelen:
-#        thehash = thehash ^ (ord(localCall[i]) << 8) # xor high byte with accumulated hash
-#        thehash = thehash ^ (ord(localCall[i+1])) # xor low byte with accumulated hash
-#        i += 2
-#
-#    return (thehash & 0x7fff) # mask off the high bit so number is always positive
+def getAPRSISFilter(aprsRadius, customfilter = None):
+    try:
 
+        # If the radius is <= 0 then we just reeturn a blank filter string as the caller doesn't want to use a filter on the APRS-IS uplink connection.
+        if aprsRadius <= 0:
+            return ""
+
+        # Check the customfilter and prepend that to aprsFilter
+        if customfilter != None:
+            aprsFilter = customfilter
+        else:
+            aprsFilter = ""
+
+        # Database connection
+        pgConnection = pg.connect(habconfig.dbConnectionString)
+        pgCursor = pgConnection.cursor()
+ 
+        # SQL query to get our current (or last) GPS location in lat/lon
+        lastPositionSQL = """select 
+            tm::timestamp without time zone as time, 
+            speed_mph, 
+            bearing, 
+            altitude_ft, 
+            round(cast(ST_Y(location2d) as numeric), 3) as latitude, 
+            round(cast(ST_X(location2d) as numeric), 3) as longitude 
+
+            from 
+            gpsposition 
+
+            order by 
+            tm desc limit 1;
+        """
+
+        # Execute the SQL query and fetch the results
+        pgCursor.execute(lastPositionSQL)
+        rows = pgCursor.fetchall()
+
+        # Only build a radius-query for APRS-IS if there was a "latest" position reurned from the SQL query.  
+        # ....granted, this location might be really old.
+        # Future note:  for those users that are running this from home, we need to provide a way for them to enter an arbitrary point to serve as the 
+        #               center of a large circle to capture packets from an active flight's tracking efforts.
+        if len(rows) > 0:
+            latitude = rows[0][4]
+            longitude = rows[0][5]
+            aprsFilter = aprsFilter + " r/" + str(latitude) + "/" + str(longitude) + "/" + str(int(aprsRadius)) 
+        #print("aprsFilter1: %s\n" % aprsFilter)
+
+
+        # SQL query to fetch the callsigns for beacons on active flights
+        activeBeaconsSql = """select 
+            f.flightid, 
+            fm.callsign 
+
+            from 
+            flights f, 
+            flightmap fm 
+
+            where 
+            fm.flightid = f.flightid 
+            and f.active = true
+      
+            order by 
+            f.flightid desc,
+            fm.callsign asc;
+        """
+      
+        # Execute the SQL query and fetch the results
+        pgCursor.execute(activeBeaconsSql)
+        rows = pgCursor.fetchall() 
+
+        # Loop through each beacon callsign, building the APRS-IS filter string
+        beaconFilter = ""
+        for beacon in rows:
+            beaconFilter = beaconFilter + "/" + beacon[1] 
+        if len(rows) > 0:
+            aprsFilter = aprsFilter + " b" + beaconFilter 
+
+    
+        # Loop through the first 9 beacons adding 100km friend filters for each one. 
+        friendFilter = ""
+        for beacon in rows[0:9]:
+            friendFilter = friendFilter + " f/" + beacon[1] + "/100"
+        if len(rows) > 0:
+            aprsFilter = aprsFilter + friendFilter 
+
+
+        # Close database connection
+        pgCursor.close()
+        pgConnection.close()
+ 
+        print("Using this filter for APRS-IS uplink: %s\n" % aprsFilter)
+        sys.stdout.flush()
+
+        # Return the resulting APRS-IS filter string
+        return aprsFilter
+
+    except pg.DatabaseError as error:
+        pgCursor.close()
+        pgConnection.close()
+        print "Database error:  ", error
+    except (StopIteration, GracefulExit, KeyboardInterrupt, SystemExit): 
+        pgCursor.close()
+        pgConnection.close()
 
 
 ##################################################
 # Create an APRS-IS filter string
+# This is the client-side filter used for connecting to the locally running aprsc instance.
+# This function is called periodically to adjust the filter dynamically (i.e. user might be 
+# driving around and thus their GPS position is changing).
 ##################################################
-def getAPRSFilter(aprsRadius, callsign):
+def getAPRSFilter(aprsRadius, callsign, ssid):
     try:
         # Adjust inital APRS-IS filter if a callsign was given.
         # ...we do this so that we ingest packets that were heard directly as well as those via a radius, etc..
-        #if callsign == "E0SS" or callsign == "":
-        #    aprsFilter = ""
-        #else:
-        aprsFilter = "e/" + callsign + "*"
+        if ssid != "" and callsign != "E0SS":
+            aprsFilter = "e/" + callsign + "-" + ssid 
+        else:
+            aprsFilter = "e/" + callsign + "*"
+
 
         # Database connection
         pgConnection = pg.connect(habconfig.dbConnectionString)
@@ -403,29 +418,6 @@ def getAPRSFilter(aprsRadius, callsign):
             aprsFilter = aprsFilter + friendFilter 
 
 
-        # SQL query to fetch the callsigns for trackers 
-#        trackerSql = """select 
-#            t.callsign
-#
-#            from 
-#            trackers t
-#  
-#            order by
-#            t.callsign asc;
-#        """
-#      
-#        # Execute the SQL query and fetch the results
-#        pgCursor.execute(trackerSql)
-#        rows = pgCursor.fetchall() 
-#
-#
-#        # Loop through each tracker callsign, building the APRS-IS filter string
-#        trackerFilter = ""
-#        for tracker in rows:
-#            trackerFilter = trackerFilter + "/" + tracker[0] + "*"
-#        if len(rows) > 0:
-#            aprsFilter = aprsFilter + " b" + trackerFilter 
-#
         # Close database connection
         pgCursor.close()
         pgConnection.close()
@@ -487,7 +479,7 @@ def writeToDatabase(x):
         ppart = packet["raw"].partition(":")
         if ppart[2] != "":
             ptype = ppart[2][0]
-            info = ppart[2][1:] 
+            info = ppart[2][0:] 
         else:
             ptype = ""
             info = ""
@@ -507,9 +499,9 @@ def writeToDatabase(x):
                 now()::timestamp with time zone, 
                 %s, 
                 %s, 
-                (%s::numeric) * 0.6213712, 
+                round((%s::numeric) * 0.6213712), 
                 %s::numeric, 
-                (%s::numeric) * 3.28084, 
+                round((%s::numeric) * 3.28084), 
                 %s, 
                 NULL, 
                 NULL, 
@@ -537,9 +529,9 @@ def writeToDatabase(x):
                 now()::timestamp with time zone, 
                 %s, 
                 %s, 
-                (%s::numeric) * 0.6213712, 
+                round((%s::numeric) * 0.6213712), 
                 %s::numeric, 
-                (%s::numeric) * 3.28084, 
+                round((%s::numeric) * 3.28084), 
                 %s, 
                 ST_GeometryFromText('POINT(%s %s)', 4326), 
                 ST_GeometryFromText('POINTZ(%s %s %s)', 4326), 
@@ -570,6 +562,7 @@ def writeToDatabase(x):
     except (ValueError, UnicodeEncodeError) as error:
         print "Encoding error: ", error
         print "Skipping DB insert for: ", x
+        sys.stdout.flush()
         pass
 
     except pg.DatabaseError as error:
@@ -586,7 +579,7 @@ def writeToDatabase(x):
 ##################################################
 # Thread for updating the APRS-IS filter
 ##################################################
-def aprsFilterThread(callsign, a, r, e):
+def aprsFilterThread(callsign, ssid, a, r, e):
     
     # The time in seconds in between updating the APRS-IS filter.
     # 
@@ -601,7 +594,7 @@ def aprsFilterThread(callsign, a, r, e):
             e.wait(delta)
 
             # Get a new APRS-IS filter string (i.e. our lat/lon location could have changed, beacon callsigns could have changed, etc.)
-            filterstring = getAPRSFilter(r, callsign) 
+            filterstring = getAPRSFilter(r, callsign, ssid) 
  
             #print "setting aprs filter:  ", filterstring
 
@@ -626,7 +619,7 @@ def aprsFilterThread(callsign, a, r, e):
 ##################################################
 # Process for connecting to APRS-IS
 ##################################################
-def aprsTapProcess(callsign, radius, e):
+def aprsTapProcess(callsign, ssid, radius, e):
     global tapcur
 
     try:
@@ -644,11 +637,13 @@ def aprsTapProcess(callsign, radius, e):
         tapcur = tapconn.cursor()
 
         # ...see the getAPRSFilter function
-        ais.set_filter(getAPRSFilter(radius, callsign))
+        ais.set_filter(getAPRSFilter(radius, callsign, ssid))
  
         # Try to connect to the locally running aprsc instance...we attempt multiple times before giving up.
+        # This will attempt a connection multiples times (ie. the following while loop), waiting 5 seconds in between tries.
+        # Attempting this loop for 18 times is equivalent to about 90 seconds.
         trycount = 0
-        while trycount < 5:
+        while trycount < 18:
             try:
                 # wait for 5 seconds before trying to connect
                 e.wait(5)
@@ -658,15 +653,17 @@ def aprsTapProcess(callsign, radius, e):
 
                 # If connection was successful, then break out of this loop
                 print "Aprsc tap connection to local aprsc successful"
+                sys.stdout.flush()
                 break
             except aprslib.ConnectionError as error:
                 print "Aprsc tap error connecting to local aprsc, attempt #", trycount, ":  ", error
+                sys.stdout.flush()
 
             # Increment trycount each time through the loop
             trycount += 1
 
         # This is the thread which updates the filter used with the APRS-IS connectipon
-        aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ais, radius, e))
+        aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ssid, ais, radius, e))
         aprsfilter.setDaemon(True)
         aprsfilter.start()
 
@@ -722,7 +719,7 @@ def getNumberOfSDRs():
 ##################################################
 # This creates the configuration file for Direwolf
 ##################################################
-def createDirewolfConfig(callsign, l, configdata):
+def createDirewolfConfig(callsign, l, configdata, dbsupport = False):
 
     # Name of the direwolf configuration file
     filename = "/eosstracker/etc/direwolf.conf" 
@@ -736,6 +733,7 @@ def createDirewolfConfig(callsign, l, configdata):
             rtl = 0
             adevice = 0
             channel = 0
+            freqmapstring = "";
            
             # Loop through the frequency/port lists creating the audio device sections
             for freqlist in l:
@@ -750,13 +748,18 @@ def createDirewolfConfig(callsign, l, configdata):
                     f.write("MYCALL " + callsign + "\n")
                     f.write("MODEM 1200\n")
                     f.write("FIX_BITS 0\n\n")
+                    
+                    # this string is used for the dbsupport capability (if enabled) below
+                    freqmapstring = freqmapstring + " " + str(rtl) + " " + str(channel) + " " + str(freq)
+
                     channel = channel + 2
                     adevice = adevice + 1
+
                 f.write("###########################################\n\n")
                 rtl = rtl + 1
 
-            if configdata["includeeoss"] == "true":
-                eoss = ",EOSS"
+            if configdata["includeeoss"] == "true" and configdata["eoss_string"] != "":
+                eoss = str(configdata["eoss_string"]) + ","
             else:
                 eoss=""
 
@@ -779,7 +782,7 @@ def createDirewolfConfig(callsign, l, configdata):
                     f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
                 f.write("\n\n")
                 f.write("######### beaconing configuration #########\n")
-                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=WIDE1-1,WIDE2-1" + str(eoss) + "      symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=" + str(eoss) + "WIDE1-1,WIDE2-1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
                 f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
                 f.write("###########################################\n\n")
             
@@ -798,15 +801,29 @@ def createDirewolfConfig(callsign, l, configdata):
             f.write("IGSERVER 127.0.0.1\n")
         
             # Login info for aprsc
+            # If igating is enabled, then the user has supplied their own callsign-ssid along with APRS-IS passcode for use as the APRS-IS login name that direwolf uses.
+            # Note that this APRS-IS login name is different than the callsign-ssid that is tagged as having "igated" a packet.  That is defined above with the MYCALL parameter.
             if configdata["igating"] == "true":
                 password = configdata["passcode"]
             else:
+                # Okay, we're not igating, so we need to generate a passcode for this callsign.
                 password = aprslib.passcode(str(callsign))
+
             f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
  
             # The rest of the direwolf configuration
             f.write("AGWPORT 8000\n")
             f.write("KISSPORT 8001\n")
+
+            # Database connection parameters
+            if dbsupport:
+                f.write("\n### Database connection parameters if running custom direwolf\n")
+                f.write("INSTANCE 0\n");
+                f.write("PGUSER " + str(habconfig.dbUser) + "\n");
+                f.write("PGPASSWORD " + str(habconfig.dbPassword) + "\n");
+                f.write("PGDBNAME " + str(habconfig.dbName) + "\n");
+                f.write("FREQMAP " + freqmapstring + "\n");
+
             f.close()
         return filename
 
@@ -821,19 +838,71 @@ def createDirewolfConfig(callsign, l, configdata):
 ##################################################
 # Run direwolf
 ##################################################
-def direwolf(configfile="", logfile="", e = None):
+def direwolf(e, callsign, freqlist, config):
     # Location of the direwolf binary
     df_binary = "/usr/local/bin/direwolf"
 
-    # if we don't have a proper configfile or logfile then we can't run Direwolf.  This should never happen, but just in case.
-    # The "logfile" referenced here is really just the redirected STDOUT from the direwolf instance.  This is different from the CSV log file... 
-    # ...that is selectable from the direwolf command line.  
-    if configfile == "" or configfile is None or logfile == "" or logfile is None:
-        return -1
+    # The location of the direwolf log file
+    logfile = "/eosstracker/logs/direwolf.out"
 
-    # The command string and arguments for running direwolf
-    df_command = [df_binary, "-t", "0", "-T", "%H:%M:%S", "-c", configfile]
+    # The command string and arguments for running direwolf.  This is will get assigned values below.
+    df_command = []
 
+    # Direwolf command to test for "-Q" functionality
+    df_test_Q = [df_binary, "-Q", "-U" ]
+
+
+    # Run direwolf to test for support of the -Q parameter
+    try:
+        # Run the aprsc command, but we redirect output to /dev/null because we only care about the return code
+        devnull = open(os.devnull, "w")
+        p = sb.Popen(df_test_Q, stdout=devnull, stderr=sb.STDOUT)
+        
+        # Wait for it to finish and grab the return code.
+        r = p.wait()
+
+        # Make sure devnull is closed
+        devnull.close()
+
+        # If the return code is zero, then we can continue on using the custom filter on the Uplink connection.  If not zero, then
+        # there was an error with the aprsc configuration file syntax, presumably because of our custom filter on the uplink port.
+        if r != 0:
+            print "INFO:  direwolf doesn't support the -Q paramter, running without"
+            sys.stdout.flush()
+
+            # (re)create the direwolf configuration file without database support
+            configfile = createDirewolfConfig(callsign, freqlist, config)
+
+            # The command string and arguments for running direwolf without the -Q parameter
+            df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
+            
+        else:
+            print "INFO:  direwolf seems to support the -Q parameter"
+            sys.stdout.flush()
+
+            # (re)create the direwolf configuration file with database support
+            configfile = createDirewolfConfig(callsign, freqlist, config, True)
+
+            # The command string and arguments for running direwolf without the -Q parameter
+            df_command = [df_binary, "-t", "0", "-T", "%D %T", "-Q", "-c", configfile]
+
+
+        # The direwolf process should NOT be running, but if it is, we need to kill it.
+        if p.poll() is None:
+            print "Terminating direwolf..."
+            p.terminate()
+            print "Waiting for direwolf to end.."
+            p.wait()
+            print "Direwolf ended"
+    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+        if p.poll() is None:
+            print "Terminating direwolf..."
+            p.terminate()
+            print "Waiting for direwolf to end.."
+            p.wait()
+            print "Direwolf ended"
+
+    # Now run direwolf for real...
     try:
         # We open the logfile first, for writing
         l = open(logfile, "w")
@@ -842,15 +911,19 @@ def direwolf(configfile="", logfile="", e = None):
         p = sb.Popen(df_command, stdout=l, stderr=l)
 
         # Wait for it to finish
-        #p.wait()
         e.wait()
+
+        # Direwolf should not be running, but if it is, we need to kill it
         if p.poll() is None:
             print "Terminating direwolf..."
             p.terminate()
             print "Waiting for direwolf to end.."
             p.wait()
             print "Direwolf ended"
+
+        # Close the log file
         l.close()
+
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         if p.poll() is None:
             print "Terminating direwolf..."
@@ -858,13 +931,15 @@ def direwolf(configfile="", logfile="", e = None):
             print "Waiting for direwolf to end.."
             p.wait()
             print "Direwolf ended"
+
+        # Close the log file
         l.close()
 
 
 ##################################################
 # Build the aprsc configuration file
 ##################################################
-def createAprscConfig(filename, callsign, igate):
+def createAprscConfig(filename, callsign, igate, customfilter = None):
 
     # Name of the aprsc configuration file.  If not provided then we can't run aprsc.  This should never happen, but just in case.
     if filename == "" or filename is None:
@@ -890,10 +965,16 @@ def createAprscConfig(filename, callsign, igate):
             
             if igate == "true":
                 # For uploading packets received over RF (aka from Direwolf), set this to "full" instead of "ro". 
-                f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 10152\n")
+                if customfilter == None:
+                    f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 10152\n")
+                else:
+                    f.write("Uplink \"Core rotate\" full  tcp  noam.aprs2.net 14580 " + str(customfilter) + "\n")
             else:
                 # This is set to be a read only connection to APRS-IS.  That is, we're not going to upload packets to any defined Uplink connections.
-                f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152\n")
+                if customfilter == None:
+                    f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 10152\n")
+                else:
+                    f.write("Uplink \"Core rotate\" ro  tcp  noam.aprs2.net 14580 " + str(customfilter) + "\n")
 
             f.write("HTTPStatus 0.0.0.0 14501\n")
             f.write("FileLimit        10000\n")
@@ -909,16 +990,44 @@ def createAprscConfig(filename, callsign, igate):
 ##################################################
 # Run the aprsc process
 ##################################################
-def aprsc(configfile, e):
+def aprsc(config, e):
     # Location of the aprsc binary
     aprsc_binary = "/opt/aprsc/sbin/aprsc"
 
-    # if we don't have a proper configfile then we can't run aprsc.  This should never happen, but just in case.
-    if configfile == "" or configfile is None:
-        return -1
+    # Create the aprsc configuration file
+    # We're assuming the path to this is the standard install path for aprsc, /opt/aprsc/etc/...
+    # We always append "01" to the callsign to ensure that it's unique for APRS-IS
+    aprsc_configfile = "/opt/aprsc/etc/tracker-aprsc.conf"
 
-    # get just the filename without any path, but prefix that with "etc/"....because aprsc runs in a chroot environment (aka no absolute paths).
-    config_file = "etc/" + os.path.basename(configfile)
+    # Get just the filename without any path, but prefix that with "etc/"....because aprsc runs in a chroot environment (aka no absolute paths).
+    config_file = "etc/" + os.path.basename(aprsc_configfile)
+
+    # This generates a random number to append to the callsign and pads it such that the server ID is always 9 characters in length
+    numRandomDigits = 9 - len(config["callsign"])
+    aprscServerId = str(config["callsign"]) + str(random.randint(5, 10 ** numRandomDigits - 1)).zfill(numRandomDigits)
+
+
+    ##########
+    # We build the configuration file assuming we're running the modifyed aprsc binary that accepts filter commands on the Uplink port.
+    # To check, we run with the "-y" switch initially and check the return code.  If > 0, then we revert to the syntax without the custom filter.
+    #
+    # Example (with custom filter):  
+    #    Uplink "Core rotate" full  tcp  noam.aprs2.net 14580 filter r/39/-103/200
+    #
+    # Example (without custom filter):
+    #    Uplink "Core rotate" full  tcp  noam.aprs2.net 10152
+    #
+    #
+    ##########
+
+    # Create a custom filter for the uplink port, this uses a 400km radius around our location (from GPS).
+    aprsisfilter = "filter " + str(getAPRSISFilter(400, config["customfilter"]))
+
+    # Create the configuration file with this custom filter.
+    # If we can't create the configuration file, then we have to exit...
+    if createAprscConfig(aprsc_configfile, aprscServerId, config["igating"], aprsisfilter) < 0:
+        return  -1
+
 
     # For reference we must run aprsc as root (thus the need for sudo) so that it can chroot to the /opt/aprsc path.
     # For example:
@@ -926,6 +1035,54 @@ def aprsc(configfile, e):
  
     # To run aprsc, we must be root, so we're going to use sudo to do that.  This assumes, that the user running this script has 
     # been given permission to start and stop (i.e. kill) the aprsc process without a password.
+
+    # We first run aprsc with the "-y" switch to test the configuration file for syntax.
+    aprsc_syntax_command = ["sudo", aprsc_binary, "-u", "aprsc", "-t", "/opt/aprsc", "-e", "info", "-o", "file", "-r", "logs", "-y", "-c", config_file]
+
+    try:
+        # Run the aprsc command, but we redirect output to /dev/null because we only care about the return code
+        devnull = open(os.devnull, "w")
+        p = sb.Popen(aprsc_syntax_command, stdout=devnull, stderr=sb.STDOUT)
+        
+        # Wait for it to finish and grab the return code.
+        r = p.wait()
+
+        # Make sure devnull is closed
+        devnull.close()
+
+        # If the return code is zero, then we can continue on using the custom filter on the Uplink connection.  If not zero, then
+        # there was an error with the aprsc configuration file syntax, presumably because of our custom filter on the uplink port.
+        if r != 0:
+            print "WARNING:  Syntax error with aprsc Uplink configuration, retrying without custom uplink filter..."
+            sys.stdout.flush()
+
+            # We now need to rebuild the configuration file without a custom APRS-IS filer on the Uplink connection.
+            # If we can't create the configuration file, then we have to exit...
+            if createAprscConfig(aprsc_configfile, aprscServerId, config["igating"]) < 0:
+                return  -1
+
+        # The aprsc process should NOT be running, but if it is, we need to kill it.
+        if p.poll() is None:
+            print "aprsc is still running..."
+            killem = ["sudo", "pkill", "aprsc"]
+            print "killing aprsc..."
+            sb.Popen(killem)
+            print "Waiting for aprsc to end..."
+            p.wait()
+            print "aprsc ended"
+    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+        if p.poll() is None:
+            print "aprsc is still running..."
+            killem = ["sudo", "pkill", "aprsc"]
+            print "killing aprsc..."
+            sb.Popen(killem)
+            print "Waiting for aprsc to end..."
+            p.wait()
+            print "aprsc ended"
+
+
+    # Now we start the aprsc process for real...
+
     # The command string and arguments for running aprsc
     aprsc_command = ["sudo", aprsc_binary, "-u", "aprsc", "-t", "/opt/aprsc", "-e", "info", "-o", "file", "-r", "logs", "-c", config_file]
 
@@ -934,8 +1091,8 @@ def aprsc(configfile, e):
         p = sb.Popen(aprsc_command)
         
         # Wait for it to finish
-        p.wait()
-        #e.wait()
+        r = p.wait()
+
         if p.poll() is None:
             print "aprsc is still running..."
             killem = ["sudo", "pkill", "aprsc"]
@@ -1086,7 +1243,7 @@ def main():
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "9", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false"}
+    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400"}
 
     for the_key, the_value in defaultkeys.iteritems():
         if the_key not in configuration:
@@ -1096,17 +1253,21 @@ def main():
     if configuration["callsign"] == "":
         configuration["callsign"] = options.callsign
 
+    # If the ssid is empty, we use "2" as the default
+    if configuration["ssid"] == "":
+        configuration["ssid"] = 2
+
     if configuration["igating"] == "true":
         if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
-            print "Inocorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
+            print "Incorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
             configuration["igating"] = "false"
 
 
     print "Starting HAB Tracker backend daemon"
     print "Callsign:  %s" % str(configuration["callsign"])
-    print "APRS-IS Radius: %dkm" % options.aprsisRadius
-    print "Algorithm Floor: %dft (this will auto-adjust)" % options.algoFloor
-    print "Algorithm Interval: %ds" % options.algoInterval
+#    print "APRS-IS Radius: %dkm" % options.aprsisRadius
+#    print "Algorithm Floor: %dft (this will auto-adjust)" % options.algoFloor
+#    print "Algorithm Interval: %ds" % options.algoInterval
 
 
     # this holds the list of sub-processes and threads that we want to start/run
@@ -1131,30 +1292,19 @@ def main():
  
         print "Number of SDRs: ", i
 
-        #  RF mode:  
+        #  Online-only mode:  
         #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
-        #      - we don't start GnuRadio processes
-        #      - we don't start Direwolf
+        #      - we do not start GnuRadio processes
+        #      - we do not start Direwolf
         #   
-        #  Online-only mode: 
-        #      - we do start aprsc, and connect in "read-only" mode (unless, future-tense here, we want to upload packets to the internet)
+        #  RF mode: 
+        #      - we do start aprsc, and connect in "read-only" mode (unless we want to igate packets to the internet)
         #      - we do start GnuRadio processes
         #      - we do start Direwolf and have it connect to the aprsc instance via "localhost" 
 
-        # Create the aprsc configuration file
-        # We're assuming the path to this is the standard install path for aprsc, /opt/aprsc/etc/...
-        # We always append "01" to the callsign to ensure that it's unique for APRS-IS
-        aprsc_configfile = "/opt/aprsc/etc/tracker-aprsc.conf"
-
-        # This generates a random number to append to the callsign and pads to such that the server ID is always 9 characters in length
-        numRandomDigits = 9 - len(configuration["callsign"])
-        aprscServerId = str(configuration["callsign"]) + str(random.randint(5, 10 ** numRandomDigits - 1)).zfill(numRandomDigits)
-
-        if createAprscConfig(aprsc_configfile, aprscServerId, configuration["igating"]) < 0:
-            sys.exit()
        
         # This is the aprsc process
-        aprscprocess = mp.Process(target=aprsc, args=(aprsc_configfile, stopevent))
+        aprscprocess = mp.Process(target=aprsc, args=(configuration, stopevent))
         aprscprocess.daemon = True
         aprscprocess.name = "aprc"
         processes.append(aprscprocess) 
@@ -1164,16 +1314,13 @@ def main():
 
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
-            # For the first SDR dongle found, start a separate GnuRadio listening process
-            # We only want to start a single GnuRadio process so that we're only going to use the first USB dongle present. This
-            # will prevent us from consuming all USB sticks attached to a system.
+            # For each SDR dongle found, start a separate GnuRadio listening process
             k = 0
-
             while k < i:
 
                 print "Using SDR:  ", sdrs[k]
-
                 status["rf_mode"] = 1
+                
                 # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
                 freqlist = getFrequencies(k)
 
@@ -1199,17 +1346,10 @@ def main():
 
                 k += 1
 
-            # Create Direwolf configuration file
-            if configuration["igating"] == "false" and configuration["beaconing"] == "false":
-                filename = createDirewolfConfig(str(configuration["callsign"]) + "02", direwolfFreqList, configuration)
-                status["direwolfcallsign"] = str(configuration["callsign"]) + "02"
-            else:
-                filename = createDirewolfConfig(str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration)
-                status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
+            status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
-            logfile = "/eosstracker/logs/direwolf.out"
-
-            dfprocess = mp.Process(target=direwolf, args=(filename, logfile, stopevent))
+            # The direwolf process
+            dfprocess = mp.Process(target=direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration))
             dfprocess.daemon = True
             dfprocess.name = "Direwolf"
             processes.append(dfprocess)
@@ -1225,19 +1365,15 @@ def main():
         ts = datetime.datetime.now()
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
-        print "\n"
-        print "JSON:", json.dumps(status)
-        print "\n"
-
 
         # This is the APRS-IS connection tap.  This is the process that is respoonsible for inserting APRS packets into the database
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), options.aprsisRadius, stopevent))
+        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), str(configuration["ssid"]), options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
         processes.append(aprstap)
 
         # This is the GPS position tracker process
-        gpsprocess = mp.Process(target=GpsPoller, args=(stopevent,))
+        gpsprocess = mp.Process(target=gpspoller.GpsPoller, args=(stopevent,))
         gpsprocess.daemon = True
         gpsprocess.name = "GPS Position Tracker"
         processes.append(gpsprocess)
@@ -1263,7 +1399,6 @@ def main():
         if os.path.isfile(jsonStatusTempFile):
             os.rename(jsonStatusTempFile, jsonStatusFile)
     
-
         # Join each process (which blocks until the sub-process ends)
         for p in processes:
             p.join()

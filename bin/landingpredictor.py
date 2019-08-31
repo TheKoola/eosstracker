@@ -157,7 +157,7 @@ def landingPredictor(altitude_floor, configuration):
         
         descent_arrays = []
         ### Now...
-        #   1.  Loop through each callsign,  flightid (from above)
+        #   1.  Loop through each flightid (from above)
         #   2.  Query the database to get all recent packets for those callsigns that makeup this flight
         #   3.  Create a curve fitting for the incoming packets
         #   4.  Loop through the prediction data for this flightid, adding up all of the lat/long deltas to get a predicted landing location
@@ -165,7 +165,6 @@ def landingPredictor(altitude_floor, configuration):
         
         i = 0
         while (i < len(flightids)):
-        #for fid, callsign in flightids:
             # this is the flightid name
             fid = flightids[i,0]
             callsign = flightids[i,1]
@@ -202,7 +201,7 @@ def landingPredictor(altitude_floor, configuration):
                                    and ST_Y(a.location2d) != 0 
                                    and a.altitude > 0
                                    and a.callsign = %s
-                                   and a.tm > now()::date
+                                   and a.tm > (now() - interval '08:00:00')
         
                                    order by 
                                    thetime asc
@@ -306,9 +305,10 @@ def landingPredictor(altitude_floor, configuration):
                 # If the index of max altitude is less than the length of the of the flight...implies we've seen an alitude "hump" and are now descending
                 # ...AND we've seen at least 2 packets since the max altitude value was hit...
                 # ...AND the max altitude is > 14,999 feet (sanity check)...
+                # ...AND we've got at least three packets from the ascent portion (without hearing packets on the way up we can't really predict anything)...
                 # ...THEN continue on and try to predict a landing location for this flight
                 alt_sanity_threshold = 14999
-                if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
+                if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold and ascent_rates.shape[0] > 2:
 
                     # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
                     gps_sql = """select 
@@ -339,10 +339,10 @@ def landingPredictor(altitude_floor, configuration):
                     # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet received from the balloon
                     dist_to_balloon = distance(my_lat, my_lon, descent_portion[-1,2], descent_portion[-1, 3])
 
-                    # If we're close to the balloon (ex. < 75 miles), then we want to adjust our prediction_floor to our current elevation.  The idea being that if 
+                    # If we're close to the balloon (ex. < 35 miles), then we want to adjust our prediction_floor to our current elevation.  The idea being that if 
                     # we're close to the balloon, then our current elevation is likely close to the elevation of the balloon's ultimate landing location.  ...and we 
                     # want to have the prediction algorithm calculate predicitons down to that elevation.  This should increase landing prediction accuracy a small amount.
-                    if dist_to_balloon < 75:
+                    if dist_to_balloon < 35:
                         prediction_floor = float(my_alt)
                     else:
                         prediction_floor = float(launchsite_elev)
@@ -450,6 +450,15 @@ def landingPredictor(altitude_floor, configuration):
                     function_weight = (float(last_heard_altitude) - prediction_floor) / (float(descent_portion[0, 1]) - prediction_floor)
                     k_idx = 0
                     first_time = 0
+
+                    # this is the list of points that comprise the flight path
+                    flightpath_points = [(x, y)]
+                    flightpath_deltas = []
+
+                    # This is the time to live until landing, in seconds
+                    ttl = 0
+
+                    # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
                     for k in prediction_descent_data:
                         if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
                            if k[0] < last_heard_altitude:
@@ -481,8 +490,10 @@ def landingPredictor(altitude_floor, configuration):
                             
                                dx = t * k[4]
                                dy = t * k[5]
-                               x = x + dx
-                               y = y + dy
+                               x += dx
+                               y += dy
+                               ttl += t
+                               flightpath_deltas.append((dx, dy))
                            else:
                                #print "else k[0]: ", k[0], "   first_time: ", first_time
                                if first_time == 0 and last_heard_altitude > backstop:
@@ -517,16 +528,192 @@ def landingPredictor(altitude_floor, configuration):
                                    dy = t * k[5]
                                    x += dx
                                    y += dy
+                                   ttl += t
+                                   flightpath_deltas.append((dx, dy))
+
+                           #if len(flightpath_points) > 0:
+                           #    if x != flightpath_points[-1][0] or y != flightpath_points[-1][1]:
+                           #        flightpath_points.append((x, y))
+                           #else:
+                           #    flightpath_points.append((x, y))
 
                         backstop = k[0]
                         k_idx += 1
                         
                     # construct SQL for inserting the landing prediction into the landingpredictions table
-                    landingprediction_sql = """insert into landingpredictions values (date_trunc('second', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326));"""
-                    landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x) ])
+
+                    prev_x = flightpath_points[-1][0] 
+                    prev_y = flightpath_points[-1][1]
+                    for u,v in flightpath_deltas[::-1]:
+                        pos_x = prev_x + u 
+                        pos_y = prev_y + v 
+                        flightpath_points.insert(0, (pos_x, pos_y))
+                        prev_x = pos_x
+                        prev_y = pos_y
+
+                    flightpath_points.insert(0, (x, y))
+
+                    linestring_text = ""
+                    m = 0
+                    for u,v in flightpath_points:
+                        if m > 0:
+                            linestring_text = linestring_text + ", "
+                        linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                        m += 1
+                    linestring_text = "LINESTRING(" + linestring_text + ")"
+                    landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) values (date_trunc('second', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric);"""
+                    landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x), linestring_text, round(float(ttl)) ])
                     landingconn.commit()
 
                     #print callsign, " [", descent_portion[-1,0], " alt: ", descent_portion[-1,1],  " v: ", round(balloon_velocities[-1], 2), "],   pred_floor: ", prediction_floor, "  coef: ", str(parachute_coef), "  est. lat/lon:  ", round(float(x),6), ", ", round(float(y), 6)
+
+                else:
+                    # If here, then the flight is NOT descending yet.  Or at least, it's not registered at least 2 packets post-burst.
+                    # In this case then we:
+                    #   1.  Determine if there is a prediction file loaded for this flight and perform a SQL query to get all of those lat, lon, alt records.
+                    #   2.  Determine the delta between the last position of the flight vs. the closest, altitude-wise, record from the prediciton file.
+                    #   3.  Then insert a landing prediction record back into the landingpredictions table
+
+                    prediction_sql = """
+                        select 
+                        d.altitude, 
+                        d.latitude, 
+                        d.longitude 
+
+                        from 
+                        predictiondata d,
+                            (select 
+                            f.flightid, 
+                            p.launchsite, 
+                            max(p.thedate) as thedate 
+                        
+                            from 
+                            flights f, 
+                            predictiondata p 
+                        
+                            where 
+                            p.flightid = f.flightid 
+                            and f.active = 't' 
+                            and p.launchsite = f.launchsite
+
+                            group by 
+                            f.flightid, 
+                            p.launchsite 
+
+                            order by 
+                            f.flightid) as l
+
+                        where 
+                        d.flightid = %s
+                        and d.launchsite = %s
+                        and d.thedate = l.thedate
+                        and l.flightid = d.flightid
+                        and l.launchsite = d.launchsite
+
+
+                        order by 
+                        d.thedate, 
+                        d.thetime asc
+                        ;
+                    """
+
+                    # Execute the SQL statment and get all rows returned
+                    #     For references: columns for flightids: flightid, callsign, launchsite, lat, lon, alt
+                    landingcur.execute(prediction_sql, [ flightids[i,0], flightids[i,2]])
+                    rows = landingcur.fetchall()
+                    predictiondata = np.array(rows)
+                    predictiondata_rev = predictiondata[::-1]
+
+                    ##  columns for balloon_data:  timestamp, altitude, latitude, longitude
+                    # Latest altitude, lat, and lon for the flight
+                    latest_altitude = balloon_data[-1, 1]
+                    x = float(balloon_data[-1, 2])
+                    y = float(balloon_data[-1, 3])
+
+                    #if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
+                    if len(rows) > 0:
+                        # if there are rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, to the current flight location.
+                        
+                        predictiondata_slice = []
+                        predictiondata_slice = np.array(predictiondata_slice)
+                        if descent_portion.shape[0] > 1 and latest_altitude > alt_sanity_threshold:
+                            # Are we descending and just not enough packets yet to perform a normal landing prediction?
+
+                            # Loop through the prediction data in reverse order to find the closest altitude
+                            loop_counter = 0
+                            l = predictiondata_rev.shape[0]
+                            prev_pred_alt = 0
+                            while predictiondata_rev[loop_counter,0] < latest_altitude and loop_counter < l - 1:
+                                if prev_pred_alt > predictiondata_rev[loop_counter, 0]:
+                                    # we've hit the top in the pred data and we need to stop
+                                    if loop_counter > 0:
+                                        loop_counter -= 1
+                                    break
+                                prev_pred_alt = predictiondata_rev[loop_counter, 0]
+                                loop_counter += 1
+
+                            # Now slice off the predictiondata we care about
+                            l = len(predictiondata_rev)
+                            predictiondata_slice = predictiondata_rev[0:loop_counter, 0:]
+                            
+                            # reverse this back in HIGH to LOW altitude order
+                            predictiondata_slice = predictiondata_slice[::-1]
+
+                        else:
+                            # we're still ascending
+
+                            if latest_altitude > float(flightids[i,5])*1.10:
+                                loop_counter = 0
+                                l = predictiondata.shape[0]
+                                prev_pred_alt = 0
+                                while predictiondata[loop_counter,0] < latest_altitude and loop_counter < l - 1:
+                                    if prev_pred_alt > predictiondata[loop_counter, 0]:
+                                        # we've hit the top in the pred data and we need to stop
+                                        if loop_counter > 0:
+                                            loop_counter -= 1
+                                        break
+                                    prev_pred_alt = predictiondata[loop_counter, 0]
+                                    loop_counter += 1
+
+                                # Now slice off the predictiondata we care about
+                                predictiondata_slice = predictiondata[loop_counter:, 0:]
+
+                        if predictiondata_slice.shape[0] > 0:
+                            # Determine the delta between the last heard packet and the prediction data
+                            dx = x - float(predictiondata_slice[0, 1]) 
+                            dy = y - float(predictiondata_slice[0, 2])
+
+                            # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
+                            m = 0
+                            linestring_text = ""
+                            for k,u,v in predictiondata_slice:
+                                if m > 0:
+                                    linestring_text = linestring_text + ", "
+                                linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
+                                m += 1
+                            linestring_text = "LINESTRING(" + linestring_text + ")"
+
+                            # Now we construct the GIS linestring string for the database insert
+                            landingprediction_sql = """
+                                 insert into landingpredictions 
+                                 values (date_trunc('second', now())::timestamp, 
+                                     %s, 
+                                     %s, 
+                                     'translated', 
+                                     %s::numeric, 
+                                     ST_GeometryFromText('POINT(%s %s)', 4326), 
+                                     ST_GeometryFromText(%s, 4326));
+                            """
+                            landingcur.execute(landingprediction_sql, 
+                                    [   fid, 
+                                        callsign, 
+                                        float(-1), 
+                                        float(predictiondata_slice[-1,2])+dy, 
+                                        float(predictiondata_slice[-1,1])+dx, 
+                                        linestring_text 
+                                    ]
+                            )
+                            landingconn.commit()
         
             i += 1
         
@@ -548,6 +735,39 @@ def landingPredictor(altitude_floor, configuration):
 ##################################################
 def runLandingPredictor(schedule, altitude_floor, e, config):
     try:
+        # we need to see if the existing landing predictions table has the flightpath column and add it if not.
+        try:
+            # Database connection 
+            dbconn = None
+            dbconn = pg.connect (habconfig.dbConnectionString)
+            dbcur = dbconn.cursor()
+
+            # This is the list of columns we need to check as older versions of the software/database might not have been updated.
+            check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric") ]
+
+            for column, coltype in check_columns:
+                # SQL to check if the column exists or not
+                check_column_sql = "select column_name from information_schema.columns where table_name='landingpredictions' and column_name=%s;"
+                dbcur.execute(check_column_sql, [ column ])
+                rows = dbcur.fetchall()
+
+                # If the number of rows returned is zero, then we need to create the column
+                if len(rows) == 0:
+                    print "Column, %s, does not exist within the 'landingpredictions' table.  Adding now." % column
+                    
+                    # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                    alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype;
+                    dbcur.execute(alter_table_sql)
+                    dbconn.commit()
+
+            # Close DB connection
+            dbcur.close()
+            dbconn.close()
+        except pg.DatabaseError as error:
+            dbcur.close()
+            dbconn.close()
+            print(error)
+
         # run the landing predictor function continuously, every "schedule" seconds.
         #while True:
         while not e.is_set():

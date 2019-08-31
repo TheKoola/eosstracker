@@ -137,18 +137,21 @@ order by 1,2,3
     $channels = [];
 
     while ($row = sql_fetch_array($result)) {
-        $tdata[]= $row['theminute'];
+        $tdata[]= $row['thedate'] . " " . $row['theminute'];
         $adata[] = $row['internet_packets'];
         $rfdata[] = $row['rf_packets'];
     }    
 
 
-    printf (" { ");
-    generateJSON($tdata, $adata, "Internet_Packets");
-    printf (", ");
-    generateJSON($tdata, $rfdata, "RF_Packets");
-
-    printf ("}");
+    if (sql_num_rows($result) > 0) { 
+        printf (" { ");
+        generateJSON($tdata, $adata, "Internet_Packets");
+        printf (", ");
+        generateJSON($tdata, $rfdata, "RF_Packets");
+        printf ("}");
+    }
+    else
+        printf ("[]");
 
     sql_close($link);
 ?>

@@ -30,30 +30,32 @@
     include $documentroot . '/common/functions.php';
 
 
+    // Check the launchsite HTML GET variable
     if (isset($_GET["launchsite"])) {
-        $get_launchsite = $_GET["launchsite"];
+        $get_launchsite = check_string($_GET["launchsite"], 64);
     }
-    else {
+    else
         $get_launchsite = "";
-    }
 
+
+    // Check the lat HTML GET variable.  This is the latitude so it should be between -90 and +90.
     $get_lat = "";
-    if (isset($_GET["lat"])) {
-	if (Is_Numeric($_GET["lat"]))
-            $get_lat = $_GET["lat"];
-    }
-    
-    $get_lon = "";
-    if (isset($_GET["lon"])) {
-	if (Is_Numeric($_GET["lon"]))
-            $get_lon = $_GET["lon"];
-    }
+    if (isset($_GET["lat"])) 
+        if (check_number($_GET["lat"], -90, 90))
+            $get_lat = floatval($_GET["lat"]);
 
+    // Check the lon HTML GET variable.  This is the longitude so it should be between -180 and +180.
+    $get_lon = "";
+    if (isset($_GET["lon"])) 
+        if (check_number($_GET["lon"], -180, 180))
+            $get_lon = floatval($_GET["lon"]);
+
+    // Check the alt HTML GET variable.  The elevation of a launch site "should" be between -300ft (aka death valley) and 15k feet.
     $get_alt = "";
-    if (isset($_GET["alt"])) {
-	if (Is_Numeric($_GET["alt"]))
-            $get_alt = $_GET["alt"];
-    }
+    if (isset($_GET["alt"])) 
+        if (check_number($_GET["alt"], -300, 15000))
+            $get_alt = intval($_GET["alt"]);
+
 
     ## if any of the GET parameters are not supplied, then exit...
     if ($get_launchsite == "" || $get_lat == "" || $get_lon == "" || $get_alt == "") {

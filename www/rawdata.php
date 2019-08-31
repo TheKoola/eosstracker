@@ -25,12 +25,112 @@
 
 
 session_start();
-$pagetitle="APRS:  Raw Data";
+$pagetitle="APRS:  Data";
 $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
 include $documentroot . '/common/header.php';
+$config = readconfiguration();
 ?>
 <script>
+    // The variables for the charts.
+    var chart;
+    var chart2;
+    var chart3;
+    var chart4;
+    
+
+    function coord_distance(lat1, lon1, lat2, lon2) {
+        var p = 0.017453292519943295;    // Math.PI / 180
+        var c = Math.cos;
+        var a = 0.5 - c((lat2 - lat1) * p)/2 + 
+                c(lat1 * p) * c(lat2 * p) * 
+                (1 - c((lon2 - lon1) * p))/2;
+
+        return Math.round((12742 * Math.asin(Math.sqrt(a)))*.6213712 * 100)/100; // 2 * R; R = 6371 km
+    }
+
+
+    // This is the APRS-IS packet counts chart.
+    function createchart (jsondata, columns) {
+        chart = c3.generate({
+            bindto: '#chart1',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+
+    // This is the Winds Aloft chart.
+    function createchart2 (jsondata, columns) {
+        chart2 = c3.generate({
+            bindto: '#chart2',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / No Active Flights" } }, type: 'bar', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
+            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' } }, y: { label: { text: 'Average Speed (MPH)', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+    
+    // This is the Direwolf RF Packets chart.
+    function createchart3 (jsondata, columns) {
+        chart3 = c3.generate({
+            bindto: '#chart3',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { format: '%H:%M:%S' }  }, y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+
+    // This is the RF Packets vs. Altitude chart
+    function createchart4 (jsondata, columns) {
+        chart4 = c3.generate({
+            bindto: '#chart4',
+            size: { width: 800, height: 350 },
+            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, type: 'area', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
+            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' } }, y: { label: { text: 'Packets Heard Direct', position: 'outer-middle' } } },
+            grid: { x: { show: true }, y: { show: true } }
+            //grid: { x: { show: true }, y: { show: true } }
+        });
+    }
+    
+    function updatechart (jsondata, columns) {
+         chart.load ({ json:  jsondata, xs: columns });
+    }
+    
+    function updatechart2 (jsondata, columns) {
+         chart2.load ({ json:  jsondata, xs: columns });
+    }
+
+    function updatechart3 (jsondata, columns) {
+         chart3.load ({ json:  jsondata, xs : columns});
+    }
+
+    function updatechart4 (jsondata, columns) {
+         chart4.load ({ json:  jsondata, xs: columns });
+    }
+
+    function getchartdata(chartupdatefunction, url) {
+        $.get(url, function(data) {
+            var jsonOutput = JSON.parse(data);
+            var mycolumns = {};
+            var i = 0;
+            var thekeys = Object.keys(jsonOutput);
+
+            for (i = 0; i < thekeys.length; i++) {
+                if (! thekeys[i].startsWith("tm-")) {
+                    mycolumns[thekeys[i]] = "tm-" + thekeys[i];
+                }
+            }
+            chartupdatefunction(jsonOutput, mycolumns);
+        });
+    }
+
+    
     // This grabs the session variables
     var selectedFlight;
     var packetdata;
@@ -229,39 +329,6 @@ include $documentroot . '/common/header.php';
             return false;
         }
 	
-	/*
-        var form_data = new FormData();
-        form_data.append("datatype", data_type_selection.value);
-        form_data.append("beginning", data_beginning.value);
-        form_data.append("ending", data_ending.value);
-        $.ajax({
-                url: "downloaddata.php",
-                dataType: 'json',
-                cache: false,
-                contentType: false,
-                processData: false,
-                data: form_data,
-                type: 'post',
-                success: function(jsonData, textStatus, jqXHR) {
-                    if (jsonData.result == 1)
-                        document.getElementById("data_download_error").innerHTML = "<mark>" + jsonData.error + "</mark>";
-                    else
-                        document.getElementById("data_download_error").innerHTML = "";
-                    document.getElementById("data_beginning").value = "";
-                    document.getElementById("data_ending").value = "";
-		    initializeDataSelection();
-                    document.getElementById("data_type_selection").selectedIndex = 0;
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    document.getElementById("errors").innerHTML = "<mark>" + textStatus + ": " + errorThrown + "</mark>";
-                    document.getElementById("data_beginning").value = "";
-                    document.getElementById("data_ending").value = "";
-		    initializeDataSelection();
-                    document.getElementById("data_type_selection").selectedIndex = 0;
-                }
-        });
-	 */
-
 
 	var url="downloaddata.php?datatype=" + data_type_selection.options[data_type_selection.selectedIndex].value + "&beginning=" + data_beginning.value + "&ending=" + data_ending.value;
 	//document.getElementById("data_download_error").innerHTML = url;
@@ -291,8 +358,6 @@ include $documentroot . '/common/header.php';
 
     }
 
-
-
     $(document).ready(function () {
         updatePacketsEvent = new CustomEvent("updatepackets");
         document.body.addEventListener("updatepackets", displaypackets, false);
@@ -310,8 +375,12 @@ include $documentroot . '/common/header.php';
         e.onpropertychange = e.oninput;
 
         initialize();
-	initializeDataSelection();
-        setInterval(getrecentdata, 5000);
+    	initializeDataSelection();
+        getchartdata(createchart, "getpacketperformance.php");
+        getchartdata(createchart2, "getspeedvsaltitude.php");
+        getchartdata(createchart3, "getdirewolfperformance.php");
+        getchartdata(createchart4, "getdirewolfperformance2.php");
+        setInterval(function() { getrecentdata(); getchartdata(updatechart, "getpacketperformance.php"); getchartdata(updatechart2, "getspeedvsaltitude.php"); getchartdata(updatechart3, "getdirewolfperformance.php"); getchartdata(updatechart4, "getdirewolfperformance2.php"); }, 5000);
     });
     
     
@@ -338,12 +407,66 @@ include $documentroot . '/common/header.php';
                         <select form="data_download_form" id="data_type_selection">
                         </select>
                     </td>
-		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
-		    <td class="packetlist"><input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm-dd-yyyy HH:MM:SS" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" pattern="\d{1,2}-\d{1,2}-\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]"></td>
+            <td class="packetlist"><input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm/dd/yyyy HH:MM:SS" 
+                autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
+                pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" title="enter date/time value using, mm/dd/yyyy HH:MM:SS"></td>
+            <td class="packetlist"><input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm/dd/yyyy HH:MM:SS" 
+                autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
+                pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" title="enter date/time value using, mm/dd/yyyy HH:MM:SS"></td>
                 </tr>
                 </table>
                 </form>
             </p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                APRS-IS Packets
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+   	        <p class="normal-italic">These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
+            the RF packet count shows the number of packets that were heard over RF that were <strong>not</strong> already known 
+            through an APRS-IS connection - it's a subtle distinction not to be confused with absolute packet counts <strong>heard</strong> over an RF channel.
+            </p>
+            <p class="normal-black"><div id="chart1"></div></p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                RF Packets
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+            <p class="normal-italic">This chart shows total RF packet count (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
+            These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
+            </p>
+            <p class="normal-black"><div id="chart3"></div></p>
+
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                RF Packets vs. Altitude
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+            <p class="normal-italic">This chart shows RF packet count vs. altitude for every packet decoded by Dire Wolf that has reported an altitude and also heard 
+            directly (i.e. not digipeated).  These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
+            Altitude values are rounded to the nearest 500ft.  For example, a packet with an altitude of 7,201ft would be counted with the 7,000ft point.
+            </p>
+            <p class="normal-black"><div id="chart4"></div></p>
+            <p class="header" style="clear:  none;">
+                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+                Flight Speed vs. Altitude
+<?php 
+    printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
+?>
+            </p>
+            <p class="normal-italic">This chart displays the average speed of a flight, as reported through APRS packets, for each 5000ft altitude strata.  
+            Although not perfectly correlated (flight speed vs. wind speed), it can provide a general indicator as to wind strength at higher altitude levels.  
+            Altitude values for a flight are rounded to the nearest 5000ft.  For example, a speed value at an altitude of 33,000ft would be counted with the 35,000ft bar.
+            </p>
+            <p class="normal-black"><div id="chart2"></div></p>
+
+
             <p class="header" style="clear:  none;">
                 <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
                 Live APRS Packets

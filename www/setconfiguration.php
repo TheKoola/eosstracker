@@ -49,6 +49,7 @@
     $ray["serialproto"] = "RTS";
     $ray["comment"] = "EOSS Tracker";
     $ray["includeeoss"] = "true";
+    $ray["eoss_string"] = "EOSS";
     $ray["symbol"] = "/k";
     $ray["overlay"] = "";
     $ray["ibeaconrate"] = "15:00";
