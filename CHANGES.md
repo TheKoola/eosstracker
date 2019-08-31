@@ -24,6 +24,8 @@
 
 - The absolute bearing (relative to N) is now displayed along side the distance to a balloon on the map within the Relative Position section of the sidebar.
 
+- Added additional graphs/charts to display RF packet information that leverages a customized Dire Wolf instance.
+
 
 ### Bugs Fixed: ###
 
