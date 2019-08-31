@@ -1,6 +1,6 @@
 # Revision History #
 
-## Version 1.2 - Under Development ##
+## Version 1.2 - August 2019 ##
 
 ### New Features: ###
 
