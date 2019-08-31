@@ -161,7 +161,6 @@ include $documentroot . '/common/header.php';
 
         var antenna_html = "<table class=\"inner-presentation-area\" cellpadding=0 cellspacing=0 border=0><tr>";
         if (!statusJson.antennas) {
-            //document.getElementById("debug").innerHTML = JSON.stringify(statusJson) + "<br><br>jeff was here";
             $("#antenna-data").html("<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark>Not running...</mark></p>");
             $("#direwolferror").html("");
             return;
