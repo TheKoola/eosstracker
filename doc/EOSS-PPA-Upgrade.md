@@ -23,16 +23,18 @@ upgrades are simple:
 
 That's it!  You should do this before each EOSS balloon launch if you can.
 
+### Additional reading
+
 There is some additional reading available below, if interested.
 
-[What's going on and what to expect](#whats-going-on-and-what-to-expect)
-[Check what versions and see if it worked](#check-and-see-if-it-worked)
+* [What's going on and what to expect](#whats-going-on-and-what-to-expect)
+* [Check what versions and see if it worked](#check-and-see-if-it-worked)
 
 If you are unsure whether or not you are connected to the EOSS PPA, follow these steps
 to check.  Note, you do not have to be connected to the Internet to check, but
 you do have to log into the tracker computer and access the command line.
 
-Optional:  [Check to see if EOSS PPA is installed](#optional-check-and-see-if-connected-to-eoss-ppa).
+* Optional:  [Check to see if EOSS PPA is installed](#optional-check-and-see-if-connected-to-eoss-ppa).
 
 ### 1. Connect to Internet and log in
 
@@ -156,9 +158,11 @@ linux; GNU C++ version 7.3.0; Boost_106501; UHD_003.010.003.000-0-unknown
 Starting HAB Tracker backend daemon
 Callsign:  E0SS
 Number of SDRs:  1
-Using SDR:   {'rtl': 0, 'product': u'RTL2838UHIDIR', 'serialnumber': u'00000001', 'manufacturer': u'Realtek'}
+Using SDR:   {'rtl': 0, 'product': u'RTL2838UHIDIR', 'serialnumber': u'00000001', 'manufacturer':
+u'Realtek'}
 INFO:  direwolf seems to support the -Q parameter
-Using this filter for APRS-IS uplink: r/39.75/-103.50/400 r/40.198/-105.149/400 b/AE0SS-12/KC0D-1 f/AE0SS-12/100 f/KC0D-1/100
+Using this filter for APRS-IS uplink: r/39.75/-103.50/400 r/40.198/-105.149/400 b/AE0SS-
+12/KC0D-1 f/AE0SS-12/100 f/KC0D-1/100
 
 Aprsc tap error connecting to local aprsc, attempt # 0 :   [Errno 111] Connection refused
 Aprsc tap error connecting to local aprsc, attempt # 1 :   [Errno 111] Connection refused
@@ -169,10 +173,10 @@ Aprsc tap connection to local aprsc successful
 
 The `INFO:  direwolf seems to support the -Q parameter` line informs you that
 direwolf version 1.5.2-1ppa2 is properly installed. The `Aprsc tap connection
-to local aprsc successful` line without any
+to local aprsc successful` line at the bottom without any
 `WARNING:  Syntax error with aprsc Uplink configuration, retrying without custom
 uplink filter...`
-line informs you that aprsc-eoss version 1.0-1ppa4 is prpoerly installed and working.
+line informs you that aprsc-eoss version 1.0-1ppa4 is properly installed and working.
 
 ### Optional: Check and see if connected to EOSS PPA
 
@@ -183,8 +187,8 @@ the two commands above.  The instructions to connect to the PPA are
 
 > Note:  If you have already enabled the EOSS PPA repository, or if you
 > are not sure if the repository is enabled or not, there is no concern running
-> the one-time steps to connect the PPA again.  Simply follow the link above
-> and your software will be updated.
+> the one-time steps to connect the PPA again.  Simply follow the instructions
+> to connect to the PPA above and your software will be updated.
 
 If you are connected to the tracker computer via the command line, you can
 see if you have enabled the EOSS PPA repository and have installed the
