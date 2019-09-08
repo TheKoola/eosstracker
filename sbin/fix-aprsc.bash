@@ -17,6 +17,7 @@ fi
 # Edits to rc.local
 if [ -f $DESTFILE ]; then
         echo "$NAME: Updating $DESTFILE..."
+        /bin/cp $DESTFILE $DESTFILE.orig
 
 echo "#!/bin/bash
 #
