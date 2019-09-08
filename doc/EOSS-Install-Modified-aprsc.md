@@ -40,6 +40,7 @@ You will see the following output:
 ```
 eosstracker@eosstracker:/eosstracker$ sudo /eosstracker/sbin/fix-aprsc.bash
 [sudo] password for eosstracker:
+fix-aprsc: Updating /etc/rc.local...
 fix-aprsc: Checking for and adding aprsc mount points...
 fix-aprsc: Copying necessary files and special devices for aprsc...
 fix-aprsc: Mounting libraries read-only for aprsc...
@@ -104,6 +105,6 @@ if [ ! -f  /opt/aprsc/etc/aprsc.conf ] ; then \
 else true ; fi
 ```
 
-The new modified version of `aprsc` is now installed.  You can pull the latest
-branch of the `eosstracker` software, refresh your browser window, and
-start up the processes by clicking on the "Start" button on the Home page.
+The new modified version of `aprsc` is now installed.  You can refresh your
+browser window, and start up the processes by clicking on the "Start" button
+on the Home page.
