@@ -1,7 +1,7 @@
 # Installing the EOSS-modified aprsc
 
 Notes by Jeff N2XGL,
-Version 1.2, Dated 2019-08-12
+Version 1.3, Dated 2019-09-07
 
 ## Installing the modified EOSS aprsc software from source
 
@@ -31,8 +31,22 @@ provided below.
 Begin by shutting down the `eosstracker` software if it is running.  Click the
 "Stop" button on the Home page.  
 
-Next log in to the tracker computer and
-make a source directory (if it does not exist) by entering the command
+Next log in to the tracker computer.  First, you have to prepare the environment
+for the new version of aprsc.  To do this, change directories: `cd /eosstracker`
+and refresh to the latest with a `git pull` command.  Now run one of the new tools
+in the sbin directory as the superuser: `sudo /eosstracker/sbin/fix-aprsc.bash`.
+
+You will see the following output:
+```
+eosstracker@eosstracker:/eosstracker$ sudo /eosstracker/sbin/fix-aprsc.bash
+[sudo] password for eosstracker:
+fix-aprsc: Checking for and adding aprsc mount points...
+fix-aprsc: Copying necessary files and special devices for aprsc...
+fix-aprsc: Mounting libraries read-only for aprsc...
+eosstracker@eosstracker:/eosstracker$
+```
+
+Now make a source directory (if it does not exist) by entering the command
 `mkdir -p ~/src` followed by `cd ~/src`.  
 
 Download the EOSS-modified version
