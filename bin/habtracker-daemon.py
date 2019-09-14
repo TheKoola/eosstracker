@@ -314,6 +314,9 @@ def getAPRSISFilter(aprsRadius, customfilter = None):
         pgCursor.close()
         pgConnection.close()
 
+        # Set aprsFilter for kiosk mode
+        aprsFilter = "r/39.75/-103.5/380"
+
         print("Using this filter for APRS-IS uplink: %s\n" % aprsFilter)
         sys.stdout.flush()
 
