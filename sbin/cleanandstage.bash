@@ -19,10 +19,10 @@ fi
 #echo "Running apt update..."
 #apt update
 
-sleep 2
-echo "Installing alsa-utils and ipheth-utils..."
-apt install -y  alsa-utils
-apt install -y ipheth-utils
+#sleep 2
+#echo "Installing alsa-utils and ipheth-utils..."
+#apt install -y  alsa-utils
+#apt install -y ipheth-utils
 
 #sleep 2
 #echo "Removing pulseaudio..."
