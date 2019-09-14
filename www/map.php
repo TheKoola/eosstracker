@@ -355,7 +355,7 @@
 
 
 <?php
-        printf ("</div>");
+//        printf ("</div>");
 
         // Altitude Chart
         printf ("<p class=\"section-header\"><a href=\"#altitude\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Altitude Chart</a>:</p>", $row['flightid'] . "_altitudechartlink", $row['flightid'] . "_altitudechartsign");
