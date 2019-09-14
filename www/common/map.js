@@ -58,11 +58,11 @@
     var livePacketStreamState = 0;;
     var processInTransition = 0;
 
-    // The list of realtime layers 
+    // The list of realtime layers
     var realtimeflightlayers = [];
     var realtimelayers = [];
 
-    
+
     /*********
     * Search for an object within an array of objects
     **********/
@@ -83,7 +83,7 @@
     **********/
     var ascendingColorMap = [];
     var descendingColorMap = [];
-    var ascending_colorsets = [ 
+    var ascending_colorsets = [
         { color : 'hotpink', markerColor: 'deeppink'},
         { color : 'green', markerColor: 'darkgreen'},
         { color : 'chocolate', markerColor: 'saddlebrown'},
@@ -91,7 +91,7 @@
         { color : 'red', markerColor: 'darkred'},
         { color : '#00e600',   markerColor: '#009900'}
     ];
-    var descending_colorsets = [ 
+    var descending_colorsets = [
         { color : 'cadetblue', markerColor: 'steelblue'},
         { color : 'darkorchid', markerColor : 'purple'},
         { color : 'slateblue', markerColor: 'darkslateblue'},
@@ -102,12 +102,12 @@
     var colorIndex = 0;
 
     /*********
-    * This function is for styling the active flight paths/tracks 
+    * This function is for styling the active flight paths/tracks
     **********/
     function activeFlightStyle (feature) {
         var localstyle;
         var id = feature.properties.id;
-        
+
         var ascending_color = colorIndex;
         var descending_color = colorIndex;
 
@@ -117,14 +117,14 @@
             if ( ! feature.properties.objecttype)
                 return {};
 
-            var objecttype = feature.properties.objecttype;                    
+            var objecttype = feature.properties.objecttype;
 
             if (objecttype == "balloonpath" ) {
                 var i = 0;
                 var fid = (feature.properties.flightid ? feature.properties.flightid : "noflightid");
                 var ascendingColorIndex = (ascendingColorMap.length > 0 ? indexOfObject(ascendingColorMap, "flightid", fid) : -1);
                 var descendingColorIndex = (descendingColorMap.length > 0 ? indexOfObject(descendingColorMap, "flightid", fid) : -1);
-      
+
                 if (ascendingColorIndex > -1)
                     ascending_color = ascending_colorsets[ascendingColorMap[ascendingColorIndex].coloridx].color;
                 else {
@@ -181,25 +181,25 @@
 
                 if (feature.geometry.type == "Point") {
                     var mapcenter = map.getCenter();
-                    var mapzoom = map.getZoom(); 
+                    var mapzoom = map.getZoom();
                     var id = feature.properties.id;
- 
+
                     // If this is a balloon object then we want a hyperlink in the popup...
 		            if (objecttype == "balloon") {
-        			    html = "<a target=\"_blank\" href=\"map.php" + 
-                            "?followfeatureid=" + feature.properties.id + 
-	        		        "&latitude=" + feature.geometry.coordinates[1] + 
-		        	        "&longitude=" + feature.geometry.coordinates[0] + 
+        			    html = "<a target=\"_blank\" href=\"map.php" +
+                            "?followfeatureid=" + feature.properties.id +
+	        		        "&latitude=" + feature.geometry.coordinates[1] +
+		        	        "&longitude=" + feature.geometry.coordinates[0] +
 			                "&zoom=" + mapzoom + "\">" +
         			        "<strong>" + feature.properties.callsign + "</strong></a>";
 	        	    }
                     // ...if it's NOT a balloon (i.e. a path, or burst, or prior beacon location then we don't want a hyperlink in the popup.
-                    else 
+                    else
 		            	html = "<strong>" + feature.properties.callsign + "</strong>";
 
                     // Update the popup content to include a number of balloon specific items
-       		        html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-		                (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+       		        html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) +
+		                (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 		                (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		                (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -230,13 +230,13 @@
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
                                 layer.bindTooltip(feature.properties.label, { className:  tipclass,  permanent:true, direction: "center",  opacity: .9, pane: mappane }).openTooltip();
-                        }    
+                        }
                         else {
                             if (feature.properties.tooltip != "")
                                 layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: mappane }).openTooltip();
                         }
                     }
-                    
+
                 }
            },
 
@@ -246,13 +246,13 @@
                var id = feature.properties.id;
 
                // Determine what the APRS symbol is for this object, then determine path to the corresponding icon file.
-               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
-               else 
+               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
 
-               
+
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
                    // default color for a balloon marker
@@ -270,8 +270,8 @@
                            var colorindex = descendingColorMap[idx].coloridx;
                            markercolor = descending_colorsets[colorindex].markerColor;
                        }
-                   } 
-    
+                   }
+
                    if (feature.properties.label)
                        var markercolor = 'black';
 
@@ -280,7 +280,7 @@
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10));
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
                    if (feature.properties.objecttype == "balloon")
@@ -289,21 +289,21 @@
 	    	       var myIcon = L.icon({
 	    	           iconUrl: filename,
         		       iconSize: [iconsize, iconsize],
-        		       iconAnchor: [iconsize_center, iconsize_center], 
+        		       iconAnchor: [iconsize_center, iconsize_center],
         		       popupAnchor: [0, -iconsize_center],
         		       tooltipAnchor: [0, tipanchor]
-        		   }); 
+        		   });
 
                    var mappane = "otherStationsPane";
                    if (feature.properties.objecttype == "balloon")
                        mappane = "flightPane";
 
 		           return L.marker(latlon, { icon: myIcon, pane: mappane, riseOnHover: true });
-               } 
+               }
            }
         }).on('update', function(ev) { updateActiveFlights(ev, this); });
     }
- 
+
 
 
     /************
@@ -314,7 +314,7 @@
     function updateActiveFlights(ev, realtimelayer) {
         var updatelist = [];
         var mapcenter = map.getCenter();
-        var mapzoom = map.getZoom(); 
+        var mapzoom = map.getZoom();
 
         //updatelist.push({"existing" : existing_id.properties.callsign, "existing_time": existing_id.properties.time, "new":item.properties.callsign, "new_time": item.properties.time });
 
@@ -329,35 +329,35 @@
             // if this is a balloon object, then update it's html properties with a hyperlink...
             if (item.properties.objecttype == "balloon") {
                 html = "<a target=\"_blank\" href=\"map.php" +
-                      "?followfeatureid=" + item.properties.id + 
-                      "&latitude=" + item.geometry.coordinates[1] + 
-                      "&longitude=" + item.geometry.coordinates[0] + 
+                      "?followfeatureid=" + item.properties.id +
+                      "&latitude=" + item.geometry.coordinates[1] +
+                      "&longitude=" + item.geometry.coordinates[0] +
                       "&zoom=" + mapzoom + "\">" +
                       "<strong>" + item.properties.callsign + "</strong></a>";
             }
             //...otherwise, we don't want a hyper link because this is a path of some sort.
-            else 
+            else
                 html = "<strong>" + item.properties.callsign + "</strong>";
 
             // Update the popup content to include a number of balloon specific items
-            html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-                (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+            html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) +
+                (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
                 (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
                 (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
 
             layer.setPopupContent(html, { className: 'myPopupStyle' });
             //updatelist.push(item.properties.callsign);
- 
+
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
             if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
                var filename;
-               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
-               else 
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
                if (item.properties.objecttype == "balloon")
@@ -366,10 +366,10 @@
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
                layer.setIcon(myIcon);
             }
 
@@ -381,7 +381,7 @@
                     }
                 }
                 else {
-                    if (item.properties.tooltip != "") 
+                    if (item.properties.tooltip != "")
                         layer.setTooltipContent(item.properties.tooltip);
                 }
             }
@@ -393,13 +393,13 @@
                     map.panTo({ lat: item.geometry.coordinates[1], lng: item.geometry.coordinates[0] });
                 }
             }
-            
+
         }
 
     }
 
     /*********
-    * this function is for styling the predicted flight paths/tracks 
+    * this function is for styling the predicted flight paths/tracks
     **********/
     function predictedFlightPathStyle (feature) {
         var localstyle;
@@ -407,13 +407,13 @@
 
         if (feature.properties) {
 
-            // what sort of object is this? 
+            // what sort of object is this?
             if ( ! feature.properties.objecttype)
                 return {};
 
-            var objecttype = feature.properties.objecttype;                    
+            var objecttype = feature.properties.objecttype;
 
-            if (objecttype == "flightpredictionpath") 
+            if (objecttype == "flightpredictionpath")
                 localstyle = { dashArray: "2 4", weight: 1, color : 'navy', pane: 'pathsPane' };
             else
                 localstyle = {};
@@ -437,15 +437,15 @@
             onEachFeature: function (feature, layer) {
                 var html = "";
                 var objecttype = feature.properties.objecttype;
-  
+
 
                 if (objecttype == "flightprediction" || objecttype == "burstlocation" || objecttype == "balloonmarker") {
                     var id = feature.properties.id;
 
 
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
-        		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+        		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) +
+	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			              (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
         			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -453,7 +453,7 @@
 	        	    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
                     // If this object has a tooltip or label defined...
-                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  That's because we'll use a "circleMarker" object 
+                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  That's because we'll use a "circleMarker" object
                     // instead of a bonfied marker with custom icon.
                     var theoffset = [0, 0];
                     if (feature.properties.objecttype == "balloonmarker")
@@ -463,7 +463,7 @@
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: "otherTooltipPane"}).openTooltip();
-                        }    
+                        }
                         else {
                             if (feature.properties.tooltip != "")
                                 layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: "otherTooltipPane"}).openTooltip();
@@ -490,22 +490,22 @@
 
 		           return cm;
                }
-               
+
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10));
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
 
 	    	       var myIcon = L.icon({
 	    	           iconUrl: filename,
         		       iconSize: [iconsize, iconsize],
-        		       iconAnchor: [iconsize_center, iconsize_center], 
+        		       iconAnchor: [iconsize_center, iconsize_center],
         		       popupAnchor: [0, -iconsize_center],
         		       tooltipAnchor: [0, tipanchor]
-        		   }); 
+        		   });
                    return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
-               } 
+               }
            }
         }).on('update', function(ev) { updateFlightPredictions(ev, this); });
     }
@@ -524,8 +524,8 @@
             var html = "";
 
             html = "<strong>" + item.properties.callsign + "</strong>";
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) +
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -536,22 +536,22 @@
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
             if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
                var filename;
-               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
-               else 
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
                layer.setIcon(myIcon);
             }
 
@@ -570,7 +570,7 @@
     }
 
     /*********
-    * this function is for styling the landing prediction paths/tracks 
+    * this function is for styling the landing prediction paths/tracks
     **********/
 
     function landingPredictionStyle (feature) {
@@ -579,14 +579,14 @@
 
         if (feature.properties) {
 
-            // what sort of object is this?  
+            // what sort of object is this?
             if ( ! feature.properties.objecttype)
                 return {};
 
-            var objecttype = feature.properties.objecttype;                    
-            if (objecttype == "landingpredictionpath") 
+            var objecttype = feature.properties.objecttype;
+            if (objecttype == "landingpredictionpath")
                 localstyle = { dashArray: "2 4", weight: 1, color : 'magenta', pane: 'pathsPane' };
-            else if (objecttype == "landingpredictionflightpath") 
+            else if (objecttype == "landingpredictionflightpath")
                 localstyle = { dashArray: "3 6", weight: 2, color : 'darkslategray', pane: 'pathsPane' };
             else
                 localstyle = {};
@@ -615,49 +615,49 @@
                 if (objecttype == "landingprediction") {
                     var id = feature.properties.id;
 		    html = "<strong>" + feature.properties.callsign + "</strong>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) +
+			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
                     // Popup for the landing prediction point
 		    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
-                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10);
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
-                        }    
+                        }
                         else {
                             if (feature.properties.tooltip != "")
                                 layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: "otherTooltipPane" } ).openTooltip();
                         }
                     }
-                    
+
                 }
            },
            pointToLayer:  function (feature, latlon) {
                var filename;
                var id = feature.properties.id;
-               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
-               else 
+               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
 
                return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
            }
@@ -681,8 +681,8 @@
             var html = "";
 
             html = "<strong>" + item.properties.callsign + "</strong>";
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) +
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -694,22 +694,22 @@
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
             if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
                var filename;
-               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
-               else 
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
                layer.setIcon(myIcon);
             }
 
@@ -723,7 +723,7 @@
                    if (item.properties.tooltip != "")
                        layer.setTooltipContent(item.properties.tooltip);
                }
-            } 
+            }
         }
     }
 
@@ -744,17 +744,17 @@
 
                 if (feature.geometry.type == "Point") {
                     var mapcenter = map.getCenter();
-                    var mapzoom = map.getZoom(); 
+                    var mapzoom = map.getZoom();
                     var id = feature.properties.id;
-    		    html = "<a target=\"_blank\" href=\"map.php" + 
-                              "?followfeatureid=" + feature.properties.id + 
-			      "&latitude=" + feature.geometry.coordinates[1] + 
-			      "&longitude=" + feature.geometry.coordinates[0] + 
-			      "&zoom=" + mapzoom + 
-			      "&showallstations=1\">" + 
+    		    html = "<a target=\"_blank\" href=\"map.php" +
+                              "?followfeatureid=" + feature.properties.id +
+			      "&latitude=" + feature.geometry.coordinates[1] +
+			      "&longitude=" + feature.geometry.coordinates[0] +
+			      "&zoom=" + mapzoom +
+			      "&showallstations=1\">" +
 			      "<strong>" + feature.properties.callsign + "</strong></a>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) +
+			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (feature.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -762,46 +762,46 @@
 
 		    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
-                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10);
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
-                        }    
+                        }
                         else {
                             if (feature.properties.tooltip != "")
                                 layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: "otherTooltipPane" }).openTooltip();
                         }
                     }
-                    
+
                 }
            },
            pointToLayer:  function (feature, latlon) {
                var filename;
                var id = feature.properties.id;
-               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
-               else 
+               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
     		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
-            } 
+            }
         }).on('update', function(ev) { updatemap(ev, this); });
     }
- 
+
 
 
     /************
@@ -811,7 +811,7 @@
      ************/
     function updatemap(ev, realtimelayer) {
         var mapcenter = map.getCenter();
-        var mapzoom = map.getZoom(); 
+        var mapzoom = map.getZoom();
         var myiconsize;
 
         for (var key in ev.update) {
@@ -821,42 +821,42 @@
             var html = "";
 
             html = "<a target=\"_blank\" href=\"map.php" +
-                      "?followfeatureid=" + item.properties.id + 
-                      "&latitude=" + item.geometry.coordinates[1] + 
-                      "&longitude=" + item.geometry.coordinates[0] + 
-                      "&zoom=" + mapzoom + 
-		              "&showallstations=1\">" + 
+                      "?followfeatureid=" + item.properties.id +
+                      "&latitude=" + item.geometry.coordinates[1] +
+                      "&longitude=" + item.geometry.coordinates[0] +
+                      "&zoom=" + mapzoom +
+		              "&showallstations=1\">" +
                       "<strong>" + item.properties.callsign + "</strong></a>";
 
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) +
+		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) +
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
 	  	      (typeof(item.geometry.coordinates) == "undefined" ? "" : "<br>Coords: " + (item.geometry.coordinates[1] * 10 / 10).toFixed(3) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(3)) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
 
             // Update the popup content
             layer.setPopupContent(html, { className: 'myPopupStyle' });
-   
+
 
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
             if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
                var filename;
-               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
-               else 
+               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x'))
+                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";
+               else
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10));
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
 		       var myIcon = L.icon({
 		           iconUrl: filename,
     		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
+    		       iconAnchor: [iconsize_center, iconsize_center],
     		       popupAnchor: [0, -iconsize_center],
     		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+    		   });
                layer.setIcon(myIcon);
             }
 
@@ -1038,7 +1038,7 @@ function getTrackers() {
             $.get("gettrackers.php", function(data) {
                 var trackerJson = JSON.parse(data);
                 var keys = Object.keys(trackerJson);
-                var i; 
+                var i;
                 var j;
                 var k;
                 var teamhtml;
@@ -1048,10 +1048,10 @@ function getTrackers() {
                 var tablediv = document.getElementById("trackers");
                 table.setAttribute("class", "trackerlist");
                 //table.setAttribute("style", "width: auto");
- 
+
                 //The columns
                 var columns = ["Team and Flight Assignment", "Callsign", "Move to This Team"];
-     
+
                 //Add the header row.
                 var row = table.insertRow(-1);
                 for (i = 0; i < columns.length; i++) {
@@ -1072,16 +1072,16 @@ function getTrackers() {
                     var html = "<select id=\"" + trackerJson[i].tactical + "\" onchange='changeAssignedFlight(\"" + trackerJson[i].tactical + "\", this)'>";
                     var checked;
                     var foundmatch = 0;
-   
+
 
                     teamcell.setAttribute("class", "trackerlist");
                     if (i % 2)
-                        teamcell.setAttribute("style", "background-color: lightsteelblue; white-space: normal; word-wrap: word-break;"); 
- 
- 
+                        teamcell.setAttribute("style", "background-color: lightsteelblue; white-space: normal; word-wrap: word-break;");
+
+
                     for (flight in flightids) {
                         if (flightids[flight] == trackerJson[i].flightid) {
-                            checked = "selected=\"selected\""; 
+                            checked = "selected=\"selected\"";
                             foundmatch = 1;
                         }
                         else
@@ -1089,16 +1089,16 @@ function getTrackers() {
                         html = html + "<option value=" + flightids[flight] + " " + checked + " >" + flightids[flight] + "</option>";
                     }
                     if (trackerJson[i].flightid == "At Large" || foundmatch == 0)
-                        checked = "selected=\"selected\""; 
+                        checked = "selected=\"selected\"";
                     else
                         checked = "";
                     html = html + "<option value=\"atlarge\" " + checked + " >At Large</option></select>";
-         
+
                     teamcell.innerHTML = "<span style=\"font-size: 1.2em;\"><strong>" + trackerJson[i].tactical + "</strong></span><br>" + html;
                     teamcell.setAttribute("rowspan", trackerkeys.length);
-                  
+
                     var t;
-    
+
                     for (j = 0; j < trackerkeys.length; j++) {
                         if (j > 0) {
                             row = table.insertRow(-1);
@@ -1106,25 +1106,25 @@ function getTrackers() {
                         teamhtml = "<select id=\"" + trackers[j].callsign + "_tacticalselect\" onchange='changeTrackerTeam(\"" + trackers[j].callsign + "\", this)'>";
                         for (t in teams) {
                            if (trackerJson[i].tactical == teams[t])
-                               checked = "selected=\"selected\""; 
+                               checked = "selected=\"selected\"";
                             else
                                 checked = "";
                             teamhtml = teamhtml + "<option value=\"" + teams[t] + "\" " + checked + " >" + teams[t] + "</option>";
                         }
                         teamhtml = teamhtml + "</select>";
-    
+
                         var cellCallsign = row.insertCell(-1);
                         cellCallsign.setAttribute("class", "trackerlist");
                         if (i % 2)
-                            cellCallsign.setAttribute("style", "background-color: lightsteelblue;"); 
+                            cellCallsign.setAttribute("style", "background-color: lightsteelblue;");
                         cellCallsign.innerHTML = "<span style=\"font-size: 1.1em;font-weight: bold;\">" + trackers[j].callsign + "</span><br><span class=\"lorem\" style=\"color: #303030;\">" + trackers[j].notes;
-    
+
                         var cellFlightid = row.insertCell(-1);
                         cellFlightid.setAttribute("class", "trackerlist");
                         if (i % 2)
-                            cellFlightid.setAttribute("style", "background-color: lightsteelblue;"); 
+                            cellFlightid.setAttribute("style", "background-color: lightsteelblue;");
                         cellFlightid.innerHTML = teamhtml;
-    
+
                     }
                 }
                 tablediv.innerHTML = "";
@@ -1166,7 +1166,7 @@ function getTrackers() {
             processInTransition = 1;
             var stoppinghtml = "<mark>Shutting down...</mark>";
             $("#systemstatus").html(stoppinghtml);
-            $.get("shutdown.php", function(data) { 
+            $.get("shutdown.php", function(data) {
                 var stoppedhtml = "<mark>Stopped.</mark>";
                 $("#systemstatus").html(stoppedhtml)
                 getProcessStatus();
@@ -1183,14 +1183,14 @@ function getTrackers() {
     ***********/
     function updateLivePacketStream() {
         if (livePacketStreamState)
-            document.dispatchEvent(updateLivePacketStreamEvent); 
+            document.dispatchEvent(updateLivePacketStreamEvent);
     }
 
 
     /***********
     * clearLivePacketFilters function
     *
-    * This function clears the filter fields on the Live Packet Stream tab 
+    * This function clears the filter fields on the Live Packet Stream tab
     ***********/
     function clearLivePacketFilters() {
         document.getElementById("searchfield").value = "";
@@ -1216,50 +1216,50 @@ function getTrackers() {
         var searchstring2 = document.getElementById("searchfield2").value;
         var operation = document.getElementById("operation").value;
         var i = 0;
- 
+
         //document.getElementById("debug").innerHTML = operation;
         for (key in keys) {
            if (operation == "and") {
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 &&
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                    i += 1;
                }
            }
            else if (operation == "or") {
                //document.getElementById("debug").innerHTML = "in OR section";
-               if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
+               if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 ||
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                    i += 1;
                }
            }
            else if (operation == "not") {
                //document.getElementById("debug").innerHTML = "in OR section";
                if (searchstring.length > 0 && searchstring2.length > 0) {
-                   if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
+                   if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 &&
                        packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                        i += 1;
                    }
                }
                else if (searchstring.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                        i += 1;
                    }
                }
                else if (searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                        i += 1;
                    }
                }
                else {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
+                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>";
                    i += 1;
                }
-               
+
            }
 
         }
@@ -1281,11 +1281,11 @@ function getTrackers() {
               url = "getallpackets.php";
           else
               url = "getpackets.php?flightid=" + currentflight;
- 
+
           packetdata = {};
-          $.get(url, function(data) { 
+          $.get(url, function(data) {
               packetdata = data;
-              updateLivePacketStream(); 
+              updateLivePacketStream();
           });
         }
     }
@@ -1301,7 +1301,7 @@ function getTrackers() {
         var selectedValue;
 
         for(var i = 0; i < radios.length; i++) {
-            if(radios[i].checked) selectedValue = radios[i].value;   
+            if(radios[i].checked) selectedValue = radios[i].value;
         }
         return selectedValue;
     }
@@ -1329,8 +1329,10 @@ function getTrackers() {
           var donehtml = "<mark>Not running.</mark>";
           if (statusJson.rf_mode == 1 && k >= keys.length)
               donehtml = "<mark style=\"background-color: lightgreen;\">Running.</mark>";
-          if (statusJson.rf_mode == 0 && k >= keys.length-1)
+          if (statusJson.rf_mode == 0 && k >= keys.length-1) {
               donehtml = "<mark style=\"background-color: lightgreen;\">Running in online mode.</mark>";
+              document.getElementById(statusJson.processes[0].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Kiosk]</font></mark>";
+            }
           $("#systemstatus").html(donehtml);
       });
     }
@@ -1351,7 +1353,7 @@ function getTrackers() {
 	var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         var tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
-        // Create a map object. 
+        // Create a map object.
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
@@ -1359,34 +1361,34 @@ function getTrackers() {
             layers : [ tilelayer ]
         });
 
-        tilelayer.addTo(map);		
+        tilelayer.addTo(map);
 
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
-        pathsPane.style.zIndex = 300; 
+        pathsPane.style.zIndex = 300;
 
         // Pane for all flights, to put them at the top of the z-order
         flightPane = map.createPane("flightPane");
-        flightPane.style.zIndex = 670; 
+        flightPane.style.zIndex = 670;
 
         // Pane for all flight Tooltips
         flightTooltipPane = map.createPane("flightTooltipPane");
-        flightTooltipPane.style.zIndex = 680; 
+        flightTooltipPane.style.zIndex = 680;
 
         // Pane for all non-flight tooltips, to put them underneath regular tooltips
         otherTooltipPane = map.createPane("otherTooltipPane");
-        otherTooltipPane.style.zIndex = 640; 
+        otherTooltipPane.style.zIndex = 640;
 
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
-        otherStationsPane.style.zIndex = 590; 
+        otherStationsPane.style.zIndex = 590;
 
- 
+
         if (latitude != "" && longitude != "" && zoom != "")
 	        map.setView(new L.LatLng(latitude, longitude), zoom);
         else
 	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 12);
-        
+
 
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         var allstations = L.markerClusterGroup();
@@ -1397,7 +1399,7 @@ function getTrackers() {
 
         var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
         if (showallstations == 1)
-            a.addTo(map); 
+            a.addTo(map);
 
         var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
         var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
@@ -1408,24 +1410,24 @@ function getTrackers() {
         realtimelayers.push(c);
 
         // The base layers and overlays that will be added to every map
-        var groupedoverlays = { 
+        var groupedoverlays = {
             "Generic Stations" : {
-                "All Other Stations" : allstations, 
-                "Trackers at Large" : trackersatlarge, 
+                "All Other Stations" : allstations,
+                "Trackers at Large" : trackersatlarge,
                 "My Location" : mystation
             }
         };
         baselayer = { "OSM Base Map" : tilelayer };
- 
+
         // use the grouped layers plugin so the layer selection widget shows layers categorized
-        var layerControl = L.control.groupedLayers(baselayer, groupedoverlays, { groupCheckboxes: true}).addTo(map); 
+        var layerControl = L.control.groupedLayers(baselayer, groupedoverlays, { groupCheckboxes: true}).addTo(map);
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
             L.DomEvent
             .disableClickPropagation(layerControl._container)
             .disableScrollPropagation(layerControl._container);
-         } 
+         }
          else {
              L.DomEvent.disableClickPropagation(layerControl._container);
          }
@@ -1442,14 +1444,14 @@ function getTrackers() {
         */
         var key;
         var key2;
-            
+
         for (key in flightids) {
             //document.getElementById("error").innerHTML = JSON.stringify(flightids[key]);
             var predictedpathlayer = L.layerGroup();
             var landingpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
-            
-    
+
+
 
             for (key2 in flightids[key].callsigns) {
                 var activeflightlayer = L.featureGroup();
@@ -1460,8 +1462,8 @@ function getTrackers() {
                 realtimeflightlayers.push(r);
                 layerControl.addOverlay(activeflightlayer, flightids[key].callsigns[key2], "Flight:  " + flightids[key].flightid);
             }
-    
-            
+
+
             var d = createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
             var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
             var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 5 * 1000);
@@ -1491,7 +1493,7 @@ function getTrackers() {
      * This function performs some startup actions and calls "initialize", the primary function for starting the map stuff
     *************/
     function startup() {
-        $.get("getposition.php", function(data) { 
+        $.get("getposition.php", function(data) {
             //document.getElementById("error").innerHTML = "followfeatureid:  " + followfeatureid;
             lastposition = JSON.parse(data);
             initialize();
@@ -1560,11 +1562,11 @@ function getTrackers() {
             var liveB_e = "#livePacketSearch";
             $(liveA_a).click({element: liveA_e, link: liveA_l }, toggle);
             $(liveB_a).click({element: liveB_e, link: liveB_l }, toggle);
- 
+
             // Build the Live Packet Stream tab
-            livePacketStreamHTML = livePacketStreamHTML + "</form>"; 
+            livePacketStreamHTML = livePacketStreamHTML + "</form>";
             document.getElementById("flightsLivePacketStream").innerHTML = livePacketStreamHTML;
- 
+
             var e = document.getElementById('searchfield');
             e.oninput = updateLivePacketStream;
             e.onpropertychange = e.oninput;
@@ -1605,7 +1607,7 @@ function getTrackers() {
             });
 
 
-            // Setup the Live Packet Stream event and handler 
+            // Setup the Live Packet Stream event and handler
             updateLivePacketStreamEvent= new CustomEvent("updateLivePacketStreamEvent");
             document.addEventListener("updateLivePacketStreamEvent", displayLivePackets, false);
 
@@ -1624,7 +1626,7 @@ function getTrackers() {
                 updateAllItems("full");
 
             // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
-            $(window).on('focus', function() { 
+            $(window).on('focus', function() {
                 updateAllItems("full", true);
             });
 
@@ -1669,7 +1671,7 @@ function getTrackers() {
             var cols = {};
             var altElement = "#" + flightids[flight].flightid + "_altitudechart";
             var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
-            
+
             achart = c3.generate({
                 bindto: altElement,
                 size: { width: 360, height: 250 },
@@ -1716,18 +1718,18 @@ function getTrackers() {
                     var thisflightid = flight.flightid;
                     var element = "#" + thisflightid + "_altitudechart";
 
-                    for (k = 0; k < chartkeys.length; k++) {  
-    
+                    for (k = 0; k < chartkeys.length; k++) {
+
                         if (! chartkeys[k].startsWith("tm-")) {
                             cols[chartkeys[k]] = "tm-" + chartkeys[k];
                         }
                     }
 
                     //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
-                    
+
                     // Load data into each Altitude chart
                     var achart = $(element).data('altitudeChart');
-                    achart.load({ json: jsondata, xs: cols }); 
+                    achart.load({ json: jsondata, xs: cols });
                  }
              }
         });
@@ -1754,18 +1756,18 @@ function getTrackers() {
                     var thisflightid = flight.flightid;
                     var element = "#" + thisflightid + "_verticalchart";
 
-                    for (k = 0; k < chartkeys.length; k++) {  
-    
+                    for (k = 0; k < chartkeys.length; k++) {
+
                         if (! chartkeys[k].startsWith("tm-")) {
                             cols[chartkeys[k]] = "tm-" + chartkeys[k];
                         }
                     }
 
                     //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
-                    
+
                     // Load data into each Altitude chart
                     var vchart = $(element).data('verticalChart');
-                    vchart.load({ json: jsondata, xs: cols }); 
+                    vchart.load({ json: jsondata, xs: cols });
                  }
              }
         });
@@ -1823,7 +1825,7 @@ function getTrackers() {
     /************
      * dispatchPanToEvent
      *
-     * This function will emit 
+     * This function will emit
     *************/
     function dispatchPanToEvent(lat, lon) {
         var panToEvent = new CustomEvent("MapPanTo", { detail: { lat: lat, lon: lon } });
@@ -1898,7 +1900,7 @@ function getTrackers() {
                 // Update the realtime layers for this flight
                 var rfl;
                 for (rfl in realtimeflightlayers) {
-                    if (realtimeflightlayers[rfl].options.name == theflight + thecallsign)  
+                    if (realtimeflightlayers[rfl].options.name == theflight + thecallsign)
                         realtimeflightlayers[rfl].update();
                 }
 
@@ -1915,7 +1917,7 @@ function getTrackers() {
                     // Loop to update the gauges and last position packet table
                     k = 0;
                     while (k < 5 && positionPackets[k]) {
-                        var item = positionPackets[k]; 
+                        var item = positionPackets[k];
 
                         // Update the flight gauges...
                         if (k == 0) {
@@ -1956,7 +1958,7 @@ function getTrackers() {
                         $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
                         $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
                         k += 1;
-                    } 
+                    }
 
 
                     // Update the status packet table
@@ -1965,7 +1967,7 @@ function getTrackers() {
                     i = 0;
                     while (k < 5 && statusPackets[k]) {
                         var item = statusPackets[k];
-              
+
                         $("#" + item.flightid + "_statustime_" + k).text(item.time.split(" ")[1]);
                         $("#" + item.flightid + "_statuscallsign_" + k).text(item.callsign);
                         $("#" + item.flightid + "_statuspacket_" + k).text(item.packet);
@@ -1995,7 +1997,7 @@ function getTrackers() {
                         headerCell.setAttribute("style", "white-space: nowrap;");
                         row.appendChild(headerCell);
                     }
-                    
+
                     // Now add the data rows
                     var keys = Object.keys(lastPacketPath);
                     if (keys.length == 0) {
@@ -2048,17 +2050,17 @@ function getTrackers() {
                     var legendcell = row.insertCell(0);
                     legendcell.setAttribute("class", "packetlist");
                     legendcell.setAttribute("colspan", "3");
-                    legendcell.innerHTML = "<strong>Legend:</strong> &nbsp; newest----->oldest<br>" 
+                    legendcell.innerHTML = "<strong>Legend:</strong> &nbsp; newest----->oldest<br>"
                         + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: lightgreen;\">R</mark></span>"
                         + " - packet received over RF<br>"
                         + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: yellow;\">I</mark></span>"
                         + " - packet received over the Internet";
                     tablediv.innerHTML = "";
                     tablediv.appendChild(table);
-                    
+
                 // getflightpackets.php
                 });
-            
+
 
                 // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
                 $.get("getaltitudechartdata.php?flightid=" + theflight, function(data) {
@@ -2081,7 +2083,7 @@ function getTrackers() {
                             var thisflightid = flight.flightid;
                             var element = "#" + thisflightid + "_altitudechart";
 
-                            for (k = 0; k < chartkeys.length; k++) {  
+                            for (k = 0; k < chartkeys.length; k++) {
 
                                 if (! chartkeys[k].startsWith("tm-")) {
                                     cols[chartkeys[k]] = "tm-" + chartkeys[k];
@@ -2089,10 +2091,10 @@ function getTrackers() {
                             }
 
                             //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
-                            
+
                             // Load data into each Altitude chart
                             var achart = $(element).data('altitudeChart');
-                            achart.load({ json: jsondata, xs: cols }); 
+                            achart.load({ json: jsondata, xs: cols });
                          }
                      }
                 });
@@ -2119,8 +2121,8 @@ function getTrackers() {
                             var thisflightid = flight.flightid;
                             var element = "#" + thisflightid + "_verticalchart";
 
-                            for (k = 0; k < chartkeys.length; k++) {  
-            
+                            for (k = 0; k < chartkeys.length; k++) {
+
                                 if (! chartkeys[k].startsWith("tm-")) {
                                     cols[chartkeys[k]] = "tm-" + chartkeys[k];
                                 }
@@ -2130,7 +2132,7 @@ function getTrackers() {
 
                             // Load data into each Altitude chart
                             var vchart = $(element).data('verticalChart');
-                            vchart.load({ json: jsondata, xs: cols }); 
+                            vchart.load({ json: jsondata, xs: cols });
                          }
                      }
                 });
@@ -2141,7 +2143,7 @@ function getTrackers() {
                     var thejsondata = JSON.parse(data);
                     var ttl = thejsondata.ttl + " mins";
                     var elem = "#" + thejsondata.flightid + "_ttl";
-                    
+
                     $(elem).text(ttl);
 
                 // getttl.php
@@ -2197,7 +2199,7 @@ function getTrackers() {
 
         // Update process status
         getProcessStatus();
-        
+
         // Update the live packet stream tab
         getLivePackets();
 
@@ -2215,4 +2217,3 @@ function getTrackers() {
         globalUpdateCounter += 1;
 
     }
-
