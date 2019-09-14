@@ -35,7 +35,7 @@
             <td align="center" valign="middle" width="80%">
                 <table class="navbar-table" cellspacing=0 cellpadding=0 border=0>
                 <tr valign="middle" align="center">
-                    <td align="center"><a href="/index.php" class="navbar">Home</a></td>
+                    <td align="center"><a href="/home.php" class="navbar">Home</a></td>
                     <td align="center"><a href="/setup.php" class="navbar">Setup</a></td>
                     <td align="center"><a href="/rawdata.php" class="navbar">Data</a></td>
                     <td align="center"><a href="/dashboard.php" target="_blank" class="navbar">Dashboard</a></td>
