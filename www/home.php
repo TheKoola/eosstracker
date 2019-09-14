@@ -154,7 +154,7 @@ include $documentroot . '/common/header.php';
                   donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running.</mark></p>";
               if (statusJson.rf_mode == 0 && procs >= keys.length-1) {  // We're running in online mode...i.e. SDRs are not attached to the system
                   donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running in online mode - no SDRs found.</mark></p>";
-                  document.getElementById(statusJson.processes[0].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Kiosk Mode]</font></mark>";
+                  document.getElementById(statusJson.processes[0].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Kiosk]</font></mark>";
                 }
           }
           $("#antenna-data").html(donehtml);

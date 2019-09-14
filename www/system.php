@@ -152,8 +152,10 @@ include $documentroot . '/common/header.php';
               //document.getElementById("debug").innerHTML = "not in transistion....processInTransition: " + processInTransition;
               if (statusJson.rf_mode == 1 && procs >= keys.length)   // We're running in RF mode...i.e. SDRs are attached to the system
                   donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running.</mark></p>";
-              if (statusJson.rf_mode == 0 && procs >= keys.length-1)   // We're running in online mode...i.e. SDRs are not attached to the system
+              if (statusJson.rf_mode == 0 && procs >= keys.length-1) {  // We're running in online mode...i.e. SDRs are not attached to the system
                   donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running in online mode - no SDRs found.</mark></p>";
+                  document.getElementById(statusJson.processes[0].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Kiosk]</font></mark>";
+                }
           }
           $("#antenna-data").html(donehtml);
 
