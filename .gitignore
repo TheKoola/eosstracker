@@ -16,3 +16,5 @@ www/gpsstatus.json*
 www/daemonstatus.json*
 www/.htaccess
 bin/*.pyc
+doc/2019-GPSL-Presentation.pdf
+www/audio/*.mp3

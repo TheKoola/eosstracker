@@ -36,7 +36,7 @@
     ***********/
     function addTracker() {
         var call = document.getElementById("newtrackercall").value;
-        var notes = document.getElementById("newtrackernotes").value;
+        var notes = document.getElementById("newtrackernotes");
         var team = document.getElementById("newtrackerteam")
         var selectedTeam = team.options[team.selectedIndex].value;
         var newtrackercall = document.getElementById("newtrackercall");
@@ -46,7 +46,12 @@
             return false;
         }
 
-        $.get("addtracker.php?callsign=" + call + "&notes=" + notes + "&team=" + selectedTeam, function(data) {
+        if (!notes.checkValidity()) {
+            throw notes.validationMessage;
+            return false;
+        }
+
+        $.get("addtracker.php?callsign=" + call + "&notes=" + notes.value + "&team=" + selectedTeam, function(data) {
             var trackerJson = JSON.parse(data);
  
             if (trackerJson.result == 0)

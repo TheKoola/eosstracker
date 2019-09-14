@@ -28,16 +28,13 @@
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-
-    if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
-        $whereclause = " and t.flightid = $1 ";
-    }
-    else {
-        $get_flightid = "";
-        $whereclause = "";
-    }
-
+    // Check the flightid HTML GET variable
+    $get_flightid = "";
+    $whereclause = "";
+    if (isset($_GET["flightid"])) 
+        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") 
+            $whereclause = " and t.flightid = $1 ";
+ 
     
 
     ## Connect to the database

@@ -101,18 +101,34 @@ try {
 }
 
     $formerror = false;
-    if (isset($_POST["flightid"])) 
-        $flightid = strtoupper($_POST["flightid"]);
+
+    // Check the flightid HTML POST variable
+    $flightid = "";
+    if (isset($_POST["flightid"])) {
+        if (($flightid = strtoupper(check_string($_POST["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_POST["thedate"]))
-        $thedate = $_POST["thedate"];
+
+    // Check the thedate HTML POST variable
+    $thedate = "";
+    if (isset($_POST["thedate"])) { 
+        if (($thedate = check_date($_POST["thedate"])) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_POST["launchsite"]))
-        $launchsite = $_POST["launchsite"];
+
+    // Check the launchsite HTML POST variable
+    $launchsite = "";
+    if (isset($_POST["launchsite"])) {
+        if (($launchsite = check_string($_POST["launchsite"], 64)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($thedate == "" || $flightid == "" || $launchsite == "")
         $formerror = true;
@@ -131,6 +147,20 @@ try {
             printf("{\"result\" : \"1\", \"error\": \"Record already exists.\"}");
         }
         else {
+           // Get the location and elevation of the launchsite
+           $query = "select distinct launchsite, lat, lon, alt from launchsites where launchsite = $1;";
+           $result = pg_query_params($link, $query, array(sql_escape_string($launchsite)));
+           if (!$result) {
+               printf("{\"result\": \"1\", \"error\": %s}", json_encode(sql_last_error()));
+               sql_close($link);
+               return 0;
+           }
+           $numrows_launchsite = sql_num_rows($result);
+           $launchsite_rows = sql_fetch_all($result);
+           $thelaunchsite["lat"] = $launchsite_rows[0]["lat"];
+           $thelaunchsite["lon"] = $launchsite_rows[0]["lon"];
+           $thelaunchsite["alt"] = $launchsite_rows[0]["alt"];
+
 
            $content = file($_FILES['file']['tmp_name']);
            $l = sizeof($content);
@@ -149,7 +179,7 @@ try {
                    // Now loop through each line of the file
                    foreach($content as $line) {
                        // if this line starts with 12 columns, then continue...
-                       $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,3}[ \t]*[0-9A-Z]{5}[ \t]*[0-9]{1,6}[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\,\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
+                       $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,4}[ \t]*[0-9A-Z]{1,6}[ \t]*[0-9]{1,6}[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\,\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
                        if ($p) {
                            // Split the line into an array using whitespace as the delimiter
                            $line_data = preg_split('/\s+/', $line);
@@ -167,28 +197,75 @@ try {
                            $latrate = ($line_data[8] - $latitude_prev) / 60;
                            $longrate = ($line_data[9] - $longitude_prev) / 60;
 
-                           if ($i > 0) {
-                               // the database insert statement
-                               $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+                           if ($altitude > $thelaunchsite["alt"] || $i > 0) {
 
-                               // Execute the database statement
-                               $result = pg_query_params($link, $insertstmt, array(sql_escape_string($flightid), sql_escape_string($launchsite), sql_escape_string($thedate), sql_escape_string($thetime), round($altitude, 6), round($latitude, 8), round($longitude, 8), round($altrate, 8), round($latrate, 8), round($longrate, 8)));
-   
-                               // check for errors in the database operation
-                               if (!$result) {
-                                   printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
-                                   sql_close($link);
-                                   return 0;
+                               if ($i == 0) {
+                                   // This is the first line of text, so we add the first row, but using the original launchsite location for calculating rates...
+                                   // calculate rates
+                                   $altrate = ($line_data[5] - $thelaunchsite["alt"]) / 60;
+                                   $latrate = ($line_data[8] - $thelaunchsite["lat"]) / 60;
+                                   $longrate = ($line_data[9] - $thelaunchsite["lon"]) / 60;
+
+                                   // the database insert statement
+                                   $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+    
+                                   // Execute the database statement
+                                   $result = pg_query_params($link, $insertstmt, array(
+                                       sql_escape_string($flightid), 
+                                       sql_escape_string($launchsite), 
+                                       sql_escape_string($thedate), 
+                                       sql_escape_string($thetime), 
+                                       round($altitude, 6), 
+                                       round($latitude, 8), 
+                                       round($longitude, 8), 
+                                       round($altrate, 8), 
+                                       round($latrate, 8), 
+                                       round($longrate, 8)
+                                   ));
+       
+                                   // check for errors in the database operation
+                                   if (!$result) {
+                                       printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
+                                       sql_close($link);
+                                       return 0;
+                                   }
                                }
-                           }
+                               else {
+                                   // All subsequent lines land here...
+                                   //
+                                   // the database insert statement
+                                   $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+    
+                                   // Execute the database statement
+                                   $result = pg_query_params($link, $insertstmt, array(
+                                       sql_escape_string($flightid), 
+                                       sql_escape_string($launchsite), 
+                                       sql_escape_string($thedate), 
+                                       sql_escape_string($thetime), 
+                                       round($altitude, 6), 
+                                       round($latitude, 8), 
+                                       round($longitude, 8), 
+                                       round($altrate, 8), 
+                                       round($latrate, 8), 
+                                       round($longrate, 8)
+                                   ));
+       
+                                   // check for errors in the database operation
+                                   if (!$result) {
+                                       printf("{\"result\": 0, \"error\": %s}", json_encode(sql_last_error()));
+                                       sql_close($link);
+                                       return 0;
+                                   }
+                               }
            
-                           // set previous values for the next iteration of this loop
-                           $altitude_prev = $altitude;
-                           $latitude_prev= $latitude;
-                           $longitude_prev = $longitude;
-        
-                           // loop counter
-                           $i++;
+                               // set previous values for the next iteration of this loop
+                               $altitude_prev = $altitude;
+                               $latitude_prev= $latitude;
+                               $longitude_prev = $longitude;
+            
+                               // loop counter
+                               $i++;
+                           }
                        }
                    }
                    printf("{\"result\": 0, \"error\": \"\"}");

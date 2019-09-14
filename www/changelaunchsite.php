@@ -28,21 +28,21 @@
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-
+    // Check the launchsite HTML GET variable
     if (isset($_GET["launchsite"])) {
-        $get_launchsite = $_GET["launchsite"];
+        $get_launchsite = check_string($_GET["launchsite"], 64);
     }
-    else {
+    else
         $get_launchsite = "";
-    }
 
+    // Check the flightid HTML GET variable
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        $get_flightid = strtoupper(check_string($_GET["flightid"], 20));
     }
-    else {
+    else
         $get_flightid = "";
-    }
-    
+
+
     ## if any of the GET parameters are not supplied, then exit...
     if ($get_flightid == "" || $get_launchsite == "") {
         printf ("{\"result\" : 0, \"error\": \"HTML form error\"}");

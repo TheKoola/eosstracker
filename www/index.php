@@ -209,13 +209,24 @@
 	    $.get("readconfiguration.php", function(data) {
 		    var jsonData = JSON.parse(data);
 
-		    document.getElementById("iconsize").value = jsonData.iconsize;
-		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
-		    if (jsonData.plottracks == "on")
-			    document.getElementById("plottracks").checked = true;
-		    else
-			    document.getElementById("plottracks").checked = false;
-            });
+		    var callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
+		    var timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
+		    var audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
+		    var igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
+		    var i = (igating == "true" ? "yes" : "no");
+		    var i2 = (i == "yes" ? "<mark>" + i + "</mark>" : i);
+		    var beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
+            var eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
+		    var b = (beaconing == "true" ? "yes" : "no");
+		    var b2 = (b == "yes" ? "<mark>" + b + (eoss != "" ? "</mark><br>Path String: <mark>" + eoss + " " : "") + "</mark>" : b);
+		    var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
+
+		    document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
+		    document.getElementById("timezone").innerHTML = timezone;
+		    document.getElementById("igating").innerHTML = i2;
+		    document.getElementById("beaconing").innerHTML = b2;
+		    document.getElementById("ssid").innerHTML = ssid;
+	    });
     }
 
 
@@ -570,13 +581,51 @@ function getTrackers() {
               document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</mark>";
               k += statusJson.processes[i].status;
           }
+          else {   // we're either up or shutdown, but we're NOT in transition
+              //document.getElementById("debug").innerHTML = "not in transistion....processInTransition: " + processInTransition;
+              if (statusJson.rf_mode == 1 && procs >= keys.length)   // We're running in RF mode...i.e. SDRs are attached to the system
+                  donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running.</mark></p>";
+              if (statusJson.rf_mode == 0 && procs >= keys.length-1)   // We're running in online mode...i.e. SDRs are not attached to the system
+                  donehtml = "<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark style=\"background-color: lightgreen;\">Running in online mode - no SDRs found.</mark></p>";
+          }
+          $("#antenna-data").html(donehtml);
 
-          var donehtml = "<mark>Not running.</mark>";
-          if (statusJson.rf_mode == 1 && k >= keys.length)
-              donehtml = "<mark style=\"background-color: lightgreen;\">Running.</mark>";
-          if (statusJson.rf_mode == 0 && k >= keys.length-1)
-              donehtml = "<mark style=\"background-color: lightgreen;\">Running in online mode.</mark>";
-          $("#systemstatus").html(donehtml);
+
+        var antenna_html = "<table class=\"inner-presentation-area\" cellpadding=0 cellspacing=0 border=0><tr>";
+        if (!statusJson.antennas) {
+            $("#antenna-data").html("<p class=\"normal-black\" style=\"margin-left: 50px;\"><mark>Not running...</mark></p>");
+            $("#direwolferror").html("");
+            return;
+        }
+        for (i = 0; i < antennas.length; i++) {
+            var frequencies = antennas[i].frequencies;
+            var rtl_id = antennas[i].rtl_id;
+            var k = 0;
+            var freqhtml = "";
+            var callsign_html = "";
+            //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
+
+            for (k = 0; k < frequencies.length; k++)
+                freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>";
+
+            antenna_html = antenna_html + "<td valign=\"top\" style=\"padding-left: 5px; padding-right: 5px;\"><table class=\"inner-presentation-area\"  style=\"width: 300px;\" align=\"left\"  cellpadding=0 cellspacing=0 border=0>"
+                + "<tr><td><p style=\"font-size: 1.4em;\">Antenna #" + rtl_id + "</p><hr></td></tr>"
+                + "<tr><td valign=\"top\">"
+                + "<p><img src=\"/images/graphics/antenna.png\" height=\"150\" style=\"float: right;\" ></p>"
+                + "<p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px; font-size: .9em;\"><strong>Frequency &nbsp; (udp port):</strong><br>" + freqhtml
+                + "<br><br><strong>GnuRadio:</strong><br>RTL-SDR #: " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer
+                + "<br>Serial No: " + antennas[i].rtl_serialnumber
+                + "<br><font style=\"font-variant: small-caps;\"><mark style=\"background-color:  lightgreen;\">[Okay]</mark></font></p></td></tr>";
+	    antenna_html = antenna_html + "<tr><td><p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px;  margin-top: 0px; margin-bottom: 0px;font-size: .9em;\">Igating status: <font style=\"font-variant: small-caps;\">" + (statusJson.igating == "true" ? "<mark style=\"background-color: lightgreen;\">[igating]</mark>" : "[no]") + "</font></p></td></tr>";
+	    antenna_html = antenna_html + "<tr><td><p class=\"normal-black\" style=\"white-space: nowrap; margin-right: 0px; margin-top: 0px; margin-bottom: 0px; font-size: .9em;\">Beaconing status: <font style=\"font-variant: small-caps;\">" + (statusJson.beaconing == "true" ? "<mark style=\"background-color: lightgreen;\">[beaconing]</mark>" : "[no]") + "</font></p></td></tr>";
+            antenna_html = antenna_html + "</table></td>";
+        }
+        antenna_html = antenna_html + "</tr></table>";
+        //document.getElementById("debug").innerHTML = "procs: " + procs + ",  keys: " + keys.length + ",  antennas:  " + antennas.length;;
+        if (antennas.length == 0 || (antennas.length > 0 && procs < keys.length-1))
+              antenna_html = donehtml;
+        $("#antenna-data").html(antenna_html);
+
       });
     }
 
@@ -722,27 +771,38 @@ function getTrackers() {
 	map.addControl(marker_control);
     }
 
+    function getgps() {
+        $.get("getgps.php", function(data) {
+            var jsonData = JSON.parse(data);
+            var gpsfix;
 
-    /************
-     * startup
-     *
-     * This function performs some startup actions and calls "initialize", the primary function for starting the map stuff
-    *************/
-    function startup() {
-        $.get("getposition.php", function(data) {
-            //document.getElementById("error").innerHTML = "followfeatureid:  " + followfeatureid;
-            lastposition = JSON.parse(data);
-            initialize();
+            gpsMode = jsonData.mode * 10 / 10;
+            if (gpsMode == 0)
+                gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ no data ]</mark>";
+            else if (gpsMode == 1)
+                gpsfix = "<mark style=\"background-color: red; font-variant: small-caps; font-size: .9em;\">[ NO FIX ]</mark>";
+            else if (gpsMode == 2)
+                gpsfix = "<mark style=\"background-color: yellow; font-variant: small-caps; font-size: .9em;\">[ 2D FIX ]</mark>";
+            else if (gpsMode == 3)
+                gpsfix = "<mark style=\"background-color: lightgreen; font-variant: small-caps; font-size: .9em;\">[ 3D FIX ]</mark>";
+            else
+                gpsfix = "n/a";
 
-	    getConfiguration();
-            buildGauges();
-            buildCharts();
-            createTheListener();
-            getProcessStatus();
+            var theDate = jsonData.utc_time;
+            theDate = theDate.replace(/T/g, " ");
+            theDate = theDate.replace(/.[0-9]*Z$/g, "");
+            var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Status:</td><td>"
+                + (jsonData.status == "normal" ? jsonData.status : "<mark style=\"background-color: yellow;\">" + jsonData.status + "</mark>")
+                + "</td></tr>"
+                + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr></table>";
 
-            var flight;
-            var allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flightLivePacketStream\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
-            var livePacketStreamHTML = "<form>" + allHtml;
             var i = 0;
             for (flight in flightids) {
                 var pos_a = "#" + flightids[flight].flightid + "_positionpacketlistlink";

@@ -38,17 +38,11 @@ include $documentroot . '/common/header.php';
                 About
             </p>
             <p class="normal-black" style="float:left;">
-	    The HAB Tracker application aids tracking and recovery of high altitude balloons by  
+	    The EOSS Tracker application aids tracking and recovery of high altitude balloons by  
 	    leveraging open source software and the amateur radio <a class="normal-link-black" target="_blank" href="http://www.aprs.org">Automatic Packet Reporting System</a> to provide near real time status and location updates.
             </p>
             <p class="normal-black">
 	        <?php include_once $documentroot . '/localinfo.php'; ?>
-            </p>
-            <p class="normal-black">
-            The HAB Tracker application is licensed under version 3 of the GNU General Public License (see <a class="normal-link-black" target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
-            </p>
-            <p class="normal-black" style="text-align: center; margin-top: 40px; margin-bottom: 0px; clear: both;">
-            Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
             </p>
 </div>
 

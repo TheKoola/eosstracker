@@ -35,23 +35,41 @@ include $documentroot . '/common/functions.php';
         return 0;
     }
 
-    //print_r($_GET);
-
     $formerror = false;
-    if (isset($_GET["flightid"])) 
-        $flightid = strtoupper($_GET["flightid"]);
+
+    // Check the flightid HTML GET variable
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["callsign"]))
-        $callsign = strtoupper($_GET["callsign"]);
+
+    // Check the callsign HTML GET variable
+    if (isset($_GET["callsign"])) {
+        if (($callsign = strtoupper(check_string($_GET["callsign"], 20))) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["description"]))
-        $description = $_GET["description"];
+
+
+    // Check the description HTML GET variable
+    if (isset($_GET["description"])) {
+        if (($description = check_string($_GET["description"], 64)) == "") 
+            $formerror = true;
+    }
     else
         $formerror = true;
-    if (isset($_GET["frequency"]))
-        $frequency = $_GET["frequency"];
+
+
+    // Check the frequency HTML GET variable and make sure it's between 144.00 and 146.00 for our SDR system.
+    if (isset($_GET["frequency"])) {
+        if (check_number($_GET["frequency"], 144.0, 146.0))
+            $frequency = floatval($_GET["frequency"]);
+        else
+            $formerror = true;
+    }
     else
         $formerror = true;
     

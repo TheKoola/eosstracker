@@ -344,6 +344,7 @@ create table landingpredictions (
     thetype text,
     coef_a numeric,
     location2d geometry(POINT, 4326),
+    flightpath geometry(LINESTRING, 4326),
     primary key (tm, flightid, callsign, thetype),
     foreign key (flightid) references flights(flightid) on update cascade on delete cascade
 );

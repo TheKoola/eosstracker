@@ -30,26 +30,27 @@
     include $documentroot . '/common/functions.php';
 
 
+    // Check the notes HTML GET variable
     if (isset($_GET["notes"])) {
-        $get_notes = $_GET["notes"];
+        $get_notes = check_string($_GET["notes"], 64);
     }
-    else {
+    else
         $get_notes = "";
-    }
 
+    // Check the callsign HTML GET variable
     if (isset($_GET["callsign"])) {
-        $get_callsign = $_GET["callsign"];
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
     }
-    else {
+    else
         $get_callsign = "";
-    }
-    
+
+
+    // Check the team HTML GET variable
     if (isset($_GET["team"])) {
-        $get_team = $_GET["team"];
+        $get_team = check_string($_GET["team"], 20);
     }
-    else {
+    else
         $get_team = "";
-    }
 
 
     ## if any of the GET parameters are not supplied, then exit...

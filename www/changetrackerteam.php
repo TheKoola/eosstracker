@@ -23,27 +23,25 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-
+    // Check the tactical HTML GET variable
     if (isset($_GET["tactical"])) {
-        $get_tactical = $_GET["tactical"];
+        $get_tactical = check_string($_GET["tactical"], 20);
     }
-    else {
+    else
         $get_tactical = "";
-    }
 
+    // Check the callsign HTML GET variable
     if (isset($_GET["callsign"])) {
-        $get_callsign = $_GET["callsign"];
+        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
     }
-    else {
+    else
         $get_callsign = "";
-    }
-    
+
 
     ## if any of the GET parameters are not supplied, then exit...
     if ($get_callsign == "" || $get_tactical == "") {

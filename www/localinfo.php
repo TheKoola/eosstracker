@@ -34,5 +34,5 @@
 
 <p class="normal-black">
 <!-- update the URL for your organization...i.e the "href=" part -->
-    <a class="normal-link-black" target="_blank" href="https://www.eoss.org">Edge of Space Sciences</a> uses the HAB Tracker application to help fulfill their mission of promoting science and education through high altitude balloons and amateur radio.
+    <a class="normal-link-black" target="_blank" href="https://www.eoss.org">Edge of Space Sciences</a> uses the EOSS Tracker application to help fulfill their mission of promoting science and education through high altitude balloons and amateur radio.
 </p>

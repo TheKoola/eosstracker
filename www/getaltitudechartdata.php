@@ -35,17 +35,18 @@
    ## Look for the variable "flightid" to be set. 
     $flightstring = "";
     if (isset($_GET["flightid"])) {
-        $flightid=$_GET["flightid"];
-        $flightarray = explode(',', $flightid); 
-        $flightstring = " and f.flightid in (";
-        $firsttime = 1;
-        foreach($flightarray as $flight) {
-            if (! $firsttime)
-                $flightstring = $flightstring . ",";
-            $firsttime = 0;
-            $flightstring = $flightstring . "'" . $flight . "'"; 
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") {
+            $flightarray = explode(',', $flightid); 
+            $flightstring = " and f.flightid in (";
+            $firsttime = 1;
+            foreach($flightarray as $flight) {
+                if (! $firsttime)
+                    $flightstring = $flightstring . ",";
+                $firsttime = 0;
+                $flightstring = $flightstring . "'" . $flight . "'"; 
+            }
+            $flightstring = $flightstring . ") ";
         }
-        $flightstring = $flightstring . ") ";
     }
 
 
@@ -104,19 +105,6 @@ thetime asc; ";
     }    
 
 
-/*    printf ("{ \"xs\" : { \n");
-    $outerfirsttime = 1;
-    foreach ($callsigns as $cs) {
-         if (! $outerfirsttime)
-             printf (", ");
-         $outerfirsttime = 0;
-         printf ("\"%s\" : {", $cs);
-         printf (" \"xname\" : \"tm-%s\", ", $cs);
-         printf (" \"yname\" : \"%s\"} ", $cs);
-    }
-    printf ("} , \n");
-*/
-
     if ($numrows > 0)
         printf ("[");
     $superfirsttime = 1;
@@ -157,22 +145,8 @@ thetime asc; ";
     if ($numrows > 0)
         printf ("]");
 
-//    print_r ($tdata);
-//    print_r ($adata);
-
-/*
-
-    $rows = sql_fetch_all($result);
-    if ($rows) {
-        $myjson = json_encode($rows);
-        echo $myjson;
-    }
-        
-*/
-
     sql_close($link);
 
 
-//    print_r ($rows);
 
 ?>

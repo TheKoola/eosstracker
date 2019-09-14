@@ -18,7 +18,16 @@
 #
 ##################################################
 
-# This just contains the databae login credentials for the habtracker backend daemon
+# This just contains the database login credentials for the habtracker backend daemon
+
+# The database name
+dbName = "aprs"
+
+# The database user
+dbUser = "eosstracker"
+
+# The database user's password
+dbPassword = "Thisisthedatabasepassword!"
 
 # Postgres connection parameters
-dbConnectionString="dbname=aprs user=eosstracker password=Thisisthedatabasepassword!"
+dbConnectionString="dbname=" + dbName + " user=" + dbUser + " password=" + dbPassword

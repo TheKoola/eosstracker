@@ -1,7 +1,7 @@
 # EOSS SDR Tracker Personal Package Archive
 
 Notes by Jeff N2XGL,
-Version 1.0, Dated 2019-02-10
+Version 1.1, Dated 2019-04-28
 
 ## Upgrading your SDR Tracker to the EOSS PPA
 
@@ -14,7 +14,7 @@ own hardware.
 
 The baseline Ubuntu Server 18.04.1 LTS operating system used on the SDR
 Tracker provides a convenient way for users to install and maintain software
-packages. [Launchpad](https://launchpad.net/) is a open source suite of tools 
+packages. [Launchpad](https://launchpad.net/) is a open source suite of tools
 that help people and teams to work together on software projects.  EOSS will
 host `eosstracker` package updates (and others) on launchpad at
 https://launchpad.net/~eoss in a Personal Package Archive (PPA).
@@ -26,16 +26,23 @@ team and placed on the PPA repository.  All a user needs to do is connect
 their SDR Tracker computer to the Internet and issue the update/upgrade
 commands.  The steps are described below.
 
+> Note:  If you have already enabled the EOSS PPA repository, or if you
+> are not sure if the repository is enabled or not, there is no concern running
+> the one-time steps again.  Simply follow the one-time steps anyway and
+> your software will be updated.
+
 ## Connecting your SDR Tracker to the EOSS PPA (one-time)
 
 To be able to download EOSS packages and install them, you need to perform
 a one-time setup to connect to the EOSS PPA.  This will require having your
 tracker computer connected to the Intenet in some fashion (e.g. Ethernet or
-WiFi to home network).  You will also need to be logged into the computer at
-the command line.  
+WiFi to home network).  See
+[here](https://github.com/TheKoola/eosstracker/blob/master/doc/EOSS-SDR-Tracker-WiFi.md)
+for instructions on connecting your tracker computer to the Internet via home
+WiFi. You will also need to be logged into the computer at the command line.  
 
 Note that these steps are for Ubuntu >= 9.10 only. Further information
-regarding installing PPAs can be found 
+regarding installing PPAs can be found
 [here](https://help.launchpad.net/Packaging/PPA/InstallingSoftware).
 
 Once you are logged in, you should be at the command
@@ -48,8 +55,8 @@ Begin by entering the following command:
 `sudo add-apt-repository ppa:eoss/ppa`
 
 This may prompt you to enter the `eosstracker` password in order to perform
-the command as root. Your system will now fetch the PPA's key. This enables 
-your tracker computer to verify that the packages in the PPA have not been 
+the command as root. Your system will now fetch the PPA's key. This enables
+your tracker computer to verify that the packages in the PPA have not been
 interfered with since they were built.  You should see some output that
 looks like:
 ```
@@ -76,7 +83,13 @@ Once that is complete, enter the command:
 This will tell the tracker computer to pull down the latest list of software
 from each package archive it knows about, including the PPA you just added.
 
-You are now set with adding the EOSS PPA repository.  Future updates and
+Finally, the first time you add the PPA, you need to install the `eosstracker`
+package.  This will add it to the list of packages that are installed on your
+machine.  Enter the command:
+
+`sudo apt-get install eosstracker`
+
+You are now all set with adding the EOSS PPA repository.  Future updates and
 upgrades will not require this step.  
 
 ## Updating and Upgrading EOSS software packages
@@ -108,4 +121,3 @@ The EOSS PPA repository will also allow an advanced user to install the
 `eosstracker` software on a new computer or recover a tracker computer
 from a bare-metal install.  Those instructions are being developed and
 will be posted in the near future.
-

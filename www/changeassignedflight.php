@@ -29,20 +29,21 @@
     include $documentroot . '/common/functions.php';
 
 
+    // Check the tactical HTML GET variable
     if (isset($_GET["tactical"])) {
-        $get_tactical = $_GET["tactical"];
+        $get_tactical = check_string($_GET["tactical"], 20);
     }
-    else {
+    else
         $get_tactical = "";
-    }
 
+    // Check the flightid HTML GET variable
     if (isset($_GET["flightid"])) {
-        $get_flightid = $_GET["flightid"];
+        $get_flightid = strtoupper(check_string($_GET["flightid"], 20));
     }
-    else {
+    else
         $get_flightid = "";
-    }
-    
+
+
     ## if any of the GET parameters are not supplied, then exit...
     if ($get_flightid == "" || $get_tactical == "") {
         printf ("[]");

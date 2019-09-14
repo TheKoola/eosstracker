@@ -36,10 +36,15 @@ include $documentroot . '/common/functions.php';
     }
 
     $formerror = false;
-    if (isset($_GET["launchsite"])) 
-        $launchsite = $_GET["launchsite"];
+
+    // Check the launchsite HTML GET variable
+    if (isset($_GET["launchsite"])) {
+        if(($launchsite = check_string($_GET["launchsite"], 64)) == "")
+            $formerror = true;
+    }
     else
         $formerror = true;
+
 
     if ($formerror == false) {
         $query = "select l.launchsite from launchsites l where l.launchsite = $1;";
