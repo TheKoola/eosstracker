@@ -161,7 +161,7 @@
                     <br>System Status: <span id="systemstatus"></span></p>
                 <table class="packetlist">
                     <tr><td class="packetlistheader">Process</td><td class="packetlistheader">Status</td></tr>
-                    <tr><td class="packetlist">direwolf</td><td class="packetlist">Kiosk Mode</td></tr>
+                    <tr><td>direwolf</td><td>Kiosk Mode</td></tr>
                     <tr><td class="packetlist">aprsc</td><td class="packetlist"><span id="aprsc-status"></span></td></tr>
                     <tr><td class="packetlist">gpsd</td><td class="packetlist"><span id="gpsd-status"></span></td></tr>
                     <tr><td class="packetlist">backend daemon</td><td class="packetlist"><span id="habtracker-d-status"></span></td></tr>
