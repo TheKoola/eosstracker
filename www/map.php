@@ -220,8 +220,8 @@
                     <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels</td></tr>
                     <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
                     <tr><td colspan=2><input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"> &nbsp; <span id="systemsettings_error" style="background-color: yellow; color: black;"></span></td></tr>
-                </table>  -->
-                </p>
+                </table>
+              </p> -->
                 <div style="position: absolute; bottom: 10px; width: 360px;">
                     <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
                     <p class="lorem">The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
