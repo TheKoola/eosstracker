@@ -126,7 +126,7 @@ include $documentroot . '/common/header.php';
 
        /* Loop through the processes and update their status */
 	  for (i = 0; i < keys.length; i++) {
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</font></mark>";
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]" : "white;\">[Kisok Mode]") + "</font></mark>";
               procs += statusJson.processes[i].status;
           }
 
