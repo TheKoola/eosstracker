@@ -331,9 +331,9 @@
         printf ("</div>");
 
         // Lastest packet path section
-        printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");
-        printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_lastpacketpath");
-?>
+//        printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");
+//        printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_lastpacketpath");
+?> <!--
     <table class="packetlist" style="width: auto;">
     <tr><td class="packetlistheader" style="white-space: nowrap;">Callsign</td>
         <td class="packetlistheader" style="white-space: nowrap;">Receive Time</td>
@@ -351,7 +351,7 @@
              - packet received over the Internet
          </td>
     </tr>
-    </table>
+  </table> -->
 
 
 <?php
