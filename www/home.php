@@ -126,7 +126,7 @@ include $documentroot . '/common/header.php';
 
        /* Loop through the processes and update their status */
 	  for (i = 0; i < keys.length; i++) {
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]" : "lightgrey;\">[Kiosk Mode]") + "</font></mark>";
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<font style=\"font-variant: small-caps;\"><mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</font></mark>";
               procs += statusJson.processes[i].status;
           }
 
@@ -312,7 +312,7 @@ include $documentroot . '/common/header.php';
                 <tr><td valign="top">
                     <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
                     <tr><td class="packetlistheader" >Process</td><td class="packetlistheader" >Status</td></tr>
-                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  lightgrey;">Kiosk Mode</mark></span><span id="direwolferror"></span></td></tr>
+                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  lightgreen;">Kiosk Mode</mark></span><span id="direwolferror"></span></td></tr>
 		    <tr><td class="packetlist" >aprsc</td><td class="packetlistright" ><span id="aprsc-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 	  	    <tr><td class="packetlist" >gpsd</td><td class="packetlistright" ><span id="gpsd-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 		    <tr><td class="packetlist" >backend daemon</td><td class="packetlistright" ><span id="habtracker-d-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
