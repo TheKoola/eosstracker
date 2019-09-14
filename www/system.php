@@ -312,7 +312,7 @@ include $documentroot . '/common/header.php';
                 <tr><td valign="top">
                     <table class="packetlist" style="margin-left: 30px;" cellpadding=0 cellspacing=0 border=0>
                     <tr><td class="packetlistheader" >Process</td><td class="packetlistheader" >Status</td></tr>
-                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  red;">Not okay</mark></span><span id="direwolferror"></span></td></tr>
+                    <tr><td class="packetlist" >direwolf</td><td class="packetlistright" ><span id="direwolf-status"><mark style="background-color:  white;">Kiosk Mode</mark></span><span id="direwolferror"></span></td></tr>
 		    <tr><td class="packetlist" >aprsc</td><td class="packetlistright" ><span id="aprsc-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 	  	    <tr><td class="packetlist" >gpsd</td><td class="packetlistright" ><span id="gpsd-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
 		    <tr><td class="packetlist" >backend daemon</td><td class="packetlistright" ><span id="habtracker-d-status"><mark style="background-color:  red;">Not okay</mark></span></td></tr>
