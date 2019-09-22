@@ -1670,24 +1670,34 @@ function getTrackers() {
             var altElement = "#" + flightids[flight].flightid + "_altitudechart";
             var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
             
+            // This is the altitude vs. time chart
             achart = c3.generate({
                 bindto: altElement,
                 size: { width: 360, height: 250 },
+                padding: {right: 10 },
                 data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
-                axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M:%S' }  }, y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
+                axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
+                    type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },
                 //grid: { x: { show: true }, y: { show: true, lines: [{ value: lastposition.properties.altitude, class: 'groundlevel', text: 'Ground Level'}] } }
                 grid: { x: { show: true }, y: { show: true } },
-                line: { connectNull: true }
+                line: { connectNull: true },
+                point: { show: false }
             });
 
+            // This is the vertical rate vs. time chart
             vchart = c3.generate({
                 bindto: vertElement,
                 size: { width: 360, height: 250 },
+                padding: {right: 10 },
                 data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
-                axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M:%S' }  }, y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' } } },
+                axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
+                    type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                    y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, tick: { format: d3.format(",d") }  } },
                 //grid: { x: { show: true }, y: { show: true, lines: [{ value: lastposition.properties.altitude, class: 'groundlevel', text: 'Ground Level'}] } }
                 grid: { x: { show: true }, y: { show: true } },
-                line: { connectNull: true }
+                line: { connectNull: true },
+                point: { show: false }
             });
 
 
