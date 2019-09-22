@@ -1643,11 +1643,9 @@ function getTrackers() {
         ele.slideToggle('fast', function() {
             if (ele.is(':visible')) {
                 signEle.text('-');
-                //document.getElementById("error-JEFF-275").innerHTML = "toggling...minus:  " + divId + ", " + switchTag;
              }
              else  {
                 signEle.text('+');
-                //document.getElementById("error-JEFF-275").innerHTML = "toggling...plus:  " + divId + ", " + switchTag;
              }
         });
     }
