@@ -864,11 +864,14 @@ a.normal-link-italic {
 }
 
 a.normal-link-black {
+    color: black;
+    /*
     color:  #b4c7ec;
     color:  #576072;
     color:  #eff0f1; 
     color:  #25262b;  
     color:  #0000aa;
+    */
     text-decoration: none; 
     text-align:  left;
     vertical-align: bottom;
