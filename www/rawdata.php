@@ -74,6 +74,10 @@ $config = readconfiguration();
     printf ("<span style=\"font-size: .6em;\">(< %dhrs %dmins)</span>", $config["lookbackperiod"] / 60, (  ($config["lookbackperiod"] / 60.0) - floor($config["lookbackperiod"] / 60) ) * 60) ; 
 ?>
             </p>
+            <!-- This is the Tree Map chart -->
+            <!-- <div style="margin: 5px; text-align: center;"><svg style="text-align: center;" id="bubblechart"></svg></div> -->
+            <!-- <div style="margin: 5px; text-align: center;"><svg style="text-align: center;" id="treemapchart"></svg></div> -->
+
             <!-- APRS-IS Packet Source chart -->
             <p class="normal-black" style="margin: 5px; margin-top: 15px; text-align: center; font-size: 1.1em;"><a href="#c1" class="normal-link-black" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) APRS-IS Packet Source</a></p>
             <div id="c1-elem" style="display: none; margin: 5px;"><p class="normal-italic" style="margin: 0; margin-right: 80px; margin-left: 80px; text-align: center;">
@@ -98,6 +102,7 @@ $config = readconfiguration();
                 available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
             </p></div>
             <div id="chart6"></div>
+            <div id="dashboard"></div>
 
 
             <!-- Heading vs. Altitude chart -->
@@ -108,10 +113,10 @@ $config = readconfiguration();
             </p></div>
             <div id="chart4"></div>
 
-            <!-- Vertical Rate vs. altitude chart -->
+            <!-- Vertical Rate and Acceleration vs. altitude chart -->
             <p class="normal-black" style="margin: 5px; margin-top: 15px; text-align: center; font-size: 1.1em;"><a href="#c5" class="normal-link-black" id="c5-link">(<span style="color: red;" id="c5-sign">+</span>) Vertical Rate vs. Altitude</a></p>
             <div id="c5-elem" style="display: none; margin: 5px;"><p class="normal-italic" style="margin: 0; margin-right: 80px; margin-left: 80px; text-align: center;">
-                This chart shows the vertical rate (ft/min) compared to the altitude for each beacon from each active flight.  
+                This chart shows the vertical rate (ft/min) compared to the altitude for each beacon from each active flight.
             </p></div>
             <div id="chart5"></div>
 

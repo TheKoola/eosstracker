@@ -57,51 +57,65 @@
     }
 
     $query = "select distinct on (f.flightid, a.callsign, thetime) 
-a.callsign, 
-f.flightid, 
-date_trunc('seconds', a.tm)::time without time zone as thetime, 
-case
-    when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
-        date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
-    else
-        date_trunc('second', a.tm)::time without time zone
-end as packet_time,
-a.altitude, 
-a.hash 
+              a.callsign, 
+              f.flightid, 
+              date_trunc('seconds', a.tm)::time without time zone as thetime, 
+              case
+                  when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
+                      date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                  else
+                      date_trunc('second', a.tm)::time without time zone
+              end as packet_time,
+              a.altitude, 
+              a.hash 
 
-from 
-packets a, 
-flights f, 
-flightmap fm 
+              from 
+              packets a, 
+              flights f, 
+              flightmap fm 
 
-where 
-fm.flightid = f.flightid 
-and a.callsign = fm.callsign 
-and a.location2d != '' 
-and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
-and a.altitude > 0 
-and active = 't'  " . $flightstring . " 
+              where 
+              fm.flightid = f.flightid 
+              and a.callsign = fm.callsign 
+              and a.location2d != '' 
+              and a.tm > date_trunc('minute', (now() - (to_char(($2)::interval, 'HH24:MI:SS')::time)))::timestamp
+              and a.altitude > 0 
+              and active = 't'  " . $flightstring . " 
 
-order by 
-f.flightid, 
-a.callsign, 
-thetime asc; 
-";
+              order by 
+              f.flightid, 
+              a.callsign, 
+              thetime asc; 
+              ";
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"]), sql_escape_string($config["lookbackperiod"] . " minute")));
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["timezone"]), 
+        sql_escape_string($config["lookbackperiod"] . " minute")
+    ));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
         return 0;
     }
    
-    // These arrays hold the x and y data for our chart
+    // The following arrays hold the x and y data for our chart
+    // Time data points (for caculating rates)
     $tdata_asc = [];
-    $adata_asc = [];
     $tdata_desc = [];
+
+    // altitude data
+    $adata_asc = [];
     $adata_desc = [];
+
+    // vertical rates (aka velocities)
     $verticalrate_asc = [];
     $verticalrate_desc = [];
+
+    // acceleration (aka changes in velocity)
+    $acceldata_altitudes_asc = [];
+    $acceldata_altitudes_desc = [];
+    $acceldata_asc = [];
+    $acceldata_desc = [];
 
     // The list of callsigns
     $callsigns = [];
@@ -126,18 +140,10 @@ thetime asc;
         $altitude = $row['altitude'];
         $hash = $row['hash'];
 
-        // Is this callsign ascending or descending?
-        if (array_key_exists($callsign, $altitude_prev)) {
-            // There was a previous row for this callsign, therefore we compare the current altitude to the previous one
-            if ($altitude > $altitude_prev[$callsign])
-                $ascending = true;
-            else
-                $ascending = false;
-        }
-
-        // calculate the vertical rate for this callsign
-        //$time1 = date_create($thetime);
+        // Timestamp for this packet 
         $time1 = date_create($packettime);
+
+        // This code block will calculate the vertical rate for this callsign
         if (array_key_exists($callsign, $time_prev)) {
             // if this packet is different (i.e. differnet MD5 hash) then process it...
             if ($hash != $hash_prev[$callsign]) {
@@ -145,8 +151,8 @@ thetime asc;
                 // Difference in datetime from the last packet to this current one
                 $diff = date_diff($time_prev[$callsign], $time1);
 
-                // The time delta in seconds
-                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60;
+                // The time delta in minutes (why not seconds?  Because we're calculating rates in ft/min)
+                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60.0;
 
                 // Save this callsign to our list of callsigns for each flightid
                 $callsigns[$flightid][$callsign] = $callsign;
@@ -157,13 +163,36 @@ thetime asc;
                     $tdata_asc[$callsign][]= $thetime;
                     $adata_asc[$callsign][] = $altitude;
 
+
                     // Do we have a real time delta?
                     if ($time_delta > 0)
                         // calculate the vertical rate in ft/min for this packet
-                        $verticalrate_asc[$callsign][] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
+                        $vrate = ($altitude - $altitude_prev[$callsign])/$time_delta;
                     else
                         // time delta was zero (shouldn't be here...but...just in case)...we use a time_delta of 1 second.
-                        $verticalrate_asc[$callsign][] = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
+                        //$vrate = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
+                        $vrate = 0;
+                    
+                    // Calculate vertical acceleration
+                    if (array_key_exists($callsign, $verticalrate_asc)) {
+                        /*printf ("<br>tdelta: %.2f, vrate: %.2f, pvrate: %.2f, diff: %.2f, accel: %.2f<br>", 
+                            $time_delta, 
+                            $vrate, 
+                            $verticalrate_asc[$callsign][count($verticalrate_asc[$callsign]) - 1], 
+                            $vrate - $verticalrate_asc[$callsign][count($verticalrate_asc[$callsign]) - 1], 
+                            ($vrate - $verticalrate_asc[$callsign][count($verticalrate_asc[$callsign]) - 1]) / $time_delta);
+                         */
+                        $acceldata_asc[$callsign][] = round(($vrate - $verticalrate_asc[$callsign][count($verticalrate_asc[$callsign]) - 1]) / $time_delta, 0);
+                        $acceldata_altitudes_asc[$callsign][] = $altitude;
+                    }
+                    //else {
+                    //    $acceldata_asc[$callsign][] = 0;
+                    //    $acceldata_altitudes_asc[$callsign][] = $altitude;
+                    //}
+
+                    // Add this vertical rate to the array of vert rates for this callsign.
+                    $verticalrate_asc[$callsign][] = round($vrate, 0);
+
                 }
                 else {
                     // descending...
@@ -173,10 +202,24 @@ thetime asc;
                     // Do we have a real time delta?
                     if ($time_delta > 0)
                         // calculate the vertical rate in ft/min for this packet
-                        $verticalrate_desc[$callsign][] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
+                        $vrate = ($altitude - $altitude_prev[$callsign])/$time_delta;
                     else
                         // time delta was zero (shouldn't be here...but...just in case)...we use a time_delta of 1 second.
-                        $verticalrate_desc[$callsign][] = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
+                        //$vrate = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
+                        $vrate = 0;
+
+                    // Calculate vertical acceleration
+                    if (array_key_exists($callsign, $verticalrate_desc)) {
+                        $acceldata_desc[$callsign][] = round(($vrate - $verticalrate_desc[$callsign][count($verticalrate_desc[$callsign]) - 1]) / $time_delta, 0);
+                        $acceldata_altitudes_desc[$callsign][] = $altitude;
+                    }
+                    //else {
+                    //    $acceldata_desc[$callsign][] = 0;
+                    //    $acceldata_altitudes_desc[$callsign][] = $altitude;
+                   // }
+
+                    // Add this vertical rate to the array of vert rates for this callsign.
+                    $verticalrate_desc[$callsign][] = round($vrate, 0);
                 }
 
             }
@@ -199,21 +242,26 @@ thetime asc;
     }
 
 
+    // If there are rows to loop through, then print out the beginning squiggly bracket for the JSON output. ;)
     if ($numrows > 0)
         printf ("{");
+
+    // Now loop through each callsign printing out JSON for each portion of its flight (i.e. ascending, descending).
     $superfirsttime = 1;
     foreach ($callsigns as $flightid => $ray) {
         if (! $superfirsttime)
             printf (", ");
         $superfirsttime = 0;
 
-        // Now loop through the descending portion of the flight
+        // Now loop through the ascending portion of the flight
         $outerfirsttime = 1;
         if (sizeof($adata_asc) > 0) {
             foreach ($ray as $cs) {
                  if (! $outerfirsttime)
                      printf (", ");
                  $outerfirsttime = 0;
+
+                 // Print out JSON for the X-Axis (i.e. the altitude for our data points)
                  $innerfirsttime = 1;
                  printf ("\"tm-%s-ascent\" : [", $cs);
                  foreach ($adata_asc[$cs] as $value) {
@@ -222,8 +270,11 @@ thetime asc;
                      $innerfirsttime = 0;
                      printf ("\"%s\"", $value);
                  }
+
+                 // comma seperator...
                  printf ("], ");
-        
+
+                 // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
                  $innerfirsttime = 1;
                  printf ("\"%s-ascent\" : [", $cs);
                  foreach ($verticalrate_asc[$cs] as $value) {
@@ -233,9 +284,44 @@ thetime asc;
                      printf ("\"%s\"", $value);
                  }
                  printf ("] ");
+
+
+
+                 /*
+                 //
+                 // Now look to print out a series for acceleration data (if present)
+                 if (sizeof($acceldata_asc) > 0) {
+                     printf (", ");
+
+                     // Print out JSON for the X-Axis (i.e. the altitude for our data points)
+                     $innerfirsttime = 1;
+                     printf ("\"tm-%s-asc-accel\" : [", $cs);
+                     foreach ($acceldata_altitudes_asc[$cs] as $value) {
+                         if (! $innerfirsttime)
+                             printf (", ");
+                         $innerfirsttime = 0;
+                         printf ("\"%s\"", $value);
+                     }
+
+                     // comma seperator...
+                     printf ("], ");
+
+                     // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
+                     $innerfirsttime = 1;
+                     printf ("\"%s-asc-accel\" : [", $cs);
+                     foreach ($acceldata_asc[$cs] as $value) {
+                         if (! $innerfirsttime)
+                             printf (", ");
+                         $innerfirsttime = 0;
+                         printf ("\"%s\"", $value);
+                     }
+                     printf ("] ");
+                 }
+                  */
             }
         }
 
+        // If we just printed out some ascent data AND there's also descent data to loop through, then we need a comma...
         if (sizeof($adata_desc) > 0 && sizeof($adata_asc) > 0)
             printf (", ");
 
@@ -246,6 +332,8 @@ thetime asc;
                  if (! $outerfirsttime)
                      printf (", ");
                  $outerfirsttime = 0;
+
+                 // Print out JSON for the X-Axis (i.e. the altitude for our data points)
                  $innerfirsttime = 1;
                  printf ("\"tm-%s-descent\" : [", $cs);
                  foreach ($adata_desc[$cs] as $value) {
@@ -254,8 +342,11 @@ thetime asc;
                      $innerfirsttime = 0;
                      printf ("\"%s\"", $value);
                  }
+
+                 // comma seperator...
                  printf ("], ");
         
+                 // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
                  $innerfirsttime = 1;
                  printf ("\"%s-descent\" : [", $cs);
                  foreach ($verticalrate_desc[$cs] as $value) {
@@ -265,14 +356,51 @@ thetime asc;
                      printf ("\"%s\"", $value);
                  }
                  printf ("] ");
+
+
+                 /*
+                 //
+                 // Now look to print out a series for acceleration data (if present)
+                 if (sizeof($acceldata_desc) > 0) {
+                     printf (", ");
+
+                     // Print out JSON for the X-Axis (i.e. the altitude for our data points)
+                     $innerfirsttime = 1;
+                     printf ("\"tm-%s-desc-accel\" : [", $cs);
+                     foreach ($acceldata_altitudes_desc[$cs] as $value) {
+                         if (! $innerfirsttime)
+                             printf (", ");
+                         $innerfirsttime = 0;
+                         printf ("\"%s\"", $value);
+                     }
+
+                     // comma seperator...
+                     printf ("], ");
+
+                     // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
+                     $innerfirsttime = 1;
+                     printf ("\"%s-desc-accel\" : [", $cs);
+                     foreach ($acceldata_desc[$cs] as $value) {
+                         if (! $innerfirsttime)
+                             printf (", ");
+                         $innerfirsttime = 0;
+                         printf ("\"%s\"", $value);
+                     }
+                     printf ("] ");
+                 }
+                  */
             }
         }
     }
+
+    // If there were rows...then we obviously need a closing bracket for our JSON.  Otherwise, print out empty JSON.
     if ($numrows > 0)
         printf ("}");
     else
         printf ("[]");
 
+
+    // Close the database connection
     sql_close($link);
 
 ?>

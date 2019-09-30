@@ -122,6 +122,23 @@
     }
 
 
+    ## Look for the variable "flightid" to be set.
+    $flightstring = "";
+    if (isset($_GET["flightid"])) {
+        if (($flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") {
+            $flightarray = explode(',', $flightid);
+            $flightstring = " and f.flightid in (";
+            $firsttime = 1;
+            foreach($flightarray as $flight) {
+                if (! $firsttime)
+                    $flightstring = $flightstring . ",";
+                $firsttime = 0;
+                $flightstring = $flightstring . "'" . $flight . "'";
+            }
+            $flightstring = $flightstring . ") ";
+        }
+    }
+
     ## Connect to the database
     $link = connect_to_database();
     if (!$link) {
@@ -130,14 +147,21 @@
     }
 
 
-    $query = "select 
-           a.tm,
+    $query = "select distinct on (f.flightid, a.callsign, thetime)
            a.callsign,
+           f.flightid,
+           date_trunc('seconds', a.tm)::time without time zone as thetime, 
            a.altitude,
            a.bearing,
            st_y(a.location2d) as lat,
-           st_x(a.location2d) as lon
-           
+           st_x(a.location2d) as lon,
+              case
+                  when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
+                      date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                  else
+                      date_trunc('second', a.tm)::time without time zone
+              end as packet_time,
+           a.hash
 
            from 
            packets a,
@@ -145,23 +169,23 @@
            flights f
 
            where 
-           a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
-           -- and a.tm > $2
-           and a.altitude != 0
+           a.tm > date_trunc('minute', (now() - (to_char(($2)::interval, 'HH24:MI:SS')::time)))::timestamp
+           and a.tm > $3
+           and a.altitude > 0
            and fm.flightid = f.flightid
-           and f.active = 'y'
            and a.callsign = fm.callsign
+           and f.active = 't'  " . $flightstring . "
 
            order by 
-           a.tm asc,
-           a.callsign, 
-           a.altitude
-
+           f.flightid,
+           a.callsign,
+           thetime asc
         ;";
 
     $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["timezone"]),
         sql_escape_string($config["lookbackperiod"] . " minute"), 
-      //  sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+        sql_escape_string($status["starttime"] . " " . $status["timezone"])
     ));
     if (!$result) {
         db_error(sql_last_error());
@@ -169,6 +193,37 @@
         return 0;
     }
    
+
+    /*** The following arrays hold the x and y data for our chart ***/
+    // Time data points (for caculating rates)
+    $tdata_asc = [];
+    $tdata_desc = [];
+
+    // altitude data
+    $adata_asc = [];
+    $adata_desc = [];
+
+    // heading variablity
+    $headingvar_asc = [];
+    $headingvar_desc = [];
+
+    // vertical rates (aka velocities)
+    $verticalrate_asc = [];
+    $verticalrate_desc = [];
+
+    // acceleration (aka changes in velocity)
+    $acceldata_altitudes_asc = [];
+    $acceldata_altitudes_desc = [];
+    $acceldata_asc = [];
+    $acceldata_desc = [];
+
+    // The list of callsigns
+    $callsigns = [];
+
+    // Number of rows returned from the query above
+    $numrows = sql_num_rows($result);
+
+
     /******** ascent *****/
     // This is the y-axis
     $tdata_asc = [];
@@ -184,76 +239,196 @@
     $data_desc = [];
 
     // Some loop variables to keep track of state from one iteration to another
-    $prev_alt = [];
+    $altitude_prev = [];
+    $time_prev = [];
     $prev_bearing = [];
     $first_time_through = [];
+    $i = 0;
+    $hash_prev = [];
 
     // Loop through each row returned
     while ($row = sql_fetch_array($result)) {
 
+        // All the data from this row...
+        $flightid = $row['flightid'];
+        $thetime = $row['thetime'];
+        $packettime = $row['packet_time'];
+        $callsign = $row['callsign'];
+        $altitude = $row['altitude'];
+        $lat = $row['lat'];
+        $lon = $row['lon'];
+        $hash = $row['hash'];
+
+        // Timestamp for this packet
+        $time1 = date_create($packettime);
+
         // Have we seen a packet from this callsign yet?
-        if (array_key_exists($row['callsign'], $prev_alt)) {
+        if (array_key_exists($row['callsign'], $time_prev)) {
+        //if (array_key_exists($row['callsign'], $prev_alt)) {
+            
+            // if this packet is different (i.e. differnet MD5 hash) then process it...
+            if ($hash != $hash_prev[$callsign]) {
 
-            // The heading variablity.  
-            $heading_variability = round(bearing($prev_lat[$row['callsign']], $prev_lon[$row['callsign']], $row['lat'], $row['lon']) - $row['bearing'], 2);
+                // Difference in datetime from the last packet to this current one
+                $diff = date_diff($time_prev[$callsign], $time1);
 
-            // Convert this to positive/negative angle that's between -180 and +180.
-            if ($heading_variability < -180.0) 
-                $heading_variability = 360 + $heading_variability;
-            if ($heading_variability > 180.0)
-                $heading_variability = $heading_variability - 360;
+                // The time delta in minutes (why not seconds?  Because we're calculating rates in ft/min)
+                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60.0;
 
-            // Is this flight ascending or descending?
-            if ($prev_alt[$row['callsign']] < $row['altitude']) {
-                // beacon is ascending...  
+                // Save this callsign to our list of callsigns for each flightid
+                $callsigns[$flightid][$callsign] = $callsign;
 
-                $tdata_asc[$row['callsign']][] = $row['altitude'];
-                //$data_asc[$row['callsign']][] = $row['bearing'];
-                $data_asc[$row['callsign']][] = $heading_variability;
-           }
-            else {
-                // beacon is descending...
-                $tdata_desc[$row['callsign']][] = $row['altitude'];
-                //$data_desc[$row['callsign']][] = $row['bearing'];
-                $data_desc[$row['callsign']][] = $heading_variability;
+                // The heading variablity.  
+                $heading_variability = round(bearing($prev_lat[$row['callsign']], $prev_lon[$row['callsign']], $row['lat'], $row['lon']) - $row['bearing'], 2);
+
+                // Convert the heading variability to a positive/negative angle that's between -180 and +180.
+                if ($heading_variability < -180.0) 
+                    $heading_variability = 360 + $heading_variability;
+                if ($heading_variability > 180.0)
+                    $heading_variability = $heading_variability - 360;
+
+                // Is this callsign ascending or descending?
+                if ($altitude > $altitude_prev[$callsign]) {
+                    /**************** Ascending *****************/
+                    $tdata_asc[$callsign][]= $thetime;
+                    $adata_asc[$callsign][] = $altitude;
+
+                    // Heading variabilty
+                    $headingvar_asc[$row['callsign']][] = $heading_variability;
+
+                    // Do we have an actual time delta?
+                    if ($time_delta > 0)
+                        // calculate the vertical rate in ft/min for this packet
+                        $vrate = ($altitude - $altitude_prev[$callsign])/$time_delta;
+                    else
+                        $vrate = 0;
+
+                    // Calculate vertical acceleration
+                    if (array_key_exists($callsign, $verticalrate_asc)) {
+                        $acceldata_asc[$callsign][] = round(($vrate - $verticalrate_asc[$callsign][count($verticalrate_asc[$callsign]) - 1]) / $time_delta, 0);
+                        $acceldata_altitudes_asc[$callsign][] = $altitude;
+                    }
+
+                    // Add this vertical rate to the array of vert rates for this callsign.
+                    $verticalrate_asc[$callsign][] = round($vrate, 0);
+
+                }
+                else {
+                    /**************** Descending *****************/
+                    $tdata_desc[$callsign][]= $thetime;
+                    $adata_desc[$callsign][] = $altitude;
+
+                    // Heading variability
+                    $headingvar_desc[$row['callsign']][] = $heading_variability;
+
+                    // Do we have an actual time delta?
+                    if ($time_delta > 0)
+                        // calculate the vertical rate in ft/min for this packet
+                        $vrate = ($altitude - $altitude_prev[$callsign])/$time_delta;
+                    else
+                        $vrate = 0;
+
+                    // Calculate vertical acceleration
+                    if (array_key_exists($callsign, $verticalrate_desc)) {
+                        $acceldata_desc[$callsign][] = round(($vrate - $verticalrate_desc[$callsign][count($verticalrate_desc[$callsign]) - 1]) / $time_delta, 0);
+                        $acceldata_altitudes_desc[$callsign][] = $altitude;
+                    }
+
+                    // Add this vertical rate to the array of vert rates for this callsign.
+                    $verticalrate_desc[$callsign][] = round($vrate, 0);
+                }
             }
-
         }
 
-        // Save these values for the next iteration of the loop
-        $prev_alt[$row['callsign']] = $row['altitude'];
-        $prev_bearing[$row['callsign']] = $row['bearing'];
-        $prev_lat[$row['callsign']] = $row['lat'];
-        $prev_lon[$row['callsign']] = $row['lon'];
-    }    
+        if (array_key_exists($callsign, $hash_prev)) {
+           if ($hash != $hash_prev[$callsign]) {
+               $altitude_prev[$callsign] = $altitude;
+               $time_prev[$callsign] = $time1;
+           }
+       }
+       if ($i == 0) {
+           $time_prev[$callsign] = $time1;
+           $altitude_prev[$callsign] = $altitude;
+       }
 
-    if (sql_num_rows($result) > 0) {
+       // Save these values for the next iteration of the loop
+       $prev_bearing[$callsign] = $row['bearing'];
+       $prev_lat[$callsign] = $lat;
+       $prev_lon[$callsign] = $lon;
+       $hash_prev[$callsign] = $hash;
+
+       $i++;
+
+    } // while loop
+
+
+    if ($numrows > 0) {
         printf (" { ");
-        $firsttime = 1;
 
-        foreach ($data_asc as $key => $series) {
+        // The heading variability for the ascent
+        $firsttime = 1;
+        foreach ($headingvar_asc as $key => $series) {
             if ($firsttime == 0)
                 printf (", ");
             $firsttime = 0;
-            $xdata = $data_asc[$key];
-            $dataseries = $tdata_asc[$key];
+            $xdata = $headingvar_asc[$key];
+            $dataseries = $adata_asc[$key];
             generateJSON($dataseries, $series, $key . "-ascent");
         }
         
-        if (sizeof($data_asc) > 0 && sizeof($data_desc) > 0)
+        // If we need a comma inbetween
+        if (sizeof($headingvar_asc) > 0 && sizeof($headingvar_desc) > 0)
             printf (", ");
 
+        // The heading variability for the descent
         $firsttime = 1;
         $dataseries = [];
         $series = [];
-        foreach ($data_desc as $key => $series) {
+        foreach ($headingvar_desc as $key => $series) {
             if ($firsttime == 0)
                 printf (", ");
             $firsttime = 0;
-            $xdata = $data_desc[$key];
-            $dataseries = $tdata_desc[$key];
+            $xdata = $headingvar_desc[$key];
+            $dataseries = $adata_desc[$key];
             generateJSON($dataseries, $series, $key . "-descent");
         }
+
+/*    
+        // If we need a comma inbetween
+        if ((sizeof($headingvar_asc) > 0 || sizeof($headingvar_desc) > 0) && sizeof($acceldata_asc) > 0)
+            printf (", ");
+
+        // The acceleration data from the ascent
+        $firsttime = 1;
+        $dataseries = [];
+        $series = [];
+        foreach ($acceldata_asc as $key => $series) {
+            if ($firsttime == 0)
+                printf (", ");
+            $firsttime = 0;
+            $xdata = $acceldata_asc[$key];
+            $dataseries = $acceldata_altitudes_asc[$key];
+            generateJSON($dataseries, $series, $key . "-asc-accel");
+        }
+
+        // If we need a comma inbetween
+        if ((sizeof($headingvar_asc) > 0 || sizeof($headingvar_desc) > 0 || sizeof($acceldata_asc) > 0) && sizeof($acceldata_desc) > 0)
+            printf (", ");
+
+        // The acceleration data from the descent
+        $firsttime = 1;
+        $dataseries = [];
+        $series = [];
+        foreach ($acceldata_desc as $key => $series) {
+            if ($firsttime == 0)
+                printf (", ");
+            $firsttime = 0;
+            $xdata = $acceldata_desc[$key];
+            $dataseries = $acceldata_altitudes_desc[$key];
+            generateJSON($dataseries, $series, $key . "-desc-accel");
+        }
+ */
+
         printf ("}");
     }
     else

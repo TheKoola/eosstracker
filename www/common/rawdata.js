@@ -29,6 +29,7 @@
     var chart4;
     var chart5;
     var chart6;
+    var bubblechart;
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
@@ -132,7 +133,9 @@
                 type: 'scatter', json: jsondata, xs: columns },
             axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' }, tick : { count: 6, format: d3.format(",d")  } }, 
                 y: { label: { text: 'Heading Variability (deg)', position: 'outer-middle' } } },
-            grid: { x: { show: true }, y: { show: true } }
+                //y2: { show: true, label: { text: 'Vert. Acceleration (ft/min^2)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
+            grid: { x: { show: true }, y: { show: true } },
+            point: { show: false }
         });
     }
     
@@ -149,9 +152,10 @@
             data: { empty : { label: { text: "No Data Available / No Active Flights" } }, 
                 type: 'scatter', json: jsondata, xs: columns },
             axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' }, tick: { count: 6, format: d3.format(",d")  } }, 
-                y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, 
-                    tick: { format: d3.format(",d") } } },
-            grid: { x: { show: true }, y: { show: true } }
+                y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
+                //y2: { show: true, label: { text: 'Vert. Acceleration (ft/min^2)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
+            grid: { x: { show: true }, y: { show: true } },
+            point: { show: false }
         });
     }
 
@@ -204,10 +208,10 @@
     /***********
     * updatechart4
     *
-    * This updates the RF Packets vs. Altitude chart
+    * This updates the Heading Variability vs. Altitude chart
     ***********/
     function updatechart4 (jsondata, columns) {
-         chart4.load ({ json:  jsondata, xs: columns });
+         chart4.load ({ json:  jsondata, xs: columns});
     }
 
     /***********
@@ -216,15 +220,15 @@
     * This updates the Vertical Rate vs. Altitude chart
     ***********/
     function updatechart5 (jsondata, columns) {
-         chart5.load ({ json:  jsondata, xs: columns });
+        chart5.load ({ json:  jsondata, xs: columns});
     }
 
     /***********
     * updatechart6
     *
-    * This updates the RF Packets vs. Altitude chart
+    * This updates the RF Packets vs. Time chart
     ***********/
-    function updatechart6 (jsondata, columns) {
+    function updatechart6 (jsondata, columns ) {
          chart6.load ({ json:  jsondata, xs: columns });
     }
 
@@ -668,4 +672,5 @@
             getchartdata(updatechart6, "getdigicounts.php"); 
         }, 5000);
     }
-    
+
+

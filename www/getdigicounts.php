@@ -101,30 +101,49 @@
 
     $query = "
         select
-            date_trunc('day', a.tm)::date as thedate, 
-            date_trunc('hour', a.tm)::time as thehour,
-            date_trunc('minute', a.tm)::time as theminute, 
-            a.heardfrom,
-            count(a.raw) as num_packets
+            date_trunc('day', b.tm)::date as thedate, 
+            date_trunc('hour', b.tm)::time as thehour,
+            date_trunc('minute', b.tm)::time as theminute, 
+            b.heardfrom,
+            count(b.raw) filter (where b.callsign != b.heardfrom) as digipackets,
+            count(b.raw) filter (where b.callsign = b.heardfrom) as nondigipackets,
+            count(b.raw) filter (where b.callsign = b.heardfrom or b.callsign != b.heardfrom ) as total_packets
 
         from
+        (
+            select distinct on (a.hash)
+            a.tm,
+            a.hash,
+            a.callsign,
+            a.heardfrom,
+            a.raw
+
+            from
             dw_packets a,
             flights f,
             flightmap fm
 
-        where
-            f.active = 'y'
+            where
+            f.active = 't'
             and fm.flightid = f.flightid
             and a.heardfrom = fm.callsign
-            and a.callsign != a.heardfrom
             and a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
             and a.tm > $2
 
-        group by
-            1,2,3,4
+            order by
+            a.hash,
+            a.tm,
+            a.callsign,
+            a.heardfrom
+        ) as b
 
-        order by
-            1,2,3,4
+        group by 
+            1, 2, 3,
+            b.heardfrom
+
+        order by 
+            1, 2, 3,
+            b.heardfrom
         ;";
 
     $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
@@ -141,7 +160,7 @@
         while ($row = sql_fetch_array($result)) {
             $heardfrom = $row['heardfrom'];
             $tdata[$heardfrom][] = $row['thedate'] . " " . $row['theminute'];
-            $ydata[$heardfrom][] = $row['num_packets'];
+            $ydata[$heardfrom][] = $row['digipackets'];
         }    
 
         if (sql_num_rows($result) > 0) {
