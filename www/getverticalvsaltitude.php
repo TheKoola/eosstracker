@@ -257,67 +257,35 @@
         $outerfirsttime = 1;
         if (sizeof($adata_asc) > 0) {
             foreach ($ray as $cs) {
-                 if (! $outerfirsttime)
-                     printf (", ");
-                 $outerfirsttime = 0;
+                if (array_key_exists($cs, $verticalrate_asc)) {
+                    if (! $outerfirsttime)
+                        printf (", ");
+                    $outerfirsttime = 0;
 
-                 // Print out JSON for the X-Axis (i.e. the altitude for our data points)
-                 $innerfirsttime = 1;
-                 printf ("\"tm-%s-ascent\" : [", $cs);
-                 foreach ($adata_asc[$cs] as $value) {
-                     if (! $innerfirsttime)
-                         printf (", ");
-                     $innerfirsttime = 0;
-                     printf ("\"%s\"", $value);
-                 }
+                    // Print out JSON for the X-Axis (i.e. the altitude for our data points)
+                    $innerfirsttime = 1;
+                    printf ("\"tm-%s-ascent\" : [", $cs);
+                    foreach ($adata_asc[$cs] as $value) {
+                        if (! $innerfirsttime)
+                            printf (", ");
+                        $innerfirsttime = 0;
+                        printf ("\"%s\"", $value);
+                    }
 
-                 // comma seperator...
-                 printf ("], ");
+                    // comma seperator...
+                    printf ("], ");
 
-                 // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
-                 $innerfirsttime = 1;
-                 printf ("\"%s-ascent\" : [", $cs);
-                 foreach ($verticalrate_asc[$cs] as $value) {
-                     if (! $innerfirsttime)
-                         printf (", ");
-                     $innerfirsttime = 0;
-                     printf ("\"%s\"", $value);
-                 }
-                 printf ("] ");
-
-
-
-                 /*
-                 //
-                 // Now look to print out a series for acceleration data (if present)
-                 if (sizeof($acceldata_asc) > 0) {
-                     printf (", ");
-
-                     // Print out JSON for the X-Axis (i.e. the altitude for our data points)
-                     $innerfirsttime = 1;
-                     printf ("\"tm-%s-asc-accel\" : [", $cs);
-                     foreach ($acceldata_altitudes_asc[$cs] as $value) {
-                         if (! $innerfirsttime)
-                             printf (", ");
-                         $innerfirsttime = 0;
-                         printf ("\"%s\"", $value);
-                     }
-
-                     // comma seperator...
-                     printf ("], ");
-
-                     // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
-                     $innerfirsttime = 1;
-                     printf ("\"%s-asc-accel\" : [", $cs);
-                     foreach ($acceldata_asc[$cs] as $value) {
-                         if (! $innerfirsttime)
-                             printf (", ");
-                         $innerfirsttime = 0;
-                         printf ("\"%s\"", $value);
-                     }
-                     printf ("] ");
-                 }
-                  */
+                    // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
+                    $innerfirsttime = 1;
+                    printf ("\"%s-ascent\" : [", $cs);
+                    foreach ($verticalrate_asc[$cs] as $value) {
+                        if (! $innerfirsttime)
+                            printf (", ");
+                        $innerfirsttime = 0;
+                        printf ("\"%s\"", $value);
+                    }
+                    printf ("] ");
+                }
             }
         }
 
@@ -329,66 +297,35 @@
         $outerfirsttime = 1;
         if (sizeof($adata_desc) > 0) {
             foreach ($ray as $cs) {
-                 if (! $outerfirsttime)
-                     printf (", ");
-                 $outerfirsttime = 0;
+                if (array_key_exists($cs, $verticalrate_desc)) {
+                    if (! $outerfirsttime)
+                        printf (", ");
+                    $outerfirsttime = 0;
 
-                 // Print out JSON for the X-Axis (i.e. the altitude for our data points)
-                 $innerfirsttime = 1;
-                 printf ("\"tm-%s-descent\" : [", $cs);
-                 foreach ($adata_desc[$cs] as $value) {
-                     if (! $innerfirsttime)
-                         printf (", ");
-                     $innerfirsttime = 0;
-                     printf ("\"%s\"", $value);
-                 }
+                    // Print out JSON for the X-Axis (i.e. the altitude for our data points)
+                    $innerfirsttime = 1;
+                    printf ("\"tm-%s-descent\" : [", $cs);
+                    foreach ($adata_desc[$cs] as $value) {
+                        if (! $innerfirsttime)
+                            printf (", ");
+                        $innerfirsttime = 0;
+                        printf ("\"%s\"", $value);
+                    }
 
-                 // comma seperator...
-                 printf ("], ");
-        
-                 // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
-                 $innerfirsttime = 1;
-                 printf ("\"%s-descent\" : [", $cs);
-                 foreach ($verticalrate_desc[$cs] as $value) {
-                     if (! $innerfirsttime)
-                         printf (", ");
-                     $innerfirsttime = 0;
-                     printf ("\"%s\"", $value);
-                 }
-                 printf ("] ");
-
-
-                 /*
-                 //
-                 // Now look to print out a series for acceleration data (if present)
-                 if (sizeof($acceldata_desc) > 0) {
-                     printf (", ");
-
-                     // Print out JSON for the X-Axis (i.e. the altitude for our data points)
-                     $innerfirsttime = 1;
-                     printf ("\"tm-%s-desc-accel\" : [", $cs);
-                     foreach ($acceldata_altitudes_desc[$cs] as $value) {
-                         if (! $innerfirsttime)
-                             printf (", ");
-                         $innerfirsttime = 0;
-                         printf ("\"%s\"", $value);
-                     }
-
-                     // comma seperator...
-                     printf ("], ");
-
-                     // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
-                     $innerfirsttime = 1;
-                     printf ("\"%s-desc-accel\" : [", $cs);
-                     foreach ($acceldata_desc[$cs] as $value) {
-                         if (! $innerfirsttime)
-                             printf (", ");
-                         $innerfirsttime = 0;
-                         printf ("\"%s\"", $value);
-                     }
-                     printf ("] ");
-                 }
-                  */
+                    // comma seperator...
+                    printf ("], ");
+           
+                    // Print out JSON for the Y-Axis (i.e. vertical rate in ft/min).
+                    $innerfirsttime = 1;
+                    printf ("\"%s-descent\" : [", $cs);
+                    foreach ($verticalrate_desc[$cs] as $value) {
+                        if (! $innerfirsttime)
+                            printf (", ");
+                        $innerfirsttime = 0;
+                        printf ("\"%s\"", $value);
+                    }
+                    printf ("] ");
+                }
             }
         }
     }
