@@ -12,3 +12,4 @@ www/daemonstatus.json*
 bin/*.pyc
 doc/2019-GPSL-Presentation.pdf
 www/audio/*.mp3
+www/audio/*.json
