@@ -316,10 +316,8 @@
 
         # No packets alert.  If we havn't heard something from the flight for > 90 seconds, then we override the normal message.
         $secs_last_packet = $ray["lastsecs"][0];
-        #printf ("<br>num: %d<br>", $secs_last_packet);
+        $nummins = ceil($secs_last_packet / 60.0);
         if ($secs_last_packet > 120) {
-            $nummins = ceil($secs_last_packet / 60.0);
-            #printf ("<br>%.2f<br>", $nummins);
             $words = "Warning, flight " . $flightnum . ". No packets for " . $nummins . " minutes.  Last update " . $alt_words . $range_words;  
         }
 
@@ -327,6 +325,16 @@
         # If there is a landing prediction availble, then we use a different sentance
         if ($ray["ttl"][0] != "" && $ray["landingdistance_miles"][0] != "") {
             $ttl = floor($ray["ttl"][0] / 60.0);
+
+            # If we haven't seen a packets from this flight for > 120 secs, then we subtract that delta from the last calculated time-to-live figure.
+            # This provides a more accurate estimate of WHEN the flight might land in the event we lose contact with it.
+            if ($secs_last_packet > 120) {
+                $ttl = floor(($ray["ttl"][0] - $secs_last_packet) / 60.0);
+                if ($ttl < 0)
+                    $ttl = 0;
+            }
+
+            # The distance to the landing location from our own position (i.e. from GPS).
             $landingdistance = ceil($ray["landingdistance_miles"][0]);
 
             $words = $words . " Time to live, " . $ttl . " minutes, predicted landing, " . $landingdistance . " miles away."; 
