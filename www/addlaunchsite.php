@@ -70,7 +70,7 @@
         return 0;
     }
 
-    $query = "insert into launchsites values ($1, $2, $3, $4);";
+    $query = "insert into launchsites (launchsite, lat, lon, alt) values ($1, $2, $3, $4);";
     $result = pg_query_params($link, $query, array(sql_escape_string($get_launchsite), $get_lat, $get_lon, $get_alt));
     if (!$result) {
         printf ("{\"result\" : 0, \"error\": %s}", json_encode(sql_last_error()));

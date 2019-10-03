@@ -495,7 +495,7 @@ def writeToDatabase(x):
         # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
         if packet["latitude"] == "" or packet["longitude"] == "":
             # SQL insert statement for packets that contain a location (i.e. lat/lon)
-            sql = """insert into packets values (
+            sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                 now()::timestamp with time zone, 
                 %s, 
                 %s, 
@@ -525,7 +525,7 @@ def writeToDatabase(x):
 
         else:
             # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
-            sql = """insert into packets values (
+            sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                 now()::timestamp with time zone, 
                 %s, 
                 %s, 
