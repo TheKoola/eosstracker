@@ -35,10 +35,14 @@ include $documentroot . '/common/header-dashboard.php';
     <div style="border-bottom: 5px double white; text-align: center; width: 98%; margin-left: auto; margin-right: auto;">
         <p style="color: lightgray; text-align: center; font-variant: small-caps;font-size: 2.2em;">
             Dashboard 
-            <font style="font-size: .6em;">(view: <a href="#b" style="color: white;" id="listSelectionLink"><span id="listSelectionLinkSign">normal</span></a>)</font>
+            <font style="font-size: .6em;">
+                (view: <a href="#b" style="color: white;" id="listSelectionLink"><span id="listSelectionLinkSign">normal</span></a>
+                 <span id="audioalerts" style="display: none;">audio: <a href="#a" style="color: white;" id="audioSelectionLink"><span id="audioSelectionLinkSign">disabled</span></a></span>)
+            </font>
             <span id="flights" style="color: lightgray; font-size: .9em;"></span>
         </p>
     </div> 
+    <div id="error"></div>
     <div id="stationlist" style="float: right; text-align: left; vertical-align: top; display: none;"></div>
     <div id="station" style="text-align: left; vertical-align: top; word-break: break-all; word-wrap: break-word;"></div>
     <p class="copyright">
