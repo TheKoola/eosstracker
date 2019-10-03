@@ -695,7 +695,7 @@ def landingPredictor(altitude_floor, configuration):
 
                             # Now we construct the GIS linestring string for the database insert
                             landingprediction_sql = """
-                                 insert into landingpredictions 
+                                 insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
                                  values (date_trunc('second', now())::timestamp, 
                                      %s, 
                                      %s, 
