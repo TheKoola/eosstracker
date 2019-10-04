@@ -709,7 +709,14 @@ def getNumberOfSDRs():
             p = usb.util.get_string(dev, dev.iProduct)
             s = usb.util.get_string(dev, dev.iSerialNumber)
             rtl = { "rtl" : i, "manufacturer" : m, "product" : p, "serialnumber" : s }
-            sdrs.append(rtl)
+
+            # Check if the RTLSDR is using a serial number string that contains "adsb".  
+            #     The idea being, not to use any SDR attached that is to be used for ADS-B reception instead.
+            if "adsb" in s.lower():
+                print "Skipping SDR: ", rtl
+            else:
+                sdrs.append(rtl)
+
             i = i+1
         #print json.dumps(sdrs)
         return sdrs
@@ -729,7 +736,10 @@ def createDirewolfConfig(callsign, l, configdata, dbsupport = False):
         # Create or overwrite the direwolf configuration file.  We don't care if we overwrite it as the configuration is created dynamically each time.
         with open(filename, "w") as f:
             f.write("###\n")
-            f.write("# " + filename + "\n\n\n")
+            f.write("# " + filename + "\n")
+            f.write("#\n")
+            f.write("# RTL numbers referred to in this file do not coorelate to those returned by rtl_eeprom.\n")
+            f.write("#\n\n\n")
             rtl = 0
             adevice = 0
             channel = 0
@@ -1290,7 +1300,7 @@ def main():
         # The number of SDRs
         i = len(sdrs)
  
-        print "Number of SDRs: ", i
+        print "Number of usable SDRs: ", i
 
         #  Online-only mode:  
         #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
@@ -1315,22 +1325,21 @@ def main():
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
             # For each SDR dongle found, start a separate GnuRadio listening process
-            k = 0
-            while k < i:
+            for k in sdrs:
 
-                print "Using SDR:  ", sdrs[k]
+                print "Using SDR:  ", k
                 status["rf_mode"] = 1
                 
                 # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-                freqlist = getFrequencies(k)
+                freqlist = getFrequencies(k["rtl"])
 
                 # Append this frequency list to our list for later json output
                 ant = {}
-                ant["rtl_id"] = k
+                ant["rtl_id"] = k["rtl"]
                 ant["frequencies"] = []
-                ant["rtl_serialnumber"] = sdrs[k]["serialnumber"]
-                ant["rtl_manufacturer"] = sdrs[k]["manufacturer"]
-                ant["rtl_product"] = sdrs[k]["product"]
+                ant["rtl_serialnumber"] = k["serialnumber"]
+                ant["rtl_manufacturer"] = k["manufacturer"]
+                ant["rtl_product"] = k["product"]
                 for freq,udpport in freqlist:
                     ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
                 antennas.append(ant) 
@@ -1339,12 +1348,11 @@ def main():
                 direwolfFreqList.append(freqlist)
 
                 # This is the GnuRadio process
-                grprocess = mp.Process(target=GRProcess, args=(freqlist, k, stopevent))
+                grprocess = mp.Process(target=GRProcess, args=(freqlist, int(k["rtl"]), stopevent))
                 grprocess.daemon = True
-                grprocess.name = "GnuRadio_" + str(k)
+                grprocess.name = "GnuRadio_" + str(k["rtl"])
                 processes.append(grprocess)
 
-                k += 1
 
             status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
