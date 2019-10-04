@@ -561,7 +561,7 @@ def landingPredictor(altitude_floor, configuration):
                         linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
                         m += 1
                     linestring_text = "LINESTRING(" + linestring_text + ")"
-                    landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) values (date_trunc('second', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric);"""
+                    landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) values (date_trunc('milliseconds', now())::timestamp, %s, %s, 'predicted', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric);"""
                     landingcur.execute(landingprediction_sql, [ fid, callsign, float(parachute_coef), float(y), float(x), linestring_text, round(float(ttl)) ])
                     landingconn.commit()
 
@@ -696,7 +696,7 @@ def landingPredictor(altitude_floor, configuration):
                             # Now we construct the GIS linestring string for the database insert
                             landingprediction_sql = """
                                  insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
-                                 values (date_trunc('second', now())::timestamp, 
+                                 values (date_trunc('milliseconds', now())::timestamp, 
                                      %s, 
                                      %s, 
                                      'translated', 
