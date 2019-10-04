@@ -92,31 +92,82 @@
 
     
     ## get the latest time to live
-    $query = 'select distinct on (l.tm, l.flightid)
-        l.tm::timestamp without time zone, 
-        l.flightid, 
-        l.ttl
+    $query = "select distinct 
+            dt.thetime,
+            dt.flightid,
+            dt.callsign,
+            lp.ttl
+ 
+        from (
+            select
+                fl.flightid,
+                date_trunc('millisecond', a.tm)::timestamp without time zone as thetime,
+                a.callsign, 
+                a.symbol, 
+                rank () over (
+                    partition by fl.flightid order by 
+                        case
+                            when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
+                                date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                            else
+                                date_trunc('second', a.tm)::time without time zone
+                        end desc
+                    ) as rank
+        
+            from 
+                packets a,
+                flightmap fm,
+                flights fl
+        
+            where 
+                a.location2d != ''
+                and a.altitude > 0
+                and fm.flightid = fl.flightid
+                and a.callsign = fm.callsign 
+                and fl.active = 't'
+                and fl.flightid = $2 
+                and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time)  
+                
+        ) as dt 
+        left outer join
+        (
+            select
+                max(l.tm) as thetime,
+                l.flightid,
+                l.callsign,
+                l.ttl
+                
+            from
+                landingpredictions l
 
-        from 
-        landingpredictions l, 
-        flights f,
-        (select flightid, max(tm) as thetime from landingpredictions group by flightid order by flightid) as a 
+            where
+                l.tm > now() - time '00:05:00'
+                and l.ttl is not null
 
-        where 
-        f.flightid = l.flightid 
-        and f.active = \'t\' 
-        and l.flightid = $1 
-        and l.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time)  
-        and l.flightid = a.flightid
-        and l.tm = a.thetime
+            group by
+                l.flightid,
+                l.callsign,
+                l.ttl
 
-        order by 
-        l.tm asc, 
-        l.flightid,
-        l.ttl asc
+            order by
+                thetime,
+                l.flightid,
+                l.callsign
 
-        limit 1; ';
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
+        ) as lp
+        on dt.flightid = lp.flightid and dt.callsign = lp.callsign
+
+        where rank = 1
+
+        order by
+            dt.flightid,
+            dt.thetime desc,
+            dt.callsign
+        limit 1; ";
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config['timezone']),
+        sql_escape_string($get_flightid), 
+        sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -125,7 +176,7 @@
 
     $firsttimeinloop = 1;
     while ($row = sql_fetch_array($result)) {
-        $thetime = $row['tm'];
+        $thetime = $row['thetime'];
         $flightid = $row['flightid'];
         $ttl = $row['ttl'];
         if ($firsttimeinloop == 0)
