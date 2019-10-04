@@ -241,7 +241,8 @@
 
         order by
             dt.flightid,
-            dt.packet_time desc
+            dt.thetime desc
+            --dt.packet_time desc
     ;';
     $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"])));
 
