@@ -94,6 +94,7 @@
     ## get the latest time to live
     $query = "select distinct 
             dt.thetime,
+            extract(epoch from now() - dt.thetime) as lastsecs,
             dt.flightid,
             dt.callsign,
             lp.ttl
@@ -178,11 +179,19 @@
     while ($row = sql_fetch_array($result)) {
         $thetime = $row['thetime'];
         $flightid = $row['flightid'];
-        $ttl = $row['ttl'];
+        $lastsecs = $row['lastsecs'];
+
+        # If it's been > 120 seconds since the last heard packet, then we subtract that time from the time-to-live value. 
+        # This accounts for the case where we haven't heard a packet from a beacon for xx minutes, but obviously the flight is still descending.
+        $ttl = $row['ttl'] - ($lastsecs > 120 ? $lastsecs : 0);
         if ($firsttimeinloop == 0)
             printf (", ");
         $firsttimeinloop = 0;
-        printf ("{ \"flightid\" : %s, \"time\" : %s, \"ttl\" : %s }", json_encode($flightid), json_encode($thetime), json_encode(($ttl <= 0 ? "n/a" : round($ttl/60.0)))); 
+        printf ("{ \"flightid\" : %s, \"time\" : %s, \"ttl\" : %s }", 
+            json_encode($flightid), 
+            json_encode($thetime), 
+            json_encode(($ttl <= 0 ? "n/a" : floor($ttl/60.0)))
+        ); 
     }
 
     if (sql_num_rows($result) <= 0)
