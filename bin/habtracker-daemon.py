@@ -1243,6 +1243,32 @@ def main():
     # --------- end of process checking section ----------
 
 
+
+    # --------- Start of directory permissions section ----------
+    # these directories need to have 777 permissions so the www-data user can write to them
+    dirs_to_check = ["/eosstracker/www/audio", "/eosstracker/www/configuration"]
+
+    # Loop through each directory
+    for thedir in dirs_to_check:
+
+        # Only proceed if this is a directory
+        if os.path.isdir(thedir):
+
+            # Get the current permissions of the directory
+            perms = os.stat(thedir).st_mode
+
+            # If these permisisons are not 777 then try to set them to 777
+            if perms & 0777 != 0777:
+                try:
+                    print "Setting permissions to 777 on:", thedir 
+                    os.chmod(thedir, 0777)
+                except OSError as e:
+                    print "Unable to set permisisons to 777 on,", thedir, ", ", os.strerror(e.errno)
+
+    # --------- End of directory permissions section ----------
+
+
+
     # --------- Read in the configuration file (if it exists) --------
     # This is normally in ../www/configuration/config.txt
     try:
