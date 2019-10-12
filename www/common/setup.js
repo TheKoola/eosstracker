@@ -1336,8 +1336,8 @@
 	    document.getElementById("serialport").disabled = false;
 	    document.getElementById("serialproto").disabled = false;
 	    document.getElementById("comment").disabled = false;
-	    document.getElementById("includeeoss").disabled = false;
-	    document.getElementById("eoss_string").disabled = false;
+        document.getElementById("includeeoss").disabled = false;
+        checkEOSS();
 	    document.getElementById("symbol").disabled = false;
 	    if (checkOverlay()) {
 	        document.getElementById("overlay").disabled = false;
