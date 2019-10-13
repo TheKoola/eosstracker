@@ -126,7 +126,7 @@
             where
             f.active = 't'
             and fm.flightid = f.flightid
-            and a.heardfrom = fm.callsign
+            and (a.heardfrom = fm.callsign or a.heardfrom like 'EOSS%')
             and a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
             and a.tm > $2
 
