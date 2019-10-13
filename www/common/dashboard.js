@@ -334,7 +334,11 @@
                     else
                         stationSymbol.innerHTML = "<font style=\"font-size: 2em;\">n/a";
 
-                    stationCallsign.innerHTML = "<font style=\"font-size: 4em;\">" + station.callsign + "</font>";
+                    stationCallsign.innerHTML = "<font style=\"font-size: 4em;\">" + station.callsign + "</font> &nbsp; <font style=\"font-size: 3em;\">"
+                        + (typeof(station.altitude) == "undefined" ? 
+                            "" : 
+                            (station.altitude > 0 ? (station.altitude * 10 / 10).toLocaleString() + " ft" : ""))
+                        + "</font>";
 
                     var srow2 = stationtable.insertRow(-1);
                     var stationDetails = srow2.insertCell(-1);
