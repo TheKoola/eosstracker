@@ -27,7 +27,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html">
-<meta http-equiv="Content-Language" content="utf-8">
+<meta charset="utf-8">
 <meta name="description" content="HAB Tracker">
 <meta name="generator" content="None other than the tried and true vi editor!">
 <meta name="keywords" content="HAB Tracker">
