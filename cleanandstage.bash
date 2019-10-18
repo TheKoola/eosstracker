@@ -25,12 +25,24 @@ apt install -y  alsa-utils
 apt install -y ipheth-utils
 
 sleep 2
+echo "Installing libttspico-utils and ffmpeg..."
+apt install -y libttspico-utils ffmpeg
+
+sleep 2
 echo "Removing pulseaudio..."
 apt remove -y pulseaudio
 
 sleep 2
 echo "Removing eosstracker..."
 apt remove -y eosstracker
+
+sleep 2
+echo "Installing aprsc-eoss..."
+apt install -y aprsc-eoss
+
+sleep 2
+echo "Installing direwolf..."
+apt install -y direwolf
 
 sleep 2
 echo "Running autoremove..."
