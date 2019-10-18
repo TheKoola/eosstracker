@@ -80,6 +80,7 @@ rm -f www/images/graphics/eosslogo.png
 rm -f www/predictiondata/*.txt
 rm -f www/preferences.php
 rm -rf /eosstracker/.git
+rm -rf /eosstracker/www/images/flightindicators/img
 cp -rpa /tmp/eosstracker/.git /eosstracker
 cp -pa /tmp/eosstracker/.gitignore /eosstracker
 chown -R eosstracker:eosstracker /eosstracker/.git*
