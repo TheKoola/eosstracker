@@ -12,7 +12,7 @@
 
 - Audio alerts from the Dashboard page are now available.  A synthesized voice will announce current flight conditions every 30 seconds and/or if certain alert condictions are encountered (ex. burst conditions).
 
-- If a locally hosted Flight Aware ADS-B instances of dump1090 is detected on the system (see https://github.com/flightaware/dump1090), then a menu option, "ADS-B", will be visible on the web pages.  That link will redirect the user to that locally hosted Flight Aware web page.
+- If a locally hosted Flight Aware ADS-B instance of dump1090 is detected on the system (see https://github.com/flightaware/dump1090), then a menu option, "ADS-B", will be visible on the web pages.  That link will redirect the user to that locally hosted Flight Aware web page.
 
 - Updates to the backend habtracker daemon process so that it will skip over any USB connected SDR unit with a serial number string containing "adsb".  This allows for coexistance with an instance of dump1090 (ADS-B scanner/decoder) running on the same system.
 
