@@ -482,7 +482,7 @@ include $documentroot . '/common/header-setup.php';
 
 		<tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" or "EOSSx" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.</td>
             <td class="packetlist" id="beaconingtext9b" style="text-align: center; color: lightgrey; white-space: nowrap;">
-            Prepend string? <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked onchange="checkEOSS();">
+            Enable/Disable <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked onchange="checkEOSS();">
             &nbsp; String: <select form="configuration_form" name="eoss_string" id="eoss_string" disabled="disabled">
                 <option value="EOSS" selected="selected">EOSS</option>
                 <option value="EOSSA">EOSSA</option>
