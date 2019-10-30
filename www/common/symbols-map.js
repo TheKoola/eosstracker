@@ -28,6 +28,35 @@
 *
 */
 
+var symbolRotation = {
+    "'" : { "degrees" : 0, "flip" : "true", "alternate" : "false" },
+    "(" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "*" : { "degrees" : 90, "flip" : "true", "alternate" : "false" },
+    "<" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "=" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    ">" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "C" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "F" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "P" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "U" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "X" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "Y" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "[" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "^" : { "degrees" : 0, "flip" : "false", "alternate" : "true" }, 
+    "a" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "b" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "e" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "f" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "g" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "j" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "k" : { "degrees" : 90, "flip" : "true", "alternate" : "true" }, 
+    "p" : { "degrees" : 270, "flip" : "true", "alternate" : "false" }, 
+    "s" : { "degrees" : 90, "flip" : "true", "alternate" : "false" }, 
+    "u" : { "degrees" : 90, "flip" : "true", "alternate" : "true" }, 
+    "v" : { "degrees" : 90, "flip" : "true", "alternate" : "true" }
+};
+
+
 var symbols = {
       "/U" : {
          "tocall" : "PU",

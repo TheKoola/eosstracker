@@ -78,6 +78,7 @@ date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
 a.callsign, 
 a.comment, 
 a.symbol, 
+a.bearing, 
 round(a.altitude) as altitude, 
 round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
 round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
@@ -133,6 +134,7 @@ a.callsign ;';
             $callsign = $row['callsign'];
         $comment = $row['comment'];
         $symbol = $row['symbol'];
+        $bearing = $row['bearing'];
         $latitude = $row['latitude'];
         $longitude = $row['longitude'];
         $altitude = $row['altitude'];
@@ -143,7 +145,7 @@ a.callsign ;';
         if (array_key_exists($callsign, $positioninfo)) {
             $speed = calc_speed($latitude, $longitude, $positioninfo[$callsign][2], $positioninfo[$callsign][3], $positioninfo[$callsign][0], $thetime);
             if ($speed < 310) 
-                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical);
+                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing);
             else {
                 //printf ("<br><strong>ERROR2:</strong> %s speed=%f<br>\n", $callsign, $speed);
                 //print_r($positioninfo[$callsign]);
@@ -152,7 +154,7 @@ a.callsign ;';
             }
         }
         else
-            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical);
+            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing);
     }    
 
 
@@ -168,7 +170,7 @@ a.callsign ;';
        
         /* This prints out the GeoJSON object for this station */
         printf ("{ \"type\" : \"Feature\",\n");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },\n", 
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s, \"bearing\" : %s },\n", 
             json_encode($callsign), 
             json_encode($callsign), 
             json_encode($positioninfo[$callsign][0]), 
@@ -177,7 +179,8 @@ a.callsign ;';
             json_encode("Tactical:  " . $positioninfo[$callsign][6] . ($positioninfo[$callsign][5] == "" ? "" : "<br>") . $positioninfo[$callsign][5]), 
             json_encode($positioninfo[$callsign][6]),
             json_encode($positioninfo[$callsign][6]),
-            json_encode($config["iconsize"])
+            json_encode($config["iconsize"]),
+            json_encode($positioninfo[$callsign][7])
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");

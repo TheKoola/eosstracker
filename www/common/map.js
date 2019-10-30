@@ -781,23 +781,62 @@
            pointToLayer:  function (feature, latlon) {
                var filename;
                var id = feature.properties.id;
-               if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
-               else 
-                   filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
+               var rotation = 0;
+
+               // Only try to display an "icon" if there was a symbol provided
+               if (typeof(feature.properties.symbol) != "undefined") {
+
+                   // Determine the file path to the PNG icon that represents this symbol
+                   if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
+                       filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
+                   else 
+                       filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
+
+                   // Determine if a bearing was provided ...AND... this symbol is one that we "should" rotate (ex. it's a vehicle, etc.)
+                   if (typeof(feature.properties.bearing) != "undefined" && typeof(symbolRotation[feature.properties.symbol.charAt(1)]) != "undefined") {
+                       var clear_to_rotate = false;
+
+                       // Is this is an alternate symbol?
+                       if (feature.properties.symbol.charAt(0) == "\\" || feature.properties.symbol.match(/^[0-9a-zA-Z]/)) {
+                           if (symbolRotation[feature.properties.symbol.charAt(1)].alternate == "true")
+                               clear_to_rotate = true;
+                        }
+                        else
+                            clear_to_rotate = true;
+
+                        if (clear_to_rotate) {
+                            // Calculate the amount of rotation needed given the individual icon's "starting" orientation (ex. most vehicle icons point to 90degs).
+                            rotation = (feature.properties.bearing * 10 / 10) - (symbolRotation[feature.properties.symbol.charAt(1)].degrees * 10 / 10);
+    
+                            // If the rotation is far enough, then we need to flip the symbol so that it appears "right side up".
+                            if (symbolRotation[feature.properties.symbol.charAt(1)].flip == "true" && (feature.properties.bearing * 10 / 10) > 180) {
+                                filename = filename.split(".")[0] + "-flip.png";
+                                rotation = symbolRotation[feature.properties.symbol.charAt(1)].degrees * 10 / 10;
+                                rotation = (feature.properties.bearing * 10 / 10) - (rotation > 180 ? rotation - 180 : rotation + 180);
+                            }
+                        }
+                    }
+               }
+               else
+                   // What to do with a point that doesn't have a symbol?
+		           return L.circleMarker(latlon, { radius: 8, pane: "otherStationsPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
+
 
                var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
-		       var myIcon = L.icon({
-		           iconUrl: filename,
-    		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
-    		       popupAnchor: [0, -iconsize_center],
-    		       tooltipAnchor: [0, tipanchor]
-    		   }); 
-    		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true });
+               var myIcon = L.icon({
+                   iconUrl: filename,
+                   iconSize: [iconsize, iconsize],
+                   iconAnchor: [iconsize_center, iconsize_center], 
+                   popupAnchor: [0, -iconsize_center],
+                   tooltipAnchor: [0, tipanchor]
+               }); 
+
+
+
+    		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true, rotationAngle: rotation, rotationOrigin: "center center" });
             } 
         }).on('update', function(ev) { updatemap(ev, this); });
     }
@@ -840,24 +879,55 @@
 
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
             if (item.properties.objecttype != "balloonmarker" && typeof(item.properties.symbol) != "undefined" && typeof(item.properties.iconsize) != "undefined") {
-               var filename;
-               if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
-                   filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
-               else 
-                   filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+                var filename;
+                var rotation = 0;
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
-               var iconsize_center = Math.trunc(iconsize/2);
-               var tipanchor = iconsize_center + 10;
 
-		       var myIcon = L.icon({
-		           iconUrl: filename,
-    		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
-    		       popupAnchor: [0, -iconsize_center],
-    		       tooltipAnchor: [0, tipanchor]
-    		   }); 
-               layer.setIcon(myIcon);
+                // Determine the file path to the PNG icon that represents this symbol
+                if (item.properties.symbol.startsWith('\\') || item.properties.symbol.startsWith('\/') || item.properties.symbol.startsWith('1x')) 
+                    filename = "/images/aprs/" + symbols[item.properties.symbol].tocall + ".png";                
+                else 
+                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
+
+                // Determine if a bearing was provided ...AND... this symbol is one that we "should" rotate (ex. it's a vehicle, etc.)
+                if (typeof(item.properties.bearing) != "undefined" && typeof(symbolRotation[item.properties.symbol.charAt(1)]) != "undefined") {
+                    var clear_to_rotate = false;
+
+                    // Is this is an alternate symbol?
+                    if (item.properties.symbol.charAt(0) == "\\" || item.properties.symbol.match(/^[0-9a-zA-Z]/)) {
+                        if (symbolRotation[item.properties.symbol.charAt(1)].alternate == "true")
+                            clear_to_rotate = true;
+                     }
+                     else
+                         clear_to_rotate = true;
+
+                     if (clear_to_rotate) {
+                         // Calculate the amount of rotation needed given the individual icon's "starting" orientation (ex. most vehicle icons point to 90degs).
+                         rotation = (item.properties.bearing * 10 / 10) - (symbolRotation[item.properties.symbol.charAt(1)].degrees * 10 / 10);
+ 
+                         // If the rotation is far enough, then we need to flip the symbol so that it appears "right side up".
+                         if (symbolRotation[item.properties.symbol.charAt(1)].flip == "true" && (item.properties.bearing * 10 / 10) > 180) {
+                             filename = filename.split(".")[0] + "-flip.png";
+                             rotation = symbolRotation[item.properties.symbol.charAt(1)].degrees * 10 / 10;
+                             rotation = (item.properties.bearing * 10 / 10) - (rotation > 180 ? rotation - 180 : rotation + 180);
+                         }
+                     }
+                 }
+
+                 var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+                 var iconsize_center = Math.trunc(iconsize/2);
+                 var tipanchor = iconsize_center + 10;
+
+                 var myIcon = L.icon({
+                     iconUrl: filename,
+                     iconSize: [iconsize, iconsize],
+                     iconAnchor: [iconsize_center, iconsize_center], 
+                     popupAnchor: [0, -iconsize_center],
+                     tooltipAnchor: [0, tipanchor]
+                 }); 
+                 layer.setIcon(myIcon);
+                 layer.setRotationAngle(rotation);
+                 layer.setRotationOrigin("center center");
             }
 
             // Check if we should update the tooltip contents...if this object has a tooltip or label defined...
@@ -1389,7 +1459,8 @@ function getTrackers() {
         
 
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        var allstations = L.markerClusterGroup();
+        //var allstations = L.markerClusterGroup();
+        var allstations = L.layerGroup();
         var mystation = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight

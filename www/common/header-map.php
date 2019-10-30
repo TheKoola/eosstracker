@@ -68,6 +68,7 @@ else
 <script src="/common/jquery.flightindicators.js"></script>
 <script src="/common/leaflet.markercluster.js"></script>
 <script src="/common/Control.SimpleMarkers.js"></script>
+<script src="/common/leaflet.rotatedMarker.js"></script>
 
 </head>
 <body>
