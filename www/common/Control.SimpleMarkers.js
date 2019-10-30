@@ -1,19 +1,56 @@
-/* jshint plusplus: false */
-/* globals L */
-/*(function(name, context, factory) {
-  // Supports UMD. AMD, CommonJS/Node.js and browser context
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = factory(
-      require('leaflet')
-    );
-  } else if (typeof define === "function" && define.amd) {
-    define(['leaflet'], factory);
-  } else {
-    if (typeof window.L === 'undefined') {
-      throw new Error('simpleMarkers must be loaded before the leaflet heatmap plugin');
-    }
+/*
+*
+##################################################
+#    This file is part of the HABTracker project for tracking high altitude balloons.
+#
+#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#
+#    HABTracker is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    HABTracker is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################
+*
+* This is a version of the SimpleMarkers plugin for Leaflet JS that has been modified for use with the EOSS Tracker app.
+*
+######## SimpleMarkers licensing statement #######
+Copyright (c) 2014, Jared Dominguez All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+##################################################
+*
+*
+*
+*
+*/
+
+/* Function to copy text from an element to the clipboard */
+  function copyToClipboard (elem) {
+      var range = document.createRange();
+      var e = document.getElementById(elem);
+      
+      range.selectNode(e);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand("Copy");
+      window.getSelection().removeAllRanges();
+      e.setAttribute("class", "blueToWhite");
   }
-})("SimpleMarkers", this, function(L) { */
+
+/* SimpleMarkers class */
   L.Control.SimpleMarkers = L.Control.extend({
     options: {
       //position: 'topleft',
@@ -128,31 +165,68 @@
       var marker = L.marker(e.latlng, marker_options);
       if (this.options.allow_popup) {
 	
-	// Create a unique id for this marker.  This will also be used to identify the HTML element (eg. a span) so that the popup content can be updated.
-	var id = "marker-" + e.latlng.lat.toString() + e.latlng.lng.toString();
+	      // Create a unique id for this marker.  This will also be used to identify the HTML element (eg. a span) so that the popup content can be updated.
+          var id = "marker-" + e.latlng.lat.toString() + e.latlng.lng.toString();
 
-	// Set the initial popup content to just the Latitude, Longitude.
-        var popupContent = "<span id=\"" + id + "\" contenteditable=\"true\">" + Math.round(e.latlng.lat * 1000) / 1000 + ", " + Math.round(e.latlng.lng * 1000) / 1000 + "</span>";
+	      // Set the initial popup content to just the Latitude, Longitude.
+          var popupContent = "<div id=\"" + id + "\">"
+              + "<div style=\"text-align: center;\"><table style=\"margin: 0 auto;\"><tr><td><span style=\"text-align: center;\"" + "id=\"" + id + "-coords\">"
+              + Math.round(e.latlng.lat * 1000) / 1000 
+              + ", " 
+              + Math.round(e.latlng.lng * 1000) / 1000 
+              + "</span></td>"
+              + "<td><img src=\"/images/graphics/clipboard.png\" style=\"height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">"
+              + "</td></tr></table></div>"
+              + "<div contenteditable=\"true\" style=\"text-align: center;\" id=\"" + id + "-content\">Your text here.</div></div>";
 
-	// Create the popup
-        var the_popup = L.popup({ closeButton: false });
+	      // Create the popup
+          var the_popup = L.popup({ closeButton: false });
 
-	// Add this unique ID to the marker itself so we can identify it during a popupclose event.
-	marker.uniqueId = id;
+	      // Add this unique ID to the marker itself so we can identify it during a popupclose event.
+	      marker.uniqueId = id;
 
-        the_popup.setContent(popupContent);
+          the_popup.setContent(popupContent);
+          marker.bindPopup(the_popup).openPopup();
+          marker.on("popupclose", function(e) { 
+		      var elemId = e.popup._source.uniqueId;
+              var coords = L.DomUtil.get(elemId + "-coords");
+              var content = L.DomUtil.get(elemId + "-content");
+              var newContent = "<div id=\"" + elemId + "\" >"
+                  + "<div style=\"text-align: center;\"><table style=\"margin: 0 auto;\"><tr><td><span style=\"text-align: center;\"" + "id=\"" + elemId + "-coords\">"
+                  + coords.innerHTML 
+                  + "</span></td>"
+                  + "<td><img src=\"/images/graphics/clipboard.png\" style=\"height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">"
+                  + "</td></tr></table></div>"
+                  + "<div style=\"text-align: center;\" id=\"" + elemId + "-content\" contenteditable=\"true\">" + content.innerHTML + "</div>"
+                  + "</div>";
+		      e.popup.setContent(newContent);
+	      });
 
-        marker.bindPopup(the_popup).on("popupclose", function(e) { 
-		var elemId = e.popup._source.uniqueId;
-                var content = L.DomUtil.get(elemId);
-                var newContent = "<span id=\"" + elemId + "\" contenteditable=\"true\">" + content.innerHTML + "</span>";
-		e.popup.setContent(newContent);
-	}).openPopup();
+          marker.on("moveend", function(e) {
+              var elemId = e.target.getPopup()._source.uniqueId;
+              e.target.openPopup();
+              var root = L.DomUtil.get(elemId);
+
+              var coords = L.DomUtil.get(elemId + "-coords");
+              var content = L.DomUtil.get(elemId + "-content");
+              var latlon = Math.round(e.target.getLatLng().lat * 1000) / 1000 + ", " + Math.round(e.target.getLatLng().lng * 1000) / 1000;
+
+              var newContent = "<div id=\"" + elemId + "\" >"
+                  + "<div style=\"text-align: center;\"><table style=\"margin: 0 auto;\"><tr><td><span style=\"text-align: center;\"" + "id=\"" + elemId + "-coords\">"
+                  + latlon
+                  + "</span></td>"
+                  + "<td><img src=\"/images/graphics/clipboard.png\" style=\"height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">"
+                  + "</td></tr></table></div>"
+                  + "<div style=\"text-align: center;\" id=\"" + elemId + "-content\" contenteditable=\"true\">" + content.innerHTML + "</div>"
+                  + "</div>";
+              this.setPopupContent(newContent);
+          });
 
       }
       if (this.options.add_marker_callback) {
         this.options.add_marker_callback(marker);
       }
+
       marker.addTo(this.map);
       this.markerList.push({ "marker": marker });
       this.options.after_add_marker_callback && this.options.after_add_marker_callback()
@@ -180,12 +254,8 @@
       this.inDelMode = false;
       document.getElementsByClassName("del_marker_control")[0].style["background-color"] = "#ffffff";
       return false;
-    }
+    },
+    
+
   });
 
-
-
-/*
-  return L.Control.SimpleMarkers
-});
-*/

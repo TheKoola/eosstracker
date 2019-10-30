@@ -464,3 +464,12 @@ input {
     border:  0;
 }
 
+@keyframes blueToWhiteTransition {
+    from { background-color: steelblue; }
+    to { background-color: white; }
+}
+
+.blueToWhite {
+    animation-name:  blueToWhiteTransition;
+    animation-duration: 0.5s;
+}
