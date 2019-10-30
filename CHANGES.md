@@ -4,9 +4,28 @@
 
 ### New Features: ###
 
+- APRS icons on the map are now rotated so that they point in the direction of the station's bearing.  This only applies to those APRS symbols that lend themselves to such rotation such as vehicles.
+
+- Waypoint markers on the map now automatically update their latitude/longitude (within their popup) with their current position after a user drags them to a new location.  In addition, there is a small icon, visibile within the popup, that when clicked, will copy the lat/lon of the waypoint to the user's clipboard.
+
+- A number of updates to charts on the Data page and on the map within the lefthand side-bar.
+
+- Audio alerts from the Dashboard page are now available.  A synthesized voice will announce current flight conditions every 30 seconds and/or if certain alert condictions are encountered (ex. burst conditions).
+
+- Added a link to a locally hosted Flight Aware ADS-B web page (see https://github.com/flightaware/dump1090).  If a dump1090 installation is detected as process startup time, then a menu option, "ADS-B", will be visible on the web pages.  
+
+- Updates to the backend habtracker daemon process so that it will skip over any USB connected SDR unit with a serial number string containing "adsb".  This allows for coexistance with an instance of dump1090 (ADS-B scanner/decoder) running on the same system.
+
 
 ### Bugs Fixed: ###
 
+- Updates to all database insert statements so that specific column names are used.  This error when encountered would cause the backend process(es) to hang without notifiying the user.
+
+- Fixes to the landing prediction routine so that only the latest packets are used as input to the algorithm for calculating a landing location.  This would largely impact the Time-To-Live (TTL) values.
+
+- Issue under Setup->System Configuration screens for prepending an "EOSS" string to any RF beaconed APRS packets.  The enabled/disabled checkbox would not fully honor the higher level beaconing checkbox and incorrectly expose the string selection dropdown to the user.  
+
+- The startup processes now automatically check for permissions for the audio and configuration subdirectories and will change those permissions if needed so that the www-data user has write privledges.
 
 
 ## Version 1.2 - August 2019 ##
