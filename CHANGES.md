@@ -27,6 +27,8 @@
 
 - The startup processes now automatically check for permissions for the audio and configuration subdirectories and will change those permissions if needed so that the www-data user has write privledges.
 
+- Issue with filtering the Dire wolf log file.  The regular expression being used was not accouting for dates being included in timestamps causing RF or Internet beacon transmissions (from direwolf) to be skipped and not listed on the Home page.
+
 
 ## Version 1.2 - August 2019 ##
 
