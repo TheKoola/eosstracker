@@ -50,8 +50,8 @@
     $matches = [];
     if (is_readable($direwolffile)) {
         $dw = shell_exec('head -100 ' . $direwolffile);
-        $dw_beacons = shell_exec("awk '/(^\[ig\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})|(\[[0-9]+L [0-9]{2}:[0-9]{2}:[0-9]{2}\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})/' " . $direwolffile);
-        $p = preg_match_all('/^(\[[0-9]+L [0-9]{1,2}:[0-9]{2}:[0-9]{2}\]|\[ig\]) .*$/m', $dw_beacons, $matches);
+        $dw_beacons = shell_exec("awk '/(^\[ig\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})|(\[[0-9]+L [0-9]{1,2}\/[0-9]{1,2}\/[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})/' " . $direwolffile);
+        $p = preg_match_all('/^(\[[0-9]+L [0-9]{1,2}\/[0-9]{1,2}\/[0-9]{1,2} [0-9]{1,2}:[0-9]{2}:[0-9]{2}\]|\[ig\]) .*$/m', $dw_beacons, $matches);
    	    if ($p) {
             foreach ($matches[0] as $b) { 
 	            if (strpos($b, "aprsc") === false && strpos($b, "logresp") === false)
