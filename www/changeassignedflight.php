@@ -87,7 +87,7 @@
     }
 
     ## We're here, so we now update this record for the original callsign...
-    if ($get_flightid == "atlarge") {
+    if ($get_flightid == "ATLARGE") {
        $query = "update teams set flightid=NULL where tactical=$1;";
        $result = pg_query_params($link, $query, array(sql_escape_string($get_tactical)));
     }
