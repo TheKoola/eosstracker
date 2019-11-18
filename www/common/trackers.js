@@ -123,13 +123,8 @@
     ***********/
 function getTrackers() {
     $.get("getflights.php", function(fdata) {
-        var flightsJson = JSON.parse(fdata)
-        var flightids = [];
+        var flightids = JSON.parse(fdata)
         var f;
-
-        for (f in flightsJson) {
-            flightids.push(flightsJson[f].flight);
-        }
 
         $.get("getteams.php", function(data) {
             var teamsJson = JSON.parse(data);
@@ -188,13 +183,13 @@ function getTrackers() {
  
  
                     for (flight in flightids) {
-                        if (flightids[flight] == trackerJson[i].flightid) {
+                        if (flightids[flight].flight == trackerJson[i].flightid) {
                             checked = "selected=\"selected\""; 
                             foundmatch = 1;
+                            html = html + "<option value=" + flightids[flight].flight + " " + checked + " >" + flightids[flight].flight + "</option>";
                         }
-                        else
-                            checked = "";
-                        html = html + "<option value=" + flightids[flight] + " " + checked + " >" + flightids[flight] + "</option>";
+                        else if (flightids[flight].active == 't')
+                            html = html + "<option value=" + flightids[flight].flight + " >" + flightids[flight].flight + "</option>";
                     }
                     if (trackerJson[i].flightid == "At Large" || foundmatch == 0)
                         checked = "selected=\"selected\""; 

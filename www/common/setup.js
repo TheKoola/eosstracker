@@ -527,6 +527,7 @@
         $.get("trackflight.php?flightid=" + flight + "&active=" + activeStatus, function(data) {
             document.getElementById("newflighterror").innerHTML = "";
             getFlights();
+            getTrackers();
         });
     }
 
