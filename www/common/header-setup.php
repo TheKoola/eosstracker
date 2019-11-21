@@ -63,21 +63,12 @@ else
 </head>
 
 <body class="cover-page">
-
-<div class="topshadow">
-<div class="container">
-<div class="leftshadow">
-<div class="rightshadow">
-<div class="innercontainer">
-
-<div class="header">
-
 <div class="logo">
      <!-- Enter one's logo text on the following line -->
-     <p style="margin-top:  30px; margin-left:  30px;"><a href="/index.php" class="logo-link"><?php if(isset($logo)) printf("%s", $logo); else printf("No Logo"); ?></a><br>
+     <p><a href="/index.php" class="logo-link"><?php if(isset($logo)) printf("%s", $logo); else printf("No Logo"); ?></a><br>
 
      <!-- This is the sub-title text -->
-     <span style="font-size: 1.2em; color:  #0052cc; font-style:  italic; text-shadow: 5px 5px 10px black;">Tracking High Altitude Balloons</span>
+     <span style="font-size: 1.2em; font-style:  italic; text-shadow: 5px 5px 10px black;">Tracking High Altitude Balloons</span>
      </p>
 </div>
 
