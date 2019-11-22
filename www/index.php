@@ -47,7 +47,7 @@ include $documentroot . '/common/header.php';
     <!-- start/stop buttons -->
     <div class="div-table" style="clear: both;">
         <div class="table-row">
-            <div class="table-header-cell">Start and Stop Processes:</div>
+            <div class="table-header-cell-important">Start and Stop Processes:</div>
         </div>
         <div class="table-row">
             <div class="table-cell">

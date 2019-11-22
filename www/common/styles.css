@@ -42,6 +42,7 @@ div.footer {
 }
 
 
+
 div.logo {
     text-align: left;
     clear: both;
@@ -138,8 +139,8 @@ li.menubar {
         padding-bottom: 10px;
         background-image: none;
     }
-
 }
+
 
 pre.packetdata {
     color:  #c8c8c8;
@@ -400,13 +401,11 @@ table.presentation-area {
 }
 
 
-/* dark table layout */
 
 div.table-header-cell {
     display: table-cell;
     color: #f8f8f8;
     text-decoration:none;
-    /*white-space: nowrap;*/
     white-space: normal;
     word-wrap: break-word;
     font-variant:  small-caps;
@@ -416,6 +415,23 @@ div.table-header-cell {
     padding-right:  5px;
     padding-left:  5px;
     font-size:  1.1em;
+    border-bottom: none;
+}
+
+div.table-header-cell-important {
+    display: table-cell;
+    color: #f8f8f8;
+    text-decoration:none;
+    white-space: normal;
+    word-wrap: break-word;
+    font-variant:  small-caps;
+    font-weight:  normal;
+    border:  solid 1px black;
+    background-color: #996300;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.1em;
+    border-bottom: none;
 }
 
 div.table-row {
@@ -447,6 +463,7 @@ div.div-table {
     vertical-align:  top;
 }
 
+
 mark.okay {
     font-variant: small-caps;
     color: black;
@@ -456,10 +473,38 @@ mark.okay {
 mark.notokay {
     font-variant: small-caps;
     color: black;
-    background-color: #ff9999;
+    background-color: #e26969;
 }
 
 mark.marginal {
     color: black;
-    background-color: #ffff99;
+    background-color: #ffff80;
+}
+
+div.antenna-table {
+    margin: 0;
+    margin-right: 30px;
+    margin-bottom: 20px;
+    text-align:  left;
+    vertical-align:  top;
+    float: left;
+}
+
+div.antenna {
+    text-align: center;
+    vertical-align: middle;
+    padding: 0;
+    margin: 0;
+    margin-right: 10px;
+}
+
+/**********************************/
+/* If the screen size is <= 800px */
+/**********************************/
+@media only screen and (max-width: 800px) {
+
+    div.antenna {
+        display: none;
+    }
+
 }

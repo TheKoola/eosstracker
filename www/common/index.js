@@ -175,7 +175,8 @@ function getrecentdata() {
 
         for (k = 0; k < frequencies.length; k++) 
             freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
-        antenna_html = antenna_html + "<div class=\"div-table\" style=\"float: left;\">"
+        antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
+            + "<div class=\"antenna-table\">"
             + "<div class=\"table-row\">"
             + "    <div class=\"table-header-cell\" style=\"font-size: 1.4em; border-bottom: none; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
             + "    <div class=\"table-header-cell\" style=\"border-bottom: none; border-left: none; text-align: center;\">Details</div>"
@@ -199,6 +200,7 @@ function getrecentdata() {
             + "<div class=\"table-row\">"
             + "    <div class=\"table-cell\">Beaconing Status</div>"
             + "    <div class=\"table-cell\" style=\"border-left: none; text-align: right;\">" + (statusJson.beaconing == "true" ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
+            + "</div>"
             + "</div>"
             + "</div>";
     }
