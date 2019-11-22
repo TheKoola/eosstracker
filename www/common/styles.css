@@ -69,16 +69,6 @@ div.menubar {
     top: 0px;
 }
 
-a.logo-link {
-    font-size: 3em;
-    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
-    color:  #f8f8f8;
-    text-decoration: none;
-    text-align:  left;
-    vertical-align: middle;
-    border-style: none;
-    text-shadow:  5px 5px 14px black;
-}
 
 span.sub-logo {
     color:  #c8c8c8; 
@@ -101,17 +91,6 @@ li.menubar {
 }
 
 
-a.navbar {
-    color:  #c8c8c8;
-    text-decoration:none;
-    font-variant:  small-caps;
-    font-size:  1.3em;
-    margin:  0px;
-    margin-right:  10px;
-    margin-left:  10px;
-}
-
-a.navbar:hover { color: white; text-decoration:underline; }
 
 .hamburger {
     position: relative;
@@ -241,13 +220,53 @@ img.bluesquare {
 }
 
 
+
+a:hover { color: white; text-decoration:underline; }
+a.packetlist-link:link { color:  #0000aa; text-decoration:none; } 
+a.packetlist-link:hover { color: #0000aa; text-decoration: underline; }
+a.header:hover { color: white; text-decoration: underline; }
+a.navbar:hover { color: white; text-decoration:underline; }
+
+
+a {
+    color: #99b3ff;
+    text-decoration: none;
+}
+
 a.packetlist-link {
     color:  #0000aa;
     text-decoration: none; 
 }
 
-a.packetlist-link:link { color:  #0000aa; text-decoration:none; } 
-a.packetlist-link:hover { color: #0000aa; text-decoration: underline; }
+a.logo-link {
+    font-size: 3em;
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+    color:  #f8f8f8;
+    text-decoration: none;
+    text-align:  left;
+    vertical-align: middle;
+    border-style: none;
+    text-shadow:  5px 5px 14px black;
+}
+
+a.header {
+    text-decoration: none;
+    color:  #c8c8c8;
+    font-weight:  normal;
+    text-align:  left;
+    vertical-align: top;
+}
+
+
+a.navbar {
+    color:  #c8c8c8;
+    text-decoration:none;
+    font-variant:  small-caps;
+    font-size:  1.3em;
+    margin:  0px;
+    margin-right:  10px;
+    margin-left:  10px;
+}
 
 
 table.packetlist {

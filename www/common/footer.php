@@ -22,22 +22,21 @@
 ##################################################
 *
  */
+
+    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    include_once $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/version.php';
 ?>
-<!-- beginning of footer -->
+
 <div class="footer">
-    <?php
-        $documentroot = $_SERVER["DOCUMENT_ROOT"];
-        include_once $documentroot . '/common/functions.php';
-        include_once $documentroot . '/common/version.php';
-    ?>
     <p class="copyright">
-    The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a class="normal-link-black" target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
+        The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
      </p>
      <p class="copyright">
-            Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
+        Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
      </p>
      <p class="copyright" style="margin-bottom: 10px;">
-     System Version: <?php if (isset($version)) printf("%s", $version); ?> 
+         System Version: <?php if (isset($version)) printf("%s", $version); ?> 
      </p>
 </div>
 <!-- end of footer -->
