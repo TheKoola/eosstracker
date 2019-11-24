@@ -34,6 +34,11 @@ body.cover-page  {
     margin: 0px;
 }
 
+input {
+    font-family:  "Lucida Console", Monaco, monospace;
+    font-size: 1em;
+}
+
 div.footer {
     text-align:  center;
     vertical-align:  middle;
@@ -185,6 +190,64 @@ p {
     margin-left: 30px;
 }
 
+.normal {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #c8c8c8;
+}
+
+.normal-noborders {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border:  none;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #c8c8c8;
+}
+
+.disabled {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #626262;
+}
+
+.disabled-noborders {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border:  none;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #626262;
+}
+
 p.normal-italic {
     color: #c8c8c8;
     margin: 0px;
@@ -206,6 +269,19 @@ p.header {
     clear:  both;
 }
 
+p.subheader {
+    color:  #aaaaaa;
+    font-weight:  normal;
+    /*font-variant:  small-caps;*/
+    font-size: 1.2em;
+    text-align:  left;
+    vertical-align: top;
+    margin-left:  30px;
+    margin-top:  30px;
+    margin-bottom:  10px;
+    margin-right:  10px;
+    clear:  both;
+}
 
 
 img.bluesquare {
@@ -302,6 +378,39 @@ table.trackerlist {
     font-size:  .9em;
     color: #c8c8c8;
 }
+
+.packetlist-highlight {
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1em;
+    color: #f8f8f8;
+    background-color: #737373;
+}
+
+.packetlist-highlight2 {
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #f8f8f8;
+    background-color: #999999;
+}
+
 
 .trackerlist {
     text-align: left;
@@ -508,3 +617,18 @@ div.antenna {
     }
 
 }
+
+.submitbutton {
+    color: white;
+    background-color: black;
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+    font-size: 1.2em;
+}
+
+
+.graybutton {
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+    font-size: 1.2em;
+}
+
+

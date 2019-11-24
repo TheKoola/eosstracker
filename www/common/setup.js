@@ -156,18 +156,12 @@
             $("#addnewbeacon_frequency").html("");
             $("#beacon1_frequency").html("");
             $("#beacon2_frequency").html("");
-            $("#beacon3_frequency").html("");
-            $("#beacon4_frequency").html("");
-            $("#beacon5_frequency").html("");
             for (i = 0; i < keys.length; i++) {
                 var freq = freqJson[i].freq * 10 / 10;
                 frequencies.push(freq); 
                 $("#addnewbeacon_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
                 $("#beacon1_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
                 $("#beacon2_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
-                $("#beacon3_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
-                $("#beacon4_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
-                $("#beacon5_frequency").append($("<option></option>").val(freq).html(freq.toFixed(3) + " MHz"));
 
                 // Create the row
                 var freqrow = table.insertRow(-1);
@@ -380,6 +374,7 @@
     * This function will add the specified flight.
     ***********/
     function addFlight() {
+
         var flightid = document.getElementById("newflightid").value;
         var notes = document.getElementById("newflightnotes");
         var monitoring = (document.getElementById("newflightmonitoring").checked == true ? "t" : "f");
@@ -414,7 +409,7 @@
 
  
         // construct url...
-        for (i = 1; i < 6; i++) {
+        for (i = 1; i < 3; i++) {
             var call = document.getElementById("beacon" + i + "_call");
             var freqelem = document.getElementById("beacon" + i + "_frequency");
             var freq = freqelem.options[freqelem.selectedIndex].value;
@@ -541,7 +536,6 @@
         var assignedSite = element.options[element.selectedIndex].value;
 
 
-        //document.getElementById("debug").innerHTML = "changing:  " + assignedSite;
         $.get("changelaunchsite.php?flightid=" + flightid + "&launchsite=" + assignedSite, function(data) {
             var resultJson = JSON.parse(data);
 
@@ -644,11 +638,11 @@
                     flightcell2.setAttribute("class", "packetlist");
                     flightcell3.setAttribute("class", "packetlist");
                     flightcell4.setAttribute("class", "packetlist");
-                    flightcell0.setAttribute("style", "background-color: lightsteelblue;"); 
-                    flightcell1.setAttribute("style", "background-color: lightsteelblue;"); 
-                    flightcell2.setAttribute("style", "background-color: lightsteelblue;"); 
-                    flightcell3.setAttribute("style", "background-color: lightsteelblue; text-align: center;"); 
-                    flightcell4.setAttribute("style", "background-color: lightsteelblue; text-align: center;"); 
+                    flightcell0.setAttribute("style", "background-color: #737373;"); 
+                    flightcell1.setAttribute("style", "background-color: #737373;"); 
+                    flightcell2.setAttribute("style", "background-color: #737373;"); 
+                    flightcell3.setAttribute("style", "background-color: #737373; text-align: center;"); 
+                    flightcell4.setAttribute("style", "background-color: #737373; text-align: center;"); 
     
                     flightcell0.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"width: 22px; height: 22px;\" onclick=\'deleteFlight(\"" + flight + "\")\'> &nbsp; ";
                     flightcell1.innerHTML = flight;
@@ -657,7 +651,6 @@
                     var html = "<select id=\"" + flightsJson[i].flight + "_launchsite\" onchange='changeAssignedLaunchSite(\"" + flightsJson[i].flight + "\", this)'>";
                     var s;
                     var checked;
-                    //document.getElementById("debug").innerHTML = JSON.stringify(sites);
                     for (s in sites) {
                         if (flightsJson[i].launchsite == sites[s])
                             checked = "selected=\"selected\""; 
@@ -960,37 +953,37 @@
             disableIgating();
             disableBeaconing();
             document.getElementById("beaconing").disabled = true;
-            document.getElementById("beaconingtext").style["color"] = "lightgrey";
+            //document.getElementById("beaconingtext").className = "disabled";
             document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext1").style["color"] = "lightgrey";
-            document.getElementById("igatingtext2").style["color"] = "lightgrey";
+            document.getElementById("igatingtext1").className = "disabled";
+            document.getElementById("igatingtext2").className = "disabled";
             document.getElementById("igating").checked = false;
             document.getElementById("beaconing").checked = false;
             //throw callsign.validationMessage;
-	    return false;
-	}
-	if (callsign.value != "") {
+	        return false;
+	    }
+        if (callsign.value != "") {
             document.getElementById("igating").disabled = false;
             document.getElementById("beaconing").disabled = false;
-	    document.getElementById("igatingtext1").style["color"] = "black";
-	    document.getElementById("igatingtext2").style["color"] = "black";
-	    document.getElementById("beaconingtexta").style["color"] = "black";
-	    document.getElementById("beaconingtextb").style["color"] = "black";
-        }	
-	else {
-	    disableIgating();
-	    disableBeaconing();
+            document.getElementById("igatingtext1").className = "normal";
+            document.getElementById("igatingtext2").className = "normal";
+            document.getElementById("beaconingtexta").className = "normal";
+            document.getElementById("beaconingtextb").className = "normal";
+            }	
+        else {
+            disableIgating();
+            disableBeaconing();
             document.getElementById("beaconing").disabled = true;
-            document.getElementById("beaconingtexta").style["color"] = "lightgrey";
-            document.getElementById("beaconingtextb").style["color"] = "lightgrey";
+            document.getElementById("beaconingtexta").className = "disabled";
+            document.getElementById("beaconingtextb").className = "disabled";
             document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext1").style["color"] = "lightgrey";
-            document.getElementById("igatingtext2").style["color"] = "lightgrey";
+            document.getElementById("igatingtext1").className = "disabled";
+            document.getElementById("igatingtext2").className = "disabled";
             document.getElementById("igating").checked = false;
             document.getElementById("beaconing").checked = false;
-	}
-	
-	return true;
+        }
+        
+        return true;
 
     }
 
@@ -1002,30 +995,30 @@
     ***********/
     function disableIgating() {
         document.getElementById("passcode").disabled = true;
-        document.getElementById("passcodetext1").style["color"] = "lightgrey";
-        document.getElementById("passcodetext2").style["color"] = "lightgrey";
-	document.getElementById("ibeacon").disabled = true;
-	document.getElementById("ibeaconrate").disabled = true;
-	document.getElementById("ibeaconratetext1").style["color"] = "lightgrey";
-	document.getElementById("ibeaconratetext2").style["color"] = "lightgrey";
+        document.getElementById("passcodetext1").className = "disabled";
+        document.getElementById("passcodetext2").className = "disabled";
+	    document.getElementById("ibeacon").disabled = true;
+    	document.getElementById("ibeaconrate").disabled = true;
+    	document.getElementById("ibeaconratetext1").className = "disabled";
+    	document.getElementById("ibeaconratetext2").className = "disabled";
 
-	var beaconing = document.getElementById("beaconing").checked;
-	if (!beaconing) {
-	    document.getElementById("symbol").disabled = true;
-    	    document.getElementById("beaconingtext101").style["color"] = "lightgrey";
-    	    document.getElementById("beaconingtext102").style["color"] = "lightgrey";
-	    document.getElementById("comment").disabled = true;
-	    document.getElementById("beaconingtext81").style["color"] = "lightgrey";
-	    document.getElementById("beaconingtext82").style["color"] = "lightgrey";
-	    if (checkOverlay()) {
-	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").style["color"] = "black";
+    	var beaconing = document.getElementById("beaconing").checked;
+    	if (!beaconing) {
+    	    document.getElementById("symbol").disabled = true;
+    	    document.getElementById("beaconingtext101").className = "disabled";
+    	    document.getElementById("beaconingtext102").className = "disabled";
+    	    document.getElementById("comment").disabled = true;
+    	    document.getElementById("beaconingtext81").className = "disabled";
+    	    document.getElementById("beaconingtext82").className = "disabled";
+            if (checkOverlay()) {
+                document.getElementById("overlay").disabled = false;
+                document.getElementById("overlaytext").className = "normal-noborders";
+            }
+                else {
+                document.getElementById("overlay").disabled = true;
+                document.getElementById("overlaytext").className = "disabled-noborders";
+            }
 	    }
-            else {
-	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").style["color"] = "lightgrey";
-	    }
-	}
     }
 
     /***********
@@ -1035,56 +1028,57 @@
     ***********/
     function disableBeaconing() {
         //document.getElementById("beaconing").disabled = true;
-        //document.getElementById("beaconingtext").style["color"] = "lightgrey";
-	document.getElementById("fastspeed").disabled = true;
-	document.getElementById("fastrate").disabled = true;
-	document.getElementById("slowspeed").disabled = true;
-	document.getElementById("slowrate").disabled = true;
-	document.getElementById("beaconlimit").disabled = true;
-	document.getElementById("fastturn").disabled = true;
-	document.getElementById("slowturn").disabled = true;
-	document.getElementById("audiodev").disabled = true;
-	document.getElementById("serialport").disabled = true;
-	document.getElementById("serialproto").disabled = true;
-	document.getElementById("includeeoss").disabled = true;
-	document.getElementById("eoss_string").disabled = true;
-	
-	var igating = document.getElementById("igating").checked;
+        //document.getElementById("beaconingtext").className = "disabled";
+            
+        document.getElementById("fastspeed").disabled = true;
+        document.getElementById("fastrate").disabled = true;
+        document.getElementById("slowspeed").disabled = true;
+        document.getElementById("slowrate").disabled = true;
+        document.getElementById("beaconlimit").disabled = true;
+        document.getElementById("fastturn").disabled = true;
+        document.getElementById("slowturn").disabled = true;
+        document.getElementById("audiodev").disabled = true;
+        document.getElementById("serialport").disabled = true;
+        document.getElementById("serialproto").disabled = true;
+        document.getElementById("includeeoss").disabled = true;
+        document.getElementById("eoss_string").disabled = true;
+        
+        var igating = document.getElementById("igating").checked;
         if (!igating) {
-	    document.getElementById("symbol").disabled = true;
-	    document.getElementById("beaconingtext101").style["color"] = "lightgrey";
-	    document.getElementById("beaconingtext102").style["color"] = "lightgrey";
-	    document.getElementById("comment").disabled = true;
-	    document.getElementById("beaconingtext81").style["color"] = "lightgrey";
-	    document.getElementById("beaconingtext82").style["color"] = "lightgrey";
-	    if (checkOverlay()) {
-	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").style["color"] = "black";
-	    }
+            document.getElementById("symbol").disabled = true;
+            document.getElementById("beaconingtext101").className = "disabled";
+            document.getElementById("beaconingtext102").className = "disabled";
+            document.getElementById("comment").disabled = true;
+            document.getElementById("beaconingtext81").className  = "disabled";
+            document.getElementById("beaconingtext82").className  = "disabled";
+            if (checkOverlay()) {
+                document.getElementById("overlay").disabled = false;
+                document.getElementById("overlaytext").className = "normal-noborders";
+            }
             else {
-	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").style["color"] = "lightgrey";
-	    }
-	}
-	document.getElementById("beaconingtext1a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext1b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext2a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext2b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext3a").style["color"] = "lightgrey";
-        document.getElementById("beaconingtext3b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext4a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext4b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext5a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext5b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext6a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext6b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext7a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext7b").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext9a").style["color"] = "lightgrey";
-	document.getElementById("beaconingtext9b").style["color"] = "lightgrey";
+                document.getElementById("overlay").disabled = true;
+                document.getElementById("overlaytext").className = "disabled-noborders";
+            }
+        }
+        document.getElementById("beaconingtext1a").className = "disabled";
+        document.getElementById("beaconingtext1b").className = "disabled";
+        document.getElementById("beaconingtext2a").className = "disabled";
+        document.getElementById("beaconingtext2b").className = "disabled";
+        document.getElementById("beaconingtext3a").className = "disabled";
+        document.getElementById("beaconingtext3b").className = "disabled";
+        document.getElementById("beaconingtext4a").className = "disabled";
+        document.getElementById("beaconingtext4b").className = "disabled";
+        document.getElementById("beaconingtext5a").className = "disabled";
+        document.getElementById("beaconingtext5b").className = "disabled";
+        document.getElementById("beaconingtext6a").className = "disabled";
+        document.getElementById("beaconingtext6b").className = "disabled";
+        document.getElementById("beaconingtext7a").className = "disabled";
+        document.getElementById("beaconingtext7b").className = "disabled";
+        document.getElementById("beaconingtext9a").className = "disabled";
+        document.getElementById("beaconingtext9b").className = "disabled";
     }
 
-    
+        
 
     /***********
     * generatePasscode function
@@ -1177,13 +1171,13 @@
             else
 	         imagefile = "/images/aprs/" + r[i].tocall + ".png";
             overlay.disabled = false;
-            document.getElementById("overlaytext").style["color"] = "black";
+            document.getElementById("overlaytext").className = "normal-noborders";
 	}
 	else {
 	    imagefile = "/images/aprs/" + r[i].tocall + ".png";
             overlay.disabled = true;
 	    overlay.value = "";
-            document.getElementById("overlaytext").style["color"] = "lightgrey";
+            document.getElementById("overlaytext").className = "disabled-noborders";
 	}
 
         document.getElementById("symbolicon").innerHTML = "<img src=\"" + imagefile + "\" style=\"width: 32px; height: 32px;\">";
@@ -1289,26 +1283,26 @@
 	
 	if (igating.checked) {
 	    document.getElementById("passcode").disabled = false;
-	    document.getElementById("passcodetext1").style["color"] = "black";
-	    document.getElementById("passcodetext2").style["color"] = "black";
+	    document.getElementById("passcodetext1").className = "normal";
+	    document.getElementById("passcodetext2").className = "normal";
 	    document.getElementById("symbol").disabled = false;
-	    document.getElementById("beaconingtext101").style["color"] = "black";
-	    document.getElementById("beaconingtext102").style["color"] = "black";
+	    document.getElementById("beaconingtext101").className = "normal";
+	    document.getElementById("beaconingtext102").className = "normal";
 	    document.getElementById("comment").disabled = false;
-	    document.getElementById("beaconingtext81").style["color"] = "black";
-	    document.getElementById("beaconingtext82").style["color"] = "black";
+	    document.getElementById("beaconingtext81").className = "normal";
+	    document.getElementById("beaconingtext82").className = "normal";
 	    if (checkOverlay()) {
 	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").style["color"] = "black";
+	        document.getElementById("overlaytext").className = "normal-noborders";
 	    }
-            else {
+        else {
 	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	        document.getElementById("overlaytext").className = "disabled-noborders";
 	    }
 	    document.getElementById("ibeacon").disabled = false;
 	    document.getElementById("ibeaconrate").disabled = false;
-	    document.getElementById("ibeaconratetext1").style["color"] = "black";
-	    document.getElementById("ibeaconratetext2").style["color"] = "black";
+	    document.getElementById("ibeaconratetext1").className = "normal";
+	    document.getElementById("ibeaconratetext2").className = "normal";
 	}
 	else {
 	    disableIgating();
@@ -1342,32 +1336,32 @@
 	    document.getElementById("symbol").disabled = false;
 	    if (checkOverlay()) {
 	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").style["color"] = "black";
+	        document.getElementById("overlaytext").className = "normal-noborders";
 	    }
             else {
 	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").style["color"] = "lightgrey";
+	        document.getElementById("overlaytext").className = "disabled-noborders";
 	    }
-	    document.getElementById("beaconingtext1a").style["color"] = "black";
-	    document.getElementById("beaconingtext1b").style["color"] = "black";
-	    document.getElementById("beaconingtext2a").style["color"] = "black";
-	    document.getElementById("beaconingtext2b").style["color"] = "black";
-	    document.getElementById("beaconingtext3a").style["color"] = "black";
-            document.getElementById("beaconingtext3b").style["color"] = "black";
-	    document.getElementById("beaconingtext4a").style["color"] = "black";
-	    document.getElementById("beaconingtext4b").style["color"] = "black";
-	    document.getElementById("beaconingtext5a").style["color"] = "black";
-	    document.getElementById("beaconingtext5b").style["color"] = "black";
-	    document.getElementById("beaconingtext6a").style["color"] = "black";
-	    document.getElementById("beaconingtext6b").style["color"] = "black";
-	    document.getElementById("beaconingtext7a").style["color"] = "black";
-	    document.getElementById("beaconingtext7b").style["color"] = "black";
-	    document.getElementById("beaconingtext81").style["color"] = "black";
-	    document.getElementById("beaconingtext82").style["color"] = "black";
-	    document.getElementById("beaconingtext9a").style["color"] = "black";
-	    document.getElementById("beaconingtext9b").style["color"] = "black";
-	    document.getElementById("beaconingtext101").style["color"] = "black";
-	    document.getElementById("beaconingtext102").style["color"] = "black";
+	    document.getElementById("beaconingtext1a").className = "normal";
+	    document.getElementById("beaconingtext1b").className = "normal";
+	    document.getElementById("beaconingtext2a").className = "normal";
+	    document.getElementById("beaconingtext2b").className = "normal";
+	    document.getElementById("beaconingtext3a").className = "normal";
+        document.getElementById("beaconingtext3b").className = "normal";
+	    document.getElementById("beaconingtext4a").className = "normal";
+	    document.getElementById("beaconingtext4b").className = "normal";
+	    document.getElementById("beaconingtext5a").className = "normal";
+	    document.getElementById("beaconingtext5b").className = "normal";
+	    document.getElementById("beaconingtext6a").className = "normal";
+	    document.getElementById("beaconingtext6b").className = "normal";
+	    document.getElementById("beaconingtext7a").className = "normal";
+	    document.getElementById("beaconingtext7b").className = "normal";
+	    document.getElementById("beaconingtext81").className = "normal";
+	    document.getElementById("beaconingtext82").className = "normal";
+	    document.getElementById("beaconingtext9a").className = "normal";
+	    document.getElementById("beaconingtext9b").className = "normal";
+	    document.getElementById("beaconingtext101").className = "normal";
+	    document.getElementById("beaconingtext102").className = "normal";
 	}
 	else {
 	    disableBeaconing();
@@ -1466,13 +1460,13 @@
                 imagefile = "/images/aprs/" + olay + "-" + r[i].tocall + ".png";
                 document.getElementById("overlay").disabled = false;
                 document.getElementById("overlay").value = olay;
-                document.getElementById("overlaytext").style["color"] = "black";
+                document.getElementById("overlaytext").className = "normal-noborders";
             }
             else {
                 imagefile = "/images/aprs/" + r[i].tocall + ".png";
                 document.getElementById("overlay").value = "";
                 document.getElementById("overlay").disabled = true;
-                document.getElementById("overlaytext").style["color"] = "lightgrey";
+                document.getElementById("overlaytext").className = "disabled-noborders";
             }
             document.getElementById("symbolicon").innerHTML = "<img src=\"" + imagefile + "\" style=\"width: 32px; height: 32px;\">";
 

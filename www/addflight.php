@@ -99,7 +99,7 @@ include $documentroot . '/common/functions.php';
         $formerror = true;
 
     // Loop through the remaining beacons
-    for ($i = 2; $i < 6; $i++) {
+    for ($i = 2; $i < 3; $i++) {
         $cstr = "beacon" . $i . "_callsign";
         $fstr = "beacon" . $i . "_frequency";
         $dstr = "beacon" . $i . "_description";
