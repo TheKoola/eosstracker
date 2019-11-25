@@ -24,12 +24,7 @@
 
     // The variables for the charts.
     var chart;
-    var chart2;
     var chart3;
-    var chart4;
-    var chart5;
-    var chart6;
-    var bubblechart;
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
@@ -38,6 +33,46 @@
     var flightlist;
     var currentflight;
     var packetcount;
+
+    // Initial chart size
+    var chartwidth = getChartWidth();
+    var chartheight = getChartHeight();
+
+    // chart color scheme
+    var chartcolors = [ "cornsilk", "orange", "lightsalmon", "lightgreen", "lightsteelblue", "tan", "khaki", "violet", "dodgerblue" ]; 
+    
+    /***********
+    * getChartWidth
+    *
+    * This function return calculated width of the chart
+    ***********/
+    function getChartWidth() {
+        var w = window.innerWidth - 20;
+
+        return w;
+    }
+
+
+    /***********
+    * getChartHeight
+    *
+    * This function return calculated height of the chart
+    ***********/
+    function getChartHeight() {
+        var w = window.innerWidth;
+        var h;
+
+        if (w < 600) {
+            // the screen is small
+            h = Math.round(w / 1.2);
+            h = (h < 100 ? 100 : h);
+        }
+        else {
+            h = Math.round(w / 3.0);
+        }
+
+        return h;
+    }
     
 
     /***********
@@ -72,34 +107,17 @@
         chart = c3.generate({
             bindto: '#chart1',
             padding: { right: 20 },
-            size: { width: 800, height: 220 },
+            size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             grid: { x: { show: true }, y: { show: true } },
-            point: { show: false }
+            point: { show: true },
+            color: { pattern: chartcolors }
         });
     }
 
-    /***********
-    * createchart2
-    *
-    * This is the Flight Spped vs. Altitude chart.
-    ***********/
-    function createchart2 (jsondata, columns) {
-        chart2 = c3.generate({
-            bindto: '#chart2',
-            padding: { right: 20 },
-            size: { width: 800, height: 220 },
-            data: { empty : { label: { text: "No Data Available / No Active Flights" } }, 
-                type: 'spline', json: jsondata, xs: columns, labels: { format: function (v, id, i, j) { return Math.round(v * 10) / 10; } }  },
-            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' }, tick: { count: 6, format: d3.format(",d") } }, 
-                y: { label: { text: 'Average Speed (MPH)', position: 'outer-middle' } } },
-            grid: { x: { show: true }, y: { show: true } }
-        });
-    }
-    
     /***********
     * createchart3
     *
@@ -109,72 +127,14 @@
         chart3 = c3.generate({
             bindto: '#chart3',
             padding: { right: 20 },
-            size: { width: 800, height: 220 },
+            size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
-            point: { show: false },
-            grid: { x: { show: true }, y: { show: true } }
-        });
-    }
-
-    /***********
-    * createchart4
-    *
-    * This is the heading vs. altitude for flight beacons chart.
-    ***********/
-    function createchart4 (jsondata, columns) {
-        chart4 = c3.generate({
-            bindto: '#chart4',
-            padding: { right: 20 },
-            size: { width: 800, height: 220 },
-            data: { empty : { label: { text: "No Data Available / No Active Flights" } }, 
-                type: 'scatter', json: jsondata, xs: columns },
-            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' }, tick : { count: 6, format: d3.format(",d")  } }, 
-                y: { label: { text: 'Heading Variability (deg)', position: 'outer-middle' } } },
-                //y2: { show: true, label: { text: 'Vert. Acceleration (ft/min^2)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
+            point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
-            point: { show: false }
-        });
-    }
-    
-    /***********
-    * createchart5
-    *
-    * This is the vertical rate vs. altitude for flight beacons chart.
-    ***********/
-    function createchart5 (jsondata, columns) {
-        chart5 = c3.generate({
-            bindto: '#chart5',
-            padding: { right: 20 },
-            size: { width: 800, height: 220 },
-            data: { empty : { label: { text: "No Data Available / No Active Flights" } }, 
-                type: 'scatter', json: jsondata, xs: columns },
-            axis: { x: { label: { text: 'Altitude (ft)', position: 'outer-center' }, tick: { count: 6, format: d3.format(",d")  } }, 
-                y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
-                //y2: { show: true, label: { text: 'Vert. Acceleration (ft/min^2)', position: 'outer-middle' }, tick: { format: d3.format(",d") } } },
-            grid: { x: { show: true }, y: { show: true } },
-            point: { show: false }
-        });
-    }
-
-    /***********
-    * createchart6
-    *
-    * This is the digipeated packet counts chart.
-    ***********/
-    function createchart6 (jsondata, columns) {
-        chart6 = c3.generate({
-            bindto: '#chart6',
-            padding: { right: 20 },
-            size: { width: 800, height: 220 },
-            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
-            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
-            point: { show: false },
-            grid: { x: { show: true }, y: { show: true } }
+            color: { pattern: chartcolors }
         });
     }
 
@@ -188,15 +148,6 @@
     }
     
     /***********
-    * updatechart2
-    *
-    * This updates the Flight Speed vs. Altitude chart
-    ***********/
-    function updatechart2 (jsondata, columns) {
-         chart2.load ({ json:  jsondata, xs: columns });
-    }
-
-    /***********
     * updatechart3
     *
     * This updates the Direwolf RF Packets chart.
@@ -204,34 +155,6 @@
     function updatechart3 (jsondata, columns) {
          chart3.load ({ json:  jsondata, xs : columns});
     }
-
-    /***********
-    * updatechart4
-    *
-    * This updates the Heading Variability vs. Altitude chart
-    ***********/
-    function updatechart4 (jsondata, columns) {
-         chart4.load ({ json:  jsondata, xs: columns});
-    }
-
-    /***********
-    * updatechart5
-    *
-    * This updates the Vertical Rate vs. Altitude chart
-    ***********/
-    function updatechart5 (jsondata, columns) {
-        chart5.load ({ json:  jsondata, xs: columns});
-    }
-
-    /***********
-    * updatechart6
-    *
-    * This updates the RF Packets vs. Time chart
-    ***********/
-    function updatechart6 (jsondata, columns ) {
-         chart6.load ({ json:  jsondata, xs: columns });
-    }
-
 
     /***********
     * getchartdata
@@ -329,7 +252,6 @@
     * This function will filter through the list of APRS packets and display that pass the filter
     ***********/
     function displaypackets () {
-        //document.getElementById("debug4").innerHTML = "packetdata: " + JSON.parse(packetdata).length;
         
         // This is the list of packets
         var packets = JSON.parse(packetdata);
@@ -346,7 +268,6 @@
         var operation = document.getElementById("operation").value;
 
  
-        //document.getElementById("debug").innerHTML = operation;
         // Loop through the packets applying the search filters
         for (key in keys) {
            if (operation == "and") {
@@ -357,7 +278,6 @@
                }
            }
            else if (operation == "or") {
-               //document.getElementById("debug").innerHTML = "in OR section";
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
                    html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
@@ -365,7 +285,6 @@
                }
            }
            else if (operation == "not") {
-               //document.getElementById("debug").innerHTML = "in OR section";
                if (searchstring.length > 0 && searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
                        packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
@@ -426,17 +345,17 @@
             var keys = Object.keys(jsondata);
             var key;
             var flight;
-            var allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
-            var html = "<p style=\"font-weight: bold;\">Select flight: <form>" + allHtml;
+            var allHtml = "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked> All packets (< 3hrs) &nbsp; &nbsp;</div>";
+            var html = "<form>" + allHtml;
             var i = 0;
 
             for (key in keys) {
                 flight = jsondata[key].flightid;
-                html = html + "<input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\" > " + flight + "&nbsp; &nbsp;";
+                html = html + "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\"> " + flight + "&nbsp; &nbsp;</div>";
                 i += 1;
                 
             }
-            html = html + "</form></p>";
+            html = html + "</form>";
            
             document.getElementById("flights").innerHTML = html;
  
@@ -633,6 +552,7 @@
 
         // Add a listener for that event to the page
         document.body.addEventListener("updatepackets", displaypackets, false);
+
         
         // have the search fields and operation dropdown call the updatepackets function when their value/state changes
         var e = document.getElementById('searchfield');
@@ -655,21 +575,30 @@
 
         // populate the charts with data
         getchartdata(createchart, "getpacketperformance.php");
-        getchartdata(createchart2, "getspeedvsaltitude.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
-        getchartdata(createchart4, "getheadingvsaltitude.php");
-        getchartdata(createchart5, "getverticalvsaltitude.php"); 
-        getchartdata(createchart6, "getdigicounts.php"); 
+
+        // Listen for screen resize changes and adjust the chart sizes accordingly
+        window.addEventListener("resize", function() {
+            var w = getChartWidth();
+            var h = getChartHeight();
+
+            chart.resize({
+                height: h,
+                width: w
+            });
+
+            chart3.resize({
+                height: h,
+                width: w
+            });
+
+        }, false);
 
         // Create a timer that is called every 5secs for updating all of our items on the page
         setInterval(function() { 
             getrecentdata(); 
             getchartdata(updatechart, "getpacketperformance.php"); 
-            getchartdata(updatechart2, "getspeedvsaltitude.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
-            getchartdata(updatechart4, "getheadingvsaltitude.php"); 
-            getchartdata(updatechart5, "getverticalvsaltitude.php"); 
-            getchartdata(updatechart6, "getdigicounts.php"); 
         }, 5000);
     }
 

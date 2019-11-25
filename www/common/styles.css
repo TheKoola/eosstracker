@@ -302,6 +302,7 @@ a:hover { color: white; text-decoration:underline; }
 a.packetlist-link:link { color:  #0000aa; text-decoration:none; } 
 a.packetlist-link:hover { color: #0000aa; text-decoration: underline; }
 a.header:hover { color: white; text-decoration: underline; }
+a.subheader:hover { color: white; text-decoration: underline; }
 a.navbar:hover { color: white; text-decoration:underline; }
 
 
@@ -332,6 +333,11 @@ a.header {
     font-weight:  normal;
     text-align:  left;
     vertical-align: top;
+}
+
+a.subheader {
+    color: #aaaaaa;
+    text-decoration: none;
 }
 
 
@@ -631,4 +637,20 @@ div.antenna {
     font-size: 1.2em;
 }
 
+
+.inverted .c3-axis-x path,
+.inverted .c3-axis-x line,
+.inverted .c3-axis-y path,
+.inverted .c3-axis-y line {
+    stroke: #c8c8c8;
+}
+
+.inverted .c3-axis-x g,
+.inverted .c3-axis-y g,
+.inverted .c3-legend-item text,
+.inverted .c3-axis-y text,
+.inverted .c3-axis-x text {
+    fill: #c8c8c8;
+    font-size: 1.1em;
+}
 

@@ -52,7 +52,8 @@ include $documentroot . '/common/header.php';
         <div class="table-row">
             <div class="table-cell">
                 <p class="normal-italic" style="margin-top: 10px; font-size: 1.1em;">Use these controls to start or stop the system daemons.</p>
-                <p style="margin-top: 10px; margin-bottom: 10px;"><button type="button" value="Start" class="graybutton" name="Start" id="startbutton" class="submitbutton"  onclick="startUpProcesses();">Start</button> 
+                <p style="margin-top: 10px; margin-bottom: 10px;">
+                    <button type="button" value="Start" class="graybutton" name="Start" id="startbutton" onclick="startUpProcesses();">Start</button> 
                     &nbsp; 
                     <button type="button" value="Stop" name="Shutdown" id="stopbutton" class="graybutton"  onclick="shutDownProcesses();">Stop</button>
                 </p>
