@@ -190,6 +190,47 @@
     }
 
     
+    /***********
+    * getdigidata
+    *
+    * This function will query the server for the digipeated packet counts and display them in a tabular format.
+    ***********/
+    function getdigidata() {
+        $.get("getdigicountstable.php", function(data) {
+            var jsonData = JSON.parse(data);
+            var i = 0;
+            var thekeys = Object.keys(jsonData);
+            var html = "";
+
+            if (jsonData.length > 0) { 
+
+                // The header for the table
+                html = "<div class=\"div-table\">"
+                    + "    <div class=\"table-row\">"
+                    + "        <div class=\"table-header-cell\">Callsign</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Digipeated Count</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Non-Digipeated Count</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Total Count</div>"
+                    + "    </div>";
+
+                for (item in jsonData) {
+                    html = html 
+                        + "    <div class=\"table-row\">"
+                        + "        <div class=\"table-cell\" style=\"border-top: none;\">" + jsonData[item].callsign + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].digipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].total_packets + "</div>"
+                        + "    </div>";
+                }
+            }
+            else
+                html = "<p>No data available</p>";
+
+            document.getElementById("digitable").innerHTML = html;
+        });
+    }
+
+
 
     /***********
     * escapeHtml
@@ -383,30 +424,15 @@
         var c1_e = "#c1-elem";
         $(c1_a).click({element: c1_e, link: c1_l }, toggle);
 
-        var c2_a = "#c2-link";
-        var c2_l = "#c2-sign";
-        var c2_e = "#c2-elem";
-        $(c2_a).click({element: c2_e, link: c2_l }, toggle);
-
         var c3_a = "#c3-link";
         var c3_l = "#c3-sign";
         var c3_e = "#c3-elem";
         $(c3_a).click({element: c3_e, link: c3_l }, toggle);
 
-        var c4_a = "#c4-link";
-        var c4_l = "#c4-sign";
-        var c4_e = "#c4-elem";
-        $(c4_a).click({element: c4_e, link: c4_l }, toggle);
-
-        var c5_a = "#c5-link";
-        var c5_l = "#c5-sign";
-        var c5_e = "#c5-elem";
-        $(c5_a).click({element: c5_e, link: c5_l }, toggle);
-
-        var c6_a = "#c6-link";
-        var c6_l = "#c6-sign";
-        var c6_e = "#c6-elem";
-        $(c6_a).click({element: c6_e, link: c6_l }, toggle);
+        var t1_a = "#t1-link";
+        var t1_l = "#t1-sign";
+        var t1_e = "#t1-elem";
+        $(t1_a).click({element: t1_e, link: t1_l }, toggle);
     }
 
 
@@ -584,6 +610,7 @@
         // populate the charts with data
         getchartdata(createchart, "getpacketperformance.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
+        getdigidata();
 
         // Listen for screen resize changes and adjust the chart sizes accordingly
         window.addEventListener("resize", function() {
@@ -607,6 +634,7 @@
             getrecentdata(); 
             getchartdata(updatechart, "getpacketperformance.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
+            getdigidata();
         }, 5000);
     }
 
