@@ -47,7 +47,15 @@
     * This function return calculated width of the chart
     ***********/
     function getChartWidth() {
-        var w = window.innerWidth - 20;
+        var w = window.innerWidth;
+
+        if (w < 600) {
+            // the screen is small
+            w = w - 20;
+        }
+        else {
+            w = Math.round(w * .80);
+        }
 
         return w;
     }
