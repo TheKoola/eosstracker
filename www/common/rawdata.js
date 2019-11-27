@@ -116,7 +116,7 @@
             bindto: '#chart1',
             padding: { right: 20 },
             size: { width: chartwidth, height: chartheight },
-            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, 
+            data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
@@ -136,7 +136,7 @@
             bindto: '#chart3',
             padding: { right: 20 },
             size: { width: chartwidth, height: chartheight },
-            data: { empty : { label: { text: "No Data Available / Processes Not Running" } }, 
+            data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
@@ -186,6 +186,45 @@
 
             /* call the provided update function with the JSON returned from the URL */
             chartupdatefunction(jsonOutput, mycolumns);
+        });
+    }
+
+    /***********
+    * gettrackerdata
+    *
+    * This function will query the server for tracker packet counts and display them in a tabular format.
+    ***********/
+    function gettrackerdata() {
+        $.get("gettrackercountstable.php", function(data) {
+            var jsonData = JSON.parse(data);
+            var i = 0;
+            var html = "";
+
+            if (jsonData.length > 0) { 
+
+                // The header for the table
+                html = "<div class=\"div-table\">"
+                    + "    <div class=\"table-row\">"
+                    + "        <div class=\"table-header-cell\">Callsign</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Digipeated Count</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Non-Digipeated Count</div>"
+                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Total Count</div>"
+                    + "    </div>";
+
+                for (item in jsonData) {
+                    html = html 
+                        + "    <div class=\"table-row\">"
+                        + "        <div class=\"table-cell\" style=\"border-top: none;\">" + jsonData[item].callsign + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].digipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].total_packets + "</div>"
+                        + "    </div>";
+                }
+            }
+            else
+                html = "<p>No data available</p>";
+
+            document.getElementById("trackertable").innerHTML = html;
         });
     }
 
@@ -433,14 +472,19 @@
         var t1_l = "#t1-sign";
         var t1_e = "#t1-elem";
         $(t1_a).click({element: t1_e, link: t1_l }, toggle);
+
+        var t2_a = "#t2-link";
+        var t2_l = "#t2-sign";
+        var t2_e = "#t2-elem";
+        $(t2_a).click({element: t2_e, link: t2_l }, toggle);
     }
 
 
     /***********
     * getrecentdata
     *
-    * This function queries the backend for all updates raw APRS packets, 
-    * updates the global variable, packetdata, with that resultant JSON, 
+    * This function queries the backend for all raw APRS packets, 
+    * updates the global variable (i.e. packetdata) with that resultant JSON, 
     * and finally updates the HTML page with those packets
     ***********/
     function getrecentdata() {
@@ -553,6 +597,20 @@
                 $("#data_type_selection").append($("<option></option>").val("flight_" + flightsJson[f].flight).html("Flight:  " + flightsJson[f].flight));
             }
 	    });
+
+        // the date/time for right now
+        var d = new Date();
+
+        //Construct strings with the date and time
+        var thedate = d.toLocaleDateString();
+        var thetime = d.toLocaleTimeString().split(" ")[0];
+        var beginningString = thedate + " 00:00:00";
+        var endingString = thedate + " " + thetime;
+
+        // Update the input elements to have these values for defaults.
+        document.getElementById("data_beginning").value = beginningString;
+        document.getElementById("data_ending").value = endingString;
+
     }
 
 
@@ -611,6 +669,7 @@
         getchartdata(createchart, "getpacketperformance.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
         getdigidata();
+        gettrackerdata();
 
         // Listen for screen resize changes and adjust the chart sizes accordingly
         window.addEventListener("resize", function() {
@@ -635,6 +694,7 @@
             getchartdata(updatechart, "getpacketperformance.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
             getdigidata();
+            gettrackerdata();
         }, 5000);
     }
 

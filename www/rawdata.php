@@ -74,7 +74,6 @@ $config = readconfiguration();
         </div>
     </div>
 </form>
-                            
 
 <!-- Charts and graphs section -->
 <p class="header" style="clear:  none;">
@@ -89,14 +88,27 @@ $config = readconfiguration();
 </p>
 
 <!-- Packet counts table for active beacons -->
-<p class="subheader"><a href="#t1" class="subheader" id="t1-link">(<span style="color: red;" id="t1-sign">+</span>) Beacon Packet Counts</a></p>
+<p class="subheader"><a href="#t1" class="subheader" id="t1-link">(<span style="color: red;" id="t1-sign">+</span>) RF Packet Counts For Beacons</a></p>
 <div id="t1-elem" style="display: none; margin: 5px;">
     <p class="normal-italic">
-       This chart shows total digipeated packet counts for each beacon on an active flight.
+       This chart shows digipeated packet counts for each beacon on an active flight.
        These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
     </p>
 </div>
 <div id="digitable"></div>
+
+<!-- Packet counts table for trackers -->
+<p class="subheader"><a href="#t2" class="subheader" id="t2-link">(<span style="color: red;" id="t2-sign">+</span>) RF Packet Counts For Trackers</a></p>
+<div id="t2-elem" style="display: none; margin: 5px;">
+    <p class="normal-italic">
+       This chart shows packet counts for each tracker.
+       These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
+    </p>
+</div>
+<div id="trackertable"></div>
+
+
+<!-- APRS-IS Packet Source chart -->
 
 <!-- APRS-IS Packet Source chart -->
 <p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) APRS-IS Packet Source</a></p>
