@@ -603,7 +603,7 @@
 
         //Construct strings with the date and time
         var thedate = d.toLocaleDateString();
-        var thetime = d.toLocaleTimeString().split(" ")[0];
+        var thetime = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
         var beginningString = thedate + " 00:00:00";
         var endingString = thedate + " " + thetime;
 
