@@ -175,6 +175,7 @@ p.packetdata-header {
 }
 
 p.copyright {
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
     color: #c8c8c8;
     text-decoration: none;
     text-align:  center;

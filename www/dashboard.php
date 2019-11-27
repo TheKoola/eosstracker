@@ -45,15 +45,9 @@ include $documentroot . '/common/header-dashboard.php';
     <div id="error"></div>
     <div id="stationlist" style="float: right; text-align: left; vertical-align: top; display: none;"></div>
     <div id="station" style="text-align: left; vertical-align: top; word-break: break-all; word-wrap: break-word;"></div>
-    <p class="copyright">
-    The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a class="normal-link-black" target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
-     </p>
-     <p class="copyright">
-            Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
-     </p>
-     <p class="copyright" style="margin-bottom: 10px;">
-     System Version: <?php if (isset($version)) printf("%s", $version); ?> 
-     </p>
 </div>
+<?php
+    include $documentroot . '/common/footer.php';
+?>
 </body>
 </html>
