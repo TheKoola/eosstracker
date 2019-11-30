@@ -47,7 +47,7 @@ include $documentroot . '/common/header.php';
     <!-- start/stop buttons -->
     <div class="div-table" style="clear: both;">
         <div class="table-row">
-            <div class="table-header-cell-important">Start and Stop Processes:</div>
+            <div class="table-cell header important toprow">Start and Stop Processes:</div>
         </div>
         <div class="table-row">
             <div class="table-cell">
@@ -64,7 +64,7 @@ include $documentroot . '/common/header.php';
     <!-- GPS state -->
     <div class="div-table" style="float: left;">
         <div class="table-row">
-            <div class="table-header-cell" style="text-align: center;">GPS Status</div>
+            <div class="table-cell header toprow" style="text-align: center;">GPS Status</div>
         </div>
         <div class="table-row">
             <div class="table-cell" style="border-top: none;"><span id="gpsdata">n/a</span></div>
@@ -74,24 +74,24 @@ include $documentroot . '/common/header.php';
     <!-- System processes -->
     <div class="div-table" style="float: left;">
         <div class="table-row">
-            <div class="table-header-cell">Process</div>
-            <div class="table-header-cell" style="border-left: none; text-align: center;">Status</div>
+            <div class="table-cell header toprow">Process</div>
+            <div class="table-cell header toprow" style="border-left: none; text-align: center;">Status</div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">direwolf</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolferror"></span></div>
+            <div class="table-cell">direwolf</div>
+            <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolferror"></span></div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">aprsc</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="aprsc-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell">aprsc</div>
+            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="nookay">Not okay</mark></span></div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">gpsd</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="gpsd-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell">gpsd</div>
+            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="nookay">Not okay</mark></span></div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">backend daemon</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="habtracker-d-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell">backend daemon</div>
+            <div class="table-cell" style="text-align: right;"><span id="habtracker-d-status"><mark class="nookay">Not okay</mark></span></div>
         </div>
     </div>
 
@@ -99,8 +99,8 @@ include $documentroot . '/common/header.php';
     <!-- Configuration settings -->
     <div class="div-table" style="float: left;">
         <div class="table-row">
-            <div class="table-header-cell" style="text-align: center;">Configuration Item</div>
-            <div class="table-header-cell" style="text-align: center; border-left: none;">Setting</div>
+            <div class="table-cell header toprow" style="text-align: center;">Configuration Item</div>
+            <div class="table-cell header toprow" style="text-align: center; border-left: none;">Setting</div>
         </div>
         <div class="table-row">
             <div class="table-cell" style="border-top: none;">Hostname</div>
