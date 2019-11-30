@@ -205,19 +205,19 @@
                 // The header for the table
                 html = "<div class=\"div-table\">"
                     + "    <div class=\"table-row\">"
-                    + "        <div class=\"table-header-cell\">Callsign</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Digipeated Count</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Non-Digipeated Count</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Total Count</div>"
+                    + "        <div class=\"table-cell header toprow\">Callsign</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Digipeated Count</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Non-Digipeated Count</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Total Count</div>"
                     + "    </div>";
 
                 for (item in jsonData) {
                     html = html 
                         + "    <div class=\"table-row\">"
-                        + "        <div class=\"table-cell\" style=\"border-top: none;\">" + jsonData[item].callsign + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].digipackets + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].total_packets + "</div>"
+                        + "        <div class=\"table-cell\">" + jsonData[item].callsign + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].digipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].total_packets + "</div>"
                         + "    </div>";
                 }
             }
@@ -246,19 +246,19 @@
                 // The header for the table
                 html = "<div class=\"div-table\">"
                     + "    <div class=\"table-row\">"
-                    + "        <div class=\"table-header-cell\">Callsign</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Digipeated Count</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Non-Digipeated Count</div>"
-                    + "        <div class=\"table-header-cell\" style=\"border-left: none; text-align: center;\">Total Count</div>"
+                    + "        <div class=\"table-cell header toprow\">Callsign</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Digipeated Count</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Non-Digipeated Count</div>"
+                    + "        <div class=\"table-cell header toprow\" style=\"text-align: center;\">Total Count</div>"
                     + "    </div>";
 
                 for (item in jsonData) {
                     html = html 
                         + "    <div class=\"table-row\">"
-                        + "        <div class=\"table-cell\" style=\"border-top: none;\">" + jsonData[item].callsign + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].digipackets + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
-                        + "        <div class=\"table-cell\" style=\"border-top: none; border-left: none; text-align: center;\">" + jsonData[item].total_packets + "</div>"
+                        + "        <div class=\"table-cell\">" + jsonData[item].callsign + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].digipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].nondigipackets + "</div>"
+                        + "        <div class=\"table-cell\" style=\"text-align: center;\">" + jsonData[item].total_packets + "</div>"
                         + "    </div>";
                 }
             }

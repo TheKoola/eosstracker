@@ -49,23 +49,23 @@ $config = readconfiguration();
 <form name="data_download_form" id="data_download_form">
     <div class="div-table">
         <div class="table-row">
-            <div class="table-cell header">Action</div>
-            <div class="table-cell header">Data Selection</div>
-            <div class="table-cell header">Beginning Date/Time</div>
-            <div class="table-cell header">Ending Date/Time</div>
+            <div class="table-cell header toprow">Action</div>
+            <div class="table-cell header toprow">Data Selection</div>
+            <div class="table-cell header toprow">Beginning Date/Time</div>
+            <div class="table-cell header toprow">Ending Date/Time</div>
         </div>
         <div class="table-row">
-            <div class="table-cell">
+            <div class="table-cell" style="padding: 5px;">
                 <input type="submit" class="submitbutton" form="data_download_form" onclick="return downloadData();" value="Download">
             </div>
-            <div class="table-cell"><select form="data_download_form" id="data_type_selection"></select></div>
-            <div class="table-cell">
+            <div class="table-cell" style="padding: 5px;"><select form="data_download_form" id="data_type_selection"></select></div>
+            <div class="table-cell" style="padding: 5px;">
                 <input type="text"  form="data_download_form" name="data_beginning" id="data_beginning" placeholder="mm/dd/yyyy HH:MM:SS" 
                     autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
                     pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" 
                     title="enter date/time value using, mm/dd/yyyy HH:MM:SS">
             </div>
-            <div class="table-cell">
+            <div class="table-cell" style="padding: 5px;">
                 <input type="text"  form="data_download_form" name="data_ending" id="data_ending" placeholder="mm/dd/yyyy HH:MM:SS" 
                     autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" required="required" 
                     pattern="\d{1,2}/\d{1,2}/\d{4}\s*([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" 
@@ -143,16 +143,16 @@ $config = readconfiguration();
 <!-- The flight selection table -->
 <div class="div-table">
     <div class="table-row">
-        <div class="table-header-cell">Select Flight:</div>
+        <div class="table-cell header toprow">Select Flight:</div>
     </div>
     <div class="table-row">
-        <div class="table-cell" style="font-size: 1em; border-top: none;"><span id="flights"></span></div>
+        <div class="table-cell" style="font-size: 1em;"><span id="flights"></span></div>
     </div>
     <div class="table-row">
-        <div class="table-header-cell" style="border-top: none;">Search Criteria:</div>
+        <div class="table-cell header">Search Criteria:</div>
     </div>
     <div class="table-row">
-        <div class="table-cell" style="padding: 5px; border-top: none;">
+        <div class="table-cell" style="padding: 5px;">
            <div style="float: left; margin-left: 5px;">
                <input type="text" size="20" maxlength="128" name="searchfield" id="searchfield" 
                    autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off">
