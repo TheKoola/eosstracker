@@ -169,14 +169,13 @@
                     </p>
                 </div>
                 <div class="div-table" style="margin-top: 30px;">
-                    <p class="section-header" style="text-decoration: underline;">How to Get Around</p>
+                    <p class="section-header" style="text-decoration: underline;">Flights</p>
                     <p class="lorem">
-                        Flights are listed by their flight number along the left-hand side.  Click on a flight number to get more information about that
-                        specific flight (ex. altitude, heading, speed, etc.).
+                        Active flights are listed within the sidebar on the left-hand side by their flight number and are also listed here.  Select a flight 
+                        to show detailed information like altitude, heading, speed, etc..
                     </p>
                     <?php
                         if ($numflights > 0) {
-                            printf ("<p class=\"lorem\">The following flights are active and listed by their flight number (the suffix) along the left-hand side:");
                             printf ("<ul>");
                             foreach ($flightlist as $row) {
                                 printf ("<li class=\"lorem\"><a href=\"#%s_sidebar\" onclick=\"opensidebar('%s');\">%s</a>, %s</li>", $row["flightid"], $row["flightid"], $row["flightid"], $row["description"]);
@@ -184,7 +183,7 @@
                             printf ("</ul></p>");
                         }
                         else {
-                           printf ("No flights are actively being tracked.");
+                           printf ("<ul><li class=\"lorem\">No flights are actively being tracked.</li></ul>");
 
                         }
                     ?>
