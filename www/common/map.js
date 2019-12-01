@@ -50,6 +50,7 @@
     var activeflights = [];
     var globalUpdateCounter = 0;
     var updateTimeout;
+    var sidebar;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1528,7 +1529,7 @@ function getTrackers() {
 
 
         // add a sidebar pane for navigation and instrumentation
-        var sidebar = L.control.sidebar('sidebar').addTo(map);
+        sidebar = L.control.sidebar('sidebar').addTo(map);
         var zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
 
 
@@ -1605,13 +1606,13 @@ function getTrackers() {
         setTimeout(function() { buildCharts(); }, 125);
 
         // build the Trackers table
-        setTimeout(function() { getTrackers(); }, 150);
+        //setTimeout(function() { getTrackers(); }, 150);
 
         // Update the flight sidebar content
         setTimeout(function() {
             var flight;
             var allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flightLivePacketStream\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
-            var livePacketStreamHTML = "<form>" + allHtml;
+            //var livePacketStreamHTML = "<form>" + allHtml;
             var i = 0;
             for (flight in flightids) {
                 var pos_a = "#" + flightids[flight].flightid + "_positionpacketlistlink";
@@ -1655,9 +1656,10 @@ function getTrackers() {
                 $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
 
                 // Build the live packet stream HTML for flight selection
-                livePacketStreamHTML = livePacketStreamHTML + "<input type=\"radio\" id=\"flightLivePacketStream-" + flightids[flight].flightid + "\" name=\"flightLivePacketStream\"  value=\"" + flightids[flight].flightid + "\" > " + flightids[flight].flightid + "&nbsp; &nbsp;";
+                //livePacketStreamHTML = livePacketStreamHTML + "<input type=\"radio\" id=\"flightLivePacketStream-" + flightids[flight].flightid + "\" name=\"flightLivePacketStream\"  value=\"" + flightids[flight].flightid + "\" > " + flightids[flight].flightid + "&nbsp; &nbsp;";
                 i += 1;
             }
+            /*
             var liveA_a = "#livePacketFlightSelectionLink";
             var liveA_l = "#livePacketFlightSelectionSign";
             var liveA_e = "#livePacketFlightSelection";
@@ -1671,11 +1673,12 @@ function getTrackers() {
             // Build the Live Packet Stream tab
             livePacketStreamHTML = livePacketStreamHTML + "</form>"; 
             document.getElementById("flightsLivePacketStream").innerHTML = livePacketStreamHTML;
+            */
         }, 175);
 
 
         // Update livestream sidebar content 
-        setTimeout(function () {
+        /*setTimeout(function () {
             var e = document.getElementById('searchfield');
             e.oninput = updateLivePacketStream;
             e.onpropertychange = e.oninput;
@@ -1723,6 +1726,7 @@ function getTrackers() {
             currentflight = "allpackets";
             getLivePackets();
         }, 200);
+        */
 
 
         // Update all things on the map.  Note:  updateAllItems will scheduled itself to run every 5 seconds.  No need for a setInterval call.
@@ -1906,6 +1910,19 @@ function getTrackers() {
              }
         });
 
+    }
+
+    /************
+     * opensidebar
+     *
+     * This function opens the specified tab on the sidebar
+    *************/
+    function opensidebar(id) {
+        if (sidebar) {
+            sidebar.open(id + "_sidebar")
+        }
+
+        return false;
     }
 
     /************

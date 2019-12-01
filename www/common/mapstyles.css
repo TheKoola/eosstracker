@@ -134,7 +134,8 @@ html, body, .map {
 .lorem {
     font-style: italic;
     /*color: "#404040";*/
-    color: gray;
+    /*color: gray;*/
+    color: #303030;
 }
 
 .buttonstyle {
@@ -403,6 +404,12 @@ a.section-link:hover { text-decoration: underline; }
     font-weight:  bold;
 }
 
+.normal {
+    color: #303030;
+    font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+    font-size: 1em;
+}
+
 p.relativeposition {
     color black;
     font-family:  "Lucida Console", Monaco, monospace;
@@ -472,9 +479,10 @@ input {
         display: none;
     }
 
-    div.table-cell {
-        width: 20px;
+    div.div-table {
+        width: 80%;
     }
+
 
     div.table-cell.big {
         font-size: 1.2em;
@@ -487,8 +495,8 @@ input {
         display: none;
     }
 
-    div.table-cell {
-        width: 20px;
+    div.div-table {
+        width: 80%;
     }
 
     div.instrumenttitle {

@@ -72,7 +72,7 @@
         return 0;
     }
 
-    $query = 'select f.flightid from flights f where f.active = true order by f.flightid desc;';
+    $query = 'select f.flightid, f.description from flights f where f.active = true order by f.flightid desc;';
     $result = sql_query($query);
     if (!$result) {
         db_error(sql_last_error());
@@ -135,8 +135,8 @@
                 <!-- <li><a href="#screenw" role="tab"><span id="screenw"></span></a></li> -->
                 <!-- <li><a href="#screenh" role="tab"><span id="screenh"></span></a></li> -->
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
-                <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
-                <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li>
+                <!-- <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li> -->
+                <!-- <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li> -->
 <?php
     if ($numflights > 0) {
         foreach ($flightlist as $row){
@@ -155,24 +155,70 @@
         <!-- Tab panes -->
         <div class="sidebar-content">
 
+            <!-- Home sidebar pane -->
             <div class="sidebar-pane" id="home">
-                <h1 class="sidebar-header">Home<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span> </h1>
-                <p class="logo" style="margin-top:  30px; margin-bottom: 0px;"><?php if (isset($logo)) printf("%s", $logo); else printf("No Logo"); ?><br>
-                </p>
-                <p style="margin-top: 0px; font-size: 1.1em; color:  #0052cc; font-style:  italic; text-shadow: 5px 5px 10px gray; margin-bottom:  30px;">Tracking High Altitude Balloons</p>
-                <p class="lorem">Welcome to the map utilty for the EOSS Tracker application.  From these screens one can monitor positions of APRS objects and their repsective paths.</p>
-                <p class="section-header">System: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?>
-                    <br>System Status: <span id="systemstatus"></span></p>
-                <table class="packetlist">
-                    <tr><td class="packetlistheader">Process</td><td class="packetlistheader">Status</td></tr>
-                    <tr><td class="packetlist">direwolf</td><td class="packetlist"><span id="direwolf-status"></span></td></tr>
-                    <tr><td class="packetlist">aprsc</td><td class="packetlist"><span id="aprsc-status"></span></td></tr>
-                    <tr><td class="packetlist">gpsd</td><td class="packetlist"><span id="gpsd-status"></span></td></tr>
-                    <tr><td class="packetlist">backend daemon</td><td class="packetlist"><span id="habtracker-d-status"></span></td></tr>
-                </table>
-                <div><span id="myerror"></span></div>
-            </div>
+                    <h1 class="sidebar-header">Home<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span> </h1>
+                <div class="div-table">
+                    <p class="logo" style="margin-top:  30px; margin-bottom: 0px;"><?php if (isset($logo)) printf("%s", $logo); else printf("No Logo"); ?></p>
+                    <p style="margin-top: 0px; font-size: 1.1em; color:  #0052cc; font-style:  italic; text-shadow: 5px 5px 10px gray; margin-bottom:  30px;">
+                        Tracking High Altitude Balloons
+                    </p>
+                    <p class="section-header" style="text-decoration: underline;">Welcome</p>
+                    <p class="lorem">Welcome to the map utilty for the EOSS Tracker application.  From this map screen one can monitor positions of 
+                        balloon flights, track where they've been, and find out where they're going.  Have fun!
+                    </p>
+                </div>
+                <div class="div-table" style="margin-top: 30px;">
+                    <p class="section-header" style="text-decoration: underline;">How to Get Around</p>
+                    <p class="lorem">
+                        Flights are listed by their flight number along the left-hand side.  Click on a flight number to get more information about that
+                        specific flight (ex. altitude, heading, speed, etc.).
+                    </p>
+                    <?php
+                        if ($numflights > 0) {
+                            printf ("<p class=\"lorem\">The following flights are active and listed by their flight number (the suffix) along the left-hand side:");
+                            printf ("<ul>");
+                            foreach ($flightlist as $row) {
+                                printf ("<li class=\"lorem\"><a href=\"#%s_sidebar\" onclick=\"opensidebar('%s');\">%s</a>, %s</li>", $row["flightid"], $row["flightid"], $row["flightid"], $row["description"]);
+                            }
+                            printf ("</ul></p>");
+                        }
+                        else {
+                           printf ("No flights are actively being tracked.");
 
+                        }
+                    ?>
+                </div>
+                <div class="div-table" style="margin-top: 30px;">
+                    <p class="section-header" style="text-decoration: underline;">System Status</p>
+                    <p class="normal" style="margin-bottom: 0px;">Current Status: <span id="systemstatus"></span></p>
+                    <p class="normal" style="margin-top: 0px; margin-bottom: 20px;">System Name: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?></p>
+                    <div class="table-row">
+                        <div class="table-cell header toprow">Process</div>
+                        <div class="table-cell header toprow">Status</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">direwolf</div>
+                        <div class="table-cell"><span id="direwolf-status"></span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">aprsc</div>
+                        <div class="table-cell"><span id="aprsc-status"></span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">gpsd</div>
+                        <div class="table-cell"><span id="gpsd-status"></span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">backend daemon</div>
+                        <div class="table-cell"><span id="habtracker-d-status"></span></div>
+                    </div>
+                </div>
+                <div id="myerror"></div>
+            </div>   <!-- end of Home sidebar pane -->
+
+            <!-- profile sidebar pane (the trackers list) -->
+            <!--
             <div class="sidebar-pane" id="profile">
                 <h1 class="sidebar-header">Trackers<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="lorem">This tab shows the list of active trackers for the current mission.</p>
@@ -182,7 +228,11 @@
                 </div>
                 <div id="newtrackererror"></div>
 
-            </div>
+            </div> -->  <!-- end of profile sidebar pane -->
+
+
+            <!-- messages sidebar pane (live packet stream) -->
+            <!--
             <div class="sidebar-pane" id="messages">
                 <h1 class="sidebar-header">Live Packet Stream<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="section-header">Live Packet Stream: &nbsp; <span id="livePacketStreamState"><mark style="background-color: red;">off</mark></span></p>
@@ -212,28 +262,72 @@
                 </div>
                 <p class="section-header">Packets: <mark><span id="packetcount">0</span></mark></p>
                 <div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>
-            </div>
+            </div> -->  <!-- end of messages sidebar pane -->
 
+
+            <!-- settings sidebar pane -->
             <div class="sidebar-pane" id="settings">
                 <h1 class="sidebar-header">Settings<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
-                <p class="section-header">Global Map Preferences:</p>
-                <p class="lorem">Changes to these settings affect all users and viewers of the map.</p>
+                <div class="div-table">
+                    <p class="section-header">Global Map Preferences:</p>
+                    <p class="lorem">Changes to these settings affect all users and viewers of the map.</p>
+                </div>
+
                 <form id="userpreferences" action="preferences.php" name="userpreferences">
-                <table cellpadding=5 cellspacing=0 border=0 class="preferencestable">
-		    <tr><td style="vertical-align:  top;">Lookback Period:<br><p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  form="userpreferences" title="from 1 to 999 minutes"> minutes</td></tr>
-                    <tr><td style="vertical-align:  top;">Icon Size:<br><p class="lorem">Changes how large the icons are for APRS objects on the map.</p></td><td style="vertical-align:  top; white-space: nowrap;"><input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels</td></tr>
-                    <tr><td style="vertical-align:  top;">Plot tracks:<br><p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are always plotted for flights).</p></td><td style="vertical-align:  top;"><input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences"></td></tr>
-                    <tr><td colspan=2><input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" style="font-size:  1.2em;"> &nbsp; <span id="systemsettings_error" style="background-color: yellow; color: black;"></span></td></tr>
-                </table>
-                </p>
-                <div style="position: absolute; bottom: 10px; width: 360px;">
+
+                <div class="div-table">
+                    <div class="table-row">
+                        <div class="table-cell header toprow big">Configuration Item</div>
+                        <div class="table-cell header toprow big">Input</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell" >Lookback Period:<br>
+                            <p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p>
+                        </div>
+                        <div class="table-cell">
+                             <input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  
+                                 form="userpreferences" title="from 1 to 999 minutes"> minutes
+                        </div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">Icon Size:<br>
+                            <p class="lorem">Changes how large the icons are for APRS objects on the map.</p>
+                        </div>
+                        <div class="table-cell">
+                            <input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" 
+                                min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels
+                        </div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell">Plot tracks:<br>
+                            <p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are 
+                                always plotted for flights).</p>
+                        </div>
+                        <div class="table-cell">
+                            <input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences">
+                        </div>
+                    </div>
+                </div>
+                <div class="div-table">
+                    <input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" 
+                        style="font-size:  1.2em;"> 
+                    &nbsp; 
+                    <span id="systemsettings_error" style="background-color: yellow; color: black;"></span>
+                </div>
+
+
+                <div class="div-table" style="margin-top: 30px;">
                     <p class="section-header">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>
-                    <p class="lorem">The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
-     </p>
+                    <p class="lorem">The EOSS Tracker application is licensed under version 3 of the GNU General Public License 
+                        (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
+                    </p>
                     <p class="lorem">Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)</p>
                 </div>
-            </div>
 
+            </div> <!-- end of settings sidebar pane -->
+
+     
+    <!-- sidebar panes for each active flight -->
 <?php
 
  if ($numflights > 0) {
