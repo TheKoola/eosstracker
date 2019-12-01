@@ -162,119 +162,100 @@ a.normal-link {
 a.normal-link:link { color:  blue; text-decoration:none; }
 a.normal-link:hover { color: red; text-decoration: underline; }
 
-
-p.instrumentvaluetitle {
-    text-align:  center; 
-    text-decoration: underline;
-    margin-top:  0;
-    margin-right:  0;
-    margin-left:  0;
-    margin-bottom:  10; 
-    font-size:  1.2em; 
-    font-weight: bold;
-    color: black;
+div.div-table {
+    margin: 0px;
+    /*padding-top:  5px;*/
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-div.readouttop {
-    width:  162px;
-    height:  20px;
-    margin: 0;
-    margin-top: 0px;
-    margin-bottom: 5px;
-}    
+div.table-row {
+    display: table-row;
+}
 
-div.readoutbottom {
-    width:  162px;
-    height:  20px;
-    margin: 0;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}    
-
-
-p.instrumentvalue {
-    background-color:  black;
+div.panel-cell {
+    display: table-cell;
+    white-space: normal;
+    background-color: black;
     text-align:  center; 
     vertical-align:  middle;
-    margin: 0;
+    margin: 5px;
     font-family:  "Lucida Console", Monaco, monospace;
     font-size: 1.2em;
     font-weight: bold;
-    color:  white;
-    width: 162px;
-    height:  20px;
-    display:  table-cell;
-}
-
-div.instrumentpanel {
-    margin: 0px;
-    padding-top:  5px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-color:  black;
-    /*border:  1px solid black; */
-    height: 414px;
-    width: 360px;
-}
-
-div.lowerinstrumentpanel {
-    margin: 0px;
-    padding-top:  0px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    background-color:  black;
-    /*border:  1px solid black; */
-    height: 235px;
-    width: 360px;
-}
-
-.ttlcontainer{
-    text-align: left;
-    margin: 0px;
-    padding:  0px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-color:  black;
-    vertical-align: middle;
-    width: 360px;
-}
-
-
-.ttl {
-    padding:  5px;
     color: white;
-    font-weight: bold;
-    font-size: 1.2em;
-    /*border:  1px solid black; */
 }
 
+div.panel-cell.toprow {
+    padding-top: 5px;
+}
 
-.ttlvalue {
-    background-color:  black;
+div.panel-cell.bottomrow {
+    padding-bottom: 5px;
+}
+
+div.instrumenttitle {
+    display: table-cell;
+    white-space: normal;
+    background-color: black;
+    text-decoration: underline;
+    text-align:  center; 
+    vertical-align:  middle;
+    margin: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
     font-family:  "Lucida Console", Monaco, monospace;
+    font-size: 1.2em;
     font-weight: bold;
-    color:  white;
+    color: white;
+}
+
+div.instrumenttitle.bottomrow {
+    padding-top: 15px;
 }
 
 
-.column {
-    float: left;
-    width:  180;
-    height: 409; 
-    overflow:  hidden;
-/*    border:  1px solid blue;*/
+div.table-cell {
+    display: table-cell;
+    text-align: left;
+    white-space: normal;
+    vertical-align: middle;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: black;
+    border-top: none;
+    border-left: none;
 }
 
-.rowtop {
-    width:  180px;
-    height:  205px;
-/*    border:  1px solid red;*/
+div.table-cell.big {
+    font-size: 1.4em;
 }
 
-.rowbottom {
-    width:  180px;
-    height:  204px;
-/*    border:  1px solid red;*/
+div.table-cell.header {
+    font-size: 1.2em;
+    background-color: #0074d9;
+    font-variant:  small-caps;
+    color: white;
+}
+
+div.table-cell.important {
+    background-color: #996300;
+}
+
+div.table-cell.toprow {
+    border-top: solid 1px black;
+}
+
+div.table-cell:first-child {
+    border-left: solid 1px black;
+}
+
+div.table-cell:last-child {
+    text-align: right;
 }
 
 
@@ -452,6 +433,13 @@ p.packetdata {
     color: black; 
 }
 
+pre.packetdata {
+    font-family:  "Lucida Console", Monaco, monospace;
+    white-space: nowrap;
+    text-align:  left;
+    margin: 0px;
+}
+
 
 input {
     font-family:  "Lucida Console", Monaco, monospace;
@@ -472,4 +460,56 @@ input {
 .blueToWhite {
     animation-name:  blueToWhiteTransition;
     animation-duration: 0.5s;
+}
+
+/* for handling the gauge size with different size screens */
+@media only screen and (max-width: 799px) {
+      div.instrument {
+          width: 140px;
+          height: 140px;
+      }
+    div.instrumenttitle {
+        display: none;
+    }
+
+    div.table-cell {
+        width: 20px;
+    }
+
+    div.table-cell.big {
+        font-size: 1.2em;
+        white-space: nowrap;
+    }
+}
+
+@media only screen and (max-width: 459px) {
+    div.instrument {
+        display: none;
+    }
+
+    div.table-cell {
+        width: 20px;
+    }
+
+    div.instrumenttitle {
+        display: block;
+    }
+    div.table-cell.big {
+        font-size: 1.2em;
+        white-space: nowrap;
+    }
+}
+
+@media only screen and (min-width: 800px) {
+      div.instrument {
+          width: 180px;
+          height: 180px;
+      }
+
+    div.instrumenttitle {
+        display: none;
+    }
+    div.table-cell.big {
+        font-size: 1.4em;
+    }
 }

@@ -62,6 +62,49 @@
     var realtimeflightlayers = [];
     var realtimelayers = [];
 
+
+
+    /***********
+    * getChartWidth
+    *
+    * This function return calculated width of the chart
+    ***********/
+    function getChartWidth() {
+        var w = window.innerWidth;
+
+        if (w < 800) {
+            // the screen is small
+            w = 280;
+        }
+        else {
+            w = 360; 
+        }
+
+        return w;
+    }
+
+
+    /***********
+    * getChartHeight
+    *
+    * This function return calculated height of the chart
+    ***********/
+    function getChartHeight() {
+        var w = window.innerWidth;
+        var h;
+
+        if (w < 800) {
+            // the screen is small
+            h = Math.round(280 / 1.4);
+            h = (h < 100 ? 100 : h);
+        }
+        else {
+            h = 250;
+        }
+
+        return h;
+    }
+    
     
     /*********
     * Search for an object within an array of objects
@@ -145,8 +188,6 @@
                     else if (feature.properties.ascending == "false")
                         localstyle = { color : descending_color, pane: 'pathsPane', weight: 2 };
                 }
-                //errorhtml = document.getElementById("error-" + fid);
-                //errorhtml.innerHTML = errorhtml.innerHTML + "<br>" + "[" + fid + ":" + id + "] colorIndex: " + colorIndex + ", len: " + ascending_colorsets.length;
                 colorIndex += i;
                 if (colorIndex > (ascending_colorsets.length - 1))
                     colorIndex = 0;
@@ -324,7 +365,6 @@
             var layer = realtimelayer.getLayer(id);
             var html = "";
 
-            //document.getElementById("error-" + item.properties.flightid).innerHTML = JSON.stringify(item);
 
             // if this is a balloon object, then update it's html properties with a hyperlink...
             if (item.properties.objecttype == "balloon") {
@@ -946,7 +986,6 @@
             if (followfeatureid != "") {
                 if (followfeatureid.localeCompare(item.properties.id) == 0) {
                     map.panTo({ lat: item.geometry.coordinates[1], lng: item.geometry.coordinates[0] });
-                    //document.getElementById("error").innerHTML = JSON.stringify(item);
                 }
             }
         }
@@ -1018,7 +1057,6 @@
                     }, 3000);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    //document.getElementById("errors").innerHTML = "error set tz: " + textStatus;
 	                alert("error: " + textStatus);
                 }
             });
@@ -1054,7 +1092,6 @@
     function changeAssignedFlight(tactical, element) {
         var assignedFlight = element.options[element.selectedIndex].value;
 
-        //document.getElementById("error").innerHTML = "tactical:  " + tactical + "  flight: " + assignedFlight;
 
         $.get("changeassignedflight.php?tactical=" + tactical + "&flightid=" + assignedFlight, function(data) {
             document.getElementById("newtrackererror").innerHTML = "";
@@ -1070,7 +1107,6 @@
     function changeTrackerTeam(call, element) {
         var tactical = element.options[element.selectedIndex].value;
 
-        //document.getElementById("error").innerHTML = "callsign:  " + call + "  tactical:  " + tactical;
 
         $.get("changetrackerteam.php?callsign=" + call + "&tactical=" + tactical, function(data) {
             document.getElementById("newtrackererror").innerHTML = "";
@@ -1112,7 +1148,6 @@ function getTrackers() {
                 var table = document.createElement("TABLE");
                 var tablediv = document.getElementById("trackers");
                 table.setAttribute("class", "trackerlist");
-                //table.setAttribute("style", "width: auto");
  
                 //The columns
                 var columns = ["Team and Flight Assignment", "Callsign", "Move to This Team"];
@@ -1292,7 +1327,6 @@ function getTrackers() {
                }
            }
            else if (operation == "or") {
-               //document.getElementById("debug").innerHTML = "in OR section";
                if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
                    packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
                    html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
@@ -1300,7 +1334,6 @@ function getTrackers() {
                }
            }
            else if (operation == "not") {
-               //document.getElementById("debug").innerHTML = "in OR section";
                if (searchstring.length > 0 && searchstring2.length > 0) {
                    if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
                        packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
@@ -1446,11 +1479,8 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
- 
-        if (latitude != "" && longitude != "" && zoom != "")
-	        map.setView(new L.LatLng(latitude, longitude), zoom);
-        else
-	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 12);
+        // set the map default starting location.  This is Denver, CO: 39.739, -104.985
+	    map.setView(new L.LatLng(39.739, -104.985), 10);
         
 
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
@@ -1497,10 +1527,10 @@ function getTrackers() {
          }
 
 
-
         // add a sidebar pane for navigation and instrumentation
         var sidebar = L.control.sidebar('sidebar').addTo(map);
         var zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
+
 
         /*
         * This sets up all the flight layers.
@@ -1510,7 +1540,6 @@ function getTrackers() {
         var key2;
             
         for (key in flightids) {
-            //document.getElementById("error").innerHTML = JSON.stringify(flightids[key]);
             var predictedpathlayer = L.layerGroup();
             var landingpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
@@ -1557,17 +1586,29 @@ function getTrackers() {
      * This function performs some startup actions and calls "initialize", the primary function for starting the map stuff
     *************/
     function startup() {
-        $.get("getposition.php", function(data) { 
-            //document.getElementById("error").innerHTML = "followfeatureid:  " + followfeatureid;
-            lastposition = JSON.parse(data);
-            initialize();
+        // initialize the map and its layers
+        initialize();
 
-	        getConfiguration();
-            buildGauges();
-            buildCharts();
-            createTheListener();
-            getProcessStatus();
+        // The idea is to stagger the loading of these so that the browser isn't bogged down at first load.
+        //
+        // Read in the configuration
+	    setTimeout(function() { getConfiguration(); }, 25);
 
+        // Setup the listener
+        setTimeout(function() { createTheListener(); }, 50);
+
+        // Get the status of running processes
+        setTimeout(function() { getProcessStatus(); }, 75);
+
+        // Build the gauges and charts
+        setTimeout(function() { buildGauges(); }, 100);
+        setTimeout(function() { buildCharts(); }, 125);
+
+        // build the Trackers table
+        setTimeout(function() { getTrackers(); }, 150);
+
+        // Update the flight sidebar content
+        setTimeout(function() {
             var flight;
             var allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flightLivePacketStream\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
             var livePacketStreamHTML = "<form>" + allHtml;
@@ -1626,11 +1667,15 @@ function getTrackers() {
             var liveB_e = "#livePacketSearch";
             $(liveA_a).click({element: liveA_e, link: liveA_l }, toggle);
             $(liveB_a).click({element: liveB_e, link: liveB_l }, toggle);
- 
+
             // Build the Live Packet Stream tab
             livePacketStreamHTML = livePacketStreamHTML + "</form>"; 
             document.getElementById("flightsLivePacketStream").innerHTML = livePacketStreamHTML;
- 
+        }, 175);
+
+
+        // Update livestream sidebar content 
+        setTimeout(function () {
             var e = document.getElementById('searchfield');
             e.oninput = updateLivePacketStream;
             e.onpropertychange = e.oninput;
@@ -1677,24 +1722,43 @@ function getTrackers() {
 
             currentflight = "allpackets";
             getLivePackets();
+        }, 200);
 
-            // build the Trackers table
-            getTrackers();
 
-            // Update all things on the map.  Note:  updateAllItems will scheduled itself to run every 5 seconds.  No need for a setInterval call.
-            // We delay a couple of seconds before updating the full map/gauges/tables if the number of flights/beacons we're tracking is > 8 in an attempt
-            // to not swamp the user's browser with updates upon first load.
-            if (realtimeflightlayers.length > 8)
-                setTimeout(function() {updateAllItems("full")}, 2000);
-            else
-                updateAllItems("full");
+        // Update all things on the map.  Note:  updateAllItems will scheduled itself to run every 5 seconds.  No need for a setInterval call.
+        // We delay a couple of seconds before updating the full map/gauges/tables if the number of flights/beacons we're tracking is > 8 in an attempt
+        // to not swamp the user's browser with updates upon first load.
+        if (realtimeflightlayers.length > 8)
+            setTimeout(function() {updateAllItems("full")}, 2000);
+        else
+            setTimeout(function() {updateAllItems("full");}, 225); 
 
-            // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
-            $(window).on('focus', function() { 
-                updateAllItems("full", true);
-            });
-
+        // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
+        $(window).on('focus', function() { 
+            updateAllItems("full", true);
         });
+
+        // Get the latest position from GPS
+        $.get("getposition.php", function(data) { 
+            lastposition = JSON.parse(data);
+            
+            // Set the map center position
+            if (latitude != "" && longitude != "" && zoom != "")
+	            map.setView(new L.LatLng(latitude, longitude), zoom);
+            else
+    	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
+        });
+
+
+        //document.getElementById("screenw").innerHTML = window.innerWidth;
+        //document.getElementById("screenh").innerHTML = window.innerHeight;
+        // Listener so that the charts for flights are resized when the screen changes size.
+        window.addEventListener("resize", function() {
+            //document.getElementById("screenw").innerHTML = window.innerWidth;
+            //document.getElementById("screenh").innerHTML = window.innerHeight;
+            resizeCharts();
+        });
+
     }
 
 
@@ -1737,7 +1801,7 @@ function getTrackers() {
             // This is the altitude vs. time chart
             achart = c3.generate({
                 bindto: altElement,
-                size: { width: 360, height: 250 },
+                size: { width: getChartWidth(), height: getChartHeight() },
                 padding: {right: 10 },
                 data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
                 axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
@@ -1752,7 +1816,7 @@ function getTrackers() {
             // This is the vertical rate vs. time chart
             vchart = c3.generate({
                 bindto: vertElement,
-                size: { width: 360, height: 250 },
+                size: { width: getChartWidth(), height: getChartHeight() },
                 padding: {right: 10 },
                 data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
                 axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
@@ -1769,6 +1833,8 @@ function getTrackers() {
             $(vertElement).data('verticalChart', vchart);
         }
 
+
+
         // Now query the backend database for chart data for all active flights, and load that data into the pre-built charts...
         $.get("getaltitudechartdata.php", function(data) {
             var thejsondata;
@@ -1780,7 +1846,6 @@ function getTrackers() {
                 thekeys = Object.keys(thejsondata);
 
 
-                //document.getElementById("error").innerHTML = JSON.stringify(thekeys);
                 for (i = 0; i < thekeys.length; i++) {
                         var flight = thejsondata[i];
                     var jsondata = flight.chartdata;
@@ -1797,7 +1862,6 @@ function getTrackers() {
                         }
                     }
 
-                    //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
                     
                     // Load data into each Altitude chart
                     var achart = $(element).data('altitudeChart');
@@ -1818,7 +1882,6 @@ function getTrackers() {
                 thekeys = Object.keys(thejsondata);
 
 
-                //document.getElementById("error").innerHTML = JSON.stringify(thekeys);
                 for (i = 0; i < thekeys.length; i++) {
                         var flight = thejsondata[i];
                     var jsondata = flight.chartdata;
@@ -1835,7 +1898,6 @@ function getTrackers() {
                         }
                     }
 
-                    //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
                     
                     // Load data into each Altitude chart
                     var vchart = $(element).data('verticalChart');
@@ -1845,6 +1907,37 @@ function getTrackers() {
         });
 
     }
+
+    /************
+     * resizeCharts
+     *
+     * This function loops through the current flights, adjusting their chart sizes to fit the screen
+    *************/
+    function resizeCharts() {
+        var w = getChartWidth();
+        var h = getChartHeight();
+
+
+        // Loop through each flight's sidebar tab, resizing the charts.
+        for (flight in flightids) {
+            var altElement = "#" + flightids[flight].flightid + "_altitudechart";
+            var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
+            
+            var vchart = $(vertElement).data('verticalChart');
+            var achart = $(altElement).data('altitudeChart');
+
+            vchart.resize({
+                height: h,
+                width: w
+            });
+
+            achart.resize({
+                height: h,
+                width: w
+            });
+        }
+    }
+
 
     /************
      * buildGauges
@@ -1876,13 +1969,21 @@ function getTrackers() {
             var relativeBearingValue = "#" + flightids[flight].flightid + "_relativebearingvalue";
             var relativeElevationValue = "#" + flightids[flight].flightid + "_relativeelevationanglevalue";
 
-
+/*
             altimeter = $.flightIndicator(altitudeInstrument, 'altimeter', { showBox: true, size: 180 });
             variometer = $.flightIndicator(verticalRateInstrument, 'variometer', { showBox: true, size: 180 });
             heading = $.flightIndicator(balloonHeadingInstrument, 'heading', { showBox: true, size: 180 });
             airspeed = $.flightIndicator(speedInstrument, 'airspeed', { showBox: true, size: 180 });
             relativebearing = $.flightIndicator(relativeBearingInstrument, 'relativeHeading', { showBox: true, size: 180 });
             relativeangle = $.flightIndicator(relativeElevationInstrument, 'elevationAngle', { showBox: true, size: 180 });
+*/
+
+            altimeter = $.flightIndicator(altitudeInstrument, 'altimeter', { showBox: true });
+            variometer = $.flightIndicator(verticalRateInstrument, 'variometer', { showBox: true});
+            heading = $.flightIndicator(balloonHeadingInstrument, 'heading', { showBox: true});
+            airspeed = $.flightIndicator(speedInstrument, 'airspeed', { showBox: true});
+            relativebearing = $.flightIndicator(relativeBearingInstrument, 'relativeHeading', { showBox: true});
+            relativeangle = $.flightIndicator(relativeElevationInstrument, 'elevationAngle', { showBox: true});
 
             $(altitudeValue).data('altimeter', altimeter);
             $(verticalRateValue).data('variometer', variometer);
@@ -1917,7 +2018,6 @@ function getTrackers() {
         var thePanToListener = document.addEventListener("MapPanTo", function(event) {
             if (map) {
                 map.panTo(L.latLng(event.detail.lat,event.detail.lon));
-                //map.setZoom(map.zoom);
             }
         });
 
@@ -1955,10 +2055,12 @@ function getTrackers() {
         }
 
         // Update the realtime layers that aren't flight layers (aka everything else...mylocation, trackers, landing predictions, other stations, etc.)
-        var rl;
-        for (rl in realtimelayers) {
-            realtimelayers[rl].update();
-        }
+        setTimeout(function() {
+            var rl;
+            for (rl in realtimelayers) {
+                realtimelayers[rl].update();
+            }
+        }, 10);
 
         // Get list of flights that have new packets and based on that list, only update those flights on the map/gauges/tables
         $.get("getupdates.php" + (fullupdate != "" ? "?fullupdate=full" : ""), function(data) {
@@ -1970,11 +2072,13 @@ function getTrackers() {
                 var thecallsign = jsonData[key].callsign;
 
                 // Update the realtime layers for this flight
-                var rfl;
-                for (rfl in realtimeflightlayers) {
-                    if (realtimeflightlayers[rfl].options.name == theflight + thecallsign)  
-                        realtimeflightlayers[rfl].update();
-                }
+                setTimeout(function() {
+                    var rfl;
+                    for (rfl in realtimeflightlayers) {
+                        if (realtimeflightlayers[rfl].options.name == theflight + thecallsign)  
+                            realtimeflightlayers[rfl].update();
+                    }
+                }, 20);
 
                 // Update all the gauges as well as the last position, last status, and packet source tables
                 $.get("getflightpackets.php?flightid=" + theflight, function(data) {
@@ -2024,7 +2128,7 @@ function getTrackers() {
                         // Update the last position packets table
                         $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
                         $("#" + item.flightid + "_lastcallsign_" + k).html(
-                            "<a href=\"#\" class=\"normal-link\" onclick=\"dispatchPanToEvent('" + item.latitude + "', '" + item.longitude + "');\">" +  item.callsign + "</a>"
+                            "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + item.latitude + "', '" + item.longitude + "');\">" +  item.callsign + "</a>"
                         );
                         $("#" + item.flightid + "_lastspeed_" + k).text(Math.round(item.speed * 10 / 10) + " mph");
                         $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
@@ -2052,53 +2156,61 @@ function getTrackers() {
                     //
                     //
                     // Create a HTML Table element.
-                    var table = document.createElement("TABLE");
-                    var tablediv = document.getElementById(fid + "_lastpacketpath");
-                    table.setAttribute("class", "packetlist");
-                    table.setAttribute("style", "width: auto");
+                    var container = document.getElementById(fid + "_lastpacketpathdata");
+                    var table = document.createElement("DIV");
+                    table.setAttribute("class", "div-table");
 
                     // The columns
                     var columns = ["Callsign", "Receive Time", "Last 10 Packets"];
 
                     // Add the header row.
-                    var row = table.insertRow(-1);
+                    var row = document.createElement("DIV");
+                    row.setAttribute("class", "table-row");
+                    table.appendChild(row);
                     for (i = 0; i < columns.length; i++) {
-                        var headerCell = document.createElement("TH");
+                        var headerCell = document.createElement("DIV");
                         headerCell.innerHTML = columns[i];
-                        headerCell.setAttribute("class", "packetlistheader");
-                        headerCell.setAttribute("style", "white-space: nowrap;");
+                        headerCell.setAttribute("class", "table-cell header toprow");
                         row.appendChild(headerCell);
                     }
                     
                     // Now add the data rows
                     var keys = Object.keys(lastPacketPath);
                     if (keys.length == 0) {
-                        row = table.insertRow(-1);
-                        var blankcell1 = row.insertCell(0);
-                        var blankcell2 = row.insertCell(1);
-                        var blankcell3 = row.insertCell(2);
-                        blankcell1.setAttribute("class", "packetlist");
-                        blankcell2.setAttribute("class", "packetlist");
-                        blankcell3.setAttribute("class", "packetlist");
+                        row = document.createElement("DIV");   
+                        row.setAttribute("class", "table-row");
+                        table.appendChild(row);
+                        var blankcell1 = document.createElement("DIV");
+                        var blankcell2 = document.createElement("DIV");
+                        var blankcell3 = document.createElement("DIV");
+                        blankcell1.setAttribute("class", "table-cell");
+                        blankcell2.setAttribute("class", "table-cell");
+                        blankcell3.setAttribute("class", "table-cell");
                         blankcell1.innerHTML = "n/a";
+                        row.appendChild(blankcell1);
+                        row.appendChild(blankcell2);
+                        row.appendChild(blankcell3);
+                        row.appendChild(blankcell4);
                     }
                     else {
                         for (i = 0; i < keys.length; i++) {
-                            row = table.insertRow(-1);
+                            row = document.createElement("DIV");
+                            row.setAttribute("class", "table-row");
+                            table.appendChild(row);
                             var beacon = lastPacketPath[i].callsign;
                             var packetsource = lastPacketPath[i].lastpath;
-                            var beaconcell = row.insertCell(0);
-                            var timecell = row.insertCell(1);
-                            var packetcell = row.insertCell(2);
+                            var beaconcell = document.createElement("DIV");
+                            var timecell = document.createElement("DIV");
+                            var packetcell = document.createElement("DIV");
+                            beaconcell.setAttribute("class", "table-cell");
+                            timecell.setAttribute("class", "table-cell");
+                            packetcell.setAttribute("class", "table-cell");
+                            row.appendChild(beaconcell);
+                            row.appendChild(timecell);
+                            row.appendChild(packetcell);
 
-
-                            beaconcell.setAttribute("class", "packetlist");
                             beaconcell.innerHTML = beacon;
-
-                            timecell.setAttribute("class", "packetlist");
                             timecell.innerHTML = lastPacketPath[i].time.split(" ")[1];
-
-                            packetcell.setAttribute("class", "packetlist");
                             packetcell.setAttribute("style", "text-align: left; white-space: nowrap;");
                             var j = 0;
                             var html = "";
@@ -2111,24 +2223,14 @@ function getTrackers() {
                                 html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
                             }
                             if (packetsource.length > 0)
-                                packetcell.innerHTML = "<pre class=\"packetdata\" style=\"margin: 0px;\">" + html + "</pre>";
+                                packetcell.innerHTML = "<pre class=\"packetdata\">" + html + "</pre>";
                             else
                                 packetcell.innerHTML = "n/a";
                         }
                     }
 
-                    //Add the legend row
-                    row = table.insertRow(-1);
-                    var legendcell = row.insertCell(0);
-                    legendcell.setAttribute("class", "packetlist");
-                    legendcell.setAttribute("colspan", "3");
-                    legendcell.innerHTML = "<strong>Legend:</strong> &nbsp; newest----->oldest<br>" 
-                        + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: lightgreen;\">R</mark></span>"
-                        + " - packet received over RF<br>"
-                        + "<span style=\"font-family: monospace; font-size: 1.4em;\"><mark style=\"background-color: yellow;\">I</mark></span>"
-                        + " - packet received over the Internet";
-                    tablediv.innerHTML = "";
-                    tablediv.appendChild(table);
+                    container.innerHTML = "";
+                    container.appendChild(table);
                     
                 // getflightpackets.php
                 });
@@ -2145,7 +2247,6 @@ function getTrackers() {
                         thekeys = Object.keys(thejsondata);
 
 
-                        //document.getElementById("error").innerHTML = JSON.stringify(thekeys);
                         for (i = 0; i < thekeys.length; i++) {
                                 var flight = thejsondata[i];
                             var jsondata = flight.chartdata;
@@ -2162,7 +2263,6 @@ function getTrackers() {
                                 }
                             }
 
-                            //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
                             
                             // Load data into each Altitude chart
                             var achart = $(element).data('altitudeChart');
@@ -2183,7 +2283,6 @@ function getTrackers() {
                         thekeys = Object.keys(thejsondata);
 
 
-                        //document.getElementById("error").innerHTML = JSON.stringify(thekeys);
                         for (i = 0; i < thekeys.length; i++) {
                                 var flight = thejsondata[i];
                             var jsondata = flight.chartdata;
@@ -2200,7 +2299,6 @@ function getTrackers() {
                                 }
                             }
 
-                            //document.getElementById("error2").innerHTML = "thisflightid:  " + thisflightid + "<br>" + JSON.stringify(cols);
 
                             // Load data into each Altitude chart
                             var vchart = $(element).data('verticalChart');
@@ -2270,11 +2368,10 @@ function getTrackers() {
         });
 
         // Update process status
-        getProcessStatus();
+        setTimeout(function() { getProcessStatus(); }, 50);
         
         // Update the live packet stream tab
-        getLivePackets();
-
+        setTimeout(function() { getLivePackets(); }, 100);
 
         // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
         // ...the idea being that ever so often, we should try to update everything on the map.

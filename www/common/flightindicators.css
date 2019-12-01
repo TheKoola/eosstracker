@@ -13,12 +13,13 @@
 
 /* Global block of an indicator*/
 div.instrument {
-  width: 250px;
-  height: 250px;
+  width: 180px;
+  height: 180px;
   position: relative;
   display: inline-block;
   overflow: hidden;
 }
+
 
 /* The box containing any element of an indicator */
 div.instrument .box {

@@ -128,9 +128,12 @@
 
     <!-- this is for the sidebar html -->
     <div id="sidebar" class="sidebar collapsed">
+
         <!-- Nav tabs -->
         <div class="sidebar-tabs">
             <ul role="tablist">
+                <!-- <li><a href="#screenw" role="tab"><span id="screenw"></span></a></li> -->
+                <!-- <li><a href="#screenh" role="tab"><span id="screenh"></span></a></li> -->
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
                 <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
                 <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li>
@@ -147,10 +150,11 @@
             <ul role="tablist">
                 <li><a href="#settings" role="tab"><img src="/images/graphics/gear.png" width="30" height="30"></a></li>
             </ul>
-        </div>
+        </div> <!-- end of sidebar-tabs -->
 
         <!-- Tab panes -->
         <div class="sidebar-content">
+
             <div class="sidebar-pane" id="home">
                 <h1 class="sidebar-header">Home<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span> </h1>
                 <p class="logo" style="margin-top:  30px; margin-bottom: 0px;"><?php if (isset($logo)) printf("%s", $logo); else printf("No Logo"); ?><br>
@@ -240,122 +244,158 @@
         // Instrument panel
         printf ("<p class=\"section-header\"><a href=\"#instruments\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">-</span>) Instrument Panel</a>:</p>", $row['flightid'] . "_instrumentpanellink", $row['flightid'] . "_instrumentpanelsign");
         printf ("<div id=\"%s\">", $row['flightid'] . "_instrumentpanel");
-        printf ("<div class=\"instrumentpanel\">");
-        printf ("   <div class=\"column\">");
-        printf ("       <div class=\"rowtop\">");
-        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\"><span id=\"%s\"></span> ft</p></div></center>", $row['flightid'] . "_altitudevalue");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_altimeter");
+        printf ("<div class=\"div-table\">");
+        printf ("   <div class=\"table-row\">");
+        printf ("       <div class=\"panel-cell toprow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div class=\"instrumenttitle\">Altitude</div>");
+        printf ("               <div><span id=\"%s\"></span> ft</div>", $row['flightid'] . "_altitudevalue");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_altimeter");
+        printf ("           </div>");
         printf ("       </div>");
-        printf ("       <div class=\"rowbottom\">");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_heading");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\"><span id=\"%s\">--</span>&#176;</p></div></center>", $row['flightid'] . "_headingvalue");
+        printf ("       <div class=\"panel-cell toprow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div class=\"instrumenttitle\">V. Rate</div>");
+        printf ("               <div><span id=\"%s\"></span> ft/min</div>", $row['flightid'] . "_verticalratevalue");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_variometer");
+        printf ("           </div>");
         printf ("       </div>");
         printf ("   </div>");
-        printf ("   <div class=\"column\">");
-        printf ("       <div class=\"rowtop\">");
-        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\"><span id=\"%s\"></span> ft/min</p></div></center>", $row['flightid'] . "_verticalratevalue");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_variometer");
+        printf ("   <div class=\"table-row\">");
+        printf ("       <div class=\"panel-cell bottomrow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_heading");
+        printf ("               <div class=\"instrumenttitle bottomrow\">Heading</div>");
+        printf ("               <div><span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_headingvalue");
+        printf ("           </div>");
         printf ("       </div>");
-        printf ("       <div class=\"rowbottom\">");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_airspeed");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\"><span id=\"%s\"></span> mph</p></div></center>", $row['flightid'] . "_speedvalue");
+        printf ("       <div class=\"panel-cell bottomrow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_airspeed");
+        printf ("               <div class=\"instrumenttitle bottomrow\">Speed</div>");
+        printf ("               <div><span id=\"%s\"></span> mph</div>", $row['flightid'] . "_speedvalue");
+        printf ("           </div>");
         printf ("       </div>");
         printf ("   </div>");
         printf ("</div>");
-        printf ("   <div class=\"ttlcontainer\"><div class=\"ttl\">Time to live: &nbsp; <span class=\"ttlvalue\" id=\"%s\">n/a mins</span></div></div>", $row['flightid'] . "_ttl");
+        printf ("<div class=\"div-table\">");
+        printf ("   <div class=\"table-row\">");
+        printf ("       <div class=\"panel-cell\">");
+        printf ("           <div style=\"margin: 5px;\">Time to live: &nbsp; <span id=\"%s\">n/a mins</span></div>", $row['flightid'] . "_ttl");
+        printf ("       </div>");
+        printf ("   </div>");
+        printf ("</div>");
         printf ("</div>");
 
         // Relative position section
         printf ("<p class=\"section-header\"><a href=\"#relative\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Relative Position</a>: </p>", $row['flightid'] . "_relativepositionlink", $row['flightid'] . "_relativepositionsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_relativeposition");
-        printf ("<div class=\"lowerinstrumentpanel\">");
-        printf ("   <div class=\"column\" style=\"height: 235px;\">");
-        printf ("       <div class=\"rowtop\" style=\"padding-top: 3px;\">");
-        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\">&nbsp;</p></div></center>");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_relativeelevationangle");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Angle: <span id=\"%s\">--</span>&#176;</p></div></center>", $row['flightid'] . "_relativeelevationanglevalue");
+        printf ("<div class=\"div-table\">");
+        printf ("   <div class=\"table-row\">");
+        printf ("       <div class=\"panel-cell toprow bottomrow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div>&nbsp;</div>");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_relativeelevationangle");
+        printf ("               <div class=\"instrumenttitle\">Elev Angle</div>");
+        printf ("               <div>Angle: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_relativeelevationanglevalue");
+        printf ("           </div>");
+        printf ("       </div>");
+        printf ("       <div class=\"panel-cell toprow bottomrow\">");
+        printf ("           <div style=\"margin: 5px;\">");
+        printf ("               <div class=\"instrumenttitle\">My Hdng</div>");
+        printf ("               <div>Hdng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_myheadingvalue");
+        printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_relativebearing");
+        printf ("               <div class=\"instrumenttitle bottomrow\">R. Brng</div>");
+        printf ("               <div>Brng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_relativebearingvalue");
+        printf ("           </div>");
         printf ("       </div>");
         printf ("   </div>");
-        printf ("   <div class=\"column\" style=\"height: 235px;\">");
-        printf ("       <div class=\"rowtop\" style=\"padding-top:  3px;\">");
-        printf ("           <center><div class=\"readouttop\"><p class=\"instrumentvalue\">Hdng: <span id=\"%s\">--</span>&#176;</p></div></center>", $row['flightid'] . "_myheadingvalue");
-        printf ("           <center><span id=\"%s\"></span></center>", $row['flightid'] . "_relativebearing");
-        printf ("           <center><div class=\"readoutbottom\"><p class=\"instrumentvalue\">Brng: <span id=\"%s\">--</span>&#176;</p></div></center>", $row['flightid'] . "_relativebearingvalue");
-        printf ("       </div>");
-        printf ("   </div>");
-//        printf ("   <center><div class=\"readoutbottom\" style=\"width: 360px;\"><p class=\"instrumentvalue\" style=\"width:  360px;\">Distance: <span id=\"%s\"></span> &nbsp; B. Coords: <span id=\"%s\"</span></p></div></center>", $row['flightid'] . "_relativepositiondistance", $row['flightid'] . "_relativeballooncoords");
         printf ("</div>");
-        printf ("    <table class=\"packetlistpanel\" style=\"width:  360px;\">");
-        printf ("        <tr><td class=\"packetlistheaderpanel\">Distance To Balloon</td>");
-        printf ("            <td class=\"packetlistheaderpanel\">Balloon Coords</td>");
-        printf ("        <tr><td class=\"packetlistpanel\"><mark><span id=\"%s\"</span></mark></td>", $row['flightid'] . "_relativepositiondistance");
-        printf ("            <td class=\"packetlistpanel\"><mark><span id=\"%s\"</span></mark></td>", $row['flightid'] . "_relativeballooncoords");
-        printf ("        </tr>");
-        printf ("    </table>");
+        printf ("    <div class=\"div-table\">");
+        printf ("        <div class=\"table-row\">");
+        printf ("            <div class=\"table-cell header toprow\">Distance To Balloon</div>");
+        printf ("            <div class=\"table-cell header toprow\">Balloon Coords</div>");
+        printf ("        </div>");
+        printf ("        <div class=\"table-row\">");
+        printf ("            <div class=\"table-cell big\"><mark><span id=\"%s\"></span></mark></div>", $row['flightid'] . "_relativepositiondistance");
+        printf ("            <div class=\"table-cell big\"><mark><span id=\"%s\"></span></mark></div>", $row['flightid'] . "_relativeballooncoords");
+        printf ("        </div>");
+        printf ("    </div>");
         printf ("</div>");
 
         // Lastest position packets section
         printf ("<p class=\"section-header\"><a href=\"#positions\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Position Packets</a>:</p>", $row['flightid'] . "_positionpacketlistlink", $row['flightid'] . "_positionpacketlistsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_positionpacketlist");
-        printf ("    <table class=\"packetlist\">");
-        printf ("        <tr><td class=\"packetlistheader\">Time</td>");
-        printf ("            <td class=\"packetlistheader\">Callsign</td>");
-        printf ("            <td class=\"packetlistheader\">Speed</td>");
-        printf ("            <td class=\"packetlistheaderright\">V. Rate</td>");
-        printf ("            <td class=\"packetlistheaderright\">Altitude</td></tr>");
+        printf ("    <div class=\"div-table\">");
+        printf ("        <div class=\"table-row\">");
+        printf ("            <div class=\"table-cell header toprow\">Time</div>");
+        printf ("            <div class=\"table-cell header toprow\">Callsign</div>");
+        printf ("            <div class=\"table-cell header toprow\">Speed</div>");
+        printf ("            <div class=\"table-cell header toprow\">V. Rate</div>");
+        printf ("            <div class=\"table-cell header toprow\">Altitude</div>");
+        printf ("        </div>");
         for ($i = 0; $i < 5; $i++) {
-            printf ("        <tr><td class=\"packetlist\"><span id=\"%s_lasttime_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlist\"><span id=\"%s_lastcallsign_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlist\"><span id=\"%s_lastspeed_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlistright\"><span id=\"%s_lastvertrate_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlistright\"><span id=\"%s_lastaltitude_%d\"</span></td>", $row['flightid'], $i);
-            printf ("        </tr>");
+            printf ("        <div class=\"table-row\">");
+            printf ("            <div class=\"table-cell\"><span id=\"%s_lasttime_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_lastcallsign_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_lastspeed_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_lastvertrate_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_lastaltitude_%d\"></span></div>", $row['flightid'], $i);
+            printf ("        </div>");
         }
-        printf ("    </table>");
+        printf ("    </div>");
         printf ("</div>");
 
         // Lastest status packets section
         printf ("<p class=\"section-header\"><a href=\"#status\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Status Packets</a>:</p>", $row['flightid'] . "_statuspacketlistlink", $row['flightid'] . "_statuspacketlistsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_statuspacketlist");
-        printf ("    <table class=\"packetlist\" style=\"width: 100%%; table-layout: auto;\">");
-        printf ("        <tr><td class=\"packetlistheader\" style=\"width: 1%%;\">Time</td>");
-        printf ("            <td class=\"packetlistheader\" style=\"width: 1%%;\">Callsign</td>");
-        printf ("            <td class=\"packetlistheader\" style=\"width: 1%%;\">Packet</td>");
+        printf ("    <div class=\"div-table\">");
+        printf ("        <div class=\"table-row\">");
+        printf ("            <div class=\"table-cell header toprow\">Time</div>");
+        printf ("            <div class=\"table-cell header toprow\">Callsign</div>");
+        printf ("            <div class=\"table-cell header toprow\">Packet</div>");
+        printf ("        </div>");
         for ($i = 0; $i < 5; $i++) {
-            printf ("        <tr><td class=\"packetlist\" style=\"width: 1%%;\"><span id=\"%s_statustime_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlist\" style=\"width: 1%%;\"><span id=\"%s_statuscallsign_%d\"</span></td>", $row['flightid'], $i);
-            printf ("            <td class=\"packetlist\" style=\"width: 100%%; white-space: normal;\"><span id=\"%s_statuspacket_%d\"</span></td>", $row['flightid'], $i);
-            printf ("        </tr>");
+            printf ("        <div class=\"table-row\">");
+            printf ("            <div class=\"table-cell\"><span id=\"%s_statustime_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_statuscallsign_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\"><span id=\"%s_statuspacket_%d\"></span></div>", $row['flightid'], $i);
+            printf ("        </div>");
         }
-        printf ("    </table>");
+        printf ("    </div>");
         printf ("</div>");
 
         // Lastest packet path section
         printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_lastpacketpath");
+        printf ("<div id=\"%s\">", $row['flightid'] . "_lastpacketpathdata");
 ?>
-    <table class="packetlist" style="width: auto;">
-    <tr><td class="packetlistheader" style="white-space: nowrap;">Callsign</td>
-        <td class="packetlistheader" style="white-space: nowrap;">Receive Time</td>
-        <td class="packetlistheader" style="white-space: nowrap;">Last 10 Packets</td>
-    </tr>
-    <tr><td class="packetlist">n/a</td>
-        <td class="packetlist"></td>
-        <td class="packetlist"></td>
-    </tr>
-    <tr><td class="packetlist" colspan="3">
+        <div class="div-table">
+            <div class="table-row">
+                <div class="table-cell header toprow">Callsign</div>
+                <div class="table-cell header toprow">Receive Time</div>
+                <div class="table-cell header toprow">Last 10 Packets</div>
+            </div>
+            <div class="table-row">
+                <div class="table-cell">n/a</div>
+               <div class="table-cell"></div>
+               <div class="table-cell"></div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <p>
         <strong>Legend:</strong> &nbsp; newest-----&gt;oldest<br> 
             <span style="font-family: monospace; font-size: 1.4em;"><mark style="background-color: lightgreen;">R</mark></span>
               - packet received over RF<br>
             <span style="font-family: monospace; font-size: 1.4em;"><mark style="background-color: yellow;">I</mark></span>
              - packet received over the Internet
-         </td>
-    </tr>
-    </table>
+         </p>
+    </div>
 
 
 <?php
-        printf ("</div>");
+        printf ("</div>"); // end of packet path section
 
         // Altitude Chart
         printf ("<p class=\"section-header\"><a href=\"#altitude\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Altitude Chart</a>:</p>", $row['flightid'] . "_altitudechartlink", $row['flightid'] . "_altitudechartsign");
@@ -373,8 +413,10 @@
     }
  }
 ?>
-        </div>
-    </div>
+        </div> <!-- end of sidebar content -->
+
+    </div> <!-- end of sidebar -->
+
     <div class="map" id="map"></div>
 <?php
     //include $documentroot . '/common/footer.php';
