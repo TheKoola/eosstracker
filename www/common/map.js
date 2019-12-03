@@ -1596,17 +1596,17 @@ function getTrackers() {
         // The idea is to stagger the loading of these so that the browser isn't bogged down at first load.
         //
         // Read in the configuration
-	    setTimeout(function() { getConfiguration(); }, 25);
+	    setTimeout(function() { getConfiguration(); }, 10);
 
         // Setup the listener
-        setTimeout(function() { createTheListener(); }, 50);
+        setTimeout(function() { createTheListener(); }, 20);
 
         // Get the status of running processes
-        setTimeout(function() { getProcessStatus(); }, 75);
+        setTimeout(function() { getProcessStatus(); }, 30);
 
         // Build the gauges and charts
-        setTimeout(function() { buildGauges(); }, 100);
-        setTimeout(function() { buildCharts(); }, 125);
+        setTimeout(function() { buildGauges(); }, 40);
+        setTimeout(function() { buildCharts(); }, 50);
 
         // build the Trackers table
         //setTimeout(function() { getTrackers(); }, 150);
@@ -1677,7 +1677,7 @@ function getTrackers() {
             livePacketStreamHTML = livePacketStreamHTML + "</form>"; 
             document.getElementById("flightsLivePacketStream").innerHTML = livePacketStreamHTML;
             */
-        }, 175);
+        }, 60);
 
 
         // Update livestream sidebar content 
@@ -1732,13 +1732,13 @@ function getTrackers() {
         */
 
 
-        // Update all things on the map.  Note:  updateAllItems will scheduled itself to run every 5 seconds.  No need for a setInterval call.
+        // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
         // We delay a couple of seconds before updating the full map/gauges/tables if the number of flights/beacons we're tracking is > 8 in an attempt
         // to not swamp the user's browser with updates upon first load.
         if (realtimeflightlayers.length > 8)
             setTimeout(function() {updateAllItems("full")}, 2000);
         else
-            setTimeout(function() {updateAllItems("full");}, 225); 
+            setTimeout(function() {updateAllItems("full");}, 70); 
 
         // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
         $(window).on('focus', function() { 
@@ -2388,10 +2388,10 @@ function getTrackers() {
         });
 
         // Update process status
-        setTimeout(function() { getProcessStatus(); }, 50);
+        setTimeout(function() { getProcessStatus(); }, 30);
         
         // Update the live packet stream tab
-        setTimeout(function() { getLivePackets(); }, 100);
+        //setTimeout(function() { getLivePackets(); }, 100);
 
         // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
         // ...the idea being that ever so often, we should try to update everything on the map.
