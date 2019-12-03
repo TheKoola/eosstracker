@@ -32,12 +32,17 @@ include $documentroot . '/common/header.php';
 
 ?>
 <script>
-    $(document).ready(function () {
+    /***********
+    * updateMapLink
+    *
+    * This function will query the server for the latest GPS position and update the Map link in the menubar accordingly.
+    ***********/
+    function updateMapLink() {
         // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
-        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
+        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter"
         //     itself thus improving the user map experience.
         setTimeout (function () {
-            $.get("getposition.php", function(data) { 
+            $.get("getposition.php", function(data) {
                 var lastposition = JSON.parse(data);
                 var lat = lastposition.geometry.coordinates[1];
                 var lon = lastposition.geometry.coordinates[0];
@@ -48,6 +53,16 @@ include $documentroot . '/common/header.php';
                 maplink.setAttribute("href", url);
             });
         }, 10);
+    }
+
+    $(document).ready(function () {
+        setTimeout (function () {
+            updateMapLink();
+        }, 10);
+
+        setInterval (function() {
+            updateMapLink();
+        }, 5000);
     });
 </script>
 <div style="width: 90%;"> 

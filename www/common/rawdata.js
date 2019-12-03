@@ -632,6 +632,29 @@
         });
     }
 
+    /***********
+    * updateMapLink
+    *
+    * This function will query the server for the latest GPS position and update the Map link in the menubar accordingly.
+    ***********/
+    function updateMapLink() {
+        // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
+        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter"
+        //     itself thus improving the user map experience.
+        setTimeout (function () {
+            $.get("getposition.php", function(data) {
+                var lastposition = JSON.parse(data);
+                var lat = lastposition.geometry.coordinates[1];
+                var lon = lastposition.geometry.coordinates[0];
+                var zoom = 10;
+
+                var maplink = document.getElementById("maplink");
+                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+                maplink.setAttribute("href", url);
+            });
+        }, 10);
+    }
+
 
     /***********
     * rawdata_startup
@@ -659,23 +682,6 @@
         e.oninput = updatepackets;
         e.onpropertychange = e.oninput;
 
-        // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
-        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
-        //     itself thus improving the user map experience.
-        setTimeout (function () {
-            $.get("getposition.php", function(data) { 
-                var lastposition = JSON.parse(data);
-                var lat = lastposition.geometry.coordinates[1];
-                var lon = lastposition.geometry.coordinates[0];
-                var zoom = 10;
-
-                var maplink = document.getElementById("maplink");
-                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
-                maplink.setAttribute("href", url);
-            });
-        }, 10);
-
-
         // Call the initialize function to get the page setup
         initialize();
 
@@ -687,6 +693,9 @@
         getchartdata(createchart3, "getdirewolfperformance.php");
         getdigidata();
         gettrackerdata();
+
+        // Update the Map link in the menubar
+        updateMapLink();
 
         // Listen for screen resize changes and adjust the chart sizes accordingly
         window.addEventListener("resize", function() {
@@ -707,6 +716,7 @@
 
         // Create a timer that is called every 5secs for updating all of our items on the page
         setInterval(function() { 
+            updateMapLink();
             getrecentdata(); 
             getchartdata(updatechart, "getpacketperformance.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 

@@ -291,14 +291,12 @@ function getgps() {
     });
 }
 
-
 /***********
-* ready
+* updateMapLink
 *
-* This function is only called once the web page is fully loaded.
+* This function will query the server for the latest GPS position and update the Map link in the menubar accordingly.
 ***********/
-$(document).ready(function () {
-
+function updateMapLink() {
     // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
     //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
     //     itself thus improving the user map experience.
@@ -314,11 +312,22 @@ $(document).ready(function () {
             maplink.setAttribute("href", url);
         });
     }, 10);
+}
 
+
+/***********
+* ready
+*
+* This function is only called once the web page is fully loaded.
+***********/
+$(document).ready(function () {
+
+    updateMapLink();
     getrecentdata();
     getConfiguration();
     getgps();
     setInterval(function() {
+        updateMapLink();
         getrecentdata();
         getgps();
         getConfiguration();
