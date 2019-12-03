@@ -256,7 +256,7 @@ function getgps() {
             gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ NO FIX ]</mark>";
         else if (gpsMode == 2)
             gpsfix = "<mark class=\"marginal\" style=\"font-size: .9em;\">[ 2D FIX ]</mark>";
-        else if (gpsMode == 3)
+        else if (gpsMode == 3) 
             gpsfix = "<mark class=\"okay\" style=\"font-size: .9em;\">[ 3D FIX ]</mark>";
         else
             gpsfix = "n/a";
@@ -298,6 +298,23 @@ function getgps() {
 * This function is only called once the web page is fully loaded.
 ***********/
 $(document).ready(function () {
+
+    // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
+    //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
+    //     itself thus improving the user map experience.
+    setTimeout (function () {
+        $.get("getposition.php", function(data) { 
+            var lastposition = JSON.parse(data);
+            var lat = lastposition.geometry.coordinates[1];
+            var lon = lastposition.geometry.coordinates[0];
+            var zoom = 10;
+
+            var maplink = document.getElementById("maplink");
+            var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+            maplink.setAttribute("href", url);
+        });
+    }, 10);
+
     getrecentdata();
     getConfiguration();
     getgps();

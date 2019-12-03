@@ -31,6 +31,25 @@ include_once $documentroot . '/common/functions.php';
 include $documentroot . '/common/header.php';
 
 ?>
+<script>
+    $(document).ready(function () {
+        // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
+        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
+        //     itself thus improving the user map experience.
+        setTimeout (function () {
+            $.get("getposition.php", function(data) { 
+                var lastposition = JSON.parse(data);
+                var lat = lastposition.geometry.coordinates[1];
+                var lon = lastposition.geometry.coordinates[0];
+                var zoom = 10;
+
+                var maplink = document.getElementById("maplink");
+                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+                maplink.setAttribute("href", url);
+            });
+        }, 10);
+    });
+</script>
 <div style="width: 90%;"> 
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">

@@ -98,6 +98,22 @@ include $documentroot . '/common/header.php';
         var freq_l = "#freqSelectionLinkSign";
         var freq_e = "#freqSelection";
         $(freq_a).click({element: freq_e, link: freq_l }, toggle);
+
+        // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
+        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
+        //     itself thus improving the user map experience.
+        setTimeout (function () {
+            $.get("getposition.php", function(data) { 
+                var lastposition = JSON.parse(data);
+                var lat = lastposition.geometry.coordinates[1];
+                var lon = lastposition.geometry.coordinates[0];
+                var zoom = 10;
+
+                var maplink = document.getElementById("maplink");
+                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+                maplink.setAttribute("href", url);
+            });
+        }, 10);
     });
 
 </script>

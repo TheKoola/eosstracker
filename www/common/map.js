@@ -1480,9 +1480,12 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
-        // set the map default starting location.  This is Denver, CO: 39.739, -104.985
-	    map.setView(new L.LatLng(39.739, -104.985), 10);
-        
+        // Set the map center position
+        if (latitude != "" && longitude != "" && zoom != "")
+	        map.setView(new L.LatLng(latitude, longitude), zoom);
+        else
+            // set the map default starting location.  This is Denver, CO: 39.739, -104.985
+	        map.setView(new L.LatLng(39.739, -104.985), 10);
 
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         //var allstations = L.markerClusterGroup();
