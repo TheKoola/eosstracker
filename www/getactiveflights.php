@@ -159,6 +159,7 @@ and a.callsign = fm.callsign '
         $bearing = $row['bearing'];
         $speed_mph = $row['speed_mph'];
         $hash = $row['hash'];
+        list($time_trunc, $microseconds) = explode(".", $thetime);
 
         // calculate the vertical rate for this callsign
         //$time1 = date_create($thetime);
@@ -166,7 +167,7 @@ and a.callsign = fm.callsign '
         if (array_key_exists($callsign, $time_prev)) {
             if ($hash != $hash_prev[$callsign]) {
                 $diff = date_diff($time_prev[$callsign], $time1);
-                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60;
+                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f);
                 //$verticalrate[$callsign] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
                 if ($time_delta > 0)
                     $verticalrate = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
@@ -185,8 +186,8 @@ and a.callsign = fm.callsign '
             if ($altitude == 0 && $hash_prev[$callsign] != $hash)
                 $altitude = $altitude_prev[$callsign];
 
-        $features[$callsign][$latitude . $longitude . $altitude] = array($latitude, $longitude, $altitude, $speed_mph, $bearing, $thetime, $verticalrate, $callsign, $packettime);
-        $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, $verticalrate, $callsign, $packettime);
+        $features[$callsign][$latitude . $longitude . $altitude] = array($latitude, $longitude, $altitude, $speed_mph, $bearing, $time_trunc, $verticalrate, $callsign, $packettime);
+        $positioninfo[$callsign] = array($time_trunc, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, $verticalrate, $callsign, $packettime);
  
         if (array_key_exists($callsign, $hash_prev)) {
             if ($hash != $hash_prev[$callsign]) {
