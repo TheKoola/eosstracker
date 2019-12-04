@@ -2078,8 +2078,6 @@ function getTrackers() {
                     k = 0;
                     while (k < 5 && positionPackets[k]) {
                         var item = positionPackets[k]; 
-                        var latestposition_lat = 0;
-                        var latestposition_lon = 0;
 
                         // Update the flight gauges...
                         if (k == 0) {
@@ -2108,21 +2106,14 @@ function getTrackers() {
                             $(speedValue).data("airspeed").setAirSpeed(thespeed);
                             $(balloonHeadingValue).text(theheading);
                             $(speedValue).text(thespeed);
-
-                            // Set the lastposition coords
-                            latestposition_lat = item.latitude;
-                            latestposition_lon = item.longitude;
                         }
 
 
                         // Update the last position packets table
                         $("#" + item.flightid + "_lasttime_" + k).text(item.time.split(" ")[1]);
-                        if (latestposition_lat == 0 || latestposition_lon == 0)
-                            $("#" + item.flightid + "_lastcallsign_" + k).html(item.callsign);
-                        else
-                            $("#" + item.flightid + "_lastcallsign_" + k).html(
-                                "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + latestposition_lat + "', '" + latestposition_lon+ "');\">" +  item.callsign + "</a>"
-                            );
+                        $("#" + item.flightid + "_lastcallsign_" + k).html(
+                            "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + item.latitude + "', '" + item.longitude + "');\">" +  item.callsign + "</a>"
+                        );
                         $("#" + item.flightid + "_lastspeed_" + k).text(Math.round(item.speed * 10 / 10) + " mph");
                         $("#" + item.flightid + "_lastvertrate_" + k).text(Math.round(item.verticalrate * 10 / 10).toLocaleString() + " ft/min");
                         $("#" + item.flightid  + "_lastaltitude_" + k).text(Math.round(item.altitude * 10 / 10).toLocaleString() + " ft");
