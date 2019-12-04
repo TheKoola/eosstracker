@@ -60,12 +60,12 @@
     $query = "select distinct on (f.flightid, a.callsign, thetime) 
 a.callsign, 
 f.flightid, 
-date_trunc('seconds', a.tm)::time without time zone as thetime, 
+date_trunc('milliseconds', a.tm)::time without time zone as thetime, 
 case
     when a.ptype = '/' and a.raw similar to '%[0-9]{6}h%' then 
-        date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+        date_trunc('milliseconds', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
     else
-        date_trunc('second', a.tm)::time without time zone
+        date_trunc('milliseconds', a.tm)::time without time zone
 end as packet_time,
 a.altitude, 
 a.hash 
@@ -117,6 +117,7 @@ thetime asc;
         $callsign = $row['callsign'];
         $altitude = $row['altitude'];
         $hash = $row['hash'];
+        list($time_trunc, $microseconds) = explode(".", $thetime);
  
 
         // calculate the vertical rate for this callsign
@@ -125,14 +126,14 @@ thetime asc;
         if (array_key_exists($callsign, $time_prev)) {
             if ($hash != $hash_prev[$callsign]) {
                 $diff = date_diff($time_prev[$callsign], $time1);
-                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60;
+                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f);
                 if ($time_delta > 0)
                     $verticalrate[$callsign][] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
                 else
                     $verticalrate[$callsign][] = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
  
                 $callsigns[$flightid][$callsign] = $callsign;
-                $tdata[$callsign][]= $thetime;
+                $tdata[$callsign][]= $time_trunc;
                 //$adata[$callsign][] = $altitude;
             }
         }

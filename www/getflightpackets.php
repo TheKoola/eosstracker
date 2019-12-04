@@ -137,12 +137,12 @@
     ## query the last packets from stations...
     $query = '
 select distinct on (thetime, a.hash)
-date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
+date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
 case
     when a.ptype = \'/\' and a.raw similar to \'%[0-9]{6}h%\' then 
-        date_trunc(\'second\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
+        date_trunc(\'milliseconds\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
     else
-        date_trunc(\'second\', a.tm)::time without time zone
+        date_trunc(\'milliseconds\', a.tm)::time without time zone
 end as packet_time,
 a.callsign, 
 a.comment, 
@@ -200,6 +200,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         $hash = $row['hash'];
         $raw = $row['raw'];
         $ptype = $row['ptype'];
+        list($time_trunc, $microseonds) = explode(".", $thetime);
 
         $allpackets[$callsign][] = array($thetime, $get_flightid, $callsign, $raw);
 
@@ -211,7 +212,8 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
             if (array_key_exists($callsign, $time_prev)) {
                 if ($hash != $hash_prev[$callsign]) {
                     $diff = date_diff($time_prev[$callsign], $time1);
-                    $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60;
+                    //print_r($diff);
+                    $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f);
                     if ($time_delta > 0)
                         $verticalrate[$callsign] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
                     else
@@ -220,7 +222,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
                 }
             }
 
-            $packets[] = array($thetime, $callsign, $get_flightid, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, (array_key_exists($callsign, $verticalrate) ? $verticalrate[$callsign] : 0));
+            $packets[] = array($time_trunc, $callsign, $get_flightid, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, (array_key_exists($callsign, $verticalrate) ? $verticalrate[$callsign] : 0));
 
             if (array_key_exists($callsign, $hash_prev)) {
                 if ($hash != $hash_prev[$callsign]) {
