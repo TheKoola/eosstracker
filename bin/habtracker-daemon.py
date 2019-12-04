@@ -1171,6 +1171,41 @@ def isRunning(myprocname):
     return listOfProcesses
 
 
+
+##################################################
+# add row to tracker teams table
+##################################################
+def checkBenchTeam():
+    # we need to see if the existing landing predictions table has the flightpath column and add it if not.
+    try:
+        # Database connection 
+        dbconn = None
+        dbconn = pg.connect (habconfig.dbConnectionString)
+        dbcur = dbconn.cursor()
+
+        # SQL to check if the column exists or not
+        check_row_sql = "select * from teams where tactical='ZZ-Not Active';"
+        dbcur.execute(check_row_sql)
+        rows = dbcur.fetchall()
+
+        # If the number of rows returned is zero, then we need to add the row
+        if len(rows) == 0:
+            print "Adding the 'ZZ-Not Active' team to the tracker team list."
+            
+            # SQL to add the row
+            insert_sql = "insert into teams (tactical, flightid) values ('ZZ-Not Active', NULL);"
+            dbcur.execute(insert_sql)
+            dbconn.commit()
+
+        # Close DB connection
+        dbcur.close()
+        dbconn.close()
+    except pg.DatabaseError as error:
+        dbcur.close()
+        dbconn.close()
+        print(error)
+
+
 ##################################################
 # main function
 ##################################################
@@ -1266,6 +1301,13 @@ def main():
                     print "Unable to set permisisons to 777 on,", thedir, ", ", os.strerror(e.errno)
 
     # --------- End of directory permissions section ----------
+
+
+
+    # --------- Add any Database things ----------
+    checkBenchTeam();
+
+    # --------- End of database additions----------
 
 
 
