@@ -83,6 +83,7 @@ else
 
 <body class="cover-page">
 <div class="logo">
+     <div class="nodeid"><?php if (is_readable("nodeid.txt")) echo file_get_contents("nodeid.txt"); ?></div>
      <p>
          <a href="/index.php" class="logo-link"><?php if(isset($logo)) printf("%s", $logo); else printf("No Logo"); ?></a><br>
          <span class="sub-logo">Tracking High Altitude Balloons</span>

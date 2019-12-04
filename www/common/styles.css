@@ -191,6 +191,18 @@ p {
     margin-left: 30px;
 }
 
+div.nodeid {
+    color:  #c8c8c8;
+    color:  white;
+    font-family:  "Lucida Console", Monaco, monospace;
+    text-decoration: none;
+    font-size:  .7em;
+    text-align:  left;
+    margin-right: 5px;
+    padding: 0px;
+    float: right;
+}
+
 .normal {
     text-align: left;
     white-space: normal;
