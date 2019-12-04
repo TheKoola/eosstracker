@@ -202,7 +202,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         $ptype = $row['ptype'];
         list($time_trunc, $microseonds) = explode(".", $thetime);
 
-        $allpackets[$callsign][] = array($thetime, $get_flightid, $callsign, $raw);
+        $allpackets[$callsign][] = array($time_trunc, $get_flightid, $callsign, $raw);
 
         if ($latitude != '' && $longitude !='' && $altitude != '') {
             // this is a position packet
