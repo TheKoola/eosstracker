@@ -1123,115 +1123,74 @@
     * ...then will create the table for displaying the tracking teams
     ***********/
 function getTrackers() {
-    $.get("getflights.php", function(fdata) {
-        var flightids = JSON.parse(fdata)
-        var f;
+    $.get("gettrackers.php", function(data) {
+        var trackerJson = JSON.parse(data);
+        var keys = Object.keys(trackerJson);
+        var i; 
+        var j;
+        var k;
+        var teamhtml;
 
-        $.get("getteams.php", function(data) {
-            var teamsJson = JSON.parse(data);
-            var teams = [];
-            var t;
+        //Create a HTML Table element.
+        var table = document.createElement("DIV");
+        var tablediv = document.getElementById("trackers");
+        table.setAttribute("class", "div-table");
 
-            for (t in teamsJson) {
-                teams.push(teamsJson[t].tactical);
+        //The columns
+        var columns = ["Team and Flight Assignment", "Team Members"];
+
+        //Add the header row.
+        var row = document.createElement("DIV");
+        row.setAttribute("class", "table-row");
+        table.appendChild(row);
+        for (i = 0; i < columns.length; i++) {
+            var headerCell = document.createElement("DIV");
+            headerCell.innerHTML = columns[i];
+            headerCell.setAttribute("class", "table-cell header toprow");
+            row.appendChild(headerCell);
+        }
+
+
+        //Add the data rows.
+        for (i = 0; i < keys.length; i++) {
+            var trackers = trackerJson[i].trackers;
+            var trackerkeys = Object.keys(trackers);
+            var flight;
+            var html = "";
+            var checked;
+            var foundmatch = 0;
+
+            if (trackerJson[i].tactical != "ZZ-Not Active") {
+                row = document.createElement("DIV");
+                row.setAttribute("class", "table-row");
+                table.appendChild(row);
+
+                var teamcell = document.createElement("DIV");
+                row.appendChild(teamcell);
+                teamcell.setAttribute("class", "table-cell");
+
+                var cellCallsign = document.createElement("DIV");
+                row.appendChild(cellCallsign);
+                cellCallsign.setAttribute("class", "table-cell");
+
+                if (i % 2) {
+                    teamcell.setAttribute("style", "background-color: lightsteelblue;");
+                    cellCallsign.setAttribute("style", "background-color: lightsteelblue;"); 
+                }
+
+                teamcell.innerHTML = "<span style=\"font-size: 1.4em;\"><strong>" + trackerJson[i].tactical + "</strong></span><br>" 
+                    + "<span class=\"lorem\">" + trackerJson[i].flightid + "</span>";
+
+                for (j = 0; j < trackerkeys.length; j++) {
+                    html = html + "<span style=\"font-size: 1.1em;font-weight: bold;\">" 
+                        + trackers[j].callsign + "</span><br><span class=\"lorem\">" 
+                        + trackers[j].notes + "<br>";
+                }
+                cellCallsign.innerHTML = html;
             }
-
-
-            $.get("gettrackers.php", function(data) {
-                var trackerJson = JSON.parse(data);
-                var keys = Object.keys(trackerJson);
-                var i; 
-                var j;
-                var k;
-                var teamhtml;
-
-                //Create a HTML Table element.
-                var table = document.createElement("TABLE");
-                var tablediv = document.getElementById("trackers");
-                table.setAttribute("class", "trackerlist");
- 
-                //The columns
-                var columns = ["Team and Flight Assignment", "Callsign", "Move to This Team"];
-     
-                //Add the header row.
-                var row = table.insertRow(-1);
-                for (i = 0; i < columns.length; i++) {
-                    var headerCell = document.createElement("TH");
-                    headerCell.innerHTML = columns[i];
-                    headerCell.setAttribute("class", "trackerlistheader");
-                    row.appendChild(headerCell);
-                }
-
-
-                //Add the data rows.
-                for (i = 0; i < keys.length; i++) {
-                    row = table.insertRow(-1);
-                    var trackers = trackerJson[i].trackers;
-                    var trackerkeys = Object.keys(trackers);
-                    var teamcell = row.insertCell(0);
-                    var flight;
-                    var html = "<select id=\"" + trackerJson[i].tactical + "\" onchange='changeAssignedFlight(\"" + trackerJson[i].tactical + "\", this)'>";
-                    var checked;
-                    var foundmatch = 0;
-   
-
-                    teamcell.setAttribute("class", "trackerlist");
-                    if (i % 2)
-                        teamcell.setAttribute("style", "background-color: lightsteelblue; white-space: normal; word-wrap: word-break;"); 
- 
- 
-                    for (flight in flightids) {
-                        if (flightids[flight].flight == trackerJson[i].flightid) {
-                            checked = "selected=\"selected\""; 
-                            foundmatch = 1;
-                            html = html + "<option value=" + flightids[flight].flight + " " + checked + " >" + flightids[flight].flight + "</option>";
-                        }
-                        else if (flightids[flight].active == 't')
-                            html = html + "<option value=" + flightids[flight].flight + " >" + flightids[flight].flight + "</option>";
-                    }
-                    if (trackerJson[i].flightid == "At Large" || foundmatch == 0)
-                        checked = "selected=\"selected\""; 
-                    else
-                        checked = "";
-                    html = html + "<option value=\"atlarge\" " + checked + " >At Large</option></select>";
-         
-                    teamcell.innerHTML = "<span style=\"font-size: 1.2em;\"><strong>" + trackerJson[i].tactical + "</strong></span><br>" + html;
-                    teamcell.setAttribute("rowspan", trackerkeys.length);
-                  
-                    var t;
-    
-                    for (j = 0; j < trackerkeys.length; j++) {
-                        if (j > 0) {
-                            row = table.insertRow(-1);
-                        }
-                        teamhtml = "<select id=\"" + trackers[j].callsign + "_tacticalselect\" onchange='changeTrackerTeam(\"" + trackers[j].callsign + "\", this)'>";
-                        for (t in teams) {
-                           if (trackerJson[i].tactical == teams[t])
-                               checked = "selected=\"selected\""; 
-                            else
-                                checked = "";
-                            teamhtml = teamhtml + "<option value=\"" + teams[t] + "\" " + checked + " >" + teams[t] + "</option>";
-                        }
-                        teamhtml = teamhtml + "</select>";
-    
-                        var cellCallsign = row.insertCell(-1);
-                        cellCallsign.setAttribute("class", "trackerlist");
-                        if (i % 2)
-                            cellCallsign.setAttribute("style", "background-color: lightsteelblue;"); 
-                        cellCallsign.innerHTML = "<span style=\"font-size: 1.1em;font-weight: bold;\">" + trackers[j].callsign + "</span><br><span class=\"lorem\" style=\"color: #303030;\">" + trackers[j].notes;
-    
-                        var cellFlightid = row.insertCell(-1);
-                        cellFlightid.setAttribute("class", "trackerlist");
-                        if (i % 2)
-                            cellFlightid.setAttribute("style", "background-color: lightsteelblue;"); 
-                        cellFlightid.innerHTML = teamhtml;
-    
-                    }
-                }
-                tablediv.innerHTML = "";
-                tablediv.appendChild(table);
-            });
-        });
+        }
+        tablediv.innerHTML = "";
+        tablediv.appendChild(table);
     });
 }
 
@@ -1609,7 +1568,7 @@ function getTrackers() {
         setTimeout(function() { buildCharts(); }, 50);
 
         // build the Trackers table
-        //setTimeout(function() { getTrackers(); }, 150);
+        setTimeout(function() { getTrackers(); }, 150);
 
         // Update the flight sidebar content
         setTimeout(function() {
@@ -2073,6 +2032,11 @@ function getTrackers() {
         else {
             fullupdate = "";
         }
+
+        // Update the tracker list
+        setTimeout (function() {
+            getTrackers();
+        }, 20);
 
         // Update the realtime layers that aren't flight layers (aka everything else...mylocation, trackers, landing predictions, other stations, etc.)
         setTimeout(function() {

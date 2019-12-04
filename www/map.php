@@ -135,7 +135,7 @@
                 <!-- <li><a href="#screenw" role="tab"><span id="screenw"></span></a></li> -->
                 <!-- <li><a href="#screenh" role="tab"><span id="screenh"></span></a></li> -->
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
-                <!-- <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li> -->
+                <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
                 <!-- <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li> -->
 <?php
     if ($numflights > 0) {
@@ -217,17 +217,15 @@
             </div>   <!-- end of Home sidebar pane -->
 
             <!-- profile sidebar pane (the trackers list) -->
-            <!--
             <div class="sidebar-pane" id="profile">
                 <h1 class="sidebar-header">Trackers<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
-                <p class="lorem">This tab shows the list of active trackers for the current mission.</p>
-                <p class="section-header">Tracker List</p>
-
-                <div id="trackers">
+                <div class="div-table">
+                    <p class="lorem">This tab shows the list of active trackers for the current mission.</p>
+                    <p class="section-header">Tracker List</p>
                 </div>
+                <div id="trackers"></div>
                 <div id="newtrackererror"></div>
-
-            </div> -->  <!-- end of profile sidebar pane -->
+            </div>  <!-- end of profile sidebar pane -->
 
 
             <!-- messages sidebar pane (live packet stream) -->
