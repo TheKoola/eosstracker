@@ -89,9 +89,9 @@ select distinct
 date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
 case
     when a.ptype = \'/\' and a.raw similar to \'%[0-9]{6}h%\' then 
-        date_trunc(\'second\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
+        date_trunc(\'milliseconds\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
     else
-        date_trunc(\'second\', a.tm)::time without time zone
+        date_trunc(\'milliseconds\', a.tm)::time without time zone
 end as packet_time,
 a.callsign, 
 a.comment, 
