@@ -2098,12 +2098,16 @@ function getTrackers() {
                                 $(altitudeValue).data("altimeter").setAltitude(thealtitude);
                                 $(altitudeValue).text(thealtitude.toLocaleString());
                             }
+                            else
+                                $(altitudeValue).text("NaN");
 
                             // Update vertical rate, but only if valid values...
                             if (thevertrate < 50000 && thevertrate > -50000) {
                                 $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
                                 $(verticalRateValue).text(thevertrate.toLocaleString());
                             }
+                            else
+                                $(verticalRateValue).text("NaN");
 
                             // Update heading and speed
                             $(balloonHeadingValue).data("heading").setHeading(theheading);
