@@ -2094,7 +2094,7 @@ function getTrackers() {
                             var speedValue = "#" + fid + "_speedvalue";
 
                             // Update altitude, but only if valid values...
-                            if (thealtitude > 0 {
+                            if (thealtitude > 0) {
                                 $(altitudeValue).data("altimeter").setAltitude(thealtitude);
                                 $(altitudeValue).text(thealtitude.toLocaleString());
                             }
