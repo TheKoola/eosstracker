@@ -100,6 +100,7 @@ and case
    else 
        a.callsign like tr.callsign || \'-%\'
 end
+and t.tactical != \'ZZ-Not Active\'
 and tr.tactical = t.tactical ' .
 ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $2 ") . '
 
