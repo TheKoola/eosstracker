@@ -102,7 +102,7 @@
         from (
             select
                 fl.flightid,
-                date_trunc('millisecond', a.tm)::timestamp without time zone as thetime,
+                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                 a.callsign, 
                 a.symbol, 
                 rank () over (

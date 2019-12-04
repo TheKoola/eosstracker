@@ -106,7 +106,7 @@
     if ($get_flightid == "") {
         $query = '
         select distinct 
-        date_trunc(\'millisecond\', a.tm)::timestamp without time zone as thetime,
+        date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
         a.callsign, 
         a.symbol, 
         round(a.speed_mph) as speed_mph,
@@ -172,7 +172,7 @@
     else {
         $query = '
         select distinct 
-        date_trunc(\'millisecond\', a.tm)::timestamp without time zone as thetime,
+        date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
         a.callsign, 
         a.symbol, 
         round(a.speed_mph) as speed_mph,
