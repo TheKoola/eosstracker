@@ -241,7 +241,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         else if ($ptype == ">") {
             // this is a status packet
             $r = preg_split('/:>/', $raw);
-            $statuspackets[] = array($thetime, $get_flightid, $callsign, $r[1]);
+            $statuspackets[] = array($time_trunc, $get_flightid, $callsign, $r[1]);
         }
     }    
 
