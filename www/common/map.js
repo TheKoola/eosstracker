@@ -2093,11 +2093,15 @@ function getTrackers() {
                             var balloonHeadingValue = "#" + fid + "_headingvalue";
                             var speedValue = "#" + fid + "_speedvalue";
 
-                            // Update altitude and vertical rate, but only if valid values...
-                            if (thealtitude > 0 && thevertrate < 50000 && thevertrate > -50000) {
+                            // Update altitude, but only if valid values...
+                            if (thealtitude > 0 {
                                 $(altitudeValue).data("altimeter").setAltitude(thealtitude);
-                                $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
                                 $(altitudeValue).text(thealtitude.toLocaleString());
+                            }
+
+                            // Update vertical rate, but only if valid values...
+                            if (thevertrate < 50000 && thevertrate > -50000) {
+                                $(verticalRateValue).data("variometer").setVario(thevertrate/1000);
                                 $(verticalRateValue).text(thevertrate.toLocaleString());
                             }
 
