@@ -603,14 +603,28 @@
 
         //Construct strings with the date and time
         var thedate = d.toLocaleDateString();
-        var thetime = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+        var thetime = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
         var beginningString = thedate + " 00:00:00";
         var endingString = thedate + " " + thetime;
 
         // Update the input elements to have these values for defaults.
         document.getElementById("data_beginning").value = beginningString;
         document.getElementById("data_ending").value = endingString;
+        console.log ("ending string:  " + endingString);
 
+    }
+
+
+    /************
+     * pad
+     *
+     * pad a number with a leading zero and return a string.  This is just for padding time figures (hours, mins, secs) to have leading zeros.
+    *************/
+    function pad(num) {
+        if (num < 10)
+            return "0" + num;
+        else
+            return num;
     }
 
 
