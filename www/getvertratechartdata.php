@@ -126,7 +126,7 @@ thetime asc;
         if (array_key_exists($callsign, $time_prev)) {
             if ($hash != $hash_prev[$callsign]) {
                 $diff = date_diff($time_prev[$callsign], $time1);
-                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f);
+                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f)/60;
                 if ($time_delta > 0)
                     $verticalrate[$callsign][] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
                 else
