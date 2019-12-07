@@ -494,7 +494,7 @@ def writeToDatabase(x):
 
         # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
         if packet["latitude"] == "" or packet["longitude"] == "":
-            # SQL insert statement for packets that contain a location (i.e. lat/lon)
+            # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
             sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                 now()::timestamp with time zone, 
                 %s, 
@@ -524,7 +524,7 @@ def writeToDatabase(x):
             ])
 
         else:
-            # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
+            # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
             sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                 now()::timestamp with time zone, 
                 %s, 
@@ -864,7 +864,7 @@ def direwolf(e, callsign, freqlist, config):
 
     # Run direwolf to test for support of the -Q parameter
     try:
-        # Run the aprsc command, but we redirect output to /dev/null because we only care about the return code
+        # Run the direwolf command, but we redirect output to /dev/null because we only care about the return code
         devnull = open(os.devnull, "w")
         p = sb.Popen(df_test_Q, stdout=devnull, stderr=sb.STDOUT)
         
@@ -1442,7 +1442,7 @@ def main():
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
 
-        # This is the APRS-IS connection tap.  This is the process that is respoonsible for inserting APRS packets into the database
+        # This is the APRS-IS connection tap.  This is the process that is responsible for inserting APRS packets into the database
         aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), str(configuration["ssid"]), options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
