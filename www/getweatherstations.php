@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 ##################################################
 *
  */
-
-    ###  This will query the database for the n most recent packets.  
 
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
@@ -61,39 +59,78 @@
     }
     
 
-    ## query the last packets from stations...
+    ## query the last packets with positions from weather stations...
     $query = '
-select distinct 
---a.tm::timestamp without time zone as thetime, 
-date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
-a.callsign, 
-a.comment, 
-a.symbol, 
-a.bearing,
-round(a.altitude) as altitude, 
-round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
-a.ptype 
+        select distinct 
+        date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
+        a.callsign, 
+        a.comment, 
+        a.symbol, 
+        a.bearing,
+        round(a.altitude) as altitude, 
+        round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
+        round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
+        a.ptype,
+  
+        case
+            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
+                case when to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') <= 180 then
+                    to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') + 180
+                else
+                    to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') - 180
+                end
+            else
+                NULL
+        end as wind_angle_bearing,
 
-from packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = \'t\') as b on a.callsign = b.callsign
-left outer join (select t.callsign from trackers t order by t.callsign) as c 
-on case
-   when c.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
-       a.callsign  = c.callsign
-   else 
-       a.callsign like c.callsign || \'-%\'
-end
+        case    
+            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
+                to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\')
+            else
+                NULL
+        end as wind_angle_heading,
 
-where 
-b.callsign is null
-and c.callsign is null
-and a.location2d != \'\' 
-and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
-and a.symbol != \'/_\'
+        case
+            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
+                to_number(substring(a.raw from position(\'_\' in a.raw) + 5 for 3), \'999\')
+            else
+                NULL
+        end as wind_magnitude_mph,
 
-order by 
-thetime asc, 
-a.callsign ;'; 
+        case
+            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g[0-9]{3}%\' then
+                to_number(substring(a.raw from position(\'g\' in a.raw) + 1 for 3), \'999\')
+            else
+                NULL
+        end as windgust_magnitude_mph,
+        case
+            when a.raw similar to \'%_%t[\-0-9]{3}%\' then
+                to_number(substring(a.raw from position(\'t\' in a.raw) + 1 for 3), \'999\')
+            else
+                NULL
+        end as temperature
+
+
+        from 
+        packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = \'t\') as b on a.callsign = b.callsign
+        left outer join (select t.callsign from trackers t order by t.callsign) as c 
+        on case
+           when c.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
+               a.callsign  = c.callsign
+           else 
+               a.callsign like c.callsign || \'-%\'
+        end
+
+        where 
+        b.callsign is null
+        and c.callsign is null
+        and a.location2d != \'\' 
+        and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
+        and a.symbol = \'/_\'
+
+        order by 
+        thetime asc, 
+        a.callsign ;'; 
 
     //printf ("<br>%s<br><br><br>", $query);
 
@@ -121,13 +158,32 @@ a.callsign ;';
         $latitude = $row['latitude'];
         $longitude = $row['longitude'];
         $altitude = $row['altitude'];
+        $wind_bearing = $row['wind_angle_bearing'];
+        $wind_heading = $row['wind_angle_heading'];
+        $wind = $row['wind_magnitude_mph'];
+        $windgusts = $row['windgust_magnitude_mph'];
+        $temperature = $row['temperature'];
 
         $features[$callsign][$latitude . $longitude . $altitude] = array($latitude, $longitude, $altitude);
 
         if (array_key_exists($callsign, $positioninfo)) {
             $speed = calc_speed($latitude, $longitude, $positioninfo[$callsign][2], $positioninfo[$callsign][3], $positioninfo[$callsign][0], $thetime);
             if ($speed < 310) 
-                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $bearing);
+                #$positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $bearing);
+                $positioninfo[$callsign] = array(
+                    $thetime, 
+                    $symbol, 
+                    $latitude, 
+                    $longitude, 
+                    $altitude, 
+                    $comment, 
+                    $bearing, 
+                    $wind_bearing, 
+                    $wind_heading, 
+                    $wind, 
+                    $windgusts, 
+                    $temperature
+                );
             else {
                 //printf ("<br><strong>ERROR2:</strong> %s speed=%f<br>\n", $callsign, $speed);
                 //print_r($positioninfo[$callsign]);
@@ -136,7 +192,20 @@ a.callsign ;';
             }
         }
         else
-            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $bearing);
+            $positioninfo[$callsign] = array(
+                $thetime, 
+                $symbol, 
+                $latitude, 
+                $longitude, 
+                $altitude, 
+                $comment, 
+                $bearing, 
+                $wind_bearing, 
+                $wind_heading, 
+                $wind, 
+                $windgusts, 
+                $temperature
+            );
     }    
 
 
@@ -153,16 +222,17 @@ a.callsign ;';
         /* This prints out the GeoJSON object for this station */
         printf ("{ \"type\" : \"Feature\",\n");
         printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s, \"bearing\" : %s },\n", 
-            json_encode($callsign), 
-            json_encode($callsign), 
-            json_encode($positioninfo[$callsign][0]), 
-            json_encode($positioninfo[$callsign][1]), 
-            json_encode($positioninfo[$callsign][4]), 
-            json_encode($positioninfo[$callsign][5]), 
-            json_encode($callsign),
-	    json_encode($callsign),
-	    json_encode($config["iconsize"]),
-	    json_encode($positioninfo[$callsign][6])
+            json_encode($callsign),  // id
+            json_encode($callsign),  // callsign
+            json_encode($positioninfo[$callsign][0]),  // time
+            json_encode($positioninfo[$callsign][1]),  // symbol 
+            json_encode($positioninfo[$callsign][4]),  // altitude
+            json_encode("Wind: " . $positioninfo[$callsign][9] . "mph from " . $positioninfo[$callsign][8] . "&#176; (bearing: " . $positioninfo[$callsign][7] . "&#176;),  gusting to: " . $positioninfo[$callsign][10] . "mph<br>" . 
+                "Temp: " . $positioninfo[$callsign][11] . "&#176; F"),
+            json_encode($callsign), // tooltip
+    	    json_encode($callsign),  // label
+    	    json_encode($config["iconsize"]), // iconsize
+    	    json_encode($positioninfo[$callsign][6]) // bearing
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");

@@ -1450,6 +1450,7 @@ function getTrackers() {
         //var allstations = L.markerClusterGroup();
         var allstations = L.layerGroup();
         var mystation = L.layerGroup();
+        var wxstations = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
@@ -1460,16 +1461,19 @@ function getTrackers() {
 
         var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
         var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
+        var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, function(){ return { color: 'black'}});
         b.addTo(map);
         c.addTo(map);
         realtimelayers.push(a);
         realtimelayers.push(b);
         realtimelayers.push(c);
+        realtimelayers.push(d);
 
         // The base layers and overlays that will be added to every map
         var groupedoverlays = { 
             "Generic Stations" : {
                 "All Other Stations" : allstations, 
+                "Weather Stations" : wxstations, 
                 "Trackers at Large" : trackersatlarge, 
                 "My Location" : mystation
             }
