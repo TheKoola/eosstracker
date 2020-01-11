@@ -56,6 +56,7 @@ import random
 import habconfig 
 import landingpredictor as lp
 import gpspoller
+import aprsis
 
 
 class GracefulExit(Exception):
@@ -329,369 +330,33 @@ def getAPRSISFilter(aprsRadius, customfilter = None):
         pgConnection.close()
 
 
-##################################################
-# Create an APRS-IS filter string
-# This is the client-side filter used for connecting to the locally running aprsc instance.
-# This function is called periodically to adjust the filter dynamically (i.e. user might be 
-# driving around and thus their GPS position is changing).
-##################################################
-def getAPRSFilter(aprsRadius, callsign, ssid):
-    try:
-        # Adjust inital APRS-IS filter if a callsign was given.
-        # ...we do this so that we ingest packets that were heard directly as well as those via a radius, etc..
-        if ssid != "" and callsign != "E0SS":
-            aprsFilter = "e/" + callsign + "-" + ssid 
-        else:
-            aprsFilter = "e/" + callsign + "*"
-
-
-        # Database connection
-        pgConnection = pg.connect(habconfig.dbConnectionString)
-        pgCursor = pgConnection.cursor()
- 
-        # SQL query to get our current (or last) GPS location in lat/lon
-        lastPositionSQL = """select 
-            tm::timestamp without time zone as time, 
-            speed_mph, 
-            bearing, 
-            altitude_ft, 
-            round(cast(ST_Y(location2d) as numeric), 3) as latitude, 
-            round(cast(ST_X(location2d) as numeric), 3) as longitude 
-
-            from 
-            gpsposition 
-
-            order by 
-            tm desc limit 1;
-        """
-
-        # Execute the SQL query and fetch the results
-        pgCursor.execute(lastPositionSQL)
-        rows = pgCursor.fetchall()
-
-        # Only build a radius-query for APRS-IS if there was a "latest" position reurned from the SQL query.  
-        # ....granted, this location might be really old.
-        # Future note:  for those users that are running this from home, we need to provide a way for them to enter an arbitrary point to serve as the 
-        #               center of a large circle to capture packets from an active flight's tracking efforts.
-        if len(rows) > 0:
-            latitude = rows[0][4]
-            longitude = rows[0][5]
-            aprsFilter = aprsFilter + " r/" + str(latitude) + "/" + str(longitude) + "/" + str(int(aprsRadius)) 
-        #print("aprsFilter1: %s\n" % aprsFilter)
-
-
-        # SQL query to fetch the callsigns for beacons on active flights
-        activeBeaconsSql = """select 
-            f.flightid, 
-            fm.callsign 
-
-            from 
-            flights f, 
-            flightmap fm 
-
-            where 
-            fm.flightid = f.flightid 
-            and f.active = true
-      
-            order by 
-            f.flightid desc,
-            fm.callsign asc;
-        """
-      
-        # Execute the SQL query and fetch the results
-        pgCursor.execute(activeBeaconsSql)
-        rows = pgCursor.fetchall() 
-
-        # Loop through each beacon callsign, building the APRS-IS filter string
-        beaconFilter = ""
-        for beacon in rows:
-            beaconFilter = beaconFilter + "/" + beacon[1] 
-        if len(rows) > 0:
-            aprsFilter = aprsFilter + " b" + beaconFilter 
-
-    
-        # Loop through the first 9 beacons adding 50km friend filters for each one. 
-        friendFilter = ""
-        for beacon in rows[0:9]:
-            friendFilter = friendFilter + " f/" + beacon[1] + "/50"
-        if len(rows) > 0:
-            aprsFilter = aprsFilter + friendFilter 
-
-
-        # Close database connection
-        pgCursor.close()
-        pgConnection.close()
- 
-        #print("aprsFilter2: %s\n" % aprsFilter)
-
-        # Return the resulting APRS-IS filter string
-        return aprsFilter
-
-    except pg.DatabaseError as error:
-        pgCursor.close()
-        pgConnection.close()
-        print "Database error:  ", error
-    except (StopIteration, GracefulExit, KeyboardInterrupt, SystemExit): 
-        pgCursor.close()
-        pgConnection.close()
-        
-
-##################################################
-# Write an incoming packet to the database
-##################################################
-tapcur = None
-def writeToDatabase(x): 
-    # Note:  we don't want to open/close the database connection within this function because that would add a LOT of overhead 
-    #        as this function is called for every incoming packet.  DB connections are opened/closed in the calling function. 
-
-    global tapcur
-    try:
-        # Parse the raw APRS packet
-        packet = aprslib.parse(x)
-        
-        # The list of key names from the APRS packet structure (parsed above) that we're insterested in when inserting this packet into the database (down below).
-        keys = ["object_name", "comment", "latitude", "longitude", "altitude", "course", "symbol", "symbol_table", "speed"]
-
-        # Set those field values to NULL if this packet does not include them....this allows us to insert a NULL value for this database field later down below. 
-        for a in keys:
-            if a not in packet:
-                packet[a] = ""
-
-        # Decipher the APRS symbol...
-        # The usual stuff about if the symbol type for an APRS packet starts with a / or a \, then we need to choose the appropriate symbol table, etc..
-        # ...basically getting the symbol returned from packet parsing (up above) consolidated down to just to characters as prep to inserting into the DB.
-        if packet["symbol_table"] != "/" and packet["symbol_table"] != "":
-            packet["symbol"] = packet["symbol_table"] + packet["symbol"]  
-        elif packet["symbol_table"] == "/":
-            packet["symbol"] = "/" + packet["symbol"]
-
-        # For those values within the packet that are numeric, we set them to zero instead of NULL if this packet does not include them.
-        for a in ["speed", "course", "altitude"]:
-            if packet[a] == "":
-                packet[a] = 0
-
-        # We want to split off the information part of the APRS packet for the following reasons:
-        #    1.  So we can upload just that part of the packet into the database
-        #    2.  Get the packet type (i.e. message, location, status, telemetry, mic-e, etc.)
-        #    3.  Break this out so we can compute an MD5 hash for determining packet uniqueness (downstream functionality)
-        #
-        # Split this the packet at the ":"
-        ppart = packet["raw"].partition(":")
-        if ppart[2] != "":
-            ptype = ppart[2][0]
-            info = ppart[2][0:] 
-        else:
-            ptype = ""
-            info = ""
-        
-        # For those APRS packets that have an "object name" (presumably for an APRS "object") then we set the "from" field to the "object name".
-        # ...even though the object packet was likely transmitted from a different callsign/station, sitting the from field to this object name
-        # makes for niceness downstream when displaying APRS items on the map.
-        if packet["object_name"] != "":
-            packet["from"] = packet["object_name"]
-
-        #print("from:%s ptype:%s info:%s\n" % (packet["from"], ptype, info))
-
-        # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
-        if packet["latitude"] == "" or packet["longitude"] == "":
-            # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
-            sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
-                now()::timestamp with time zone, 
-                %s, 
-                %s, 
-                round((%s::numeric) * 0.6213712), 
-                %s::numeric, 
-                round((%s::numeric) * 3.28084), 
-                %s, 
-                NULL, 
-                NULL, 
-                %s, 
-                %s, 
-                md5(%s)
-            );"""
-
-            # Execute the SQL statement
-            tapcur.execute(sql, [
-                packet["from"], 
-                packet["symbol"], 
-                packet["speed"], 
-                packet["course"], 
-                packet["altitude"], 
-                packet["comment"], 
-                packet["raw"], 
-                ptype, 
-                info
-            ])
-
-        else:
-            # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
-            sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
-                now()::timestamp with time zone, 
-                %s, 
-                %s, 
-                round((%s::numeric) * 0.6213712), 
-                %s::numeric, 
-                round((%s::numeric) * 3.28084), 
-                %s, 
-                ST_GeometryFromText('POINT(%s %s)', 4326), 
-                ST_GeometryFromText('POINTZ(%s %s %s)', 4326), 
-                %s, 
-                %s, 
-                md5(%s)
-            );"""
-
-            # Execute the SQL statement
-            tapcur.execute(sql, [
-                packet["from"], 
-                packet["symbol"], 
-                packet["speed"], 
-                packet["course"], 
-                packet["altitude"], 
-                packet["comment"], 
-                packet["longitude"], 
-                packet["latitude"], 
-                packet["longitude"], 
-                packet["latitude"], 
-                packet["altitude"], 
-                packet["raw"], 
-                ptype,
-                info
-            ])
-         
-
-    except (ValueError, UnicodeEncodeError) as error:
-        print "Encoding error: ", error
-        print "Skipping DB insert for: ", x
-        sys.stdout.flush()
-        pass
-
-    except pg.DatabaseError as error:
-        print "[writeToDatabase] Database error:  ", error
-        print "[writeToDatabase] raw packet: ", x
-        tapcur.close()
-    except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
-        #print "Unknown packet format:  %s, %s" % (datetime.datetime.now(), x)
-        pass
-    except (StopIteration, GracefulExit, KeyboardInterrupt, SystemExit): 
-        tapcur.close()
-
-
-##################################################
-# Thread for updating the APRS-IS filter
-##################################################
-def aprsFilterThread(callsign, ssid, a, r, e):
-    
-    # The time in seconds in between updating the APRS-IS filter.
-    # 
-    delta = 15 
-
-    try:
-        # Loop forever (until this thread/process is killed) sleeping each time for "delta" seconds.
-        #while True:
-        while not e.is_set():
-            # Sleep for delta seconds
-            #time.sleep(delta)
-            e.wait(delta)
-
-            # Get a new APRS-IS filter string (i.e. our lat/lon location could have changed, beacon callsigns could have changed, etc.)
-            filterstring = getAPRSFilter(r, callsign, ssid) 
- 
-            #print "setting aprs filter:  ", filterstring
-
-            # Put this filter into effect
-            a.set_filter(filterstring)
-            #print "Filter now: ", a.filter
-
-    except (StopIteration, GracefulExit, KeyboardInterrupt, SystemExit): 
-        print "Aprsc filter thread ended"
-
-
 
 ##################################################
 # Process for connecting to APRS-IS
 ##################################################
-#def aprsTapWatchDog(a, e):
-#    e.wait()
-#    print "Watchdog closing APRS-IS tap..."
-#    raise StopIteration("telling aprslib to stop")
-
-
-##################################################
-# Process for connecting to APRS-IS
-##################################################
-def aprsTapProcess(callsign, ssid, radius, e):
-    global tapcur
+def tapProcess(configuration, aprsserver, typeoftap, radius, e):
 
     try:
- 
-        #logging.basicConfig(level=0)
-        
-        # Connect to the aprsc process 
-        # We always append "03" to callsign to ensure were connecting with a reasonably unique callsign (i.e. so we don't conflict with direwolf or other).
-        ais = aprslib.IS(callsign + "03", aprslib.passcode(str(callsign) + "03"), host='127.0.0.1', port='14580')
+        if typeoftap == "cwop":
+            tap = aprsis.cwopTap(server = str(aprsserver), callsign = str(configuration['callsign']), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
+        elif typeoftap == "aprs":
+            tap = aprsis.aprsTap(server = str(aprsserver), callsign = str(configuration['callsign']), ssid = str(configuration["ssid"]), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
+        else:
+            return
 
-        # database connection
-        # the writeToDatabase function uses these connect variables
-        tapconn = pg.connect(habconfig.dbConnectionString)
-        tapconn.set_session(autocommit=True)
-        tapcur = tapconn.cursor()
+        tap.run()
 
-        # ...see the getAPRSFilter function
-        ais.set_filter(getAPRSFilter(radius, callsign, ssid))
- 
-        # Try to connect to the locally running aprsc instance...we attempt multiple times before giving up.
-        # This will attempt a connection multiples times (ie. the following while loop), waiting 5 seconds in between tries.
-        # Attempting this loop for 18 times is equivalent to about 90 seconds.
-        trycount = 0
-        while trycount < 18:
-            try:
-                # wait for 5 seconds before trying to connect
-                e.wait(5)
-        
-                # Try to connect to aprsc
-                ais.connect()
-
-                # If connection was successful, then break out of this loop
-                print "Aprsc tap connection to local aprsc successful"
-                sys.stdout.flush()
-                break
-            except aprslib.ConnectionError as error:
-                print "Aprsc tap error connecting to local aprsc, attempt #", trycount, ":  ", error
-                sys.stdout.flush()
-
-            # Increment trycount each time through the loop
-            trycount += 1
-
-        # This is the thread which updates the filter used with the APRS-IS connectipon
-        aprsfilter = th.Thread(name="APRS-IS Filter", target=aprsFilterThread, args=(callsign, ssid, ais, radius, e))
-        aprsfilter.setDaemon(True)
-        aprsfilter.start()
-
-        #watchdog = th.Thread(name="APRS-IS Tap Watchdog", target=aprsTapWatchDog, args=(ais, e))
-        #watchdog.setDaemon(True)
-        #watchdog.start()
-
-        # The consumer function blocks forever, calling the writeToDatabase function upon receipt of each APRS packet
-        ais.consumer(writeToDatabase, blocking=True, raw=True)
-            
-    #except (StopIteration, aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
     except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
-        print "Closing APRS Tap: ", error
-        ais.close()
-        tapcur.close()
-        tapconn.close()
-        print "aprsTap ended"
+        print "Closing APRS(", aprsserver, ") Tap: ", error
+        tap.close()
+        print "Tap ended: ", aprsserver
 
     except pg.DatabaseError as error:
-        print "[aprsTapProcess] Database error:  ", error
-        tapcur.close()
-        tapconn.close()
-        ais.close()
+        print "[tapProcess(", aprsserver, ")] Database error:  ", error
+        tap.close()
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
-        tapcur.close()
-        tapconn.close()
-        ais.close()
-        print "aprsTap ended"
+        tap.close()
+        print "Tap ended: ", aprsserver
 
 
 ##################################################
@@ -1135,9 +800,6 @@ def argument_parser():
         "", "--aprsisRadius", dest="aprsisRadius", type="intx", default=50,
         help="Set the radius (in kilometers) for filtering packets from APRS-IS [default=%default]")
     parser.add_option(
-        "", "--algoFloor", dest="algoFloor", type="intx", default=4900,
-        help="Set the elevation floor (in feet) for how low the landing predictor will compute landing locations  [default=%default]")
-    parser.add_option(
         "", "--algoInterval", dest="algoInterval", type="intx", default=20,
         help="How often (in secs) the landing predictor run [default=%default]")
     parser.add_option(
@@ -1343,10 +1005,6 @@ def main():
 
     print "Starting HAB Tracker backend daemon"
     print "Callsign:  %s" % str(configuration["callsign"])
-#    print "APRS-IS Radius: %dkm" % options.aprsisRadius
-#    print "Algorithm Floor: %dft (this will auto-adjust)" % options.algoFloor
-#    print "Algorithm Interval: %ds" % options.algoInterval
-
 
     # this holds the list of sub-processes and threads that we want to start/run
     processes = []
@@ -1443,10 +1101,16 @@ def main():
         status["timezone"] = str(configuration["timezone"])
 
         # This is the APRS-IS connection tap.  This is the process that is responsible for inserting APRS packets into the database
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsTapProcess, args=(str(configuration["callsign"]), str(configuration["ssid"]), options.aprsisRadius, stopevent))
+        aprstap = mp.Process(name="APRS-IS Tap", target=tapProcess, args=(configuration, "127.0.0.1", "aprs", options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
         processes.append(aprstap)
+
+        # This is the CWOP connection tap.  This is the process that is responsible for inserting CWOP packets into the database
+        cwoptap = mp.Process(name="CWOP Tap", target=tapProcess, args=(configuration, "cwop.aprs.net", "cwop", options.aprsisRadius, stopevent))
+        cwoptap.daemon = True
+        cwoptap.name = "CWOP Tap"
+        processes.append(cwoptap)
 
         # This is the GPS position tracker process
         gpsprocess = mp.Process(target=gpspoller.GpsPoller, args=(stopevent,))
@@ -1455,7 +1119,7 @@ def main():
         processes.append(gpsprocess)
 
         # This is the landing predictor process
-        landingprocess = mp.Process(target=lp.runLandingPredictor, args=(options.algoInterval, options.algoFloor, stopevent, configuration))
+        landingprocess = mp.Process(target=lp.runLandingPredictor, args=(options.algoInterval, stopevent, configuration))
         landingprocess.daemon = True
         landingprocess.name = "Landing Predictor"
         processes.append(landingprocess)
