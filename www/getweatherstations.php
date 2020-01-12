@@ -99,13 +99,13 @@
 
         case
             when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g[0-9]{3}%\' then
-                to_number(substring(a.raw from position(\'g\' in a.raw) + 1 for 3), \'999\')
+                to_number(substring(a.raw from position(\'_\' in a.raw) + 9 for 3), \'999\')
             else
                 NULL
         end as windgust_magnitude_mph,
         case
             when a.raw similar to \'%_%t[\-0-9]{3}%\' then
-                to_number(substring(a.raw from position(\'t\' in a.raw) + 1 for 3), \'999\')
+                to_number(substring(a.raw from position(\'_\' in a.raw) + 13 for 3), \'999\')
             else
                 NULL
         end as temperature
