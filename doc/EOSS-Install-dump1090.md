@@ -25,6 +25,7 @@ for information about software upgrades and the `dev` branch from GitHub.
 This can be the same model USB SDR deployed for the APRS frequencies.  
 These instructions apply to this device. It can be ordered here:
 [link](https://www.amazon.com/gp/product/B01HA642SW/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
+
 Optionally, you can order the FlightAware Pro Stick USB ADS-B Receiver from here:
 [link](https://www.amazon.com/FlightAware-Pro-Stick-ADS-B-Receiver/dp/B01D1ZAP3C)
 
@@ -84,7 +85,7 @@ bandpass filter if you have implemented it).
 output should look like this:
 
 <p align="center">
-<img src="assets/adsb-rtl-eeprom-out.png" alt="rtl_eeprom output" width=800>
+<img src="assets/adsb-rtl-eeprom-out.png" alt="rtl_eeprom output" width=400>
 </p>
 
 6. Note the new Serial number is `ADSB`.  You are asked to "replug the device
@@ -94,7 +95,8 @@ for changes to take effect".  Replug the device.
 ports.
 9. Power on your brick, reconnect to your terminal session and log in.  
 10.  To check to see if you now have two SDRs, from the command prompt
-enter: `rtl_test`.  You should see "2 devices found".
+enter: `rtl_test`.  You should see "2 devices found".  Press CNTRL-C to
+exit the test command.
 
 You are now ready for the dump1090-fa (ADS-B) software installation.
 
@@ -159,23 +161,25 @@ It may be important to filter flight information and display only flights
 we have an interest – such as balloon flights.  EOSS has registered three
 tail numbers for future flights:  The three EOSS N-numbers are:
 ```
-Tail number:  N991SS, Hex ICAO Address:  ADD7FB
-Tail number:  N992SS, Hex ICAO Address:  ADDBB2
-Tail number:  N993SS, Hex ICAO Address:  ADDF69
+Tail number: N991SS, Hex ICAO Address: ADD7FB
+Tail number: N992SS, Hex ICAO Address: ADDBB2
+Tail number: N993SS, Hex ICAO Address: ADDF69
 ```
 The CU N-Number and ICAO Address is:
 ```
-Tail number:  N4615G, Hex ICAO Address:  A59EE9
+Tail number: N4615G, Hex ICAO Address: A59EE9
 ```
 As an example, to filter and watch a flight for our balloon (N991SS),
 enter the command:
+
 `nc 127.0.0.1 30003 | egrep -i "N991SS"`
 
 To observe the tail number, click on the logo for that flight and note
-the number in red or green to the right of the commercial flight number.  
-This is the tail number we will use to filter multiple flights.  
+the number in red or green to the right of the commercial flight number.  This
+is the tail number we will use to filter multiple flights.  
 
 For example, to follow A12861 and A3CCBD enter:
+
 `nc 127.0.0.1 30003 | egrep -i "A12861|A3CCBD"`
 This command will return data only for those two flights:
 
@@ -185,9 +189,11 @@ This command will return data only for those two flights:
 
 To save the streaming data to a new file in the current directory, the command
 was issued:  
+
 `nc 127.0.0.1 30003 | egrep -i "A12861|A3CCBD" >output.txt`
 
 To append streaming data onto an existing file:
+
 `nc 127.0.0.1 30003 | egrep -i "A12861|A3CCBD" >>output.txt`
 
 You should be well on the way to monitor specific and multiple balloon flights
