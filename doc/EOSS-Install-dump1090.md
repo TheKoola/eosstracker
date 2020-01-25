@@ -181,6 +181,7 @@ is the tail number we will use to filter multiple flights.
 For example, to follow A12861 and A3CCBD enter:
 
 `nc 127.0.0.1 30003 | egrep -i "A12861|A3CCBD"`
+
 This command will return data only for those two flights:
 
 <p align="center">
