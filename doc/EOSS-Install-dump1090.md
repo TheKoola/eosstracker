@@ -167,7 +167,7 @@ Tail number: N993SS, Hex ICAO Address: ADDF69
 ```
 The CU N-Number and ICAO Address is:
 ```
-Tail number: N4615G, Hex ICAO Address: A59EE9
+Tail number: N461SG, Hex ICAO Address: A59EE9
 ```
 As an example, to filter and watch a flight for our balloon (N991SS),
 enter the command:
