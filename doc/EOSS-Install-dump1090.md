@@ -170,13 +170,13 @@ The CU N-Number and ICAO Address is:
 Tail number: N461SG, Hex ICAO Address: A59EE9
 ```
 As an example, to filter and watch a flight for our balloon (N991SS),
-enter the command:
+enter the command (note the ICAO address):
 
-`nc 127.0.0.1 30003 | egrep -i "N991SS"`
+`nc 127.0.0.1 30003 | egrep -i "ADD7FB"`
 
 To observe the tail number, click on the logo for that flight and note
 the number in red or green to the right of the commercial flight number.  This
-is the tail number we will use to filter multiple flights.  
+is the ICAO address we will use to filter multiple flights.  
 
 For example, to follow A12861 and A3CCBD enter:
 
