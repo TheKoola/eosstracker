@@ -1226,7 +1226,7 @@ def runLandingPredictor(schedule, e, config):
                     print "Column, %s, does not exist within the 'landingpredictions' table.  Adding now." % column
                     
                     # SQL to alter the "landingpredictions" table and add the "flightpath" column
-                    alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype;
+                    alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype + ";";
                     dbcur.execute(alter_table_sql)
                     dbconn.commit()
 
