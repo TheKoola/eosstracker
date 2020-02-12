@@ -859,10 +859,14 @@ class LandingPredictor:
                             length = ascent_portion.shape[0]
 
                             # The weight assigned to the two different functions used for predictions.  Essentially a precentage value based on 
-                            # "where" in the descent a flight is at:  
+                            # "where" in the descent a flight is at it varies from 0 to 1.  With 1 being at the max altitude, and 0 being at the prediction_floor.
                             #     Shortly after burst?  ...then apply more weight to the curve fitting function
                             #     Well into the descent?  ...then apply more weight to the drag caluclation function
                             function_weight = (float(last_heard_altitude) - prediction_floor) / (float(descent_portion[0, 0]) - prediction_floor)
+
+                            # Adjust the weight so that it more aggressively favors the drag calculation function instead of the curve fitting model.
+                            function_weight = function_weight**2
+
                             debugmsg("function_weight: %f" % function_weight)
 
                             # Loop params
