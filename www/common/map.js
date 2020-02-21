@@ -2382,7 +2382,7 @@ function getTrackers() {
 
         // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
         // ...the idea being that ever so often, we should try to update everything on the map.
-        if (globalUpdateCounter > 16) {
+        if (globalUpdateCounter > 4) {
             // Set updateAllItems to run again in 5 seconds, but as a full.
             updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
         }
