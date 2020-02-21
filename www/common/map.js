@@ -2007,6 +2007,23 @@ function getTrackers() {
     }
 
 
+    /************
+     * updateFlightLayer
+     *
+     * This function provides for an easy way to update a flight layer based on its name.
+     * Flight layer names are the concatenated string consisting of the flightid and the callsign.
+     * For example:  EOSS-289KC0D-1
+     *
+    *************/
+    function updateFlightLayer(name) {
+        var rfl;
+
+        for (rfl in realtimeflightlayers) {
+            if (realtimeflightlayers[rfl].options.name == name)  
+                realtimeflightlayers[rfl].update();
+        }
+    }
+
 
     /************
      * UpdateAllItems
@@ -2059,14 +2076,8 @@ function getTrackers() {
                 var theflight = jsonData[key].flightid;
                 var thecallsign = jsonData[key].callsign;
 
-                // Update the realtime layers for this flight
-                setTimeout(function() {
-                    var rfl;
-                    for (rfl in realtimeflightlayers) {
-                        if (realtimeflightlayers[rfl].options.name == theflight + thecallsign)  
-                            realtimeflightlayers[rfl].update();
-                    }
-                }, 20);
+                // Update the realtime layer for this flight
+                setTimeout(updateFlightLayer(theflight+thecallsign), 20);
 
                 // Update all the gauges as well as the last position, last status, and packet source tables
                 $.get("getflightpackets.php?flightid=" + theflight, function(data) {
