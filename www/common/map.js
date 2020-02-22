@@ -61,6 +61,7 @@
 
     // The list of realtime layers 
     var realtimeflightlayers = [];
+    var landingpredictionlayers = [];
     var realtimelayers = [];
 
 
@@ -641,13 +642,14 @@
     *
     * This function is for creating a new realtime layer object.
     *********/
-    function createLandingPredictionsLayer(url, container, interval) {
+    function createLandingPredictionsLayer(url, container, interval, fid) {
         return L.geolayer(url, {
             interval: interval,
             container: container,
             color: 'black',
             weight: 2,
             opacity: 0.7,
+            name: fid,
             style:  landingPredictionStyle,
             onEachFeature: function (feature, layer) {
                 var html = "";
@@ -1516,22 +1518,37 @@ function getTrackers() {
             for (key2 in flightids[key].callsigns) {
                 var activeflightlayer = L.featureGroup();
 
-                //activeflights.push({ "callsign" : flightids[key].callsigns[key2], "layergroup" : activeflightlayer });
-                var r = createActiveFlightsLayer("getactiveflights.php?flightid=" + flightids[key].flightid + "&callsign=" + flightids[key].callsigns[key2], activeflightlayer, 5 * 1000, flightids[key].flightid + flightids[key].callsigns[key2]);
+                /* The active flight layer */
+                var r = createActiveFlightsLayer("getactiveflights.php?flightid=" + flightids[key].flightid + "&callsign=" + flightids[key].callsigns[key2], 
+                    activeflightlayer, 
+                    5 * 1000, 
+                    flightids[key].flightid + flightids[key].callsigns[key2]
+                );
                 r.addTo(map);
                 realtimeflightlayers.push(r);
+
+                /* Add these layers to the map's layer control */
                 layerControl.addOverlay(activeflightlayer, flightids[key].callsigns[key2], "Flight:  " + flightids[key].flightid);
             }
     
             
+            /* The Trackers and Predict File layers */
             var d = createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
             var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
-            var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 5 * 1000);
+
+            /* The landing prediction layer */
+            var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 
+                5 * 1000,
+                flightids[key].flightid
+            );
+
             d.addTo(map);
             f.addTo(map);
             realtimelayers.push(d);
             realtimelayers.push(e);
-            realtimelayers.push(f);
+            landingpredictionlayers.push(f);
+
+            /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Flight Prediction", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
@@ -1614,85 +1631,15 @@ function getTrackers() {
                 $(inst_a).click({element: inst_e, link: inst_l }, toggle);
                 $(alt_a).click({element: alt_e, link: alt_l }, toggle);
                 $(vert_a).click({element: vert_e, link: vert_l }, toggle);
-                //$(va_a).click({element: va_e, link: va_l }, toggle);
                 $(rel_a).click({element: rel_e, link: rel_l }, toggle);
                 $(lpp_a).click({element: lpp_e, link: lpp_l }, toggle);
 
                 // We use this to determine when the last packet came in for a given flight.
                 $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
 
-                // Build the live packet stream HTML for flight selection
-                //livePacketStreamHTML = livePacketStreamHTML + "<input type=\"radio\" id=\"flightLivePacketStream-" + flightids[flight].flightid + "\" name=\"flightLivePacketStream\"  value=\"" + flightids[flight].flightid + "\" > " + flightids[flight].flightid + "&nbsp; &nbsp;";
                 i += 1;
             }
-            /*
-            var liveA_a = "#livePacketFlightSelectionLink";
-            var liveA_l = "#livePacketFlightSelectionSign";
-            var liveA_e = "#livePacketFlightSelection";
-
-            var liveB_a = "#livePacketSearchLink";
-            var liveB_l = "#livePacketSearchSign";
-            var liveB_e = "#livePacketSearch";
-            $(liveA_a).click({element: liveA_e, link: liveA_l }, toggle);
-            $(liveB_a).click({element: liveB_e, link: liveB_l }, toggle);
-
-            // Build the Live Packet Stream tab
-            livePacketStreamHTML = livePacketStreamHTML + "</form>"; 
-            document.getElementById("flightsLivePacketStream").innerHTML = livePacketStreamHTML;
-            */
         }, 60);
-
-
-        // Update livestream sidebar content 
-        /*setTimeout(function () {
-            var e = document.getElementById('searchfield');
-            e.oninput = updateLivePacketStream;
-            e.onpropertychange = e.oninput;
-
-            var e = document.getElementById('searchfield2');
-            e.oninput = updateLivePacketStream;
-            e.onpropertychange = e.oninput;
-
-            var e = document.getElementById('operation');
-            e.oninput = updateLivePacketStream;
-            e.onpropertychange = e.oninput;
-
-
-            // set onclick for the Live Packet Stream flight selection radio buttons
-            for (flight in flightids) {
-                $("#flightLivePacketStream-" + flightids[flight].flightid).on('click change', function(e) {
-                    currentflight = selectedflight();
-                    getLivePackets();
-                });
-            }
-
-            $("#allpackets").on('click change', function(e) {
-                currentflight = selectedflight();
-                getLivePackets();
-            });
-
-            // set onclick for the start/stop buttons on the Live Packet Stream tab
-            $("#livepacketstart").on('click change', function(e) {
-                livePacketStreamState = 1;
-                document.getElementById("livePacketStreamState").innerHTML = "<mark style=\"background-color: lightgreen;\">on</mark>";
-                getLivePackets();
-            });
-
-            $("#livepacketstop").on('click change', function(e) {
-                livePacketStreamState = 0;
-                document.getElementById("livePacketStreamState").innerHTML = "<mark style=\"background-color: red;\">off</mark>";
-                clearLivePacketFilters();
-            });
-
-
-            // Setup the Live Packet Stream event and handler 
-            updateLivePacketStreamEvent= new CustomEvent("updateLivePacketStreamEvent");
-            document.addEventListener("updateLivePacketStreamEvent", displayLivePackets, false);
-
-            currentflight = "allpackets";
-            getLivePackets();
-        }, 200);
-        */
 
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
@@ -2019,11 +1966,30 @@ function getTrackers() {
         var rfl;
 
         for (rfl in realtimeflightlayers) {
-            if (realtimeflightlayers[rfl].options.name == name)  
+            if (realtimeflightlayers[rfl].options.name == name)  {
                 realtimeflightlayers[rfl].update();
+            }
         }
     }
 
+
+    /************
+     * updateLandingPredictionLayer
+     *
+     * This function provides for an easy way to update a landing prediction layer based on its name.
+     * Flight layer names are the concatenated string consisting of the flightid and the callsign.
+     * For example:  EOSS-289KC0D-1
+     *
+    *************/
+    function updateLandingPredictionLayer(name) {
+        var rfl;
+
+        for (rfl in landingpredictionlayers) {
+            if (landingpredictionlayers[rfl].options.name == name)   {
+                landingpredictionlayers[rfl].update();
+            }
+        }
+    }
 
     /************
      * UpdateAllItems
@@ -2067,9 +2033,25 @@ function getTrackers() {
             }
         }, 10);
 
+
         // Get list of flights that have new packets and based on that list, only update those flights on the map/gauges/tables
         $.get("getupdates.php" + (fullupdate != "" ? "?fullupdate=full" : ""), function(data) {
             var jsonData = JSON.parse(data);
+            var key;
+            var flights = [];
+            var f;
+
+            /* Build an array of unique flightid's */
+            for (key in jsonData) {
+                if (flights.indexOf(jsonData[key].flightid) == -1)
+                    flights.push(jsonData[key].flightid);
+            }
+
+            /* For each unique flightid, update the landing prediction layer for that flight */
+            for (f in flights) {
+                // Update the landing prediction layers 
+                setTimeout(updateLandingPredictionLayer(flights[f]), 25);
+            }
 
             // for each flight that was returned, update the map
             for (key in jsonData) {
@@ -2078,6 +2060,7 @@ function getTrackers() {
 
                 // Update the realtime layer for this flight
                 setTimeout(updateFlightLayer(theflight+thecallsign), 20);
+
 
                 // Update all the gauges as well as the last position, last status, and packet source tables
                 $.get("getflightpackets.php?flightid=" + theflight, function(data) {
@@ -2197,7 +2180,6 @@ function getTrackers() {
                         row.appendChild(blankcell1);
                         row.appendChild(blankcell2);
                         row.appendChild(blankcell3);
-                        row.appendChild(blankcell4);
                     }
                     else {
                         for (i = 0; i < keys.length; i++) {
@@ -2382,7 +2364,7 @@ function getTrackers() {
 
         // If the global update counter is greater than this threshold, then schedule the next update to be a "full" update.
         // ...the idea being that ever so often, we should try to update everything on the map.
-        if (globalUpdateCounter > 4) {
+        if (globalUpdateCounter > 16) {
             // Set updateAllItems to run again in 5 seconds, but as a full.
             updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
         }
