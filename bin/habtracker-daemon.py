@@ -800,7 +800,7 @@ def argument_parser():
         "", "--aprsisRadius", dest="aprsisRadius", type="intx", default=50,
         help="Set the radius (in kilometers) for filtering packets from APRS-IS [default=%default]")
     parser.add_option(
-        "", "--algoInterval", dest="algoInterval", type="intx", default=20,
+        "", "--algoInterval", dest="algoInterval", type="intx", default=10,
         help="How often (in secs) the landing predictor run [default=%default]")
     parser.add_option(
         "", "--kill", dest="kill", action="store_true", 
