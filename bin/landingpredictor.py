@@ -62,14 +62,25 @@ def debugmsg(message):
         sys.stdout.flush()
 
 
+
 #####################################
-# The LandingPredictor Class
+# The PredictorBase Class
+# 
+#    class PredictorBase:
+#        def __init__(self):
+#        def __del__(self):
+#        def func_x2(self, x, a) :
+#        def func_fittedline(self, x, a, b):
+#        def distance(self, lat1, lon1, lat2, lon2):
+#        def getLatestPackets(self, callsign = None):
+#        def processPredictions(self):
+#        def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, prediction_floor):
 #####################################
-class LandingPredictor:
+class PredictorBase(object):
 
     ################################
     # constructor
-    def __init__(self, dbConnectionString = None, timezone = 'America\Denver', timeout = 60):
+    def __init__(self):
 
         # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
         # This will automatically adjust later on...to the elevation of the originating launch site for the given flight
@@ -92,36 +103,12 @@ class LandingPredictor:
             [80000, 31.929], [90000, 31.897], [100000, 31.868], [150000, 31.717], [200000, 31.566], [250000, 31.415] ])
         self.g = interpolate.interp1d(self.gravities[0:, 0], self.gravities[0:, 1], kind='cubic')
 
-        # The database connection string
-        self.dbstring = dbConnectionString
-
-        # The database connection object
-        self.landingconn = None
-        self.landingconn = pg.extensions.connection
-
-        # The timezone
-        self.timezone = 'America\Denver'
-        if timezone:
-            self.timezone = timezone
-
-        # Time limit in minutes for when to stop calculating predictions.  If this much or greater time has eplapsed since the last packet from the 
-        # flight, then don't perform a prediction.
-        # Default is set to 60 mins.
-        self.timeout = 60
-        if timeout:
-            self.timeout = timeout
-
-        debugmsg("LandingPredictor instance created.")
+        debugmsg("PredictorBase instance created.")
 
     ################################
     # destructor
     def __del__(self):
-        try:
-            if not self.landingconn.closed:
-                debugmsg("LandingPredictor destructor:  closing database connection.")
-                self.landingconn.close()
-        except pg.DatabaseError as error:
-            print(error)
+        debugmsg("PredictorBase destructor")
 
 
     #####################################
@@ -136,16 +123,8 @@ class LandingPredictor:
         return a*x + b
 
 
-    ################################
-    # Set the database connection string
-    def setDBConnection(self, dbstring):
-        # Set the database connection 
-        self.dbstring = dbstring
-
-
     #####################################
     # Function to use to determine distance between two points
-    #####################################
     def distance(self, lat1, lon1, lat2, lon2):
         lon1 = math.radians(lon1)
         lon2 = math.radians(lon2)
@@ -164,722 +143,17 @@ class LandingPredictor:
 
 
     ################################
-    # Set the timezone string for the database queries
-    def setTimezone(self, timezone = 'America\Denver'):
-        # set the timezone
-        if timezone:
-            self.timezone = timezone
+    # Base function for getting a list of packets for a particular callsign
+    # This should return at least these columns (any additional returned by a subclass, for example, should be out on the end):  
+    #     altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
+    def getLatestPackets(self, callsign = None):
+        return None
 
 
     ################################
-    # Function for connecting to the database
-    def connectToDatabase(self, dbstring = None):
-        if dbstring:
-            self.dbstring = dbstring
-
-        if not self.dbstring:
-            return False
-
-        try:
-
-            # If not already connected to the database, then try to connect
-            if self.landingconn != None:
-                if self.landingconn.closed:
-                    debugmsg("Connecting to the database: %s" % self.dbstring)
-                    self.landingconn = pg.connect (self.dbstring)
-
-            return True
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            self.landingconn.close()
-            print(error)
-            return False
-
-
-    ################################
-    # Function for querying the database to get a list of active flightids and the beacon's callsigns assigned to those flights.
-    # The resulting list of flights and callsigns is returned
-    def db_getFlights(self):
-
-        # SQL for getting active flights and callsigns
-        flightids_sql = """
-            select distinct 
-            f.flightid, 
-            fm.callsign,
-            l.launchsite,
-            l.lat,
-            l.lon,
-            l.alt
-
-            from 
-            flights f, 
-            flightmap fm,
-            launchsites l
-
-            where 
-            fm.flightid = f.flightid 
-            and l.launchsite = f.launchsite
-            and f.active = 't' 
-
-            order by 
-            f.flightid, 
-            fm.callsign;"""
-        
-        # Execute the query and get the list of flightids
-        try:
-            # Check if we're connected to the database or not.
-            if not self.connectToDatabase():
-                return np.array([])
-
-            landingcur = self.landingconn.cursor()
-            landingcur.execute(flightids_sql)
-            rows = landingcur.fetchall()
-            landingcur.close()
-
-            if debug:
-                flightlist = ""
-                for r in rows:
-                    flightlist += " " + r[0] + ":" + r[1]
-                debugmsg("List of flights[%d]:%s" % (len(rows), flightlist))
-
-            # columns for returned array:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
-            return np.array(rows)
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            landingcur.close()
-            self.landingconn.close()
-            print(error)
-            return np.array([])
-        
-
-    ################################
-    # Function for querying the database to get a list of latest packets for the provided callsign
-    # The resulting list of packets is returned if no callsign is given then an empty list is returned
-    # columns returned in the list:  altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
-    def db_getLatestPackets(self, callsign = ''):
-
-        # if a callsign wasn't provided, then return a empty numpy array
-        if not callsign:
-            return np.array([])
-
-        # The SQL statement to get the latest packets for this callsign
-        # columns:  timestamp, altitude, latitude, longitude
-        # Note:  only those packetst that might have occured within the last 6hrs are queried.
-        latestpackets_sql = """select distinct on (thetime)
-                               case
-                                   when a.ptype = '/' and a.raw similar to '%%[0-9]{6}h%%' then 
-                                       date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::timestamp without time zone
-                                   else
-                                       date_trunc('second', a.tm)::timestamp without time zone
-                               end as thetime,
-                               round(a.altitude::numeric) as altitude,
-                               round(ST_Y(a.location2d)::numeric, 6) as lat,
-                               round(ST_X(a.location2d)::numeric, 6) as long,
-                               round(extract(epoch from (now() - a.tm)) / 60.0) as elapsed_mins,
-                               case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                       round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                                   else
-                                       NULL
-                               end as temperature_k,
-                               case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                       round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                                   else
-                                       NULL
-                               end as pressure_pa
-
-                               from 
-                               packets a
-    
-                               where 
-                               ST_X(a.location2d) != 0 
-                               and ST_Y(a.location2d) != 0 
-                               and a.altitude > 0
-                               and a.callsign = %s
-                               and a.tm > (now() - interval '06:00:00')
-    
-                               order by 
-                               thetime asc
-                               ; """
-          
-        try:
-            # Check if we're connected to the database or not.
-            if not self.connectToDatabase():
-                return np.array([])
-
-            # Execute the SQL statment and get all rows returned
-            landingcur = self.landingconn.cursor()
-            landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
-            rows = landingcur.fetchall()
-            landingcur.close()
-
-            # If there is more than one packet to process...
-            if len(rows) > 1:
-                # Loop variables
-                alt_prev = 0
-                lat_prev = 0
-                long_prev = 0
-                alt_rate = 0
-                lat_rate = 0
-                lon_rate = 0
-                current_packets = []
-                first_packet = []
-                firsttime = 0
-
-                # Loop through each row returned (aka each packet for this callsign) calculating rates of change for vertical rate, latitutde rate, and longitude rate
-                for row in rows:
-                    thetime = row[0]
-                    if firsttime == 0:
-                        time_delta = thetime
-                        firsttime = 1
-                        first_packet = row
-                        current_packets.append([thetime, row[1], row[2], row[3], 0, 0, 0, row[4]])
-                    else:
-                        time_delta = thetime - time_prev
-                        if time_delta.total_seconds() > 0:
-                            alt_rate = float(row[1] - alt_prev) / float(time_delta.total_seconds())
-                            lat_rate = float(row[2] - lat_prev) / float(time_delta.total_seconds())
-                            lon_rate = float(row[3] - lon_prev) / float(time_delta.total_seconds())
-                            current_packets.append([thetime, row[1], row[2], row[3],  alt_rate, lat_rate, lon_rate, row[4]])
-                    time_prev = thetime
-                    alt_prev = row[1]
-                    lat_prev = row[2]
-                    lon_prev = row[3]
-
-                debugmsg("Latest packets  for %s: %d" % (callsign.upper(), len(rows)))
-                debugmsg("current_packets for %s: %d" % (callsign.upper(), len(current_packets)))
-                debugmsg("rows[first]           : %s, %f, %f, %f" % (rows[0][0], rows[0][1], rows[0][2], rows[0][3]))
-                debugmsg("current_packets[first]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[0][0], 
-                    current_packets[0][1], 
-                    current_packets[0][2], 
-                    current_packets[0][3], 
-                    current_packets[0][4], 
-                    current_packets[0][5],
-                    current_packets[0][6],
-                    current_packets[0][7]
-                    ))
-                debugmsg("rows[last]           : %s, %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2], rows[-1][3]))
-                debugmsg("current_packets[last]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[-1][ 0], 
-                    current_packets[-1][1], 
-                    current_packets[-1][2], 
-                    current_packets[-1][3], 
-                    current_packets[-1][4], 
-                    current_packets[-1][5],
-                    current_packets[-1][6],
-                    current_packets[-1][7]
-                    ))
-
-                return current_packets
-
-            # No packets found, so return an empty numpy array
-            else:
-                return []
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            landingcur.close()
-            self.landingconn.close()
-            print(error)
-            return []
-
-
-
-    ################################
-    # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
-    def getGPSPosition(self):
-        # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
-        gps_sql = """select 
-            tm::timestamp without time zone as time, 
-            round(speed_mph) as speed_mph, 
-            bearing, 
-            round(altitude_ft) as altitude_ft, 
-            round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
-            round(cast(ST_X(location2d) as numeric), 6) as longitude 
-           
-            from 
-            gpsposition 
-          
-            order by 
-            tm desc 
-            limit 1;"""
-
-
-        gpsposition = {
-                "altitude" : 0.0,
-                "latitude" : 0.0,
-                "longitude" : 0.0,
-                "isvalid" : False
-                }
-        try:
-
-            # Check if we're connected to the database or not.
-            if not self.connectToDatabase():
-                return gpsposition
-
-            # Execute the SQL statment and get all rows returned
-            landingcur = self.landingconn.cursor()
-            landingcur.execute(gps_sql)
-            gpsrows = landingcur.fetchall()
-            landingcur.close()
-
-            # There should only be one row returned from the above query, but just in case we loop through each row saving our 
-            # last altitude, latitude, and longitude
-            if len(gpsrows) > 0:
-                for gpsrow in gpsrows:
-                    my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
-                    my_lat = gpsrow[4]
-                    my_lon = gpsrow[5]
-
-                gpsposition = {
-                        "altitude" : float(my_alt),
-                        "latitude" : float(my_lat),
-                        "longitude" : float(my_lon),
-                        "isvalid" : True
-                        }
-
-                debugmsg("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))
-
-            return gpsposition
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            landingcur.close()
-            self.landingconn.close()
-            print(error)
-            return gpsposition
-
-
-    ################################
-    # Get a list of rows from a predict file, if it was loaded into the database
-    def db_getPredictFile(self, flightid = '', launchsite = ''):
-
-        # if the flightid or the launchsite wasn't given, then return an empty list
-        if not flightid or not launchsite:
-            return []
-
-        # SQL to query flight prediction records for the flightid
-        prediction_sql = """
-            select 
-            d.altitude, 
-            d.latitude, 
-            d.longitude 
-
-            from 
-            predictiondata d,
-                (select 
-                f.flightid, 
-                p.launchsite, 
-                max(p.thedate) as thedate 
-            
-                from 
-                flights f, 
-                predictiondata p 
-            
-                where 
-                p.flightid = f.flightid 
-                and f.active = 't' 
-                and p.launchsite = f.launchsite
-
-                group by 
-                f.flightid, 
-                p.launchsite 
-
-                order by 
-                f.flightid) as l
-
-            where 
-            d.flightid = %s
-            and d.launchsite = %s
-            and d.thedate = l.thedate
-            and l.flightid = d.flightid
-            and l.launchsite = d.launchsite
-
-
-            order by 
-            d.thedate, 
-            d.thetime asc
-            ;
-        """
-
-        try:
-            # Check if we're connected to the database or not.
-            if not self.connectToDatabase():
-                return np.array([])
-
-            # Execute the SQL statment and get all rows returned
-            #     For reference: columns for flightids: flightid, callsign, launchsite, lat, lon, alt
-            landingcur = self.landingconn.cursor()
-            landingcur.execute(prediction_sql, [ flightid, launchsite ])
-            rows = landingcur.fetchall()
-            landingcur.close()
-
-            debugmsg("Predict file length: %d" % len(rows))
-            if len(rows) > 0:
-                debugmsg("Predict file last: %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2]))
-
-            return np.array(rows)
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            landingcur.close()
-            self.landingconn.close()
-            print(error)
-            return np.array([])
-
-
-    ################################
-    # This is the main function for calculating predictions.  It will loop through all callsigns on active flights creating landing predictions for each.
+    # This is the main function for calculating predictions.  
     def processPredictions(self):
-
         debugmsg("Starting processPredictions...")
-
-        # Check if we're connected to the database or not.
-        if not self.connectToDatabase():
-            return False
-
-        if self.landingconn.closed:
-            return False
-
-        # Database cursor
-        landingcur = self.landingconn.cursor()
-
-        # get list of active flightids/callsign combo records
-        # columns:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
-        flightids = self.db_getFlights()
-
-        try:
-
-            # Loop through each record creating a prediction
-            for rec in flightids:
-            
-                # this is the flightid
-                fid = rec[0]
-
-                # callsign
-                callsign = rec[1]
-
-                debugmsg("============ start processing: %s : %s ==========" % (fid, callsign))
-
-                # launchsite particulars
-                launchsite = { 
-                        "flightid" : str(fid), 
-                        "name" : str(rec[2]),
-                        "lat" : float(rec[3]),
-                        "lon" : float(rec[4]),
-                        "elevation" : float(rec[5])
-                        }
-                if debug:
-                    print "Launchsite info: ", launchsite
-
-                # Get our latest position
-                gpsposition = self.getGPSPosition()
-
-                # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
-                prediction_floor = launchsite['elevation']
-
-                # Get a list of the latest packets for this callsign
-                # latestpackets columns:  
-                #    timestamp, 
-                #    altitude, 
-                #    latitude, 
-                #    longitude, 
-                #    altitude_change_rate, 
-                #    latitude_change_rate, 
-                #    longitude_change_rate, 
-                #    elapsed_mins
-                latestpackets =  np.array(self.db_getLatestPackets(callsign))
-                debugmsg("latestpackets.shape: %s" % str(latestpackets.shape))
-
-                # Have there been any packets heard from this callsign yet? 
-                if latestpackets.shape[0] > 0:
-                    debugmsg("latestpackets[0]:  %s, %f, %f, %f, %f, %f, %f, %f" % (latestpackets[0,0], 
-                        latestpackets[0,1],
-                        latestpackets[0,2],
-                        latestpackets[0,3],
-                        latestpackets[0,4],
-                        latestpackets[0,5],
-                        latestpackets[0,6],
-                        latestpackets[0,7]
-                        ))
-                # ...if no packets heard, then return.
-                else:
-                    debugmsg("No packets heard from this callsign: %s" % callsign)
-                    debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
-                    continue
-
-                # Timestamp of the last packet we've heard from the flight
-                elapsed_mins = latestpackets[-1, 7]
-                debugmsg("Elapsed time since last packet[%s:%s]: %d mins" %(fid, callsign, elapsed_mins))
-
-                # If amount of elapsed time since the last packet from the flight is greater than our timeout value, then we abort and exit.
-                # No sense in creating a prediction for a flight that is over.
-                if elapsed_mins > self.timeout:
-                    debugmsg("Elapsed time (%d mins) greater than timeout (%d mins), not processing prediction." %(elapsed_mins, self.timeout))
-                    debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
-                    continue
-
-                # slice (aka list) of just the altitude columns
-                altitudes = latestpackets[0:, 1]
-
-                # find the maximum altitude and note the index position of that value
-                idx = np.argmax(altitudes)
-                max_altitude = altitudes[idx]
-                debugmsg("processPredictions: Max altitude heard thus far: %d" % max_altitude)
-
-                # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
-                ascent_portion = np.array(latestpackets[0:(idx+1), 1:7], dtype='f')
-                descent_portion = np.array(latestpackets[idx:, 1:7], dtype='f')
-                debugmsg("processPredictions: ascent_portion.shape: %s" % str(ascent_portion.shape))
-                debugmsg("processPredictions: descent_portion.shape: %s" % str(descent_portion.shape))
-     
-                if descent_portion.shape[0] > 2:
-                    is_descending = True
-                else:
-                    is_descending = False
-
-
-                # The flight is descending...and we want to process a prediction
-                if is_descending:
-
-                    ####################################
-                    # START:  adjust the prediction floor
-                    ####################################
-                    # If we're close to the balloon (ex. < 35 miles), then we want to adjust our prediction_floor to our current elevation.  
-                    # The idea being that if we're close to the balloon, then our current elevation is likely close to the elevation of the 
-                    # balloon's ultimate landing location.  ...and we want to have the prediction algorithm calculate predicitons down to 
-                    # that elevation.  This should increase landing prediction accuracy a small amount.
-                    if gpsposition['isvalid']:
-                        # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet 
-                        # received from the balloon
-                        dist_to_balloon = self.distance(
-                                gpsposition['latitude'], 
-                                gpsposition['longitude'], 
-                                descent_portion[-1, 1], 
-                                descent_portion[-1, 2]
-                                )
-
-                        # If we're close to the balloon, then set the prediction floor to that elevation
-                        if dist_to_balloon < 35:
-                            prediction_floor = float(gpsposition['altitude'])
-
-                    debugmsg("Prediction floor set to: %f" % prediction_floor)
-
-                    ####################################
-                    # END:  adjust the prediction floor
-                    ####################################
-
-                    # Call the prediction algo
-                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], prediction_floor)
-
-                    ####################################
-                    # START:  insert predicted landing record into the database
-                    ####################################
-                    # Set the initial value of the LINESTRING text to nothing.
-                    linestring_text = ""
-                    m = 0
-
-
-                    # If there was a prediction calculated
-                    if flightpath:
-                        # Now loop through each of these points and create the LINESTRING
-                        for u,v,t in flightpath:
-                            if m > 0:
-                                linestring_text = linestring_text + ", "
-                            linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
-                            m += 1
-                        linestring_text = "LINESTRING(" + linestring_text + ")"
-                        if m < 2:
-                            linestring_text = None
-
-                        # The SQL for inserting this prediction record into the database
-                        landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) 
-                            values (now(), 
-                            %s, 
-                            %s, 
-                            'predicted', 
-                            %s::numeric, 
-                            ST_GeometryFromText('POINT(%s %s)', 4326), 
-                            ST_GeometryFromText(%s, 4326), 
-                            %s::numeric);"""
-
-                        #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
-
-                        ts = datetime.datetime.now()
-                        debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
-
-                        # execute the SQL insert statement
-                        landingcur.execute(landingprediction_sql, [ fid, callsign, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2])) ])
-                        self.landingconn.commit()
-
-
-                    ####################################
-                    # END:  insert predicted landing record into the database
-                    ####################################
-
-                else:
-                    # The flight is still ascending OR conditions are such that we don't want to process a prediction (i.e. immediately post-burst).
-                    ####################################
-                    # START:  Check if predict file is uploaded, then upload a landing prediction to the database based on that predict.
-                    ####################################
-                    debugmsg("Flight, %s, isn't descending yet and/or less than 2 packets post-burst have been heard" % fid)
-
-                    # If here, then the flight is NOT descending yet.  Or at least, it's not registered 2 packets post-burst.
-                    # In this case then we:
-                    #   1.  Determine if there is a prediction file loaded for this flight and perform a SQL query to get all
-                    #       of those lat, lon, alt records.
-                    #   2.  Determine the delta between the last position of the flight vs. the closest, altitude-wise, record 
-                    #       from the prediciton file.
-                    #   3.  Then insert a landing prediction record back into the landingpredictions table.
-
-                    ##  columns for balloon_data:  timestamp, altitude, latitude, longitude
-                    # Latest altitude, lat, and lon for the flight
-                    #
-                    # reference:  latestpackets columns:  
-                    #    timestamp, 
-                    #    altitude, 
-                    #    latitude, 
-                    #    longitude, 
-                    #    altitude_change_rate, 
-                    #    latitude_change_rate, 
-                    #    longitude_change_rate
-                    
-                    # Get any prediction file rows (if loaded in the database)
-                    rows = self.db_getPredictFile(fid, launchsite["name"])
-                    predictiondata = rows
-                    predictiondata_rev = predictiondata[::-1]
-
-                    latest_altitude = latestpackets[-1, 1]
-                    x = float(latestpackets[-1, 2])
-                    y = float(latestpackets[-1, 3])
-
-                    #if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
-                    if len(rows) > 0:
-                        # if there are rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, 
-                        # to the current flight location.
-
-                        predictiondata_slice = []
-                        predictiondata_slice = np.array(predictiondata_slice)
-                        alt_sanity_threshold = 14999
-
-                        if descent_portion.shape[0] > 1 and latest_altitude > alt_sanity_threshold:
-                            # Are we descending and just not enough packets yet to perform a normal landing prediction?
-
-                            # Loop through the prediction data in reverse order to find the closest altitude
-                            loop_counter = 0
-                            l = predictiondata_rev.shape[0]
-                            prev_pred_alt = 0
-                            while predictiondata_rev[loop_counter,0] < latest_altitude and loop_counter < l - 1:
-                                if prev_pred_alt > predictiondata_rev[loop_counter, 0]:
-                                    # we've hit the top in the pred data and we need to stop
-                                    if loop_counter > 0:
-                                        loop_counter -= 1
-                                    break
-                                prev_pred_alt = predictiondata_rev[loop_counter, 0]
-                                loop_counter += 1
-
-                            # Now slice off the predictiondata we care about
-                            l = len(predictiondata_rev)
-                            predictiondata_slice = predictiondata_rev[0:loop_counter, 0:]
-                            
-                            # reverse this back in HIGH to LOW altitude order
-                            predictiondata_slice = predictiondata_slice[::-1]
-
-                        else:
-                            # we're still ascending
-
-                            #if latest_altitude > float(flightids[i,5])*1.10:
-                            if latest_altitude > float(rec[5])*1.10:
-                                loop_counter = 0
-                                l = predictiondata.shape[0]
-                                prev_pred_alt = 0
-                                while predictiondata[loop_counter,0] < latest_altitude and loop_counter < l - 1:
-                                    if prev_pred_alt > predictiondata[loop_counter, 0]:
-                                        # we've hit the top in the pred data and we need to stop
-                                        if loop_counter > 0:
-                                            loop_counter -= 1
-                                        break
-                                    prev_pred_alt = predictiondata[loop_counter, 0]
-                                    loop_counter += 1
-
-                                # Now slice off the predictiondata we care about
-                                predictiondata_slice = predictiondata[loop_counter:, 0:]
-
-                        if predictiondata_slice.shape[0] > 0:
-                            # Determine the delta between the last heard packet and the prediction data
-                            dx = x - float(predictiondata_slice[0, 1]) 
-                            dy = y - float(predictiondata_slice[0, 2])
-
-                            # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
-                            m = 0
-                            linestring_text = ""
-                            for k,u,v in predictiondata_slice:
-                                if m > 0:
-                                    linestring_text = linestring_text + ", "
-                                linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
-                                m += 1
-                            linestring_text = "LINESTRING(" + linestring_text + ")"
-
-                            # Now we construct the GIS linestring string for the database insert
-                            landingprediction_sql = """
-                                 insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
-                                 values (now(),
-                                     %s, 
-                                     %s, 
-                                     'translated', 
-                                     %s::numeric, 
-                                     ST_GeometryFromText('POINT(%s %s)', 4326), 
-                                     ST_GeometryFromText(%s, 4326));
-                            """
-
-                            #debugmsg("SQL: " + landingprediction_sql % 
-                            #        (   fid, 
-                            #            callsign, 
-                            #            str(-1), 
-                            #            str(float(predictiondata_slice[-1,2])+dy), 
-                            #            str(float(predictiondata_slice[-1,1])+dx), 
-                            #            linestring_text 
-                            #        ))
-
-                            ts = datetime.datetime.now()
-                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
-
-                            landingcur.execute(landingprediction_sql, 
-                                    [   fid, 
-                                        callsign, 
-                                        float(-1), 
-                                        float(predictiondata_slice[-1,2])+dy, 
-                                        float(predictiondata_slice[-1,1])+dx, 
-                                        linestring_text 
-                                    ]
-                            )
-                            self.landingconn.commit()
-
-                    ####################################
-                    # END:  Check if predict file is uploaded and upload a landing prediction to the database based on that predict.
-                    ####################################
-    
-                debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
-
-
-        except pg.DatabaseError as error:
-            landingcur.close()
-            self.landingconn.close()
-            print(error)
-        except (GracefulExit, KeyboardInterrupt, SystemExit):
-            landingcur.close()
-            self.landingconn.close()
-
-        # Close the database connection
-        debugmsg("Closing databse connections...")
-        landingcur.close()
-        self.landingconn.close()
-
-    ################################
-    #END processPredictions()
-    ################################
 
 
 
@@ -1383,6 +657,843 @@ class LandingPredictor:
             #    print "flightpath_points: ", flightpath_points
 
             return flightpath_points[::-1]
+
+
+
+#####################################
+# The LandingPredictor Class
+# 
+#    class LandingPredictor:
+#        def __init__(self, dbConnectionString = None, timezone = 'America\Denver', timeout = 60):
+#        def __del__(self):
+#        def func_x2(self, x, a) :
+#        def func_fittedline(self, x, a, b):
+#        def setDBConnection(self, dbstring):
+#        def distance(self, lat1, lon1, lat2, lon2):
+#        def setTimezone(self, timezone = 'America\Denver'):
+#        def connectToDatabase(self, dbstring = None):
+#        def db_getFlights(self):
+#        def getLatestPackets(self, callsign = None):
+#        def getGPSPosition(self):
+#        def db_getPredictFile(self, flightid = '', launchsite = ''):
+#        def processPredictions(self):
+#        def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, prediction_floor):
+#####################################
+class LandingPredictor(PredictorBase):
+
+    ################################
+    # constructor
+    def __init__(self, dbConnectionString = None, timezone = 'America\Denver', timeout = 60):
+        super(PredictorBase, self).__init__()
+
+        # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
+        # This will automatically adjust later on...to the elevation of the originating launch site for the given flight
+        self.prediction_floor = 4900
+
+        # This is the velocity value in ft/s at the floor.  That is, how fast is the balloon traveling when it hits ground level.  Or put 
+        # more mathmatically kindof our x-intercept.
+        self.adjust = 17
+
+        # Curve representing the change in air density with altitude
+        self.airdensities = np.array([ [0, 23.77], [5000, 20.48], [10000, 17.56], [15000, 14.96], [20000, 12.67], [25000, 10.66],    
+            [30000, 8.91], [35000, 7.38], [40000, 5.87], [45000, 4.62], [50000, 3.64], [60000, 2.26], [70000, 1.39], [80000, 0.86],    
+            [90000, 0.56], [100000, 0.33], [150000, 0.037], [200000, 0.0053], [250000, 0.00065]])
+        self.airdensity = interpolate.interp1d(self.airdensities[0:, 0], self.airdensities[0:,1], kind='cubic')
+
+
+        # Curve representing the change in gravitational acceleration with altitude
+        self.gravities = np.array([ [0, 32.174], [5000, 32.159], [10000, 32.143], [15000, 32.128], [20000, 32.112], [25000, 32.097], 
+            [30000, 32.082], [35000, 32.066], [40000, 32.051], [45000, 32.036], [50000, 32.020], [60000, 31.990], [70000, 31.959], 
+            [80000, 31.929], [90000, 31.897], [100000, 31.868], [150000, 31.717], [200000, 31.566], [250000, 31.415] ])
+        self.g = interpolate.interp1d(self.gravities[0:, 0], self.gravities[0:, 1], kind='cubic')
+
+        # The database connection string
+        self.dbstring = dbConnectionString
+
+        # The database connection object
+        self.landingconn = None
+        self.landingconn = pg.extensions.connection
+
+        # The timezone
+        self.timezone = 'America\Denver'
+        if timezone:
+            self.timezone = timezone
+
+        # Time limit in minutes for when to stop calculating predictions.  If this much or greater time has eplapsed since the last packet from the 
+        # flight, then don't perform a prediction.
+        # Default is set to 60 mins.
+        self.timeout = 60
+        if timeout:
+            self.timeout = timeout
+
+        debugmsg("LandingPredictor instance created.")
+
+    ################################
+    # destructor
+    def __del__(self):
+        try:
+            if not self.landingconn.closed:
+                debugmsg("LandingPredictor destructor:  closing database connection.")
+                self.landingconn.close()
+        except pg.DatabaseError as error:
+            print(error)
+
+
+    #####################################
+    # Function to use for curve fitting
+    def func_x2(self, x, a) :
+        return a * np.power(x - self.prediction_floor, 2) + self.adjust
+
+
+    #####################################
+    # this is y = mx +b
+    def func_fittedline(self, x, a, b):
+        return a*x + b
+
+
+    ################################
+    # Set the database connection string
+    def setDBConnection(self, dbstring):
+        # Set the database connection 
+        self.dbstring = dbstring
+
+
+    #####################################
+    # Function to use to determine distance between two points
+    #####################################
+    def distance(self, lat1, lon1, lat2, lon2):
+        lon1 = math.radians(lon1)
+        lon2 = math.radians(lon2)
+        lat1 = math.radians(lat1)
+        lat2 = math.radians(lat2)
+
+        # Haversine formula
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        #r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+        r = 3956 # Radius of earth in kilometers. Use 3956 for miles
+
+        return float(c * r)
+
+
+    ################################
+    # Set the timezone string for the database queries
+    def setTimezone(self, timezone = 'America\Denver'):
+        # set the timezone
+        if timezone:
+            self.timezone = timezone
+
+
+    ################################
+    # Function for connecting to the database
+    def connectToDatabase(self, dbstring = None):
+        if dbstring:
+            self.dbstring = dbstring
+
+        if not self.dbstring:
+            return False
+
+        try:
+
+            # If not already connected to the database, then try to connect
+            if self.landingconn != None:
+                if self.landingconn.closed:
+                    debugmsg("Connecting to the database: %s" % self.dbstring)
+                    self.landingconn = pg.connect (self.dbstring)
+
+            return True
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            self.landingconn.close()
+            print(error)
+            return False
+
+
+    ################################
+    # Function for querying the database to get a list of active flightids and the beacon's callsigns assigned to those flights.
+    # The resulting list of flights and callsigns is returned
+    def db_getFlights(self):
+
+        # SQL for getting active flights and callsigns
+        flightids_sql = """
+            select distinct 
+            f.flightid, 
+            fm.callsign,
+            l.launchsite,
+            l.lat,
+            l.lon,
+            l.alt
+
+            from 
+            flights f, 
+            flightmap fm,
+            launchsites l
+
+            where 
+            fm.flightid = f.flightid 
+            and l.launchsite = f.launchsite
+            and f.active = 't' 
+
+            order by 
+            f.flightid, 
+            fm.callsign;"""
+        
+        # Execute the query and get the list of flightids
+        try:
+            # Check if we're connected to the database or not.
+            if not self.connectToDatabase():
+                return np.array([])
+
+            landingcur = self.landingconn.cursor()
+            landingcur.execute(flightids_sql)
+            rows = landingcur.fetchall()
+            landingcur.close()
+
+            if debug:
+                flightlist = ""
+                for r in rows:
+                    flightlist += " " + r[0] + ":" + r[1]
+                debugmsg("List of flights[%d]:%s" % (len(rows), flightlist))
+
+            # columns for returned array:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+            return np.array(rows)
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            landingcur.close()
+            self.landingconn.close()
+            print(error)
+            return np.array([])
+        
+
+    ################################
+    # Function for querying the database to get a list of latest packets for the provided callsign
+    # The resulting list of packets is returned if no callsign is given then an empty list is returned
+    # columns returned in the list:  altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
+    def getLatestPackets(self, callsign = None):
+
+        # if a callsign wasn't provided, then return a empty numpy array
+        if not callsign:
+            return []
+
+        # The SQL statement to get the latest packets for this callsign
+        # columns:  timestamp, altitude, latitude, longitude
+        # Note:  only those packetst that might have occured within the last 6hrs are queried.
+        latestpackets_sql = """select distinct on (thetime)
+                               case
+                                   when a.ptype = '/' and a.raw similar to '%%[0-9]{6}h%%' then 
+                                       date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::timestamp without time zone
+                                   else
+                                       date_trunc('second', a.tm)::timestamp without time zone
+                               end as thetime,
+                               round(a.altitude::numeric) as altitude,
+                               round(ST_Y(a.location2d)::numeric, 6) as lat,
+                               round(ST_X(a.location2d)::numeric, 6) as long,
+                               round(extract(epoch from (now() - a.tm)) / 60.0) as elapsed_mins,
+                               case 
+                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                                       round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                                   else
+                                       NULL
+                               end as temperature_k,
+                               case 
+                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                                       round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                                   else
+                                       NULL
+                               end as pressure_pa
+
+                               from 
+                               packets a
+    
+                               where 
+                               ST_X(a.location2d) != 0 
+                               and ST_Y(a.location2d) != 0 
+                               and a.altitude > 0
+                               and a.callsign = %s
+                               and a.tm > (now() - interval '06:00:00')
+    
+                               order by 
+                               thetime asc
+                               ; """
+          
+        try:
+            # Check if we're connected to the database or not.
+            if not self.connectToDatabase():
+                return []
+
+            # Execute the SQL statment and get all rows returned
+            landingcur = self.landingconn.cursor()
+            landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
+            rows = landingcur.fetchall()
+            landingcur.close()
+
+            # If there is more than one packet to process...
+            if len(rows) > 1:
+                # Loop variables
+                alt_prev = 0
+                lat_prev = 0
+                long_prev = 0
+                alt_rate = 0
+                lat_rate = 0
+                lon_rate = 0
+                current_packets = []
+                first_packet = []
+                firsttime = 0
+
+                # Loop through each row returned (aka each packet for this callsign) calculating rates of change for vertical rate, latitutde rate, and longitude rate
+                for row in rows:
+                    thetime = row[0]
+                    if firsttime == 0:
+                        time_delta = thetime
+                        firsttime = 1
+                        first_packet = row
+                        current_packets.append([thetime, row[1], row[2], row[3], 0, 0, 0, row[4]])
+                    else:
+                        time_delta = thetime - time_prev
+                        if time_delta.total_seconds() > 0:
+                            alt_rate = float(row[1] - alt_prev) / float(time_delta.total_seconds())
+                            lat_rate = float(row[2] - lat_prev) / float(time_delta.total_seconds())
+                            lon_rate = float(row[3] - lon_prev) / float(time_delta.total_seconds())
+                            current_packets.append([thetime, row[1], row[2], row[3],  alt_rate, lat_rate, lon_rate, row[4]])
+                    time_prev = thetime
+                    alt_prev = row[1]
+                    lat_prev = row[2]
+                    lon_prev = row[3]
+
+                debugmsg("Latest packets  for %s: %d" % (callsign.upper(), len(rows)))
+                debugmsg("current_packets for %s: %d" % (callsign.upper(), len(current_packets)))
+                debugmsg("rows[first]           : %s, %f, %f, %f" % (rows[0][0], rows[0][1], rows[0][2], rows[0][3]))
+                debugmsg("current_packets[first]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[0][0], 
+                    current_packets[0][1], 
+                    current_packets[0][2], 
+                    current_packets[0][3], 
+                    current_packets[0][4], 
+                    current_packets[0][5],
+                    current_packets[0][6],
+                    current_packets[0][7]
+                    ))
+                debugmsg("rows[last]           : %s, %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2], rows[-1][3]))
+                debugmsg("current_packets[last]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[-1][ 0], 
+                    current_packets[-1][1], 
+                    current_packets[-1][2], 
+                    current_packets[-1][3], 
+                    current_packets[-1][4], 
+                    current_packets[-1][5],
+                    current_packets[-1][6],
+                    current_packets[-1][7]
+                    ))
+
+                return current_packets
+
+            # No packets found, so return an empty numpy array
+            else:
+                return []
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            landingcur.close()
+            self.landingconn.close()
+            print(error)
+            return []
+
+
+
+    ################################
+    # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
+    def getGPSPosition(self):
+        # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
+        gps_sql = """select 
+            tm::timestamp without time zone as time, 
+            round(speed_mph) as speed_mph, 
+            bearing, 
+            round(altitude_ft) as altitude_ft, 
+            round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
+            round(cast(ST_X(location2d) as numeric), 6) as longitude 
+           
+            from 
+            gpsposition 
+          
+            order by 
+            tm desc 
+            limit 1;"""
+
+
+        gpsposition = {
+                "altitude" : 0.0,
+                "latitude" : 0.0,
+                "longitude" : 0.0,
+                "isvalid" : False
+                }
+        try:
+
+            # Check if we're connected to the database or not.
+            if not self.connectToDatabase():
+                return gpsposition
+
+            # Execute the SQL statment and get all rows returned
+            landingcur = self.landingconn.cursor()
+            landingcur.execute(gps_sql)
+            gpsrows = landingcur.fetchall()
+            landingcur.close()
+
+            # There should only be one row returned from the above query, but just in case we loop through each row saving our 
+            # last altitude, latitude, and longitude
+            if len(gpsrows) > 0:
+                for gpsrow in gpsrows:
+                    my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
+                    my_lat = gpsrow[4]
+                    my_lon = gpsrow[5]
+
+                gpsposition = {
+                        "altitude" : float(my_alt),
+                        "latitude" : float(my_lat),
+                        "longitude" : float(my_lon),
+                        "isvalid" : True
+                        }
+
+                debugmsg("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))
+
+            return gpsposition
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            landingcur.close()
+            self.landingconn.close()
+            print(error)
+            return gpsposition
+
+
+    ################################
+    # Get a list of rows from a predict file, if it was loaded into the database
+    def db_getPredictFile(self, flightid = '', launchsite = ''):
+
+        # if the flightid or the launchsite wasn't given, then return an empty list
+        if not flightid or not launchsite:
+            return []
+
+        # SQL to query flight prediction records for the flightid
+        prediction_sql = """
+            select 
+            d.altitude, 
+            d.latitude, 
+            d.longitude 
+
+            from 
+            predictiondata d,
+                (select 
+                f.flightid, 
+                p.launchsite, 
+                max(p.thedate) as thedate 
+            
+                from 
+                flights f, 
+                predictiondata p 
+            
+                where 
+                p.flightid = f.flightid 
+                and f.active = 't' 
+                and p.launchsite = f.launchsite
+
+                group by 
+                f.flightid, 
+                p.launchsite 
+
+                order by 
+                f.flightid) as l
+
+            where 
+            d.flightid = %s
+            and d.launchsite = %s
+            and d.thedate = l.thedate
+            and l.flightid = d.flightid
+            and l.launchsite = d.launchsite
+
+
+            order by 
+            d.thedate, 
+            d.thetime asc
+            ;
+        """
+
+        try:
+            # Check if we're connected to the database or not.
+            if not self.connectToDatabase():
+                return np.array([])
+
+            # Execute the SQL statment and get all rows returned
+            #     For reference: columns for flightids: flightid, callsign, launchsite, lat, lon, alt
+            landingcur = self.landingconn.cursor()
+            landingcur.execute(prediction_sql, [ flightid, launchsite ])
+            rows = landingcur.fetchall()
+            landingcur.close()
+
+            debugmsg("Predict file length: %d" % len(rows))
+            if len(rows) > 0:
+                debugmsg("Predict file last: %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2]))
+
+            return np.array(rows)
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            landingcur.close()
+            self.landingconn.close()
+            print(error)
+            return np.array([])
+
+
+    ################################
+    # This is the main function for calculating predictions.  It will loop through all callsigns on active flights creating landing predictions for each.
+    def processPredictions(self):
+
+        # Check if we're connected to the database or not.
+        if not self.connectToDatabase():
+            return False
+
+        if self.landingconn.closed:
+            return False
+
+        # Database cursor
+        landingcur = self.landingconn.cursor()
+
+        # get list of active flightids/callsign combo records
+        # columns:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+        flightids = self.db_getFlights()
+
+        try:
+
+            # Loop through each record creating a prediction
+            for rec in flightids:
+            
+                # this is the flightid
+                fid = rec[0]
+
+                # callsign
+                callsign = rec[1]
+
+                debugmsg("============ start processing: %s : %s ==========" % (fid, callsign))
+
+                # launchsite particulars
+                launchsite = { 
+                        "flightid" : str(fid), 
+                        "name" : str(rec[2]),
+                        "lat" : float(rec[3]),
+                        "lon" : float(rec[4]),
+                        "elevation" : float(rec[5])
+                        }
+                if debug:
+                    print "Launchsite info: ", launchsite
+
+                # Get our latest position
+                gpsposition = self.getGPSPosition()
+
+                # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
+                prediction_floor = launchsite['elevation']
+
+                # Get a list of the latest packets for this callsign
+                # latestpackets columns:  
+                #    timestamp, 
+                #    altitude, 
+                #    latitude, 
+                #    longitude, 
+                #    altitude_change_rate, 
+                #    latitude_change_rate, 
+                #    longitude_change_rate, 
+                #    elapsed_mins
+                latestpackets =  np.array(self.getLatestPackets(callsign))
+                debugmsg("latestpackets.shape: %s" % str(latestpackets.shape))
+
+                # Have there been any packets heard from this callsign yet? 
+                if latestpackets.shape[0] > 0:
+                    debugmsg("latestpackets[0]:  %s, %f, %f, %f, %f, %f, %f, %f" % (latestpackets[0,0], 
+                        latestpackets[0,1],
+                        latestpackets[0,2],
+                        latestpackets[0,3],
+                        latestpackets[0,4],
+                        latestpackets[0,5],
+                        latestpackets[0,6],
+                        latestpackets[0,7]
+                        ))
+                # ...if no packets heard, then return.
+                else:
+                    debugmsg("No packets heard from this callsign: %s" % callsign)
+                    debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
+                    continue
+
+                # Timestamp of the last packet we've heard from the flight
+                elapsed_mins = latestpackets[-1, 7]
+                debugmsg("Elapsed time since last packet[%s:%s]: %d mins" %(fid, callsign, elapsed_mins))
+
+                # If amount of elapsed time since the last packet from the flight is greater than our timeout value, then we abort and exit.
+                # No sense in creating a prediction for a flight that is over.
+                if elapsed_mins > self.timeout:
+                    debugmsg("Elapsed time (%d mins) greater than timeout (%d mins), not processing prediction." %(elapsed_mins, self.timeout))
+                    debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
+                    continue
+
+                # slice (aka list) of just the altitude columns
+                altitudes = latestpackets[0:, 1]
+
+                # find the maximum altitude and note the index position of that value
+                idx = np.argmax(altitudes)
+                max_altitude = altitudes[idx]
+                debugmsg("processPredictions: Max altitude heard thus far: %d" % max_altitude)
+
+                # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
+                ascent_portion = np.array(latestpackets[0:(idx+1), 1:7], dtype='f')
+                descent_portion = np.array(latestpackets[idx:, 1:7], dtype='f')
+                debugmsg("processPredictions: ascent_portion.shape: %s" % str(ascent_portion.shape))
+                debugmsg("processPredictions: descent_portion.shape: %s" % str(descent_portion.shape))
+     
+                if descent_portion.shape[0] > 2:
+                    is_descending = True
+                else:
+                    is_descending = False
+
+
+                # The flight is descending...and we want to process a prediction
+                if is_descending:
+
+                    ####################################
+                    # START:  adjust the prediction floor
+                    ####################################
+                    # If we're close to the balloon (ex. < 35 miles), then we want to adjust our prediction_floor to our current elevation.  
+                    # The idea being that if we're close to the balloon, then our current elevation is likely close to the elevation of the 
+                    # balloon's ultimate landing location.  ...and we want to have the prediction algorithm calculate predicitons down to 
+                    # that elevation.  This should increase landing prediction accuracy a small amount.
+                    if gpsposition['isvalid']:
+                        # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet 
+                        # received from the balloon
+                        dist_to_balloon = self.distance(
+                                gpsposition['latitude'], 
+                                gpsposition['longitude'], 
+                                descent_portion[-1, 1], 
+                                descent_portion[-1, 2]
+                                )
+
+                        # If we're close to the balloon, then set the prediction floor to that elevation
+                        if dist_to_balloon < 35:
+                            prediction_floor = float(gpsposition['altitude'])
+
+                    debugmsg("Prediction floor set to: %f" % prediction_floor)
+
+                    ####################################
+                    # END:  adjust the prediction floor
+                    ####################################
+
+                    # Call the prediction algo
+                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], prediction_floor)
+
+                    ####################################
+                    # START:  insert predicted landing record into the database
+                    ####################################
+                    # Set the initial value of the LINESTRING text to nothing.
+                    linestring_text = ""
+                    m = 0
+
+
+                    # If there was a prediction calculated
+                    if flightpath:
+                        # Now loop through each of these points and create the LINESTRING
+                        for u,v,t in flightpath:
+                            if m > 0:
+                                linestring_text = linestring_text + ", "
+                            linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                            m += 1
+                        linestring_text = "LINESTRING(" + linestring_text + ")"
+                        if m < 2:
+                            linestring_text = None
+
+                        # The SQL for inserting this prediction record into the database
+                        landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) 
+                            values (now(), 
+                            %s, 
+                            %s, 
+                            'predicted', 
+                            %s::numeric, 
+                            ST_GeometryFromText('POINT(%s %s)', 4326), 
+                            ST_GeometryFromText(%s, 4326), 
+                            %s::numeric);"""
+
+                        #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+
+                        ts = datetime.datetime.now()
+                        debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+
+                        # execute the SQL insert statement
+                        landingcur.execute(landingprediction_sql, [ fid, callsign, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2])) ])
+                        self.landingconn.commit()
+
+
+                    ####################################
+                    # END:  insert predicted landing record into the database
+                    ####################################
+
+                else:
+                    # The flight is still ascending OR conditions are such that we don't want to process a prediction (i.e. immediately post-burst).
+                    ####################################
+                    # START:  Check if predict file is uploaded, then upload a landing prediction to the database based on that predict.
+                    ####################################
+                    debugmsg("Flight, %s, isn't descending yet and/or less than 2 packets post-burst have been heard" % fid)
+
+                    # If here, then the flight is NOT descending yet.  Or at least, it's not registered 2 packets post-burst.
+                    # In this case then we:
+                    #   1.  Determine if there is a prediction file loaded for this flight and perform a SQL query to get all
+                    #       of those lat, lon, alt records.
+                    #   2.  Determine the delta between the last position of the flight vs. the closest, altitude-wise, record 
+                    #       from the prediciton file.
+                    #   3.  Then insert a landing prediction record back into the landingpredictions table.
+
+                    ##  columns for balloon_data:  timestamp, altitude, latitude, longitude
+                    # Latest altitude, lat, and lon for the flight
+                    #
+                    # reference:  latestpackets columns:  
+                    #    timestamp, 
+                    #    altitude, 
+                    #    latitude, 
+                    #    longitude, 
+                    #    altitude_change_rate, 
+                    #    latitude_change_rate, 
+                    #    longitude_change_rate
+                    
+                    # Get any prediction file rows (if loaded in the database)
+                    rows = self.db_getPredictFile(fid, launchsite["name"])
+                    predictiondata = rows
+                    predictiondata_rev = predictiondata[::-1]
+
+                    latest_altitude = latestpackets[-1, 1]
+                    x = float(latestpackets[-1, 2])
+                    y = float(latestpackets[-1, 3])
+
+                    #if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
+                    if len(rows) > 0:
+                        # if there are rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, 
+                        # to the current flight location.
+
+                        predictiondata_slice = []
+                        predictiondata_slice = np.array(predictiondata_slice)
+                        alt_sanity_threshold = 14999
+
+                        if descent_portion.shape[0] > 1 and latest_altitude > alt_sanity_threshold:
+                            # Are we descending and just not enough packets yet to perform a normal landing prediction?
+
+                            # Loop through the prediction data in reverse order to find the closest altitude
+                            loop_counter = 0
+                            l = predictiondata_rev.shape[0]
+                            prev_pred_alt = 0
+                            while predictiondata_rev[loop_counter,0] < latest_altitude and loop_counter < l - 1:
+                                if prev_pred_alt > predictiondata_rev[loop_counter, 0]:
+                                    # we've hit the top in the pred data and we need to stop
+                                    if loop_counter > 0:
+                                        loop_counter -= 1
+                                    break
+                                prev_pred_alt = predictiondata_rev[loop_counter, 0]
+                                loop_counter += 1
+
+                            # Now slice off the predictiondata we care about
+                            l = len(predictiondata_rev)
+                            predictiondata_slice = predictiondata_rev[0:loop_counter, 0:]
+                            
+                            # reverse this back in HIGH to LOW altitude order
+                            predictiondata_slice = predictiondata_slice[::-1]
+
+                        else:
+                            # we're still ascending
+
+                            #if latest_altitude > float(flightids[i,5])*1.10:
+                            if latest_altitude > float(rec[5])*1.10:
+                                loop_counter = 0
+                                l = predictiondata.shape[0]
+                                prev_pred_alt = 0
+                                while predictiondata[loop_counter,0] < latest_altitude and loop_counter < l - 1:
+                                    if prev_pred_alt > predictiondata[loop_counter, 0]:
+                                        # we've hit the top in the pred data and we need to stop
+                                        if loop_counter > 0:
+                                            loop_counter -= 1
+                                        break
+                                    prev_pred_alt = predictiondata[loop_counter, 0]
+                                    loop_counter += 1
+
+                                # Now slice off the predictiondata we care about
+                                predictiondata_slice = predictiondata[loop_counter:, 0:]
+
+                        if predictiondata_slice.shape[0] > 0:
+                            # Determine the delta between the last heard packet and the prediction data
+                            dx = x - float(predictiondata_slice[0, 1]) 
+                            dy = y - float(predictiondata_slice[0, 2])
+
+                            # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
+                            m = 0
+                            linestring_text = ""
+                            for k,u,v in predictiondata_slice:
+                                if m > 0:
+                                    linestring_text = linestring_text + ", "
+                                linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
+                                m += 1
+                            linestring_text = "LINESTRING(" + linestring_text + ")"
+
+                            # Now we construct the GIS linestring string for the database insert
+                            landingprediction_sql = """
+                                 insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
+                                 values (now(),
+                                     %s, 
+                                     %s, 
+                                     'translated', 
+                                     %s::numeric, 
+                                     ST_GeometryFromText('POINT(%s %s)', 4326), 
+                                     ST_GeometryFromText(%s, 4326));
+                            """
+
+                            #debugmsg("SQL: " + landingprediction_sql % 
+                            #        (   fid, 
+                            #            callsign, 
+                            #            str(-1), 
+                            #            str(float(predictiondata_slice[-1,2])+dy), 
+                            #            str(float(predictiondata_slice[-1,1])+dx), 
+                            #            linestring_text 
+                            #        ))
+
+                            ts = datetime.datetime.now()
+                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+
+                            landingcur.execute(landingprediction_sql, 
+                                    [   fid, 
+                                        callsign, 
+                                        float(-1), 
+                                        float(predictiondata_slice[-1,2])+dy, 
+                                        float(predictiondata_slice[-1,1])+dx, 
+                                        linestring_text 
+                                    ]
+                            )
+                            self.landingconn.commit()
+
+                    ####################################
+                    # END:  Check if predict file is uploaded and upload a landing prediction to the database based on that predict.
+                    ####################################
+    
+                debugmsg("============ end processing:   %s : %s ==========" % (fid, callsign))
+
+
+        except pg.DatabaseError as error:
+            landingcur.close()
+            self.landingconn.close()
+            print(error)
+        except (GracefulExit, KeyboardInterrupt, SystemExit):
+            landingcur.close()
+            self.landingconn.close()
+
+        # Close the database connection
+        debugmsg("Closing databse connections...")
+        landingcur.close()
+        self.landingconn.close()
+
+    ################################
+    #END processPredictions()
+    ################################
+
 
 
 
