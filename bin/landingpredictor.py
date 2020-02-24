@@ -279,14 +279,14 @@ class LandingPredictor:
                                round(ST_X(a.location2d)::numeric, 6) as long,
                                round(extract(epoch from (now() - a.tm)) / 60.0) as elapsed_mins,
                                case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,4}T[0-9]{1,4}P%%' then
-                                       round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,4}T[0-9]{1,4}P') from ' [-]{0,1}[0-9]{1,4}T') from ' [-]{0,1}[0-9]{1,4}') as decimal) / 10.0, 2)
+                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                                       round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,4}T') from ' [-]{0,1}[0-9]{1,4}') as decimal) / 10.0, 2)
                                    else
                                        NULL
                                end as temperature_k,
                                case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,4}T[0-9]{1,4}P%%' then
-                                       round(cast(substring(substring(a.raw from '[0-9]{1,4}P') from '[0-9]{1,4}') as decimal) * 10.0, 2)
+                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                                       round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
                                    else
                                        NULL
                                end as pressure_pa
