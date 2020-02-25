@@ -174,7 +174,7 @@ class PredictorBase(object):
     #    ttl:  (float) the time remaining before touchdown (in minutes)
     #    err:  (boolean) if true, then an error occured and the variables values are invalid
     #
-    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, prediction_floor):
+    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, prediction_floor, surface_winds = False):
         debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, prediction_floor))
         debugmsg("latestpackets size: %d" % latestpackets.shape[0])
 
@@ -333,16 +333,24 @@ class PredictorBase(object):
 
                 # Difference in the elevation at the launch site and the altitude of the balloon for the first packet we heard 
                 dz = float(ascent_portion[0,0]) - origin_alt
+                debugmsg("Altitude gained from launch site to first packet: %fft" % dz)
 
                 # Calculate the mean vertical rate for the first 5 APRS packets.
                 avg_ascent_rate = float(np.mean(ascent_portion[0:5, 3]))
+                debugmsg("Mean ascent rate for the first 5 packets: %fft/sec" % avg_ascent_rate) 
 
                 # Estimate how long it took the balloon to travel from the launch site elevation to the first packet we heard
                 time_to_first = dz / avg_ascent_rate
+                debugmsg("Time from launch to first packet: %fs" % time_to_first)
 
                 # Estimate the latitude and longitude angular rates
-                latrate_to_first = (float(ascent_portion[0,1]) - origin_x) / time_to_first
-                lonrate_to_first = (float(ascent_portion[0,2]) - origin_y) / time_to_first
+                # reference:  columns:  altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
+                latrate_to_first = (float(ascent_portion[0,1]) - float(origin_x)) / time_to_first
+                lonrate_to_first = (float(ascent_portion[0,2]) - float(origin_y)) / time_to_first
+                #latrate_to_first = (origin_x - float(ascent_portion[0,1]) ) / time_to_first
+                #lonrate_to_first = (origin_y - float(ascent_portion[0,2]) ) / time_to_first
+                debugmsg("latrate_to_first: (%f - %f) / %f = %f" % (ascent_portion[0,1], origin_x, time_to_first, latrate_to_first))
+                debugmsg("lonrate_to_first: (%f - %f) / %f = %f" % (ascent_portion[0,2], origin_y, time_to_first, lonrate_to_first))
 
                 # Append the entry for the prediction_floor elevation to the ascent_portion array
                 tempray = np.array([ [prediction_floor, origin_x, origin_y, avg_ascent_rate, latrate_to_first, lonrate_to_first ]], dtype='f')
@@ -354,6 +362,12 @@ class PredictorBase(object):
                     tempray[0,5]
                     ))
 
+                # Update the initial packet with these calculated vertical, lat, and lon rates
+                ascent_portion[0,3] = avg_ascent_rate
+                ascent_portion[0,4] = latrate_to_first
+                ascent_portion[0,5] = lonrate_to_first
+
+                # Add a record for the launch site itself to the beginning of our list of packets
                 ascent_portion = np.insert(ascent_portion, 0, tempray, axis=0)
 
             ####################################
@@ -470,13 +484,17 @@ class PredictorBase(object):
                     avg_lat_rate = lat_sum / w_sum
                     avg_lon_rate = lon_sum / w_sum
                     debugmsg("surface winds.  current altitude:  %.2f, avg_lat_rate: %f, avg_lon_rate: %f" % (last_heard_altitude, avg_lat_rate, avg_lon_rate))
-                    use_surface_wind = True
+                    if surface_winds:
+                        use_surface_wind = True
+                    else:
+                        debugmsg("Not using surface winds in prediction calculations")
+                        use_surface_wind = False
                 else:
                     use_surface_wind = False
 
             # Loop params
             k_idx = 0
-            first_time = 0
+            first_time = True
 
             # this is the list of points that comprise the flight path, setting to empty values prior to entering the loop
             flightpath_deltas = []
@@ -496,12 +514,21 @@ class PredictorBase(object):
             # We're here because:  a) the flight is descending, and b) conditions are such that we want to calculate a prediction.
 
             # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
-            for k in ascent_portion[np.where(ascent_portion[:,0] <= last_heard_altitude)]:
-                debugmsg("k: %f, %f, %f, %f, %f, %f" %(k[0], k[1], k[2], k[3], k[4], k[5]))
+            #for k in ascent_portion[np.where(ascent_portion[:,0] <= last_heard_altitude)]:
+            #for k in ascent_portion:
+            k_len = ascent_portion.shape[0]
+            while k_idx < k_len and first_time:
 
+                # The row
+                k = ascent_portion[k_idx,]
+
+                # We want to skip this section the first time through the loop.  That is for the first value of "k[0]" which should be the
+                # prediction_floor, we don't want to run any calculations.  The "backstop" is therefore set to the last_heard_altitude (up above)
+                # to ensure this happens.
                 if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
 
-                   # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight
+                   # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight then continue 
+                   # with calcuations from one ascent waypoint to the next higher one.
                    if k[0] < last_heard_altitude:
 
                        upper_idx = k_idx + 5
@@ -539,10 +566,12 @@ class PredictorBase(object):
                        #        sys.stdout.flush()
                     
 
-                       if use_surface_wind:
+                       if use_surface_wind and surface_winds:
 
                            # Weighting for surface winds components.  The closer to landing, the more weight surface winds have.
-                           surface_weight = (1 - (last_heard_altitude - prediction_floor) / float(surface_wind_threshold - prediction_floor))**surface_exponent_weight
+                           surface_weight = (1 - (last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+
+
                            if surface_weight > 1:
                                surface_weight = 1
                            if surface_weight < 0:
@@ -563,14 +592,13 @@ class PredictorBase(object):
                        x += dx
                        y += dy
                        ttl += t
+                       debugmsg("TOP:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
                        flightpath_deltas.append((dx, dy, ttl))
 
+                   
                    else:
-                       #if debug:
-                       #    print "else k[0]: %d, firsttime: %d" % (k[0], first_time)
-                       #    sys.stdout.flush()
-                       if first_time == 0 and last_heard_altitude > backstop:
-                           first_time = 1
+                       if first_time and last_heard_altitude > backstop:
+                           first_time = False
 
                            upper_idx = k_idx + 5
                            lower_idx = k_idx - 5
@@ -587,22 +615,17 @@ class PredictorBase(object):
                            h_range = []
                            if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
                                t = abs( (last_heard_altitude - backstop) / (balloon_velocities[-1] + delta))
-                       #        if debug:
-                       #            print "        END:  alt: ", last_heard_altitude, "  t: ", t, "  backstop: ", backstop
-                       #            sys.stdout.flush()
                            else:
                                h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
                                for h in h_range:
                                    t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
                                t += abs( (last_heard_altitude - h_range[-1]) / (balloon_velocities[-1] + delta))
-                       #        if debug:
-                       #            print "        END:  alt: ", last_heard_altitude, "  t: ", t, "  backstop: ", backstop, "  h_range[-1]: ", h_range[-1],  "  h_range: ", h_range
-                       #            sys.stdout.flush()
 
-                           if use_surface_wind:
+                           if use_surface_wind and surface_winds:
 
-                               # Weighting for surface winds components.  The closer to landing, the more weight surface winds have.
-                               surface_weight = (1 - float(last_heard_altitude - prediction_floor) / float(surface_wind_threshold - prediction_floor))**surface_exponent_weight
+                               # Weighting for surface winds components.  The closer to landing, the more weight surface winds have
+                               surface_weight = (1 - float(last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+
                                if surface_weight > 1:
                                    surface_weight = 1
                                if surface_weight < 0:
@@ -623,14 +646,21 @@ class PredictorBase(object):
                            x += dx
                            y += dy
                            ttl += t
+                           debugmsg("BOTTOM:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
                            flightpath_deltas.append((dx, dy, ttl))
 
                    # END:  if k[0] < last_heard_altitude:
 
+
+                else:
+                   debugmsg("NO RUN:  backstop: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, k[0], k[1], k[2], k[3], k[4], k[5]))
+
+                # END:  if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
+
+
                 backstop = k[0]
                 k_idx += 1
 
-                # END:  if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
             # END:  for k in ascent_portion:
                 
             ####################################
@@ -1285,7 +1315,7 @@ class LandingPredictor(PredictorBase):
                     ####################################
 
                     # Call the prediction algo
-                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], prediction_floor)
+                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], prediction_floor, True)
 
                     ####################################
                     # START:  insert predicted landing record into the database
@@ -1321,6 +1351,7 @@ class LandingPredictor(PredictorBase):
                         #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
 
                         ts = datetime.datetime.now()
+                        debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
                         debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
                         # execute the SQL insert statement
