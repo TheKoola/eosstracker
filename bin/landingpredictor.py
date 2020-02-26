@@ -694,13 +694,13 @@ class PredictorBase(object):
 # The LandingPredictor Class
 # 
 #    class LandingPredictor:
-#        def __init__(self, dbConnectionString = None, timezone = 'America\Denver', timeout = 60):
+#        def __init__(self, dbConnectionString = None, timezone = 'America/Denver', timeout = 60):
 #        def __del__(self):
 #        def func_x2(self, x, a) :
 #        def func_fittedline(self, x, a, b):
 #        def setDBConnection(self, dbstring):
 #        def distance(self, lat1, lon1, lat2, lon2):
-#        def setTimezone(self, timezone = 'America\Denver'):
+#        def setTimezone(self, timezone = 'America/Denver'):
 #        def connectToDatabase(self, dbstring = None):
 #        def db_getFlights(self):
 #        def getLatestPackets(self, callsign = None):
@@ -713,7 +713,7 @@ class LandingPredictor(PredictorBase):
 
     ################################
     # constructor
-    def __init__(self, dbConnectionString = None, timezone = 'America\Denver', timeout = 60):
+    def __init__(self, dbConnectionString = None, timezone = 'America/Denver', timeout = 60):
         super(PredictorBase, self).__init__()
 
         # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
@@ -745,7 +745,7 @@ class LandingPredictor(PredictorBase):
         self.landingconn = pg.extensions.connection
 
         # The timezone
-        self.timezone = 'America\Denver'
+        self.timezone = 'America/Denver'
         if timezone:
             self.timezone = timezone
 
@@ -810,7 +810,7 @@ class LandingPredictor(PredictorBase):
 
     ################################
     # Set the timezone string for the database queries
-    def setTimezone(self, timezone = 'America\Denver'):
+    def setTimezone(self, timezone = 'America/Denver'):
         # set the timezone
         if timezone:
             self.timezone = timezone
