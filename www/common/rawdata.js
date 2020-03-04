@@ -610,7 +610,6 @@
         // Update the input elements to have these values for defaults.
         document.getElementById("data_beginning").value = beginningString;
         document.getElementById("data_ending").value = endingString;
-        console.log ("ending string:  " + endingString);
 
     }
 
