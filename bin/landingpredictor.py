@@ -78,30 +78,33 @@ def debugmsg(message):
 #####################################
 class PredictorBase(object):
 
+    # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
+    # This will automatically adjust later on...to the elevation of the originating launch site for the given flight
+    prediction_floor = 4900
+
+    # This is the velocity value in ft/s at the floor.  That is, how fast is the balloon traveling when it hits ground level.  Or put 
+    # more mathmatically kindof our x-intercept.
+    adjust = 17
+
+    # air density with altitude
+    airdensities = np.array([ [0, 23.77], [5000, 20.48], [10000, 17.56], [15000, 14.96], [20000, 12.67], [25000, 10.66],    
+        [30000, 8.91], [35000, 7.38], [40000, 5.87], [45000, 4.62], [50000, 3.64], [60000, 2.26], [70000, 1.39], [80000, 0.86],    
+        [90000, 0.56], [100000, 0.33], [150000, 0.037], [200000, 0.0053], [250000, 0.00065]])
+
+    # gravitational acceleration with altitude
+    gravities = np.array([ [0, 32.174], [5000, 32.159], [10000, 32.143], [15000, 32.128], [20000, 32.112], [25000, 32.097], 
+        [30000, 32.082], [35000, 32.066], [40000, 32.051], [45000, 32.036], [50000, 32.020], [60000, 31.990], [70000, 31.959], 
+        [80000, 31.929], [90000, 31.897], [100000, 31.868], [150000, 31.717], [200000, 31.566], [250000, 31.415] ])
+
+    # Curves representing the change in air density and gravitational acceleration with altitude
+    airdensity = interpolate.interp1d(airdensities[0:, 0], airdensities[0:,1] * 10**-4, kind='cubic')
+    g = interpolate.interp1d(gravities[0:, 0], gravities[0:, 1], kind='cubic')
+
+
     ################################
     # constructor
     def __init__(self):
 
-        # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
-        # This will automatically adjust later on...to the elevation of the originating launch site for the given flight
-        self.prediction_floor = 4900
-
-        # This is the velocity value in ft/s at the floor.  That is, how fast is the balloon traveling when it hits ground level.  Or put 
-        # more mathmatically kindof our x-intercept.
-        self.adjust = 17
-
-        # Curve representing the change in air density with altitude
-        self.airdensities = np.array([ [0, 23.77], [5000, 20.48], [10000, 17.56], [15000, 14.96], [20000, 12.67], [25000, 10.66],    
-            [30000, 8.91], [35000, 7.38], [40000, 5.87], [45000, 4.62], [50000, 3.64], [60000, 2.26], [70000, 1.39], [80000, 0.86],    
-            [90000, 0.56], [100000, 0.33], [150000, 0.037], [200000, 0.0053], [250000, 0.00065]])
-        self.airdensity = interpolate.interp1d(self.airdensities[0:, 0], self.airdensities[0:,1], kind='cubic')
-
-
-        # Curve representing the change in gravitational acceleration with altitude
-        self.gravities = np.array([ [0, 32.174], [5000, 32.159], [10000, 32.143], [15000, 32.128], [20000, 32.112], [25000, 32.097], 
-            [30000, 32.082], [35000, 32.066], [40000, 32.051], [45000, 32.036], [50000, 32.020], [60000, 31.990], [70000, 31.959], 
-            [80000, 31.929], [90000, 31.897], [100000, 31.868], [150000, 31.717], [200000, 31.566], [250000, 31.415] ])
-        self.g = interpolate.interp1d(self.gravities[0:, 0], self.gravities[0:, 1], kind='cubic')
 
         debugmsg("PredictorBase instance created.")
 
@@ -165,7 +168,7 @@ class PredictorBase(object):
     #    launch_lat:  (float) the latitude (in decimal degrees) of the launch location
     #    launch_lon:  (float) the longitude (in decimal degrees) of the launch location
     #    launch_elev:  (float) the elevation (in feet) of the launch location
-    #    prediction_floor:  (float) the altitude below which the prediction algorithm will no longer compute predictions.  Should be ground level near the landing area.
+    #    algo_floor:  (float) the altitude below which the prediction algorithm will no longer compute predictions.  Should be ground level near the landing area.
     #
     # Returns:
     #    flightpath:  (list) list of points (lat, lon, altitude) of the predicted flight path
@@ -174,17 +177,20 @@ class PredictorBase(object):
     #    ttl:  (float) the time remaining before touchdown (in minutes)
     #    err:  (boolean) if true, then an error occured and the variables values are invalid
     #
-    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, prediction_floor, surface_winds = False):
-        debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, prediction_floor))
+    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False):
+        debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, algo_floor))
         debugmsg("latestpackets size: %d" % latestpackets.shape[0])
 
         # if invalid arguments then return
-        if not launch_lat or not launch_lon or not launch_elev or not prediction_floor:
+        if not launch_lat or not launch_lon or not launch_elev or not algo_floor:
             return None
 
         # if no packets are provided then return
         if latestpackets.shape[0] <= 0:
             return None
+
+        # Set the prediction floor
+        self.prediction_floor = algo_floor
 
         # slice (aka list) of just the altitude columns
         altitudes = latestpackets[0:, 1]
@@ -324,7 +330,7 @@ class PredictorBase(object):
             # If the flight is already lower than the prediction_floor then we don't bother with this, because we're not going to calculate
             # a prediction when the flight is below the floor.  Otherwise we preappend a row with updated rates for altitude, lat, lon, 
             # alt_rate, lat_rate, and lon_rate
-            if last_heard_altitude > prediction_floor:
+            if last_heard_altitude > self.prediction_floor:
 
                 # This is the location and elevation of the launch site (aka where the balloon started its trip from)
                 origin_x = launch_lat
@@ -353,7 +359,7 @@ class PredictorBase(object):
                 debugmsg("lonrate_to_first: (%f - %f) / %f = %f" % (ascent_portion[0,2], origin_y, time_to_first, lonrate_to_first))
 
                 # Append the entry for the prediction_floor elevation to the ascent_portion array
-                tempray = np.array([ [prediction_floor, origin_x, origin_y, avg_ascent_rate, latrate_to_first, lonrate_to_first ]], dtype='f')
+                tempray = np.array([ [self.prediction_floor, origin_x, origin_y, avg_ascent_rate, latrate_to_first, lonrate_to_first ]], dtype='f')
                 debugmsg("Pre-pending to ascent_portion: %f, %f, %f, %f, %f, %f" % (tempray[0,0],
                     tempray[0,1],
                     tempray[0,2],
@@ -390,13 +396,13 @@ class PredictorBase(object):
 
             # Here we want to compute the k-value for this parachute, weight, drag combo
             # parachute_coef - this is the constant that represents 2m/CdA for this parachute, flight-string combo
-            parachute_coef = np.mean(((balloon_velocities **2) * (self.airdensity(balloon_altitudes) / 1000)) / self.g(balloon_altitudes))
+            parachute_coef = np.mean(((balloon_velocities **2) * self.airdensity(balloon_altitudes)) / self.g(balloon_altitudes))
             debugmsg("parachute_coef: %f" % parachute_coef)
 
             # This is a list of points with the predicted velocity for various altitudes beyond the last altitude we've seen (aka the future)
-            alts = np.arange(prediction_floor / 2, balloon_altitudes[-1] + 10000, 500)
+            alts = np.arange(self.prediction_floor / 2, balloon_altitudes[-1] + 10000, 500)
             debugmsg("alts length: %f" % alts.shape[0])
-            pred_v = np.sqrt(parachute_coef * self.g(alts) / (self.airdensity(alts) / 1000))
+            pred_v = np.sqrt(parachute_coef * self.g(alts) / self.airdensity(alts))
             pred_v_curve = interpolate.interp1d(alts, pred_v, kind='cubic')
 
             # Perform curve fitting for predictions when in the early stages of the descent.
@@ -431,7 +437,7 @@ class PredictorBase(object):
             # "where" in the descent a flight is at it varies from 0 to 1.  With 1 being at the max altitude, and 0 being at the prediction_floor.
             #     Shortly after burst?  ...then apply more weight to the curve fitting function
             #     Well into the descent?  ...then apply more weight to the drag caluclation function
-            function_weight = (float(last_heard_altitude) - prediction_floor) / (float(descent_portion[0, 0]) - prediction_floor)
+            function_weight = (float(last_heard_altitude) - self.prediction_floor) / (float(descent_portion[0, 0]) - self.prediction_floor)
 
             # Adjust the weight so that it more aggressively favors the drag calculation function instead of the curve fitting model.
             function_weight = function_weight**2
@@ -442,8 +448,8 @@ class PredictorBase(object):
             # The flight is at an altitude where surface winds are taking over....
             use_surface_wind = False
             surface_exponent_weight = 2
-            surface_wind_threshold = 8000 + prediction_floor
-            surface_wind_cutoff = 3000 + prediction_floor
+            surface_wind_threshold = 8000 + self.prediction_floor
+            surface_wind_cutoff = 3000 + self.prediction_floor
             debugmsg("surface_wind_threshold: %f, surface_wind_cutoff: %f" % (surface_wind_threshold, surface_wind_cutoff))
             if last_heard_altitude < surface_wind_threshold:
 
@@ -525,7 +531,7 @@ class PredictorBase(object):
                 # We want to skip this section the first time through the loop.  That is for the first value of "k[0]" which should be the
                 # prediction_floor, we don't want to run any calculations.  The "backstop" is therefore set to the last_heard_altitude (up above)
                 # to ensure this happens.
-                if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
+                if k[0] >= self.prediction_floor and k_idx > 0 and k[0] > backstop:
 
                    # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight then continue 
                    # with calcuations from one ascent waypoint to the next higher one.
@@ -716,27 +722,6 @@ class LandingPredictor(PredictorBase):
     def __init__(self, dbConnectionString = None, timezone = 'America/Denver', timeout = 60):
         super(PredictorBase, self).__init__()
 
-        # This is the initial floor for the algorithm.  Prediction calculations are no longer performed for altitudes below this value.
-        # This will automatically adjust later on...to the elevation of the originating launch site for the given flight
-        self.prediction_floor = 4900
-
-        # This is the velocity value in ft/s at the floor.  That is, how fast is the balloon traveling when it hits ground level.  Or put 
-        # more mathmatically kindof our x-intercept.
-        self.adjust = 17
-
-        # Curve representing the change in air density with altitude
-        self.airdensities = np.array([ [0, 23.77], [5000, 20.48], [10000, 17.56], [15000, 14.96], [20000, 12.67], [25000, 10.66],    
-            [30000, 8.91], [35000, 7.38], [40000, 5.87], [45000, 4.62], [50000, 3.64], [60000, 2.26], [70000, 1.39], [80000, 0.86],    
-            [90000, 0.56], [100000, 0.33], [150000, 0.037], [200000, 0.0053], [250000, 0.00065]])
-        self.airdensity = interpolate.interp1d(self.airdensities[0:, 0], self.airdensities[0:,1], kind='cubic')
-
-
-        # Curve representing the change in gravitational acceleration with altitude
-        self.gravities = np.array([ [0, 32.174], [5000, 32.159], [10000, 32.143], [15000, 32.128], [20000, 32.112], [25000, 32.097], 
-            [30000, 32.082], [35000, 32.066], [40000, 32.051], [45000, 32.036], [50000, 32.020], [60000, 31.990], [70000, 31.959], 
-            [80000, 31.929], [90000, 31.897], [100000, 31.868], [150000, 31.717], [200000, 31.566], [250000, 31.415] ])
-        self.g = interpolate.interp1d(self.gravities[0:, 0], self.gravities[0:, 1], kind='cubic')
-
         # The database connection string
         self.dbstring = dbConnectionString
 
@@ -769,43 +754,11 @@ class LandingPredictor(PredictorBase):
             print(error)
 
 
-    #####################################
-    # Function to use for curve fitting
-    def func_x2(self, x, a) :
-        return a * np.power(x - self.prediction_floor, 2) + self.adjust
-
-
-    #####################################
-    # this is y = mx +b
-    def func_fittedline(self, x, a, b):
-        return a*x + b
-
-
     ################################
     # Set the database connection string
     def setDBConnection(self, dbstring):
         # Set the database connection 
         self.dbstring = dbstring
-
-
-    #####################################
-    # Function to use to determine distance between two points
-    #####################################
-    def distance(self, lat1, lon1, lat2, lon2):
-        lon1 = math.radians(lon1)
-        lon2 = math.radians(lon2)
-        lat1 = math.radians(lat1)
-        lat2 = math.radians(lat2)
-
-        # Haversine formula
-        dlon = lon2 - lon1
-        dlat = lat2 - lat1
-        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-        c = 2 * math.asin(math.sqrt(a))
-        #r = 6371 # Radius of earth in kilometers. Use 3956 for miles
-        r = 3956 # Radius of earth in kilometers. Use 3956 for miles
-
-        return float(c * r)
 
 
     ################################
@@ -1221,7 +1174,7 @@ class LandingPredictor(PredictorBase):
                 gpsposition = self.getGPSPosition()
 
                 # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
-                prediction_floor = launchsite['elevation']
+                landingprediction_floor = launchsite['elevation']
 
                 # Get a list of the latest packets for this callsign
                 # latestpackets columns:  
@@ -1306,16 +1259,16 @@ class LandingPredictor(PredictorBase):
 
                         # If we're close to the balloon, then set the prediction floor to that elevation
                         if dist_to_balloon < 35:
-                            prediction_floor = float(gpsposition['altitude'])
+                            landingprediction_floor = float(gpsposition['altitude'])
 
-                    debugmsg("Prediction floor set to: %f" % prediction_floor)
+                    debugmsg("Prediction floor set to: %f" % landingprediction_floor)
 
                     ####################################
                     # END:  adjust the prediction floor
                     ####################################
 
                     # Call the prediction algo
-                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], prediction_floor, True)
+                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
 
                     ####################################
                     # START:  insert predicted landing record into the database
