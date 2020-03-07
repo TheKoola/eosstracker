@@ -664,16 +664,26 @@ div.antenna {
 .inverted .c3-axis-x path,
 .inverted .c3-axis-x line,
 .inverted .c3-axis-y path,
-.inverted .c3-axis-y line {
+.inverted .c3-axis-y line, 
+.inverted .c3-axis-y2 path,
+.inverted .c3-axis-y2 line {
     stroke: #c8c8c8;
 }
 
 .inverted .c3-axis-x g,
 .inverted .c3-axis-y g,
+.inverted .c3-axis-y2 g,
 .inverted .c3-legend-item text,
 .inverted .c3-axis-y text,
+.inverted .c3-axis-y2 text,
 .inverted .c3-axis-x text {
     fill: #c8c8c8;
     font-size: 1.1em;
+}
+
+.c3-title {
+  font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
+  font-size: 2em;
+  fill: #aaaaaa;
 }
 

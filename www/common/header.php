@@ -37,7 +37,6 @@
     include_once $documentroot . "/common/version.php";
     include_once $documentroot . '/common/logo.php';
 ?>
-<link rel="stylesheet" href="/common/styles.css">
 <link rel="shortcut icon" href="/images/graphics/favicon.ico">
 <link rel="icon" type="image/png" href="/images/graphics/favicon-192x192.png" sizes="192x192">
 <link rel="apple-touch-icon" sizes="180x180" href="/images/graphics/apple-touch-icon-180x180.png">
@@ -56,6 +55,7 @@ else
 <!-- <script src="/leaflet/leaflet.js"></script> -->
 <script src="/common/d3.min.js" charset="utf-8"></script>
 <script src="/common/c3.min.js"></script>
+<link rel="stylesheet" href="/common/styles.css">
 
 </head>
 <?php

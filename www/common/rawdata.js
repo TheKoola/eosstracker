@@ -24,7 +24,9 @@
 
     // The variables for the charts.
     var chart;
+    var chart2;
     var chart3;
+    var chart4;
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
@@ -127,6 +129,47 @@
     }
 
     /***********
+    * createchart2
+    *
+    * This is the KC0D payload Temperature chart
+    ***********/
+    function createchart2 (jsondata, columns) {
+        chart2 = c3.generate({
+            bindto: '#chart2',
+            /*padding: { right: 20 },*/
+            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            data: { empty : { label: { text: "No Data Available" } }, 
+                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                y: { label: { text: 'Temperature (F)', position: 'outer-middle' } } },
+            point: { show: true },
+            grid: { x: { show: true }, y: { show: true } },
+            color: { pattern: chartcolors },
+            title: { text: "Temperature (F)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+        }); }
+
+    /***********
+    * createchart4
+    *
+    * This is the KC0D payload Pressure chart
+    ***********/
+    function createchart4 (jsondata, columns) {
+        chart4 = c3.generate({
+            bindto: '#chart4',
+            /*padding: { right: 20 },*/
+            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            data: { empty : { label: { text: "No Data Available" } }, 
+                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                y: { label: { text: 'Pressure (atm)', position: 'outer-middle' } } },
+            point: { show: true },
+            grid: { x: { show: true }, y: { show: true } },
+            color: { pattern: chartcolors },
+            title: { text: "Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
+        });
+    }
+
+    /***********
     * createchart3
     *
     * This is the Direwolf RF Packets chart.
@@ -156,6 +199,24 @@
     }
     
     /***********
+    * updatechart2  
+    *
+    * This updates KC0D environmentals chart
+    ***********/
+/*
+    function updatechart2 (jsondata, columns, axes) {
+         chart2.load ({ json:  jsondata, xs: columns, axes: axes });
+    }
+    */
+    function updatechart2 (jsondata, columns) {
+         chart2.load ({ json:  jsondata, xs: columns });
+    }
+
+    function updatechart4 (jsondata, columns) {
+         chart4.load ({ json:  jsondata, xs: columns });
+    }
+
+    /***********
     * updatechart3
     *
     * This updates the Direwolf RF Packets chart.
@@ -163,6 +224,38 @@
     function updatechart3 (jsondata, columns) {
          chart3.load ({ json:  jsondata, xs : columns});
     }
+
+    /***********
+    * getchartdata2
+    *
+    * This function serves as a front-end for the updatechart2 function for the KC0D environmentals chart because it's using two y-axes.
+    * It accepts a function and a URL.
+    ***********/
+    function getchartdata2(chartupdatefunction, url) {
+        /* Call the URL provided */
+        $.get(url, function(data) {
+            var jsonOutput = JSON.parse(data);
+            var mycolumns = {};
+            var axes = {};
+            var i = 0;
+            var thekeys = Object.keys(jsonOutput);
+
+            for (i = 0; i < thekeys.length; i++) {
+                if (! thekeys[i].startsWith("tm-")) {
+                    mycolumns[thekeys[i]] = "tm-" + thekeys[i];
+                    if (thekeys[i].indexOf("emperature") != -1) 
+                        axes[thekeys[i]] = "y";
+                    if (thekeys[i].indexOf("essure") != -1) 
+                        axes[thekeys[i]] = "y2";
+                }
+            }
+            //document.getElementById("debug").innerHTML = JSON.stringify(axes);
+
+            /* call the provided update function with the JSON returned from the URL */
+            chartupdatefunction(jsonOutput, mycolumns, axes);
+        });
+    }
+
 
     /***********
     * getchartdata
@@ -462,6 +555,11 @@
         var c1_l = "#c1-sign";
         var c1_e = "#c1-elem";
         $(c1_a).click({element: c1_e, link: c1_l }, toggle);
+        
+        var c2_a = "#c2-link";
+        var c2_l = "#c2-sign";
+        var c2_e = "#c2-elem";
+        $(c2_a).click({element: c2_e, link: c2_l }, toggle);
 
         var c3_a = "#c3-link";
         var c3_l = "#c3-sign";
@@ -703,7 +801,9 @@
 
         // populate the charts with data
         getchartdata(createchart, "getpacketperformance.php");
+        getchartdata(createchart2, "gettemp.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
+        getchartdata(createchart4, "getpressure.php");
         getdigidata();
         gettrackerdata();
 
@@ -715,9 +815,21 @@
             var w = getChartWidth();
             var h = getChartHeight();
 
+            var small_w = Math.floor(w / 2.1);
+
             chart.resize({
                 height: h,
                 width: w
+            });
+
+            chart2.resize({
+                height: h,
+                width: small_w 
+            });
+
+            chart4.resize({
+                height: h,
+                width: small_w
             });
 
             chart3.resize({
@@ -732,7 +844,9 @@
             updateMapLink();
             getrecentdata(); 
             getchartdata(updatechart, "getpacketperformance.php"); 
+            getchartdata(updatechart2, "gettemp.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
+            getchartdata(updatechart4, "getpressure.php"); 
             getdigidata();
             gettrackerdata();
         }, 5000);

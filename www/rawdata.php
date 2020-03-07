@@ -133,12 +133,31 @@ $config = readconfiguration();
 <div class="inverted" id="chart3"></div>
 
 
+<!-- KC0D Payload Environmentals Data -->
+<p class="subheader"><a href="#c2" class="subheader" id="c2-link">(<span style="color: red;" id="c2-sign">+</span>) KC0D Payload Environmentals</a></p>
+<div id="c2-elem" style="display: none; margin: 5px;">
+    <p class="normal-italic">
+       These charts shows the temperature (F) and pressure (atm) as measured by any KC0D payloads on the flight string.
+    </p>
+</div>
+<!-- KC0D Payload Temperature Chart -->
+<div class="inverted" style="float:left;" id="chart2"></div>
+
+<!-- KC0D Payload Pressure Chart -->
+<div class="inverted" style="float:left;" id="chart4"></div>
+
+<!-- KC0D Payload Battery Voltage Chart -->
+<div class="inverted" style="float:left;" id="chart5"></div>
+
+<div style="margin-top: 20px; margin-bottom: 20px; float; none; clear: both;"> &nbsp; </div>
+
 
 <!-- Live packets section -->
 <p class="header">
     <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
     Live APRS Packets
 </p>
+
 
 <!-- The flight selection table -->
 <div class="div-table">
