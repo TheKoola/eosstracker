@@ -1,5 +1,6 @@
 # Ignore the maps, osm, db, and logs directories
 maps/*
+osm/*
 osm/README
 osm/data
 osm/symbols
