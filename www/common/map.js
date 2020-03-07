@@ -51,6 +51,8 @@
     var globalUpdateCounter = 0;
     var updateTimeout;
     var sidebar;
+    var layerControl;
+    var tilelayer;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1436,19 +1438,19 @@ function getTrackers() {
 
 
     /***********
-    * initialize function
+    * initialize_map function
     *
-    * This function performs all of the heavy lifting to init the map, get preferences, and start things up.
+    * This function creates the map.  It should be called first.
     ***********/
-    function initialize() {
+    function initialize_map() {
         var baselayer;
         var overlays;
 
 
-	// create the tile layer referencing the local system as the url (i.e. "/maps/....")
-	var osmUrl='/maps/{z}/{x}/{y}.png';
-	var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-        var tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
+        // create the tile layer referencing the local system as the url (i.e. "/maps/....")
+        var osmUrl='/maps/{z}/{x}/{y}.png';
+        var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+        tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
         // Create a map object. 
 	    map = new L.Map('map', {
@@ -1480,13 +1482,58 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
+        baselayer = { "OSM Base Map" : tilelayer };
+ 
+        // use the grouped layers plugin so the layer selection widget shows layers categorized
+        layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
+
+        // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
+        if (!L.Browser.touch) {
+            L.DomEvent
+            .disableClickPropagation(layerControl._container)
+            .disableScrollPropagation(layerControl._container);
+         } 
+         else {
+             L.DomEvent.disableClickPropagation(layerControl._container);
+         }
+
+        // add a sidebar pane for navigation and instrumentation
+        sidebar = L.control.sidebar('sidebar').addTo(map);
+        var zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // add a scale widget in the lower left hand corner for miles / kilometers.
+        var scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
+
+	    // add a widget in the upper right hand corner for adding waypoints
+	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
+	    map.addControl(marker_control);
+
+    }
+
+    /***********
+    * Set map center
+    *
+    * This function will set the map center based on the current latitude, longitude, and zoom level in the global variables:
+    *     latitude
+    *     longitude
+    *     zoom
+    ***********/
+    function set_map_center() {
+
         // Set the map center position
         if (latitude != "" && longitude != "" && zoom != "")
 	        map.setView(new L.LatLng(latitude, longitude), zoom);
         else
             // set the map default starting location.  This is Denver, CO: 39.739, -104.985
 	        map.setView(new L.LatLng(39.739, -104.985), 10);
+    }
 
+    /***********
+    * initialize_other function
+    *
+    * This function performs all of the heavy lifting to init the data sources displayed on the map for non-flight sources.
+    ***********/
+    function initialize_layers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         //var allstations = L.markerClusterGroup();
         var allstations = L.layerGroup();
@@ -1510,34 +1557,10 @@ function getTrackers() {
         realtimelayers.push(c);
         realtimelayers.push(d);
 
-        // The base layers and overlays that will be added to every map
-        var groupedoverlays = { 
-            "Generic Stations" : {
-                "All Other Stations" : allstations, 
-                "Weather Stations" : wxstations, 
-                "Trackers at Large" : trackersatlarge, 
-                "My Location" : mystation
-            }
-        };
-        baselayer = { "OSM Base Map" : tilelayer };
- 
-        // use the grouped layers plugin so the layer selection widget shows layers categorized
-        var layerControl = L.control.groupedLayers(baselayer, groupedoverlays, { groupCheckboxes: true}).addTo(map); 
-
-        // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
-        if (!L.Browser.touch) {
-            L.DomEvent
-            .disableClickPropagation(layerControl._container)
-            .disableScrollPropagation(layerControl._container);
-         } 
-         else {
-             L.DomEvent.disableClickPropagation(layerControl._container);
-         }
-
-
-        // add a sidebar pane for navigation and instrumentation
-        sidebar = L.control.sidebar('sidebar').addTo(map);
-        var zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
+        layerControl.addOverlay(allstations, "All Other Stations", "Generic Stations");
+        layerControl.addOverlay(wxstations, "Weather Stations", "Generic Stations");
+        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Generic Stations");
+        layerControl.addOverlay(mystation, "My Location", "Generic Stations");
 
 
         /*
@@ -1551,8 +1574,6 @@ function getTrackers() {
             var predictedpathlayer = L.layerGroup();
             var landingpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
-            
-    
 
             for (key2 in flightids[key].callsigns) {
                 var activeflightlayer = L.featureGroup();
@@ -1593,13 +1614,6 @@ function getTrackers() {
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
          }
 
-
-        // add a scale widget in the lower left hand corner for miles / kilometers.
-        var scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
-
-	    // add a widget in the upper right hand corner for adding waypoints
-	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
-	    map.addControl(marker_control);
     }
 
 
@@ -1610,7 +1624,13 @@ function getTrackers() {
     *************/
     function startup() {
         // initialize the map and its layers
-        initialize();
+        initialize_map();
+
+        // set the map center
+        setTimeout(function() {set_map_center(); }, 10); 
+
+        // load map layers
+        setTimeout(function() { initialize_layers(); }, 10);
 
         // The idea is to stagger the loading of these so that the browser isn't bogged down at first load.
         //
@@ -1618,17 +1638,17 @@ function getTrackers() {
 	    setTimeout(function() { getConfiguration(); }, 10);
 
         // Setup the listener
-        setTimeout(function() { createTheListener(); }, 20);
+        setTimeout(function() { createTheListener(); }, 10);
 
         // Get the status of running processes
-        setTimeout(function() { getProcessStatus(); }, 30);
+        setTimeout(function() { getProcessStatus(); }, 10);
 
         // Build the gauges and charts
-        setTimeout(function() { buildGauges(); }, 40);
-        setTimeout(function() { buildCharts(); }, 50);
+        setTimeout(function() { buildGauges(); }, 10);
+        setTimeout(function() { buildCharts(); }, 10);
 
         // build the Trackers table
-        setTimeout(function() { getTrackers(); }, 150);
+        setTimeout(function() { getTrackers(); }, 10);
 
         // Update the flight sidebar content
         setTimeout(function() {
@@ -1678,16 +1698,16 @@ function getTrackers() {
 
                 i += 1;
             }
-        }, 60);
+        }, 10);
 
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
         // We delay a couple of seconds before updating the full map/gauges/tables if the number of flights/beacons we're tracking is > 8 in an attempt
         // to not swamp the user's browser with updates upon first load.
-        if (realtimeflightlayers.length > 8)
-            setTimeout(function() {updateAllItems("full")}, 2000);
-        else
-            setTimeout(function() {updateAllItems("full");}, 70); 
+        //if (realtimeflightlayers.length > 8)
+        //    setTimeout(function() {updateAllItems("full")}, 5000);
+        //else
+        setTimeout(function() {updateAllItems("full");}, 2000); 
 
         // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
         $(window).on('focus', function() { 
@@ -1937,15 +1957,6 @@ function getTrackers() {
             var speedValue = "#" + flightids[flight].flightid + "_speedvalue";
             var relativeBearingValue = "#" + flightids[flight].flightid + "_relativebearingvalue";
             var relativeElevationValue = "#" + flightids[flight].flightid + "_relativeelevationanglevalue";
-
-/*
-            altimeter = $.flightIndicator(altitudeInstrument, 'altimeter', { showBox: true, size: 180 });
-            variometer = $.flightIndicator(verticalRateInstrument, 'variometer', { showBox: true, size: 180 });
-            heading = $.flightIndicator(balloonHeadingInstrument, 'heading', { showBox: true, size: 180 });
-            airspeed = $.flightIndicator(speedInstrument, 'airspeed', { showBox: true, size: 180 });
-            relativebearing = $.flightIndicator(relativeBearingInstrument, 'relativeHeading', { showBox: true, size: 180 });
-            relativeangle = $.flightIndicator(relativeElevationInstrument, 'elevationAngle', { showBox: true, size: 180 });
-*/
 
             altimeter = $.flightIndicator(altitudeInstrument, 'altimeter', { showBox: true });
             variometer = $.flightIndicator(verticalRateInstrument, 'variometer', { showBox: true});
