@@ -1498,7 +1498,7 @@ function getTrackers() {
             lastposition = JSON.parse(data);
             initialize();
 
-	        getConfiguration();
+	        //getConfiguration();
             buildGauges();
             buildCharts();
             createTheListener();
@@ -1980,6 +1980,9 @@ function getTrackers() {
                     //
                     //
                     // Create a HTML Table element.
+                    //
+                    /********** don't need packet source for kiosk ********/
+                    /*
                     var table = document.createElement("TABLE");
                     var tablediv = document.getElementById(fid + "_lastpacketpath");
                     table.setAttribute("class", "packetlist");
@@ -2057,6 +2060,7 @@ function getTrackers() {
                         + " - packet received over the Internet";
                     tablediv.innerHTML = "";
                     tablediv.appendChild(table);
+                    */
 
                 // getflightpackets.php
                 });
@@ -2152,6 +2156,8 @@ function getTrackers() {
 
 
                 // Calculate our relative position to each flight's latest position packet
+                /******* don't need relative position for kiosk *******/
+                /*
                 $.get("getrelativeposition.php?flightid=" + theflight, function(data) {
                     var thejsondata;
                     var i = 0;
@@ -2190,6 +2196,7 @@ function getTrackers() {
                          }
                      }
                 });
+                */
 
             // for loop for each flightid
             }
