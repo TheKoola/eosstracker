@@ -894,7 +894,7 @@ class LandingPredictor(PredictorBase):
         # Note:  only those packetst that might have occured within the last 6hrs are queried.
         latestpackets_sql = """select distinct on (thetime)
                                case
-                                   when a.ptype = '/' and a.raw similar to '%%[0-9]{6}h%%' then 
+                                   when a.raw similar to '%%[0-9]{6}h%%' then 
                                        date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::timestamp without time zone
                                    else
                                        date_trunc('second', a.tm)::timestamp without time zone
