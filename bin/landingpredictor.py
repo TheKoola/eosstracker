@@ -472,7 +472,7 @@ class PredictorBase(object):
                     for n in waypoints:
 
                         # The weight assigned to this waypoint
-                        w = i ** surface_exponent_weight
+                        w = i ** (surface_exponent_weight * 2)
                         debugmsg("waypoint[%d]: w=%f, %f, %f, %f, %f, %f, %f" %(i-1, w, n[0], n[1], n[2], n[3], n[4], n[5]))
 
                         # The waypoint multipled by the weight
@@ -555,7 +555,11 @@ class PredictorBase(object):
                        t = 0
                        h_range = []
                        if k[0] - backstop <= step_size:
-                           t = abs( (k[0] - backstop) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
+                           v_0 =  function_weight * self.func_x2(backstop, *p) + (1 - function_weight) * pred_v_curve(backstop)
+                           v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
+                           v_avg = (v_0 + v_1) / 2.0
+                           t = abs((k[0] - backstop) / v_avg)
+                           #t = abs( (k[0] - backstop) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
 
                        #    if debug:
                        #        print "        alt: %d  k[0]: %d, backstop: %d, t: %f" %(last_heard_altitude, k[0], backstop, t)
@@ -564,8 +568,18 @@ class PredictorBase(object):
                        else:
                            h_range = np.arange(backstop + step_size, k[0], step_size)
                            for h in h_range:
-                               t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
-                           t += abs( (k[0] - h_range[-1]) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
+                               #t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
+                               v_0 =  function_weight * self.func_x2(h-step_size, *p) + (1 - function_weight) * pred_v_curve(h-step_size)
+                               v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t += abs(step_size / v_avg)
+
+                           v_0 =  function_weight * self.func_x2(h_range[-1], *p) + (1 - function_weight) * pred_v_curve(h_range[-1])
+                           v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
+                           v_avg = (v_0 + v_1) / 2.0
+                           t += abs((k[0] - h_range[-1]) / v_avg)
+                           #t += abs( (k[0] - h_range[-1]) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
+
                        #    if debug:
                        #        print "        alt:  %d, k[0]: %d, backstop: %d, t: %f, h_range[-1]: %d" % (last_heard_altitude, k[0], backstop, t, h_range[-1])
                        #        print "            h_range: ", h_range
@@ -620,12 +634,25 @@ class PredictorBase(object):
                            t = 0
                            h_range = []
                            if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
-                               t = abs( (last_heard_altitude - backstop) / (balloon_velocities[-1] + delta))
+                               #t = abs( (last_heard_altitude - backstop) / (balloon_velocities[-1] + delta))
+                               v_0 =  function_weight * self.func_x2(backstop, *p) + (1 - function_weight) * pred_v_curve(backstop)
+                               v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t = abs((last_heard_altitude - backstop) / v_avg)
                            else:
                                h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
                                for h in h_range:
-                                   t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
-                               t += abs( (last_heard_altitude - h_range[-1]) / (balloon_velocities[-1] + delta))
+                                   v_0 =  function_weight * self.func_x2(h-step_size, *p) + (1 - function_weight) * pred_v_curve(h-step_size)
+                                   v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
+                                   v_avg = (v_0 + v_1) / 2.0
+                                   t += abs(step_size / v_avg)
+                                   #t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
+
+                               v_0 =  function_weight * self.func_x2(h_range[-1], *p) + (1 - function_weight) * pred_v_curve(h_range[-1])
+                               v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t += abs((last_heard_altitude - h_range[-1]) / v_avg)
+                               #t += abs( (last_heard_altitude - h_range[-1]) / (balloon_velocities[-1] + delta))
 
                            if use_surface_wind and surface_winds:
 
