@@ -892,12 +892,12 @@ class LandingPredictor(PredictorBase):
         # The SQL statement to get the latest packets for this callsign
         # columns:  timestamp, altitude, latitude, longitude
         # Note:  only those packetst that might have occured within the last 6hrs are queried.
-        latestpackets_sql = """select distinct on (thetime)
+        latestpackets_sql = """select distinct
                                case
                                    when a.raw similar to '%%[0-9]{6}h%%' then 
-                                       date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::timestamp without time zone
+                                       date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::time without time zone
                                    else
-                                       date_trunc('second', a.tm)::timestamp without time zone
+                                       date_trunc('second', a.tm)::time without time zone
                                end as thetime,
                                round(a.altitude::numeric) as altitude,
                                round(ST_Y(a.location2d)::numeric, 6) as lat,
@@ -927,6 +927,7 @@ class LandingPredictor(PredictorBase):
                                and a.tm > (now() - interval '06:00:00')
     
                                order by 
+                               elapsed_mins desc,
                                thetime asc
                                ; """
           
@@ -958,12 +959,14 @@ class LandingPredictor(PredictorBase):
                 for row in rows:
                     thetime = row[0]
                     if firsttime == 0:
-                        time_delta = thetime
+                        time_delta = datetime.timedelta(hours=thetime.hour, minutes=thetime.minute, seconds=thetime.second)
                         firsttime = 1
                         first_packet = row
                         current_packets.append([thetime, row[1], row[2], row[3], 0, 0, 0, row[4]])
                     else:
-                        time_delta = thetime - time_prev
+                        thetime_delta = datetime.timedelta(hours=thetime.hour, minutes=thetime.minute, seconds=thetime.second)
+                        time_prev_delta = datetime.timedelta(hours=time_prev.hour, minutes=time_prev.minute, seconds=time_prev.second)
+                        time_delta = thetime_delta - time_prev_delta
                         if time_delta.total_seconds() > 0:
                             alt_rate = float(row[1] - alt_prev) / float(time_delta.total_seconds())
                             lat_rate = float(row[2] - lat_prev) / float(time_delta.total_seconds())
