@@ -56,14 +56,16 @@
         return $speed;
     }
 
+    $formerror = false;
 
-
-    // For future use...
-    $prediction_type = "predicted"; 
-    
+    // Check the prediction type HTML GET variable
+    $get_type = "predicted"; 
+    if (isset($_GET["type"])) {
+        if (($get_type = strtolower(check_string($_GET["type"], 20))) == "")
+            $formerror = true;
+    }
     
     // Check the flightid HTML GET variable
-    $formerror = false;
     $get_flightid = "";
     if (isset($_GET["flightid"])) {
         if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
@@ -78,6 +80,7 @@
         printf ("[]");
         return 0;
     }
+
 
     ## Connect to the database
     $link = connect_to_database();
@@ -120,7 +123,7 @@
 
     
     ## get the landing predictions...
-    $query = 'select 
+    $query = "select 
         l.tm, 
         l.flightid, 
         l.callsign, 
@@ -136,15 +139,21 @@
 
         where 
         f.flightid = l.flightid 
-        and f.active = \'t\' 
+        and f.active = 't' 
         and l.flightid = $1 
-        and l.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time)  
+        and l.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
+        " . 
+        ($get_type == "predicted" || $get_type == "translated" ? " and l.thetype in ('predicted', 'translated')" : " and l.thetype = $3 ")
+        . " 
 
         order by 
         l.tm asc, 
         l.flightid, 
-        l.callsign;';
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
+        l.callsign;";
+    if ($get_type == "predicted" || $get_type == "translated") 
+        $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
+    else
+        $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($get_type)));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -165,7 +174,9 @@
     }
 
 
-    printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Landing Predictions\" }, \"features\" : [");
+    $numrows = sql_num_rows($result);
+    if ($numrows > 0) 
+        printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Landing Predictions\" }, \"features\" : [");
 
     $firsttimeinloop = 1;
     foreach ($features as $callsign => $ray) {
@@ -176,12 +187,12 @@
         // This is the point for the landing prediction itself
         printf ("{ \"type\" : \"Feature\",");
         printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s, \"ttl\" : %s },", 
-            json_encode($callsign . "_landing_predicted"), 
+            json_encode($callsign . "_landing_" . $get_type), 
             json_encode($callsign . " Predicted Landing"), 
             json_encode($callsign . " Landing"), 
             json_encode("/J"), 
-            json_encode("Landing prediction"),
-	        json_encode($callsign . " Landing"),
+            json_encode("Landing prediction" . ($get_type == "wind_adjusted" ? "<br>Wind adjusted" : "")),
+	        json_encode($callsign . " Landing" . ($get_type == "wind_adjusted" ? "<br>(wind adjusted)" : "")),
             json_encode($config["iconsize"]),
             json_encode($ttl[$callsign])
         );
@@ -190,7 +201,7 @@
 
         // This is the linestring for the path the landing prediction point itself has taken over the life of the flight
         if (array_key_exists($callsign, $thetype)) {
-            if ($thetype[$callsign] == "predicted")
+            if ($thetype[$callsign] == "predicted" || $thetype[$callsign] == "wind_adjusted")
                 $okay = 1;
             else
                 $okay = 0;
@@ -198,10 +209,10 @@
         if (count($ray) > 1 && $okay) {
             printf (", ");
             foreach ($ray as $k => $elem) {
-                if ($elem[2] == "predicted")
+                if ($elem[2] == "predicted" || $elem[2] == "wind_adjusted")
                     $linestring[] = array($elem[1], $elem[0]);
             }
-            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing" . $prediction_type));
+            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing_" . $get_type));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
             unset ($linestring);
         }
@@ -210,14 +221,17 @@
         // This is the linestring for the predicted flight path
         if (array_key_exists($callsign, $flightpath)) {
             if (strlen($flightpath[$callsign]) > 0) {
-                printf (", { \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionflightpath\" },", json_encode($callsign . "_flightpath_landing_" . $prediction_type));
+                printf (", { \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionflightpath\" },", json_encode($callsign . "_flightpath_landing_" . $get_type));
                 printf ("\"geometry\" : %s }  ", $flightpath[$callsign]);
             }
         }
 
 
     }
-    printf ("] }"); 
+    if ($numrows > 0)
+        printf ("] }"); 
+    else
+        printf ("[]");
 
     sql_close($link);
 

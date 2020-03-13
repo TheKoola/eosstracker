@@ -1572,7 +1572,8 @@ function getTrackers() {
             
         for (key in flightids) {
             var predictedpathlayer = L.layerGroup();
-            var landingpredictionlayer = L.layerGroup();
+            var landingpredictionlayer_reg = L.layerGroup();
+            var landingpredictionlayer_wind = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
 
             for (key2 in flightids[key].callsigns) {
@@ -1597,21 +1598,28 @@ function getTrackers() {
             var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
 
             /* The landing prediction layer */
-            var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 
+            var f = createLandingPredictionsLayer("getlandingpredictions.php?type=predicted&flightid=" + flightids[key].flightid, landingpredictionlayer_reg, 
+                5 * 1000,
+                flightids[key].flightid
+            );
+            var g = createLandingPredictionsLayer("getlandingpredictions.php?type=wind_adjusted&flightid=" + flightids[key].flightid, landingpredictionlayer_wind, 
                 5 * 1000,
                 flightids[key].flightid
             );
 
             d.addTo(map);
             f.addTo(map);
+            g.addTo(map);
             realtimelayers.push(d);
             realtimelayers.push(e);
             landingpredictionlayers.push(f);
+            landingpredictionlayers.push(g);
 
             /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Flight Prediction", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(landingpredictionlayer_reg, "Landing Predictions (regular)", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(landingpredictionlayer_wind , "Landing Predictions (wind adjusted)", "Flight:  " + flightids[key].flightid);
          }
 
     }

@@ -159,7 +159,6 @@ class PredictorBase(object):
         debugmsg("Starting processPredictions...")
 
 
-
     ##########################################################
     # The landing prediction algorithm
     #     This should only be called once the flight is descending.  
@@ -177,7 +176,7 @@ class PredictorBase(object):
     #    ttl:  (float) the time remaining before touchdown (in minutes)
     #    err:  (boolean) if true, then an error occured and the variables values are invalid
     #
-    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False):
+    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False, wind_rates = None):
         debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, algo_floor))
         debugmsg("latestpackets size: %d" % latestpackets.shape[0])
 
@@ -519,6 +518,7 @@ class PredictorBase(object):
             ####################################
             # We're here because:  a) the flight is descending, and b) conditions are such that we want to calculate a prediction.
 
+
             # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
             #for k in ascent_portion[np.where(ascent_portion[:,0] <= last_heard_altitude)]:
             #for k in ascent_portion:
@@ -586,22 +586,51 @@ class PredictorBase(object):
                        #        sys.stdout.flush()
                     
 
-                       if use_surface_wind and surface_winds:
+                       if surface_winds:
 
-                           # Weighting for surface winds components.  The closer to landing, the more weight surface winds have.
-                           surface_weight = (1 - (last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+                           # Which wind vector to use?
+                           if wind_rates is None:
+                               lat_wind_rate = k[4]
+                               lon_wind_rate = k[5]
+                               debugmsg("No wind rates given")
+                           else:
+                               surface_weight = (1 - (k[0] - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+                               if surface_weight > 1:
+                                   surface_weight = 1
+                               if surface_weight < 0:
+                                   surface_weight = 0
+
+                               if k[0] >= surface_wind_threshold:
+                                   surface_weight = 0
 
 
-                           if surface_weight > 1:
-                               surface_weight = 1
-                           if surface_weight < 0:
-                               surface_weight = 0
+                               lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * k[4]
+                               lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * k[5]
+                               debugmsg("latest alt: %f, wind[0]: %f, wind[1]: %f, k[0]: %f, surface_weight: %f, latwr: %f, lonwr: %f" % (last_heard_altitude, wind_rates[0], wind_rates[1], k[0], surface_weight, lat_wind_rate, lon_wind_rate))
 
-                           debugmsg("surface wind weighting: %f, alt: %f" % (surface_weight, k[0]))
 
-                           # compute weighted avg of wind vectors
-                           lat_rate = surface_weight * avg_lat_rate + (1 - surface_weight) * k[4]
-                           lon_rate = surface_weight * avg_lon_rate + (1 - surface_weight) * k[5]
+                           # If this is true then the flight is already descending below the surface_wind_threshold
+                           if use_surface_wind:
+                               # Weighting for surface winds components.  The closer to landing, the more weight surface winds have.
+                               surface_weight = (1 - (last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+
+                               if surface_weight > 1:
+                                   surface_weight = 1
+                               if surface_weight < 0:
+                                   surface_weight = 0
+
+                               # compute weighted avg of wind vectors
+                               lat_rate = surface_weight * avg_lat_rate + (1 - surface_weight) * lat_wind_rate
+                               lon_rate = surface_weight * avg_lon_rate + (1 - surface_weight) * lon_wind_rate
+                               debugmsg("///////> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, avg_lat_rate: %f, avg_lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate, avg_lat_rate, avg_lon_rate))
+
+                           # the flight has yet to descend below the surface_wind_threshold
+                           else:
+                               lat_rate = lat_wind_rate
+                               lon_rate = lon_wind_rate 
+                               #debugmsg("##=====> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, k[4]: %f, k[5]: %f" % (surface_weight, k[0], lat_rate, lon_rate, k[4], k[5]))
+
+                           #debugmsg("surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate))
 
                            dx = t * lat_rate
                            dy = t * lon_rate
@@ -654,21 +683,47 @@ class PredictorBase(object):
                                t += abs((last_heard_altitude - h_range[-1]) / v_avg)
                                #t += abs( (last_heard_altitude - h_range[-1]) / (balloon_velocities[-1] + delta))
 
-                           if use_surface_wind and surface_winds:
+                           if surface_winds:
 
-                               # Weighting for surface winds components.  The closer to landing, the more weight surface winds have
-                               surface_weight = (1 - float(last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+                               # Which wind vector to use?
+                               if wind_rates is None:
+                                   lat_wind_rate = k[4]
+                                   lon_wind_rate = k[5]
+                               else:
+                                   surface_weight = (1 - (k[0] - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+                                   if surface_weight > 1:
+                                       surface_weight = 1
+                                   if surface_weight < 0:
+                                       surface_weight = 0
 
-                               if surface_weight > 1:
-                                   surface_weight = 1
-                               if surface_weight < 0:
-                                   surface_weight = 0
+                                   if k[0] >= surface_wind_threshold:
+                                       surface_weight = 0
 
-                               debugmsg("surface wind weighting: %f, alt: %f" % (surface_weight, k[0]))
+                                   lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * k[4]
+                                   lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * k[5]
 
-                               # compute weighted avg of wind vectors
-                               lat_rate = surface_weight * avg_lat_rate + (1 - surface_weight) * k[4]
-                               lon_rate = surface_weight * avg_lon_rate + (1 - surface_weight) * k[5]
+                               # If this is true then the flight is already descending below the surface_wind_threshold
+                               if use_surface_wind:
+                                   # Weighting for surface winds components.  The closer to landing, the more weight surface winds have.
+                                   surface_weight = (1 - (last_heard_altitude - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
+
+                                   if surface_weight > 1:
+                                       surface_weight = 1
+                                   if surface_weight < 0:
+                                       surface_weight = 0
+
+                                   # compute weighted avg of wind vectors
+                                   lat_rate = surface_weight * avg_lat_rate + (1 - surface_weight) * lat_wind_rate
+                                   lon_rate = surface_weight * avg_lon_rate + (1 - surface_weight) * lon_wind_rate
+                                   debugmsg("///////> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, avg_lat_rate: %f, avg_lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate, avg_lat_rate, avg_lon_rate))
+
+                               # the flight has yet to descend below the surface_wind_threshold
+                               else:
+                                   lat_rate = lat_wind_rate
+                                   lon_rate = lon_wind_rate
+                                   #debugmsg("##====> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, k[4]: %f, k[5]: %f" % (surface_weight, k[0], lat_rate, lon_rate, k[4], k[5]))
+
+                               #debugmsg("surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate))
 
                                dx = t * lat_rate
                                dy = t * lon_rate
@@ -1014,6 +1069,183 @@ class LandingPredictor(PredictorBase):
             return []
 
 
+    ################################
+    # This will query the database looking for weather stations near the latest landing prediction and/or the current
+    # location (from GPS).  
+    # This will return a list containing two surface wind values:
+    #    returned tuple:  [ lat_wind_rate, lon_wind_rate ], validity
+    #
+    def getSurfaceWinds(self, flightid):
+
+        # Check if we're connected to the database or not.
+        if not self.connectToDatabase() or flightid is None:
+            return ([], False)
+
+        try: 
+            validity = False
+
+            # Execute the SQL statment and get all rows returned
+            wxcur = self.landingconn.cursor()
+
+            # Get the latest GPS coords for a flight
+            lastlandingprediction_sql = """
+                select 
+                    l.tm as thetime,
+                    st_y(l.location2d) as lat,
+                    st_x(l.location2d) as lon
+
+                from
+                    landingpredictions l
+
+                where 
+                    l.flightid = %s
+                    and l.tm > (now() - interval '06:00:00')
+                    and l.tm > now()::date
+
+                order by
+                    l.tm desc 
+                
+                limit 1
+                ;
+            """
+
+            wxcur.execute(lastlandingprediction_sql, [ flightid ])
+            rows = wxcur.fetchall()
+
+            # notes on wind directions...
+            # wind heading:  this is the direction the wind is blowing "from".  Basically the direction a weather vane will point when placed in the wind.
+            # wind bearing:  this is the direction the wind is blowing "to".  
+            windrates = []
+
+            # if there were rows returned then proceed to get the surface winds at that location
+            if len(rows) > 0:
+                position = [ float(rows[0][1]), float(rows[0][2]) ]
+                #print "position: ", position
+                wx_sql = """
+                    select 
+                        d.weighted_avg_lat / (5280 * 24901.461 / 360) as lat_s,
+                        d.weighted_avg_lon / (5280 * 2 * pi() * 3963.0 * cos(radians(%s)) / 360) as lon_s,
+                        round(sqrt(d.weighted_avg_lat^2 + d.weighted_avg_lon^2), 2) as wind_magnitude_fts,
+                        round(sqrt(d.weighted_avg_lat^2 + d.weighted_avg_lon^2) * 3600.0/5280.0, 2) as wind_magnitude_mph
+
+                    from 
+                    (select 
+                        avg(c.wind_fts_lat) as wind_avg_fts_lat,
+                        avg(c.wind_fts_lon) as wind_avg_fts_lon,
+                        sum(c.wind_fts_lat * 100 / (1.12 ^ c.distance_miles)) / sum(100 / (1.12 ^ c.distance_miles)) as weighted_avg_lat,
+                        sum(c.wind_fts_lon * 100 / (1.12 ^ c.distance_miles)) / sum(100 / (1.12 ^ c.distance_miles)) as weighted_avg_lon
+
+                    from
+                        (select
+                            b.thetime,
+                            b.callsign,
+                            b.lat,
+                            b.lon,
+                            round(b.distance, 3) as distance_miles,
+                            b.wind_magnitude_mph,
+                            b.wind_angle_bearing,
+                            b.wind_angle_heading,
+                            round((b.wind_magnitude_mph * (5280.0 / 3600.0) * cos(radians(b.wind_angle_bearing)))::numeric, 6) as wind_fts_lat,
+                            round((b.wind_magnitude_mph * (5280.0 / 3600.0) * sin(radians(b.wind_angle_bearing)))::numeric, 6) as wind_fts_lon
+
+                            from
+                                (select
+                                    date_trunc('second', a.tm)::time without time zone as thetime,
+                                    a.callsign, 
+                                    round(ST_Y(a.location2d)::numeric, 6) as lat,
+                                    round(ST_X(a.location2d)::numeric, 6) as lon,
+                                    cast(ST_DistanceSphere(ST_GeomFromText('POINT(%s %s)',4326), a.location2d)*.621371/1000 as numeric) as distance,
+                                    case
+                                        when a.ptype = '@' and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' then 
+                                            case when to_number(substring(a.raw from position('_' in a.raw) + 1 for 3), '999') <= 180 then
+                                                to_number(substring(a.raw from position('_' in a.raw) + 1 for 3), '999') + 180
+                                            else
+                                                to_number(substring(a.raw from position('_' in a.raw) + 1 for 3), '999') - 180
+                                            end
+                                        else
+                                            NULL
+                                    end as wind_angle_bearing,
+                                    case
+                                        when a.ptype = '@' and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' then 
+                                            to_number(substring(a.raw from position('_' in a.raw) + 1 for 3), '999')
+                                        else
+                                            NULL
+                                    end as wind_angle_heading,
+                                    case
+                                        when a.ptype = '@' and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' then 
+                                            to_number(substring(a.raw from position('_' in a.raw) + 5 for 3), '999')
+                                        else
+                                            NULL
+                                    end as wind_magnitude_mph,
+                                    a.raw
+
+                                from
+                                    packets a
+                                    left outer join 
+                                        (select
+                                            max(a.tm) as thetime,
+                                            a.callsign
+
+                                        from
+                                            packets a
+
+                                        where 
+                                            a.tm > now()::date
+                                            and a.ptype = '@'
+                                            and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' 
+
+                                        group by
+                                            a.callsign
+
+                                        order by
+                                            thetime asc
+                                        ) as a1
+                                        on a.tm = a1.thetime and a.callsign = a1.callsign
+
+                                where 
+                                    a.tm > now()::date
+                                    and a1.callsign is not null
+                                    and a.ptype = '@'
+
+                                order by
+                                    a.tm asc
+                                ) as b
+
+                            where 
+                                b.wind_angle_bearing is not null
+                                and b.wind_magnitude_mph is not null
+                                and b.distance < 75 
+                                and b.thetime > (now() - interval '02:00:00')::time
+
+                            order by 
+                                distance_miles asc
+
+                        ) as c
+                    ) as d
+                    ;
+                """
+                wxcur.execute(wx_sql, [ position[0], position[1], position[0] ])
+                wxrows = wxcur.fetchall()
+                if len(wxrows) > 0:
+                    if wxrows[0][0] is not None and wxrows[0][1] is not None:
+                        windrates = [ float(wxrows[0][0]), float(wxrows[0][1]) ]
+                        validity = True
+                        debugmsg("windrates[0]: %f, windrates[1]: %f " % (windrates[0], windrates[1]))
+                    else:
+                        windrates = []
+                        validity = False
+
+            wxcur.close()
+            return (windrates, validity)
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            wxcur.close()
+            self.landingconn.close()
+            print(error)
+            return ([], False)
+
+
 
     ################################
     # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
@@ -1297,49 +1529,68 @@ class LandingPredictor(PredictorBase):
                     # END:  adjust the prediction floor
                     ####################################
 
-                    # Call the prediction algo
-                    flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
+                    # Get the surface winds at the landing location:
+                    winds, validity = self.getSurfaceWinds(fid)
+                    #print "winds: ", winds
+                    #print "validity: ", validity
+                    
+                    if not validity:
+                        winds = None
+                        predtypes = ["predicted"]
+                    else:
+                        predtypes = ["predicted", "wind_adjusted"]
 
-                    ####################################
-                    # START:  insert predicted landing record into the database
-                    ####################################
-                    # Set the initial value of the LINESTRING text to nothing.
-                    linestring_text = ""
-                    m = 0
+                    for predictiontype in predtypes:
+
+                        if predictiontype == "wind_adjusted":
+                            # Call the prediction algo
+                            debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
+                            flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
+                        else:
+                            # Call the prediction algo
+                            debugmsg("Running prediction regular prediction")
+                            flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
+
+                        ####################################
+                        # START:  insert predicted landing record into the database
+                        ####################################
+                        # Set the initial value of the LINESTRING text to nothing.
+                        linestring_text = ""
+                        m = 0
 
 
-                    # If there was a prediction calculated
-                    if flightpath:
-                        # Now loop through each of these points and create the LINESTRING
-                        for u,v,t in flightpath:
-                            if m > 0:
-                                linestring_text = linestring_text + ", "
-                            linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
-                            m += 1
-                        linestring_text = "LINESTRING(" + linestring_text + ")"
-                        if m < 2:
-                            linestring_text = None
+                        # If there was a prediction calculated
+                        if flightpath:
+                            # Now loop through each of these points and create the LINESTRING
+                            for u,v,t in flightpath:
+                                if m > 0:
+                                    linestring_text = linestring_text + ", "
+                                linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                                m += 1
+                            linestring_text = "LINESTRING(" + linestring_text + ")"
+                            if m < 2:
+                                linestring_text = None
 
-                        # The SQL for inserting this prediction record into the database
-                        landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) 
-                            values (now(), 
-                            %s, 
-                            %s, 
-                            'predicted', 
-                            %s::numeric, 
-                            ST_GeometryFromText('POINT(%s %s)', 4326), 
-                            ST_GeometryFromText(%s, 4326), 
-                            %s::numeric);"""
+                            # The SQL for inserting this prediction record into the database
+                            landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) 
+                                values (now(), 
+                                %s, 
+                                %s, 
+                                %s, 
+                                %s::numeric, 
+                                ST_GeometryFromText('POINT(%s %s)', 4326), 
+                                ST_GeometryFromText(%s, 4326), 
+                                %s::numeric);"""
 
-                        #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+                            #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
 
-                        ts = datetime.datetime.now()
-                        debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
-                        debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+                            ts = datetime.datetime.now()
+                            debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
+                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
-                        # execute the SQL insert statement
-                        landingcur.execute(landingprediction_sql, [ fid, callsign, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2])) ])
-                        self.landingconn.commit()
+                            # execute the SQL insert statement
+                            landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2])) ])
+                            self.landingconn.commit()
 
 
                     ####################################
@@ -1500,7 +1751,7 @@ class LandingPredictor(PredictorBase):
             self.landingconn.close()
 
         # Close the database connection
-        debugmsg("Closing databse connections...")
+        debugmsg("Closing database connections...")
         landingcur.close()
         self.landingconn.close()
 
