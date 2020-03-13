@@ -1107,7 +1107,7 @@ def main():
         processes.append(aprstap)
 
         # This is the CWOP connection tap.  This is the process that is responsible for inserting CWOP packets into the database
-        cwoptap = mp.Process(name="CWOP Tap", target=tapProcess, args=(configuration, "cwop.aprs.net", "cwop", options.aprsisRadius, stopevent))
+        cwoptap = mp.Process(name="CWOP Tap", target=tapProcess, args=(configuration, "cwop.aprs.net", "cwop", 200, stopevent))
         cwoptap.daemon = True
         cwoptap.name = "CWOP Tap"
         processes.append(cwoptap)
