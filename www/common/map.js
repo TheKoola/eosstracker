@@ -1452,15 +1452,26 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
+        var osmbright = L.mapboxGL({
+            accessToken: 'notneeded',
+            style: '/tileserver/styles/osm-bright/style.json'
+            //style: '/common/osm-bright-gl-style.json'
+        });
+
+        var basic = L.mapboxGL({
+            accessToken: 'notneeded',
+            style: '/tileserver/styles/klokantech-basic/style.json'
+        });
+        
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ tilelayer ]
+            layers : [ osmbright ]
         });
 
-        tilelayer.addTo(map);		
+        //tilelayer.addTo(map);		
 
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
@@ -1482,7 +1493,7 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
-        baselayer = { "OSM Base Map" : tilelayer };
+        baselayer = { "Base Map (raster)" : tilelayer, "Bright (vector)" : osmbright, "Basic (vector)" : basic };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 

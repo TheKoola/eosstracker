@@ -70,6 +70,14 @@ else
 <script src="/common/Control.SimpleMarkers.js"></script>
 <script src="/common/leaflet.rotatedMarker.js"></script>
 
+<!-- Mapbox GL JS -->
+<script src="/common/mapbox-gl.js"></script>
+<link href="/common/mapbox-gl.css" rel="stylesheet">
+
+<!-- Leaflet shim for mapbox -->
+<script src="/common/leaflet-mapbox-gl.js"></script>
+
+
 </head>
 <body>
 
