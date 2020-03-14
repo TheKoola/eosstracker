@@ -29,7 +29,7 @@
     
     $startup_script = "/eosstracker/bin/start_session.bash";
 
-    $output = shell_exec('sudo -b -u eosstracker ' . $startup_script);
+    $output = shell_exec('sudo -H -b -u eosstracker ' . $startup_script);
     //printf ("%s", json_encode($output));
     //printf ("[]");
     printf ("%s", $output);
