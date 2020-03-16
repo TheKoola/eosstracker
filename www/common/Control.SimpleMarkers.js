@@ -171,9 +171,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 	      // Set the initial popup content to just the Latitude, Longitude.
           var popupContent = "<div id=\"" + id + "\">"
               + "<div style=\"text-align: center;\"><table style=\"margin: 0 auto;\"><tr><td><span style=\"text-align: center;\"" + "id=\"" + id + "-coords\">"
-              + Math.round(e.latlng.lat * 1000) / 1000 
+              + Math.round(e.latlng.lat * 10000) / 10000 
               + ", " 
-              + Math.round(e.latlng.lng * 1000) / 1000 
+              + Math.round(e.latlng.lng * 10000) / 10000 
               + "</span></td>"
               + "<td><img src=\"/images/graphics/clipboard.png\" style=\"height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">"
               + "</td></tr></table></div>"
@@ -209,7 +209,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
               var coords = L.DomUtil.get(elemId + "-coords");
               var content = L.DomUtil.get(elemId + "-content");
-              var latlon = Math.round(e.target.getLatLng().lat * 1000) / 1000 + ", " + Math.round(e.target.getLatLng().lng * 1000) / 1000;
+              var latlon = Math.round(e.target.getLatLng().lat * 10000) / 10000 + ", " + Math.round(e.target.getLatLng().lng * 10000) / 10000;
 
               var newContent = "<div id=\"" + elemId + "\" >"
                   + "<div style=\"text-align: center;\"><table style=\"margin: 0 auto;\"><tr><td><span style=\"text-align: center;\"" + "id=\"" + elemId + "-coords\">"
