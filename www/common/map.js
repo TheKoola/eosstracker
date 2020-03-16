@@ -1468,10 +1468,8 @@ function getTrackers() {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ osmbright ]
+            layers : [ tilelayer ]
         });
-
-        //tilelayer.addTo(map);		
 
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
