@@ -296,8 +296,9 @@ class APRSIS(object):
                     self.ais.close()
 
                 except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
-                    print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
-                    sys.stdout.flush()
+                    pass
+                    #print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
+                    #sys.stdout.flush()
 
                 finally:
                     # Increment trycount each time through the loop
