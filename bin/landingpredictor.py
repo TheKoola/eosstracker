@@ -447,8 +447,8 @@ class PredictorBase(object):
             # The flight is at an altitude where surface winds are taking over....
             use_surface_wind = False
             surface_exponent_weight = 2
-            surface_wind_threshold = 8000 + self.prediction_floor
-            surface_wind_cutoff = 3000 + self.prediction_floor
+            surface_wind_threshold = 6000 + self.prediction_floor
+            surface_wind_cutoff = 2500 + self.prediction_floor
             debugmsg("surface_wind_threshold: %f, surface_wind_cutoff: %f" % (surface_wind_threshold, surface_wind_cutoff))
             if last_heard_altitude < surface_wind_threshold:
 
@@ -503,6 +503,7 @@ class PredictorBase(object):
 
             # this is the list of points that comprise the flight path, setting to empty values prior to entering the loop
             flightpath_deltas = []
+            flightpath_altitudes = []
 
             # This is the time to live until landing, in seconds
             ttl = 0
@@ -510,7 +511,6 @@ class PredictorBase(object):
             ####################################
             # END:  initialize loop variables
             ####################################
-
 
 
             ####################################
@@ -547,10 +547,6 @@ class PredictorBase(object):
 
                        avg_asc_rate = np.mean(ascent_portion[lower_idx:upper_idx, 3])
                        delta = avg_asc_rate - k[3] 
-                       #if debug: 
-                       #    print "lower_idx: %d, upper_idx: %d " % (lower_idx, upper_idx), "averaging:",  np.round(ascent_portion[lower_idx:upper_idx, 3])
-                       #    print "lower_idx: %d, upper_idx: %d " % (lower_idx, upper_idx), "altitudes:",  np.round(ascent_portion[lower_idx:upper_idx, 0])
-                       #    sys.stdout.flush()
 
                        t = 0
                        h_range = []
@@ -559,16 +555,10 @@ class PredictorBase(object):
                            v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
                            v_avg = (v_0 + v_1) / 2.0
                            t = abs((k[0] - backstop) / v_avg)
-                           #t = abs( (k[0] - backstop) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
-
-                       #    if debug:
-                       #        print "        alt: %d  k[0]: %d, backstop: %d, t: %f" %(last_heard_altitude, k[0], backstop, t)
-                       #        sys.stdout.flush()
 
                        else:
                            h_range = np.arange(backstop + step_size, k[0], step_size)
                            for h in h_range:
-                               #t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
                                v_0 =  function_weight * self.func_x2(h-step_size, *p) + (1 - function_weight) * pred_v_curve(h-step_size)
                                v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
                                v_avg = (v_0 + v_1) / 2.0
@@ -578,13 +568,7 @@ class PredictorBase(object):
                            v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
                            v_avg = (v_0 + v_1) / 2.0
                            t += abs((k[0] - h_range[-1]) / v_avg)
-                           #t += abs( (k[0] - h_range[-1]) / ((function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])) + delta))
 
-                       #    if debug:
-                       #        print "        alt:  %d, k[0]: %d, backstop: %d, t: %f, h_range[-1]: %d" % (last_heard_altitude, k[0], backstop, t, h_range[-1])
-                       #        print "            h_range: ", h_range
-                       #        sys.stdout.flush()
-                    
 
                        if surface_winds:
 
@@ -628,9 +612,6 @@ class PredictorBase(object):
                            else:
                                lat_rate = lat_wind_rate
                                lon_rate = lon_wind_rate 
-                               #debugmsg("##=====> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, k[4]: %f, k[5]: %f" % (surface_weight, k[0], lat_rate, lon_rate, k[4], k[5]))
-
-                           #debugmsg("surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate))
 
                            dx = t * lat_rate
                            dy = t * lon_rate
@@ -642,7 +623,11 @@ class PredictorBase(object):
                        y += dy
                        ttl += t
                        debugmsg("TOP:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
-                       flightpath_deltas.append((dx, dy, ttl))
+                       if k_idx == 0:
+                           a = self.prediction_floor
+                       else:
+                           a = ascent_portion[k_idx - 1,0]
+                       flightpath_deltas.append((dx, dy, ttl, a))
 
                    
                    else:
@@ -663,7 +648,6 @@ class PredictorBase(object):
                            t = 0
                            h_range = []
                            if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
-                               #t = abs( (last_heard_altitude - backstop) / (balloon_velocities[-1] + delta))
                                v_0 =  function_weight * self.func_x2(backstop, *p) + (1 - function_weight) * pred_v_curve(backstop)
                                v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
                                v_avg = (v_0 + v_1) / 2.0
@@ -675,13 +659,11 @@ class PredictorBase(object):
                                    v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
                                    v_avg = (v_0 + v_1) / 2.0
                                    t += abs(step_size / v_avg)
-                                   #t += abs( (step_size) / ((function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)) + delta))
 
                                v_0 =  function_weight * self.func_x2(h_range[-1], *p) + (1 - function_weight) * pred_v_curve(h_range[-1])
                                v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
                                v_avg = (v_0 + v_1) / 2.0
                                t += abs((last_heard_altitude - h_range[-1]) / v_avg)
-                               #t += abs( (last_heard_altitude - h_range[-1]) / (balloon_velocities[-1] + delta))
 
                            if surface_winds:
 
@@ -721,9 +703,6 @@ class PredictorBase(object):
                                else:
                                    lat_rate = lat_wind_rate
                                    lon_rate = lon_wind_rate
-                                   #debugmsg("##====> surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f, k[4]: %f, k[5]: %f" % (surface_weight, k[0], lat_rate, lon_rate, k[4], k[5]))
-
-                               #debugmsg("surface wind weighting: %f, alt: %f, lat_rate: %f, lon_rate: %f" % (surface_weight, k[0], lat_rate, lon_rate))
 
                                dx = t * lat_rate
                                dy = t * lon_rate
@@ -735,7 +714,11 @@ class PredictorBase(object):
                            y += dy
                            ttl += t
                            debugmsg("BOTTOM:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
-                           flightpath_deltas.append((dx, dy, ttl))
+                           if k_idx == 0:
+                               a = self.prediction_floor
+                           else:
+                               a = ascent_portion[k_idx - 1,0]
+                           flightpath_deltas.append((dx, dy, ttl, a))
 
                    # END:  if k[0] < last_heard_altitude:
 
@@ -756,7 +739,7 @@ class PredictorBase(object):
             ####################################
 
             # The first point in the predicted flight path is the latest position of the flight
-            flightpath_points = [(descent_portion[-1,1], descent_portion[-1,2], ttl)]
+            flightpath_points = [(descent_portion[-1,1], descent_portion[-1,2], ttl, last_heard_altitude)]
 
             # Set the previous lat/lon points to the last value of the flightpath_points array, which should be 
             # the last position of the flight.
@@ -764,18 +747,16 @@ class PredictorBase(object):
             prev_y = flightpath_points[-1][1]
 
             # Collect the points determined along the way
-            for u,v,t in flightpath_deltas[::-1]:
+            # This is reversed because the prediction loop (above) runs from the prediction_floor up to the last_heard_altitude, basically calculating
+            # the delta points in reverse.
+            for u,v,t,a in flightpath_deltas[::-1]:
                 pos_x = prev_x + u 
                 pos_y = prev_y + v 
-                flightpath_points.insert(0, (pos_x, pos_y, t))
+                flightpath_points.append((pos_x, pos_y, t, a))
                 prev_x = pos_x
                 prev_y = pos_y
 
-            #if debug:
-            #    print "flightpath_points: ", flightpath_points
-
-            return flightpath_points[::-1]
-
+            return flightpath_points
 
 
 #####################################
@@ -867,6 +848,7 @@ class LandingPredictor(PredictorBase):
                 if self.landingconn.closed:
                     debugmsg("Connecting to the database: %s" % self.dbstring)
                     self.landingconn = pg.connect (self.dbstring)
+                    self.landingconn.set_session(autocommit=True)
 
             return True
 
@@ -1126,7 +1108,47 @@ class LandingPredictor(PredictorBase):
                         d.weighted_avg_lat / (5280 * 24901.461 / 360) as lat_s,
                         d.weighted_avg_lon / (5280 * 2 * pi() * 3963.0 * cos(radians(%s)) / 360) as lon_s,
                         round(sqrt(d.weighted_avg_lat^2 + d.weighted_avg_lon^2), 2) as wind_magnitude_fts,
-                        round(sqrt(d.weighted_avg_lat^2 + d.weighted_avg_lon^2) * 3600.0/5280.0, 2) as wind_magnitude_mph
+                        round(sqrt(d.weighted_avg_lat^2 + d.weighted_avg_lon^2) * 3600.0/5280.0, 2) as wind_magnitude_mph,
+
+                        case
+                        -- Quadrant I
+                        when d.weighted_avg_lat > 0 and d.weighted_avg_lon > 0 then
+                            round(degrees(atan(d.weighted_avg_lon / d.weighted_avg_lat))+ 180.0)
+
+                       -- Quadrant II
+                        when d.weighted_avg_lat < 0 and d.weighted_avg_lon > 0 then
+                            round(degrees(atan(-d.weighted_avg_lat / d.weighted_avg_lon)) + 90.0 + 180.0)
+
+                       -- Quadrant III
+                        when d.weighted_avg_lat < 0 and d.weighted_avg_lon < 0 then
+                            round(degrees(atan(d.weighted_avg_lon / d.weighted_avg_lat)) + 180.0 - 180.0)
+
+                       -- Quadrant IV
+                        when d.weighted_avg_lat > 0 and d.weighted_avg_lon < 0 then
+                            round(degrees(atan(d.weighted_avg_lat / -d.weighted_avg_lon)) + 270.0 - 180.0)
+                        else
+                            NULL
+                        end as wind_heading,
+
+                        case
+                        -- Quadrant I
+                        when d.weighted_avg_lat > 0 and d.weighted_avg_lon > 0 then
+                            round(degrees(atan(d.weighted_avg_lon / d.weighted_avg_lat)))
+
+                        -- Quadrant II
+                        when d.weighted_avg_lat < 0 and d.weighted_avg_lon > 0 then
+                            round(degrees(atan(-d.weighted_avg_lat / d.weighted_avg_lon)) + 90.0)
+
+                        -- Quadrant III
+                        when d.weighted_avg_lat < 0 and d.weighted_avg_lon < 0 then
+                            round(degrees(atan(d.weighted_avg_lon / d.weighted_avg_lat)) + 180.0)
+
+                        -- Quadrant IV
+                        when d.weighted_avg_lat > 0 and d.weighted_avg_lon < 0 then
+                            round(degrees(atan(d.weighted_avg_lat / -d.weighted_avg_lon)) + 270.0)
+                        else
+                            NULL
+                        end as wind_bearing
 
                     from 
                     (select 
@@ -1228,7 +1250,7 @@ class LandingPredictor(PredictorBase):
                 wxrows = wxcur.fetchall()
                 if len(wxrows) > 0:
                     if wxrows[0][0] is not None and wxrows[0][1] is not None:
-                        windrates = [ float(wxrows[0][0]), float(wxrows[0][1]) ]
+                        windrates = [ float(wxrows[0][0]), float(wxrows[0][1]), float(wxrows[0][3]), float(wxrows[0][4]), float(wxrows[0][5]) ]
                         validity = True
                         debugmsg("windrates[0]: %f, windrates[1]: %f " % (windrates[0], windrates[1]))
                     else:
@@ -1537,8 +1559,10 @@ class LandingPredictor(PredictorBase):
                     if not validity:
                         winds = None
                         predtypes = ["predicted"]
+                        wind_text = None
                     else:
                         predtypes = ["predicted", "wind_adjusted"]
+                        wind_text = "ARRAY[" + str(round(winds[2])) + ", " + str(round(winds[3])) + ", " + str(round(winds[4])) + "]"
 
                     for predictiontype in predtypes:
 
@@ -1556,40 +1580,40 @@ class LandingPredictor(PredictorBase):
                         ####################################
                         # Set the initial value of the LINESTRING text to nothing.
                         linestring_text = ""
+                        array_text = ""
                         m = 0
 
 
                         # If there was a prediction calculated
                         if flightpath:
                             # Now loop through each of these points and create the LINESTRING
-                            for u,v,t in flightpath:
+                            for u,v,t,a in flightpath:
                                 if m > 0:
                                     linestring_text = linestring_text + ", "
+                                    array_text = array_text + ", "
                                 linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                                array_elem = "[" + str(round(u,6)) + ", " + str(round(v,6)) + ", " + str(round(t,4)) + ", " + str(round(a)) + "]"
+                                array_text = array_text + array_elem
                                 m += 1
                             linestring_text = "LINESTRING(" + linestring_text + ")"
+                            array_text = "ARRAY[" + array_text + "]"
                             if m < 2:
                                 linestring_text = None
+                                array_text = None
 
                             # The SQL for inserting this prediction record into the database
-                            landingprediction_sql = """insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl) 
-                                values (now(), 
-                                %s, 
-                                %s, 
-                                %s, 
-                                %s::numeric, 
-                                ST_GeometryFromText('POINT(%s %s)', 4326), 
-                                ST_GeometryFromText(%s, 4326), 
-                                %s::numeric);"""
-
-                            #debugmsg("SQL: " + landingprediction_sql % (fid, callsign, "0", str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+                            landingprediction_sql = """ insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl """ + (", patharray " if array_text else "") + (", winds " if wind_text else "") + """) values (now(), %s, %s, %s, %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric """ + (", " + array_text if array_text else "") + (", " + wind_text if wind_text else "") +  """);"""
 
                             ts = datetime.datetime.now()
+
+                            #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+                            #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
+
                             debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
                             debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
                             # execute the SQL insert statement
-                            landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2])) ])
+                            landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
                             self.landingconn.commit()
 
 
@@ -1772,10 +1796,11 @@ def runLandingPredictor(schedule, e, config):
             # Database connection 
             dbconn = None
             dbconn = pg.connect (habconfig.dbConnectionString)
+            dbconn.set_session(autocommit=True)
             dbcur = dbconn.cursor()
 
             # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-            check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric") ]
+            check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric"), ("patharray", "numeric[][]"), ("winds", "numeric[]") ]
 
             for column, coltype in check_columns:
                 # SQL to check if the column exists or not

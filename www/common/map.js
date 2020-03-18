@@ -514,10 +514,11 @@
 
                     // If this object has a tooltip or label defined...
                     // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  That's because we'll use a "circleMarker" object 
-                    // instead of a bonfied marker with custom icon.
+                    // instead of a bonified marker with custom icon.
                     var theoffset = [0, 0];
                     if (feature.properties.objecttype == "balloonmarker")
                         theoffset = [0, -12];
+
 
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
@@ -677,7 +678,7 @@
                 var html = "";
                 var objecttype = feature.properties.objecttype;
 
-                if (objecttype == "landingprediction") {
+                if (objecttype == "landingprediction" || objecttype == "balloonmarker") {
                     var id = feature.properties.id;
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
@@ -693,45 +694,69 @@
 
 
                     // Popup for the landing prediction point
-		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+		            layer.bindPopup(html, {className:  'myPopupStyle'} );
 
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+
+                    // If this object has a tooltip or label defined...
+                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  
+                    // That's because we'll use a "circleMarker" object instead of a bonified marker with custom icon.
+                    var theoffset = [0, 0];
+                    if (feature.properties.objecttype == "balloonmarker")
+                        theoffset = [0, -12];
+
+                    var mappane;
+                    if (objecttype == "landingprediction")
+                        mappane = "flightTooltipPane";
+                    else
+                        mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
                             if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
+                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: mappane}).openTooltip();
                         }    
                         else {
                             if (feature.properties.tooltip != "")
-                                layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: "otherTooltipPane" } ).openTooltip();
+                                layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: mappane}).openTooltip();
                         }
                     }
-                    
                 }
            },
            pointToLayer:  function (feature, latlon) {
                var filename;
+               var markercolor = 'gray';
                var id = feature.properties.id;
                if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
                    filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
-               var iconsize_center = Math.trunc(iconsize/2);
-               var tipanchor = iconsize_center + 10;
 
-		       var myIcon = L.icon({
-		           iconUrl: filename,
-    		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
-    		       popupAnchor: [0, -iconsize_center],
-    		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+               // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
+               if (feature.properties.objecttype == "balloonmarker") {
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
 
-               return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
+		           return cm;
+               }
+
+               // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
+               else {
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize_center = Math.trunc(iconsize/2);
+                   var tipanchor = iconsize_center + 10;
+
+                   var myIcon = L.icon({
+                       iconUrl: filename,
+                       iconSize: [iconsize, iconsize],
+                       iconAnchor: [iconsize_center, iconsize_center], 
+                       popupAnchor: [0, -iconsize_center],
+                       tooltipAnchor: [0, tipanchor]
+                   }); 
+
+                   return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
+               }
            }
         }).on('update', function(ev) { updateLandingPredictions(ev, this); });
     }
@@ -1452,6 +1477,7 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
+        /*
         var osmbright = L.mapboxGL({
             accessToken: 'notneeded',
             style: '/tileserver/styles/osm-bright/style.json'
@@ -1462,6 +1488,7 @@ function getTrackers() {
             accessToken: 'notneeded',
             style: '/tileserver/styles/klokantech-basic/style.json'
         });
+        */
         
         // Create a map object. 
 	    map = new L.Map('map', {
@@ -1491,7 +1518,7 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
-        baselayer = { "Base Map (raster)" : tilelayer, "Bright (vector)" : osmbright, "Basic (vector)" : basic };
+        baselayer = { "Base Map (raster)" : tilelayer };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
