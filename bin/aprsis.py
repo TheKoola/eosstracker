@@ -361,6 +361,7 @@ class APRSIS(object):
             if not self.aprsconn:
                 debugmsg("Connecting to the database: %s" % self.dbstring)
                 self.aprsconn = pg.connect (self.dbstring)
+                self.aprsconn.set_session(autocommit=True)
 
             return True
 
@@ -584,11 +585,12 @@ class APRSIS(object):
                     info
                 ])
 
+            # Commit the insert to the database
+            self.aprsconn.commit()
+
             # Close the database cursor
             tapcur.close()
 
-            # Commit the insert to the database
-            self.aprsconn.commit()
              
 
         except (ValueError, UnicodeEncodeError) as error:
