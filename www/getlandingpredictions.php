@@ -166,10 +166,10 @@
     $thepath = array();
     while ($row = sql_fetch_array($result)) {
         $thetime = $row['tm'];
+        $callsign = $row['callsign'];
         $thepath[$callsign] = json_decode($row['thepath']);
         $thewind[$callsign] = json_decode($row['thewind']);
         $flightid = $row['flightid'];
-        $callsign = $row['callsign'];
         $thetype[$callsign] = $row['thetype'];
         $latitude = $row['lat'];
         $longitude = $row['long'];
