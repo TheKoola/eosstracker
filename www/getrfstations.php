@@ -143,10 +143,8 @@
                 where 
                 a.location2d != '' 
                 and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-
-                " .  
-                ($use_receive_level == True ?  " group by a.hash, packet_time, a.sourcename, a.comment, a.source_symbol, a.bearing, a.speed_mph, altitude, latitude, longitude, temperature_k, pressure_pa, ptype, a.heardfrom, freq" : "")
-                . "
+                
+                group by a.hash, packet_time, a.sourcename, a.comment, a.source_symbol, a.bearing, a.speed_mph, altitude, latitude, longitude, temperature_k, pressure_pa, ptype, a.heardfrom, freq
 
                 order by
                 a.hash
