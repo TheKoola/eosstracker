@@ -856,7 +856,8 @@
 			      "<strong>" + feature.properties.callsign + "</strong></a>";
 		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
 			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
+			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency + "MHz" + 
+                      (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? ", via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -972,9 +973,10 @@
 		              "&showallstations=1\">" + 
                       "<strong>" + item.properties.callsign + "</strong></a>";
 
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
+	        html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+		          (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + "MHz" +  
+                      (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? ", via: " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -1573,6 +1575,7 @@ function getTrackers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         //var allstations = L.markerClusterGroup();
         var allstations = L.layerGroup();
+        var allrfstations = L.layerGroup();
         var mystation = L.layerGroup();
         var wxstations = L.layerGroup();
 
@@ -1580,8 +1583,11 @@ function getTrackers() {
         var trackersatlarge = L.layerGroup();
 
         var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
-        if (showallstations == 1)
+        var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, function(){ return { color: 'black'}});
+        if (showallstations == 1) {
             a.addTo(map); 
+            a1.addTo(map); 
+        }
 
         var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
         var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
@@ -1589,14 +1595,16 @@ function getTrackers() {
         b.addTo(map);
         c.addTo(map);
         realtimelayers.push(a);
+        realtimelayers.push(a1);
         realtimelayers.push(b);
         realtimelayers.push(c);
         realtimelayers.push(d);
 
-        layerControl.addOverlay(allstations, "All Other Stations", "Generic Stations");
-        layerControl.addOverlay(wxstations, "Weather Stations", "Generic Stations");
-        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Generic Stations");
-        layerControl.addOverlay(mystation, "My Location", "Generic Stations");
+        layerControl.addOverlay(mystation, "My Location", "Trackers and Location");
+        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Trackers and Location");
+        layerControl.addOverlay(allstations, "All Other Stations (Inet only)", "Other Stations");
+        layerControl.addOverlay(allrfstations, "All Other Stations (RF only)", "Other Stations");
+        layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
 
 
         /*
