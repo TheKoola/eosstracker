@@ -523,15 +523,15 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    packet["from"], 
-                    packet["symbol"], 
-                    packet["speed"], 
-                    packet["course"], 
-                    packet["altitude"], 
-                    packet["comment"], 
-                    packet["raw"], 
-                    ptype, 
-                    info
+                    packet["from"].strip(), 
+                    packet["symbol"].strip(), 
+                    packet["speed"],
+                    packet["course"],
+                    packet["altitude"],
+                    packet["comment"].strip(), 
+                    packet["raw"].strip(), 
+                    ptype.strip(), 
+                    info.strip()
                 ])
 
             else:
@@ -569,20 +569,20 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    packet["from"], 
-                    packet["symbol"], 
-                    packet["speed"], 
-                    packet["course"], 
-                    packet["altitude"], 
-                    packet["comment"], 
-                    packet["longitude"], 
-                    packet["latitude"], 
-                    packet["longitude"], 
-                    packet["latitude"], 
-                    packet["altitude"], 
-                    packet["raw"], 
-                    ptype,
-                    info
+                    packet["from"].strip(), 
+                    packet["symbol"].strip(), 
+                    packet["speed"],
+                    packet["course"],
+                    packet["altitude"],
+                    packet["comment"].strip(), 
+                    packet["longitude"],
+                    packet["latitude"],
+                    packet["longitude"],
+                    packet["latitude"],
+                    packet["altitude"],
+                    packet["raw"].strip(), 
+                    ptype.strip(),
+                    info.strip()
                 ])
 
             # Commit the insert to the database
