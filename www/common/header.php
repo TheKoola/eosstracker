@@ -58,29 +58,6 @@ else
 <link rel="stylesheet" href="/common/styles.css">
 
 </head>
-<?php
-    # This section determines if the ADS-B program dump1090-fa is installed.  If "yes" then (later on below) create a menu option for it.
-    # Specify that we don't care about self-signed SSL certs
-    $context = stream_context_create( [
-        'ssl' => [
-        'verify_peer' => false,
-        'verify_peer_name' => false,
-        ],
-    ]);
-
-    # If the dump1090-fa package has been installed, then this should be its URL
-    $dump1090fa_url = "https://" . $_SERVER["HTTP_HOST"] . "/dump1090-fa";
-
-    # Get HTML headers by trying to load the URL 
-    $file_headers = get_headers($dump1090fa_url, 0, $context);
-
-    # Check if the dump1090-fa package has been installed
-    if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
-        $exists = false;
-    else 
-        $exists = true;
-?>
-
 <body class="cover-page">
 <div class="logo">
      <div class="nodeid"><?php if (is_readable("nodeid.txt")) echo file_get_contents("nodeid.txt"); ?></div>
@@ -94,11 +71,7 @@ else
     <ul class="menubar">
         <li class="menubar"><a href="/home.php" class="navbar">Home</a></li>
         <li class="menubar"><a href="/setup.php" class="navbar">Setup</a></li>
-        <li class="menubar"><a href="/rawdata.php" class="navbar">Data</a></li>
-        <li class="menubar"><a href="/dashboard.php" target="_blank" class="navbar">Dashboard</a></li>
-        <?php if ($exists) { ?> <li class="menubar"><a href="/dump1090-fa" target="_blank" class="navbar">ADS-B</a></li> <?php } ?>
         <li class="menubar"><a id="maplink" href="/index.php" target="_blank" class="navbar">Map</a></li>
-        <li class="menubar"><a href="/about.php" class="navbar">About</a></li>
         </ul>
 </div>
 

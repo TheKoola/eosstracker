@@ -29,5 +29,5 @@
  *
  */
 
-    $logo = "EOSS Tracker";
+    $logo = "EOSS Tracker (Kiosk)";
 ?>

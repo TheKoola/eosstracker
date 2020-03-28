@@ -1695,9 +1695,10 @@ function getTrackers() {
     ***********/
     function initialize_layers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        //var allstations = L.markerClusterGroup();
-        var allstations = L.layerGroup();
-        var wxstations = L.layerGroup();
+        var allstations = L.markerClusterGroup();
+        var wxstations = L.markerClusterGroup();
+        //var allstations = L.layerGroup();
+        //var wxstations = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();

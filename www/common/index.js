@@ -308,7 +308,7 @@ function updateMapLink() {
             var zoom = 10;
 
             var maplink = document.getElementById("maplink");
-            var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+            var url = "/index.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
             maplink.setAttribute("href", url);
         });
     }, 10);
