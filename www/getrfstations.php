@@ -78,94 +78,127 @@
     ## query the last packets from stations...
     $query = "
         select distinct
-        f.thetime,
-        f.packet_time,
-        f.sourcename as callsign, 
-        f.comment, 
-        f.symbol, 
-        f.bearing,
-        f.speed_mph,
-        f.altitude, 
-        f.latitude, 
-        f.longitude,
-        f.temperature_k,
-        f.pressure_pa,
-        f.ptype,
-        f.heardfrom,
-        f.freq,
-        f.receive_level
+        g.thetime,
+        g.packet_time,
+        g.sourcename as callsign,
+        g.heardfrom,
+        g.comment, 
+        g.symbol, 
+        g.bearing,
+        g.speed_mph,
+        g.altitude, 
+        g.latitude, 
+        g.longitude,
+        g.temperature_k,
+        g.pressure_pa,
+        g.ptype,
+        g.freq,
+        g.receive_level
 
-        from 
+        from
         (
-                select distinct on (a.hash)
-                a.hash,
-                min(date_trunc('milliseconds', a.tm)::timestamp without time zone) as thetime,
-                case
-                    when a.raw similar to '%[0-9]{6}h%' then 
-                        date_trunc('milliseconds', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
-                    else
-                        date_trunc('milliseconds', a.tm)::time without time zone
-                end as packet_time,
-                a.sourcename, 
-                a.comment, 
-                a.source_symbol as symbol, 
-                a.bearing,
-                a.speed_mph,
-                round(a.altitude) as altitude, 
-                round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-                round(cast(ST_X(a.location2d) as numeric), 6) as longitude,
-                case 
-                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                        round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                    else
-                        NULL
-                end as temperature_k,
-                case 
-                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                    else
-                        NULL
-                end as pressure_pa,
-                case
-                    when position(':' in a.raw) > 0 then
-                        substring(a.raw from position(':' in a.raw) + 1 for 1)
-                    else
-                        NULL
-                end as ptype, 
-                a.heardfrom, 
-                round(a.freq / 1000000.0,3) as freq, " . 
-                ($use_receive_level == True ?  " case when a.heardfrom = a.sourcename then round(avg(a.receive_level)) else -1 end as receive_level" : "-1 as receive_level")
-                . "
+            select distinct
+            f.thetime,
+            f.packet_time,
+            f.sourcename,
+            f.comment, 
+            f.symbol, 
+            f.bearing,
+            f.speed_mph,
+            f.altitude, 
+            f.latitude, 
+            f.longitude,
+            f.temperature_k,
+            f.pressure_pa,
+            f.ptype,
+            f.heardfrom,
+            f.freq,
+            f.receive_level,
+            row_number () over (partition by f.sourcename order by f.thetime desc)
 
-                from 
-                dw_packets a
+            from 
+            (
+                    select distinct on (a.hash)
+                    a.hash,
+                    date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                    case
+                        when a.raw similar to '%[0-9]{6}h%' then 
+                            date_trunc('milliseconds', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                        else
+                            date_trunc('milliseconds', a.tm)::time without time zone
+                    end as packet_time,
+                    a.sourcename, 
+                    a.comment, 
+                    a.source_symbol as symbol, 
+                    a.bearing,
+                    a.speed_mph,
+                    round(a.altitude) as altitude, 
+                    round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
+                    round(cast(ST_X(a.location2d) as numeric), 6) as longitude,
+                    case 
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                        else
+                            NULL
+                    end as temperature_k,
+                    case 
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                            round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                        else
+                            NULL
+                    end as pressure_pa,
+                    case
+                        when position(':' in a.raw) > 0 then
+                            substring(a.raw from position(':' in a.raw) + 1 for 1)
+                        else
+                            NULL
+                    end as ptype, 
+                    a.heardfrom, 
+                    round(a.freq / 1000000.0,3) as freq, 
+                    dense_rank () over (partition by a.hash, date_trunc('minute', a.tm) order by cast(a.sourcename = a.heardfrom as int) desc), 
+                    " . 
+                    ($use_receive_level == True ?  " case when a.heardfrom = a.sourcename then a.receive_level else -1 end as receive_level" : "-1 as receive_level")
+                    . "
 
-                where 
-                a.location2d != '' 
-                and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-                
-                group by a.hash, packet_time, a.sourcename, a.comment, a.source_symbol, a.bearing, a.speed_mph, altitude, latitude, longitude, temperature_k, pressure_pa, ptype, a.heardfrom, freq
+                    from 
+                    dw_packets a
 
-                order by
-                a.hash
-        ) as f
-        left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on f.sourcename = b.callsign
-        left outer join (select t.callsign from trackers t order by t.callsign) as c 
-            on case
-               when c.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
-                   f.sourcename  = c.callsign
-               else 
-                   f.sourcename like c.callsign || '-%'
-            end
+                    where 
+                    a.location2d != '' 
+                    and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+                    
+                    --group by a.hash, packet_time, a.sourcename, a.comment, a.source_symbol, a.bearing, a.speed_mph, altitude, latitude, longitude, temperature_k, pressure_pa, ptype, a.heardfrom, freq
+
+                    order by
+                    a.hash
+            ) as f
+            left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on f.sourcename = b.callsign
+            left outer join (select t.callsign from trackers t order by t.callsign) as c 
+                on case
+                   when c.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
+                       f.sourcename  = c.callsign
+                   else 
+                       f.sourcename like c.callsign || '-%'
+                end
+
+            where 
+                b.callsign is null
+                and c.callsign is null
+                and f.symbol != '/_'
+                and f.dense_rank = 1
+
+            order by 
+            f.thetime asc,
+            f.sourcename
+        ) as g
 
         where 
-            b.callsign is null
-            and c.callsign is null
-            and f.symbol != '/_'
+        g.row_number = 1
 
-        order by 
-        f.thetime asc,
-        f.sourcename;
+        order by
+        g.thetime asc,
+        g.sourcename
+        ;
     ";
 
     $result = pg_query_params($link, $query, array(
