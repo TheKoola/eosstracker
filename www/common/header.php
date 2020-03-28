@@ -92,12 +92,12 @@ else
 <div class="menubar">
     
     <ul class="menubar">
-        <li class="menubar"><a href="/index.php" class="navbar">Home</a></li>
+        <li class="menubar"><a href="/home.php" class="navbar">Home</a></li>
         <li class="menubar"><a href="/setup.php" class="navbar">Setup</a></li>
         <li class="menubar"><a href="/rawdata.php" class="navbar">Data</a></li>
         <li class="menubar"><a href="/dashboard.php" target="_blank" class="navbar">Dashboard</a></li>
         <?php if ($exists) { ?> <li class="menubar"><a href="/dump1090-fa" target="_blank" class="navbar">ADS-B</a></li> <?php } ?>
-        <li class="menubar"><a id="maplink" href="/map.php" target="_blank" class="navbar">Map</a></li>
+        <li class="menubar"><a id="maplink" href="/index.php" target="_blank" class="navbar">Map</a></li>
         <li class="menubar"><a href="/about.php" class="navbar">About</a></li>
         </ul>
 </div>

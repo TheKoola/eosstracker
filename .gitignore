@@ -1,7 +1,7 @@
 # Ignore the maps, osm, db, and logs directories
-maps/
-osm/
-db/
+maps/*
+osm/*
+db/*
 logs/*
 lost+found
 www/nodeid.txt
@@ -13,3 +13,4 @@ bin/*.pyc
 doc/2019-GPSL-Presentation.pdf
 www/audio/*.mp3
 www/audio/*.json
+www/.htaccess
