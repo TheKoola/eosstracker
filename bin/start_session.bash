@@ -33,7 +33,7 @@
 #     This is the catch-all default callsign when operating in read-only (Internet) and receive-only (RF) mode.  It is NOT used
 #     when a user has entered their callsign through the web setup screens (ex. under Setup-->System Configuration).  This doesn't
 #     need to be edited.
-CALLSIGN="E0SS"
+CALLSIGN="AE0SS"
 
 # Locations of things
 HOMEDIR=/eosstracker
@@ -42,6 +42,7 @@ LOGDIR=${HOMEDIR}/logs
 HABTRACKERCMD=${BINDIR}/habtracker-daemon.py
 LOGFILE=${LOGDIR}/start_session.log
 STDERR=${LOGFILE}.stderr
+APRSISRADIUS=400
 
 
 # Check if things are running:
@@ -75,5 +76,5 @@ echo "###################" >> ${LOGFILE}
 #echo "###################" >> ${LOGFILE}
 
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
-nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &
+nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} --aprsisRadius=${APRSISRADIUS} >> ${LOGFILE} 2>${STDERR} &
 
