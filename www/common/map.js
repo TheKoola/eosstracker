@@ -1506,6 +1506,10 @@ function getTrackers() {
             layers : [ tilelayer ]
         });
 
+        // Set default map location and zoom
+        // This is Denver, CO: 39.739, -104.985
+	    map.setView(new L.LatLng(39.739, -104.985), 10);
+
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
         pathsPane.style.zIndex = 300; 
