@@ -83,33 +83,12 @@
            else 
                a.callsign like c.callsign || '-%'
         end
-        left outer join (
-            select distinct on (z.hash)
-            z.hash,
-            z.sourcename as callsign,
-            min(z.tm) as thetime
-
-            from
-            dw_packets z
-
-            where
-            z.location2d != '' 
-            and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
-
-            group by
-            z.hash,
-            z.sourcename
-
-            order by
-            z.hash
-        ) as dw on dw.callsign = a.callsign and (abs(extract(epoch from (dw.thetime  - a.tm))) < 1  or dw.thetime >= a.tm or dw.hash = a.hash)
 
         where 
         b.callsign is null
         and c.callsign is null
-        and dw.hash is null
         and a.location2d != '' 
-        and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+        and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
         and a.symbol != '/_'
 
         order by 
@@ -119,7 +98,6 @@
 
 
     $result = pg_query_params($link, $query, array(
-        sql_escape_string($config["lookbackperiod"] . " minute"),
         sql_escape_string($config["lookbackperiod"] . " minute")
     ));
     if (!$result) {
