@@ -33,9 +33,9 @@
     $config = readconfiguration();
 
     // The followme HTML GET variable
-    $get_followme = False;
+    $get_followme = "";
     if (isset($_GET["followme"]))  
-        $get_followme = True;
+        $get_followme = "True";
     if ($get_followme != "")
         $pagetitle = "APRS:  My Location";
 
@@ -47,26 +47,26 @@
         $pagetitle = "APRS:  " .  $get_followfeatureid;
 
     // The showallstations HTML GET variable
+    $get_showallstations = 0;
     if (isset($_GET["showallstations"]))
-        $get_showallstations = 1;
-    else
-        $get_showallstations = 0;
+        if (check_number($_GET["showallstations"], 0, 1))
+            $get_showallstations = intval($_GET["showallstations"]);
     
     // Sanitize the latitude HTML GET variable
-    $get_latitude = "";
+    $get_latitude = 0;
     if (isset($_GET["latitude"])) 
         if (check_number($_GET["latitude"], -90, 90))
             $get_latitude = floatval($_GET["latitude"]);
 
     // Sanitize the longitude HTML GET variable
-    $get_longitude = "";
+    $get_longitude = 0;
     if (isset($_GET["longitude"]))
         if (check_number($_GET["longitude"], -180, 180))
             $get_longitude = floatval($_GET["longitude"]);
 
 
     // Sanitize the zoom HTML GET variable
-    $get_zoom = "";
+    $get_zoom = 0;
     if (isset($_GET["zoom"]))
         if (check_number($_GET["zoom"], 1, 20))
             $get_zoom = intval($_GET["zoom"]);
@@ -122,10 +122,11 @@
     var flightids = <?php echo json_encode($output); ?>;
     var followfeatureid = "<?php echo $get_followfeatureid; ?>";
     var followme = "<?php echo $get_followme; ?>";
-    var showallstations = "<?php echo $get_showallstations; ?>";
-    var latitude = "<?php echo $get_latitude; ?>";
-    var longitude = "<?php echo $get_longitude; ?>";
-    var zoom = "<?php echo $get_zoom; ?>";
+    followme = (followme == "True" ? true : false);
+    var showallstations = Number("<?php echo $get_showallstations; ?>");
+    var latitude = Number("<?php echo $get_latitude; ?>");
+    var longitude = Number("<?php echo $get_longitude; ?>");
+    var zoom = Number("<?php echo $get_zoom; ?>");
 </script>
 <script src="/common/map.js"></script>
 <script>

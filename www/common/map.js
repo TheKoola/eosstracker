@@ -711,11 +711,7 @@
                     if (feature.properties.objecttype == "balloonmarker")
                         theoffset = [0, -12];
 
-                    var mappane;
-                    if (objecttype == "landingprediction")
-                        mappane = "flightTooltipPane";
-                    else
-                        mappane = "otherTooltipPane";
+                    var mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
@@ -1497,18 +1493,37 @@ function getTrackers() {
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
         
+        var themap;
+        var mapnum = 0;
+        switch (mapnum) {
+            case 0:
+                themap = tilelayer;
+            case 1:
+                themap = basic;
+            case 2:
+                themap = osmbright;
+            default:
+                themap = osmbright;
+        }
+
         
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ osmbright ]
+            layers : [ themap ],
+            minZoom: 4,
+            maxZoom: 20
         });
 
+        //console.log ("followme: " + followme + ", latitude: " + latitude + ", longitude: " + longitude + ", zoom: " + zoom + ", showallstations: " + showallstations);
         // Set default map location and zoom
-        // This is Denver, CO: 39.739, -104.985
-	    map.setView(new L.LatLng(39.739, -104.985), 10);
+        if (latitude != 0 && longitude != 0 && zoom != 0)
+            map.setView(new L.latLng(latitude, longitude), zoom);
+        else
+            // This is Denver, CO: 39.739, -104.985
+    	    map.setView(new L.latLng(39.739, -104.985), 10);
 
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
@@ -1572,7 +1587,7 @@ function getTrackers() {
 
         // Get the starting map position from gpsposition table on the server
         //
-        if (latitude != "" && longitude != "" && zoom != "") {
+        if (latitude != 0 && longitude != 0 && zoom != 0) {
             // if the latitude, longitude, and zoom global variables are set, then set the map center to those coords
             map.setView(new L.latLng(latitude, longitude), zoom);
             setGeoWatch();
@@ -1588,11 +1603,6 @@ function getTrackers() {
                 setGeoWatch();
             });
         }
-
-        // Set default map location and My Location
-        // This is Denver, CO: 39.739, -104.985
-	    //map.setView(new L.LatLng(39.739, -104.985), 10);
-        //createMyLocation(39.739, -104.985, 5280);
     }
 
     /***********
@@ -1628,8 +1638,8 @@ function getTrackers() {
     * This function is the callback function that the geolocation API, watchPosition, will call when the user's location has changed
     ***********/
     function setMyLocation(position) {
-        var lat = position.coords.latitude * 1.0;
-        var lon = position.coords.longitude * 1.0;
+        var lat = Number(position.coords.latitude);
+        var lon = Number(position.coords.longitude);
 
         // call to update the location marker on the map
         // the date/time for right now
@@ -1640,8 +1650,10 @@ function getTrackers() {
 
         // The HTML that will be inserted into the marker's popup box
         var html = "<a target=\"_blank\" href=\"index.php?followme=true" +
+            "&latitude=" + lat +
+            "&longitude=" + lon + 
             "&zoom=" + 
-            zoom +
+            map.getZoom() +
             "&showallstations=0\"><strong>My Location</strong></a>" + 
             (typeof(position.coords.altitude) != "undefined" ? "<br>Altitude: <font class=\"altitudestyle\">" + Math.round(position.coords.altitude * 3.2808).toLocaleString() + "ft</font>" : "") + 
             (typeof(position.coords.heading) != "undefined" ?  "<br>Heading: " + Math.round(position.coords.heading * 1.0).toLocaleString() + "&deg;" : "") + 
@@ -1678,6 +1690,11 @@ function getTrackers() {
             // Add the mystation layer to the map
             mystation.addTo(map);
 
+            // Pan the map to this location if it wasn't in followfeatureid mode
+            if (latitude == 0 || longitude == 0 || zoom == 0) {
+                map.panTo(new L.latLng(lat,lon));
+            }
+
             // Set our flag variable to true so we don't get here a 2nd time.
             locationSetup = true;
         }
@@ -1687,8 +1704,9 @@ function getTrackers() {
         }
 
         // If we're following our own location, then pan the map to this new location
-        if (followme == true)
+        if (followme == true) {
             map.panTo(new L.latLng(lat,lon));
+        }
     }
 
 
@@ -1721,7 +1739,6 @@ function getTrackers() {
         layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
         layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
         layerControl.addOverlay(allstations, "All Other Stations", "Other Stations");
-
 
         /*
         * This sets up all the flight layers.
@@ -1772,6 +1789,7 @@ function getTrackers() {
             layerControl.addOverlay(landingpredictionlayer_wind , "Landing Predictions", "Flight:  " + flightids[key].flightid);
          }
 
+        // Set up the map and get the My Location position
         set_map_center();
 
     }
