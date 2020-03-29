@@ -705,11 +705,7 @@
                     if (feature.properties.objecttype == "balloonmarker")
                         theoffset = [0, -12];
 
-                    var mappane;
-                    if (objecttype == "landingprediction")
-                        mappane = "flightTooltipPane";
-                    else
-                        mappane = "otherTooltipPane";
+                    var mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
@@ -1500,6 +1496,13 @@ function getTrackers() {
             layers : [ tilelayer ]
         });
 
+        // Set default map location and zoom
+        if (latitude != 0 && longitude != 0 && zoom != 0)
+            map.setView(new L.latLng(latitude, longitude), zoom);
+        else
+            // This is Denver, CO: 39.739, -104.985
+    	    map.setView(new L.latLng(39.739, -104.985), 10);
+
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
         pathsPane.style.zIndex = 300; 
@@ -1546,24 +1549,6 @@ function getTrackers() {
 	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
 	    map.addControl(marker_control);
 
-    }
-
-    /***********
-    * Set map center
-    *
-    * This function will set the map center based on the current latitude, longitude, and zoom level in the global variables:
-    *     latitude
-    *     longitude
-    *     zoom
-    ***********/
-    function set_map_center() {
-
-        // Set the map center position
-        if (latitude != "" && longitude != "" && zoom != "")
-	        map.setView(new L.LatLng(latitude, longitude), zoom);
-        else
-            // set the map default starting location.  This is Denver, CO: 39.739, -104.985
-	        map.setView(new L.LatLng(39.739, -104.985), 10);
     }
 
     /***********
@@ -1678,9 +1663,6 @@ function getTrackers() {
         // initialize the map and its layers
         initialize_map();
 
-        // set the map center
-        setTimeout(function() {set_map_center(); }, 10); 
-
         // load map layers
         setTimeout(function() { initialize_layers(); }, 10);
 
@@ -1771,10 +1753,10 @@ function getTrackers() {
             lastposition = JSON.parse(data);
             
             // Set the map center position
-            if (latitude != "" && longitude != "" && zoom != "")
-	            map.setView(new L.LatLng(latitude, longitude), zoom);
+            if (latitude != 0 && longitude != 0 && zoom != 0)
+	            map.setView(new L.latLng(latitude, longitude), zoom);
             else
-    	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
+    	        map.setView(new L.latLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
         });
 
 
