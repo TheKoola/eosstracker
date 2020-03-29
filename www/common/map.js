@@ -1485,25 +1485,25 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
-        /*
         var osmbright = L.mapboxGL({
             accessToken: 'notneeded',
-            style: '/tileserver/styles/osm-bright/style.json'
-            //style: '/common/osm-bright-gl-style.json'
+            style: '/tileserver/styles/osm-bright/style.json',
+            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
         var basic = L.mapboxGL({
             accessToken: 'notneeded',
-            style: '/tileserver/styles/klokantech-basic/style.json'
+            style: '/tileserver/styles/klokantech-basic/style.json',
+            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
-        */
+        
         
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ tilelayer ]
+            layers : [ osmbright ]
         });
 
         // Set default map location and zoom
@@ -1530,7 +1530,7 @@ function getTrackers() {
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
 
-        baselayer = { "Base Map (raster)" : tilelayer };
+        baselayer = { "OpenStreetMap (raster)" : tilelayer, "Klokantech Basic (vector)" : basic, "OSM Bright (vector)" : osmbright };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
