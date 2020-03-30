@@ -24,6 +24,7 @@
  */
 
 
+    header("Content-Type:  application/json;");
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
@@ -185,7 +186,12 @@
             $pressure = "";
 
         $hash = $row['hash'];
-        list($time_trunc, $microseconds) = explode(".", $thetime);
+        if (strpos($thetime, ".") === false) {
+            $time_trunc = $thetime;
+            $microseconds = 0;
+        }
+        else
+            list($time_trunc, $microseconds) = explode(".", $thetime);
 
         // calculate the vertical rate for this callsign
         //$time1 = date_create($thetime);

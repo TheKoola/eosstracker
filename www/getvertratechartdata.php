@@ -117,7 +117,12 @@ thetime asc;
         $callsign = $row['callsign'];
         $altitude = $row['altitude'];
         $hash = $row['hash'];
-        list($time_trunc, $microseconds) = explode(".", $thetime);
+        if (strpos($thetime, ".") === false) {
+            $time_trunc = $thetime;
+            $microseconds = 0;
+        }
+        else
+            list($time_trunc, $microseconds) = explode(".", $thetime);
  
 
         // calculate the vertical rate for this callsign
