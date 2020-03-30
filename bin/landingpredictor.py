@@ -1558,63 +1558,60 @@ class LandingPredictor(PredictorBase):
                     
                     if not validity:
                         winds = None
-                        predtypes = ["predicted"]
                         wind_text = None
+                        predictiontype = "predicted"
+
+                        # Call the prediction algo
+                        debugmsg("Running prediction regular prediction")
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
                     else:
-                        predtypes = ["predicted", "wind_adjusted"]
                         wind_text = "ARRAY[" + str(round(winds[2])) + ", " + str(round(winds[3])) + ", " + str(round(winds[4])) + "]"
+                        predictiontype = "wind_adjusted"
 
-                    for predictiontype in predtypes:
+                        # Call the prediction algo
+                        debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
 
-                        if predictiontype == "wind_adjusted":
-                            # Call the prediction algo
-                            debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
-                            flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
-                        else:
-                            # Call the prediction algo
-                            debugmsg("Running prediction regular prediction")
-                            flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
-
-                        ####################################
-                        # START:  insert predicted landing record into the database
-                        ####################################
-                        # Set the initial value of the LINESTRING text to nothing.
-                        linestring_text = ""
-                        array_text = ""
-                        m = 0
+                    ####################################
+                    # START:  insert predicted landing record into the database
+                    ####################################
+                    # Set the initial value of the LINESTRING text to nothing.
+                    linestring_text = ""
+                    array_text = ""
+                    m = 0
 
 
-                        # If there was a prediction calculated
-                        if flightpath:
-                            # Now loop through each of these points and create the LINESTRING
-                            for u,v,t,a in flightpath:
-                                if m > 0:
-                                    linestring_text = linestring_text + ", "
-                                    array_text = array_text + ", "
-                                linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
-                                array_elem = "[" + str(round(u,6)) + ", " + str(round(v,6)) + ", " + str(round(t,4)) + ", " + str(round(a)) + "]"
-                                array_text = array_text + array_elem
-                                m += 1
-                            linestring_text = "LINESTRING(" + linestring_text + ")"
-                            array_text = "ARRAY[" + array_text + "]"
-                            if m < 2:
-                                linestring_text = None
-                                array_text = None
+                    # If there was a prediction calculated
+                    if flightpath:
+                        # Now loop through each of these points and create the LINESTRING
+                        for u,v,t,a in flightpath:
+                            if m > 0:
+                                linestring_text = linestring_text + ", "
+                                array_text = array_text + ", "
+                            linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                            array_elem = "[" + str(round(u,6)) + ", " + str(round(v,6)) + ", " + str(round(t,4)) + ", " + str(round(a)) + "]"
+                            array_text = array_text + array_elem
+                            m += 1
+                        linestring_text = "LINESTRING(" + linestring_text + ")"
+                        array_text = "ARRAY[" + array_text + "]"
+                        if m < 2:
+                            linestring_text = None
+                            array_text = None
 
-                            # The SQL for inserting this prediction record into the database
-                            landingprediction_sql = """ insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl """ + (", patharray " if array_text else "") + (", winds " if wind_text else "") + """) values (now(), %s, %s, %s, %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric """ + (", " + array_text if array_text else "") + (", " + wind_text if wind_text else "") +  """);"""
+                        # The SQL for inserting this prediction record into the database
+                        landingprediction_sql = """ insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath, ttl """ + (", patharray " if array_text else "") + (", winds " if wind_text else "") + """) values (now(), %s, %s, %s, %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326), %s::numeric """ + (", " + array_text if array_text else "") + (", " + wind_text if wind_text else "") +  """);"""
 
-                            ts = datetime.datetime.now()
+                        ts = datetime.datetime.now()
 
-                            #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
-                            #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
+                        #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+                        #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
 
-                            debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
-                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+                        debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
+                        debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
-                            # execute the SQL insert statement
-                            landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
-                            self.landingconn.commit()
+                        # execute the SQL insert statement
+                        landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
+                        self.landingconn.commit()
 
 
                     ####################################

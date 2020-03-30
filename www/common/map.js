@@ -45,6 +45,7 @@
     var flightPane;
     var flightTooltipPane;
     var otherTooltipPane;
+    var breadcrumbPane;
     var otherStationsPane;
     var lastposition;
     var activeflights = [];
@@ -702,16 +703,22 @@
                     // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  
                     // That's because we'll use a "circleMarker" object instead of a bonified marker with custom icon.
                     var theoffset = [0, 0];
-                    if (feature.properties.objecttype == "balloonmarker")
-                        theoffset = [0, -12];
-
                     var mappane = "otherTooltipPane";
+                    if (feature.properties.objecttype == "balloonmarker") {
+                        theoffset = [0, -12];
+                        mappane = "breadcrumbPane";
+                    }
+                    else 
+                        mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
-                            if (feature.properties.label != "")
+                            if (feature.properties.label != "") {
+                                if (feature.properties.label.indexOf("<br>") !== -1)
+                                    theoffset = [0, -7];
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: mappane}).openTooltip();
+                            }
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -1519,6 +1526,10 @@ function getTrackers() {
         otherTooltipPane = map.createPane("otherTooltipPane");
         otherTooltipPane.style.zIndex = 640; 
 
+        // Pane for all non-flight tooltips, to put them underneath regular tooltips
+        breadcrumbPane = map.createPane("breadcrumbPane");
+        breadcrumbPane.style.zIndex = 600; 
+
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
         otherStationsPane.style.zIndex = 590; 
@@ -1585,11 +1596,11 @@ function getTrackers() {
         realtimelayers.push(c);
         realtimelayers.push(d);
 
-        layerControl.addOverlay(mystation, "My Location", "Trackers and Location");
-        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Trackers and Location");
+        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
         layerControl.addOverlay(allstations, "Other Stations (Inet only)", "Other Stations");
         layerControl.addOverlay(allrfstations, "Other Stations (RF only)", "Other Stations");
         layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
+        layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
 
         /*
@@ -1601,8 +1612,7 @@ function getTrackers() {
             
         for (key in flightids) {
             var predictedpathlayer = L.layerGroup();
-            var landingpredictionlayer_reg = L.layerGroup();
-            var landingpredictionlayer_wind = L.layerGroup();
+            var landingpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
 
             for (key2 in flightids[key].callsigns) {
@@ -1627,28 +1637,20 @@ function getTrackers() {
             var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
 
             /* The landing prediction layer */
-            var f = createLandingPredictionsLayer("getlandingpredictions.php?type=predicted&flightid=" + flightids[key].flightid, landingpredictionlayer_reg, 
+            var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 
                 5 * 1000,
                 flightids[key].flightid
             );
-            var g = createLandingPredictionsLayer("getlandingpredictions.php?type=wind_adjusted&flightid=" + flightids[key].flightid, landingpredictionlayer_wind, 
-                5 * 1000,
-                flightids[key].flightid
-            );
-
             d.addTo(map);
             f.addTo(map);
-            g.addTo(map);
             realtimelayers.push(d);
             realtimelayers.push(e);
             landingpredictionlayers.push(f);
-            landingpredictionlayers.push(g);
 
             /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(predictedpathlayer, "Flight Prediction", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(landingpredictionlayer_reg, "Landing Predictions (regular)", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(landingpredictionlayer_wind , "Landing Predictions (wind adjusted)", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(predictedpathlayer, "Pre-Flight Predicted Path", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
          }
 
     }

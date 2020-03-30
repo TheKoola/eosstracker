@@ -58,12 +58,6 @@
 
     $formerror = false;
 
-    // Check the prediction type HTML GET variable
-    $get_type = "predicted"; 
-    if (isset($_GET["type"])) {
-        if (($get_type = strtolower(check_string($_GET["type"], 20))) == "")
-            $formerror = true;
-    }
     
     // Check the flightid HTML GET variable
     $get_flightid = "";
@@ -144,18 +138,17 @@
         and f.active = 't' 
         and l.flightid = $1 
         and l.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
-        " . 
-        ($get_type == "predicted" || $get_type == "translated" ? " and l.thetype in ('predicted', 'translated')" : " and l.thetype = $3 ")
-        . " 
 
         order by 
         l.tm asc, 
         l.flightid, 
         l.callsign;";
-    if ($get_type == "predicted" || $get_type == "translated") 
-        $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
-    else
-        $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($get_type)));
+
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($get_flightid), 
+        sql_escape_string($config["lookbackperiod"] . " minute")
+    ));
+
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -190,7 +183,7 @@
             printf (", ");
         $firsttimeinloop = 0;
 
-        if (array_key_exists($callsign, $thewind))
+        if ($thetype[$callsign] == "wind_adjusted")
             $wind_html = "<br>Surface wind: " . $thewind[$callsign][0] . "mph from " . $thewind[$callsign][1] . "&deg; (bearing " . $thewind[$callsign][2] . "&deg;)";
         else
             $wind_html = "";
@@ -199,12 +192,12 @@
         // This is the point for the landing prediction itself
         printf ("{ \"type\" : \"Feature\",");
         printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s, \"ttl\" : %s },", 
-            json_encode($callsign . "_landing_" . $get_type), 
+            json_encode($callsign . "_landing"), 
             json_encode($callsign . " Predicted Landing"), 
             json_encode($callsign . " Landing"), 
             json_encode("/J"), 
-            json_encode("Landing prediction" . ($get_type == "wind_adjusted" ? $wind_html : "")),
-	        json_encode($callsign . " Landing" . ($get_type == "wind_adjusted" ? "<br>(wind adjusted)" : "")),
+            json_encode("Landing prediction" . $wind_html),
+	        json_encode($callsign . " Landing" . ($thetype[$callsign] == "wind_adjusted" ? "<br>(wind adjusted)" : "")),
             json_encode($config["iconsize"]),
             json_encode($ttl[$callsign])
         );
@@ -212,78 +205,73 @@
         printf ("}");
 
         // This is the linestring for the path the landing prediction point has taken as the landing prediction coords have changed.
-        if (array_key_exists($callsign, $thetype)) {
-            if ($thetype[$callsign] == "predicted" || $thetype[$callsign] == "wind_adjusted")
-                $okay = 1;
-            else
-                $okay = 0;
-        }
-        if (count($ray) > 1 && $okay) {
+        // We only want to plot the historical track the landing prediction has taken for "predicted" or "wind_adjusted" prediction types.  
+        if (count($ray) > 1 && ($thetype[$callsign] == "predicted" || $thetype[$callsign] == "wind_adjusted")) {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 if ($elem[2] == "predicted" || $elem[2] == "wind_adjusted")
                     $linestring[] = array($elem[1], $elem[0]);
             }
-            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing_" . $get_type));
+            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionpath\" },", json_encode($callsign . "_path_landing"));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
             unset ($linestring);
         }
 
 
         // This is the linestring for the predicted flight path
+        // This is the flight path from the last location of the flight to the predicted landing spot (the "X" marks the spot).
         if (array_key_exists($callsign, $flightpath)) {
             if (strlen($flightpath[$callsign]) > 0) {
-                printf (", { \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionflightpath\" },", json_encode($callsign . "_flightpath_landing_" . $get_type));
+                printf (", { \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"objecttype\" : \"landingpredictionflightpath\" },", json_encode($callsign . "_flightpath_landing"));
                 printf ("\"geometry\" : %s }  ", $flightpath[$callsign]);
             }
         }
 
         // These are the breadcrumbs
-        /*
-        if (array_key_exists($callsign, $thepath) && $okay) {
+        if (array_key_exists($callsign, $thepath)) {
             $i = 0;
             $outerfirsttime = 1;
             $firsttime = 1;
-            $len = sizeof($thepath[$callsign]);
-            foreach ($thepath[$callsign] as $idx => $tuple) {
-                if ($outerfirsttime == 0)
+            if (!empty($thepath[$callsign])) {
+                $len = sizeof($thepath[$callsign]);
+                if ($len > 0)
                     print (", ");
-                $outerfirsttime = 0;
+                foreach ($thepath[$callsign] as $idx => $tuple) {
 
-                #printf ("<br>----<br>");
-                #print_r($tuple);
-                #printf ("<br>----<br>");
+                    //printf ("<br>--%s:%d--<br>", $callsign, $idx);
+                    //print_r($tuple);
+                    //printf ("<br>----<br>");
 
-                if ($i < $len - 1 && $i > 0 && $i % 4 == 0) {
-                    if ($firsttime == 0)
-                        printf (", ");
-                    $firsttime = 0;
+                    if ($i < $len - 1 && $i > 0 && $i % 10 == 0) {
+                        if ($firsttime == 0)
+                            printf (", ");
+                        $firsttime = 0;
 
-                    //This is the GeoJSON object for the breadcrumb within the predicted flight path 
-                    if ($tuple[3] > 9999 && $i % 6 == 0) 
-                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
-                            json_encode($callsign . "_predictionpoint_" . $i), 
-                            json_encode($callsign), 
-                            json_encode("/J"), 
-                            json_encode($tuple[3]), 
-                            json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"), 
-                            json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"),
-                            json_encode($config["iconsize"])
-                            );
-                    else 
-                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"iconsize\" : %s },", 
-                            json_encode($callsign . "_predictionpoint_" . $i), 
-                            json_encode($callsign), 
-                            json_encode("/J"), 
-                            json_encode($tuple[3]), 
-                            json_encode($config["iconsize"])
-                            );
-                    printf (" \"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($tuple[1], $tuple[0])));
+                        //This is the GeoJSON object for the breadcrumb within the predicted flight path 
+                        if ($tuple[3] > 9999) 
+                            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
+                                json_encode($callsign . "_predictionpoint_" . $i), 
+                                json_encode($callsign), 
+                                json_encode("/J"), 
+                                json_encode($tuple[3]), 
+                                json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"), 
+                                json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"),
+                                json_encode($config["iconsize"])
+                                );
+                        else 
+                            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"iconsize\" : %s },", 
+                                json_encode($callsign . "_predictionpoint_" . $i), 
+                                json_encode($callsign), 
+                                json_encode("/J"), 
+                                json_encode($tuple[3]), 
+                                json_encode($config["iconsize"])
+                                );
+                        printf (" \"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($tuple[1], $tuple[0])));
+                    }
+                    $i += 1;
                 }
-                $i += 1;
             }
         }
-         */ 
 
     }
     if ($numrows > 0)
