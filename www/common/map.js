@@ -47,6 +47,7 @@
     var flightTooltipPane;
     var otherTooltipPane;
     var otherStationsPane;
+    var breadcrumbPane;
     var activeflights = [];
     var globalUpdateCounter = 0;
     var updateTimeout;
@@ -705,19 +706,25 @@
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
                     // If this object has a tooltip or label defined...
-                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  
+                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.
                     // That's because we'll use a "circleMarker" object instead of a bonified marker with custom icon.
                     var theoffset = [0, 0];
-                    if (feature.properties.objecttype == "balloonmarker")
-                        theoffset = [0, -12];
-
                     var mappane = "otherTooltipPane";
+                    if (feature.properties.objecttype == "balloonmarker") {
+                        theoffset = [0, -12];
+                        mappane = "breadcrumbPane";
+                    }
+                    else
+                        mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
-                            if (feature.properties.label != "")
+                            if (feature.properties.label != "") {
+                                if (feature.properties.label.indexOf("<br>") !== -1)
+                                    theoffset = [0, -7];
                                 layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: mappane}).openTooltip();
+                            }
                         }    
                         else {
                             if (feature.properties.tooltip != "")
@@ -1517,7 +1524,6 @@ function getTrackers() {
             maxZoom: 20
         });
 
-        //console.log ("followme: " + followme + ", latitude: " + latitude + ", longitude: " + longitude + ", zoom: " + zoom + ", showallstations: " + showallstations);
         // Set default map location and zoom
         if (latitude != 0 && longitude != 0 && zoom != 0)
             map.setView(new L.latLng(latitude, longitude), zoom);
@@ -1540,6 +1546,10 @@ function getTrackers() {
         // Pane for all non-flight tooltips, to put them underneath regular tooltips
         otherTooltipPane = map.createPane("otherTooltipPane");
         otherTooltipPane.style.zIndex = 640; 
+
+        // Pane for all non-flight tooltips, to put them underneath regular tooltips
+        breadcrumbPane = map.createPane("breadcrumbPane");
+        breadcrumbPane.style.zIndex = 600;
 
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
@@ -1585,8 +1595,6 @@ function getTrackers() {
     ***********/
     function set_map_center() {
 
-        // Get the starting map position from gpsposition table on the server
-        //
         if (latitude != 0 && longitude != 0 && zoom != 0) {
             // if the latitude, longitude, and zoom global variables are set, then set the map center to those coords
             map.setView(new L.latLng(latitude, longitude), zoom);
@@ -1749,7 +1757,7 @@ function getTrackers() {
             
         for (key in flightids) {
             var predictedpathlayer = L.layerGroup();
-            var landingpredictionlayer_wind = L.layerGroup();
+            var landingpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
 
             for (key2 in flightids[key].callsigns) {
@@ -1772,7 +1780,7 @@ function getTrackers() {
             /* The Trackers and Predict File layers */
             var d = createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
             var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
-            var g = createLandingPredictionsLayer("getlandingpredictions.php?type=wind_adjusted&flightid=" + flightids[key].flightid, landingpredictionlayer_wind, 
+            var g = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 
                 5 * 1000,
                 flightids[key].flightid
             );
@@ -1786,7 +1794,7 @@ function getTrackers() {
             /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Pre-Flight Predicted Path", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(landingpredictionlayer_wind , "Landing Predictions", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
          }
 
         // Set up the map and get the My Location position
