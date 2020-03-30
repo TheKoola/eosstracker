@@ -49,7 +49,7 @@ def signal_handler(signum, frame):
 
 #####################################
 ## Set this to "True" to have debugging text output when running
-debug = False
+debug = True
 #####################################
 
 
@@ -447,8 +447,8 @@ class PredictorBase(object):
             # The flight is at an altitude where surface winds are taking over....
             use_surface_wind = False
             surface_exponent_weight = 2
-            surface_wind_threshold = 6000 + self.prediction_floor
-            surface_wind_cutoff = 2500 + self.prediction_floor
+            surface_wind_threshold = 4500 + self.prediction_floor
+            surface_wind_cutoff = 2000 + self.prediction_floor
             debugmsg("surface_wind_threshold: %f, surface_wind_cutoff: %f" % (surface_wind_threshold, surface_wind_cutoff))
             if last_heard_altitude < surface_wind_threshold:
 
