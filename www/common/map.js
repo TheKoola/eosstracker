@@ -1597,9 +1597,9 @@ function getTrackers() {
         realtimelayers.push(d);
 
         layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
-        layerControl.addOverlay(allstations, "Other Stations (Inet only)", "Other Stations");
-        layerControl.addOverlay(allrfstations, "Other Stations (RF only)", "Other Stations");
         layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
+        layerControl.addOverlay(allrfstations, "Other Stations (RF only)", "Other Stations");
+        layerControl.addOverlay(allstations, "Other Stations (Inet only)", "Other Stations");
         layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
 
