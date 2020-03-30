@@ -1,4 +1,4 @@
-#!/usr/bin/python
+
 
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
@@ -49,7 +49,7 @@ def signal_handler(signum, frame):
 
 #####################################
 ## Set this to "True" to have debugging text output when running
-debug = True
+debug = False
 #####################################
 
 
