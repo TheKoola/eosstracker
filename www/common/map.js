@@ -1571,7 +1571,8 @@ function getTrackers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         var allstations = L.markerClusterGroup();
         //var allstations = L.layerGroup();
-        var allrfstations = L.layerGroup();
+        //var allrfstations = L.layerGroup();
+        var allrfstations = L.markerClusterGroup();
         var mystation = L.layerGroup();
         //var wxstations = L.layerGroup();
         var wxstations = L.markerClusterGroup();
