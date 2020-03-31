@@ -200,7 +200,13 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         $hash = $row['hash'];
         $raw = $row['raw'];
         $ptype = $row['ptype'];
-        list($time_trunc, $microseonds) = explode(".", $thetime);
+
+        if (strpos($thetime, ".") === false) {
+            $time_trunc = $thetime;
+            $microseconds = 0;
+        }
+        else
+            list($time_trunc, $microseconds) = explode(".", $thetime);
 
         $allpackets[$callsign][] = array($time_trunc, $get_flightid, $callsign, $raw);
 
