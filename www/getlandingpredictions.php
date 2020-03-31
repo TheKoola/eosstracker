@@ -23,7 +23,7 @@
 *
  */
 
-
+    header("Content-Type:  application/json;");
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
@@ -236,36 +236,40 @@
                 $len = sizeof($thepath[$callsign]);
                 if ($len > 0)
                     print (", ");
+
+                // Get the first and last element of the $thepath array
+                $first_tuple = reset($thepath[$callsign]);
+                $last_tuple = end($thepath[$callsign]);
+
+                // Now compute the span in altitude from the first element to the last
+                $altitude_span = $first_tuple[3] - $last_tuple[3];
+
+                // Now create a mod value for use below based on how large the altitude_span was.  
+                // Bascially when:
+                //     -  the altitude span is ~100k feet, then the mod should be about 20.
+                //     -  the altitude span is ~4k feet, then the mod should be about 2.
+                $mod_value = floor((16 * $altitude_span / 100000.0) + 2);
+                //printf("<br>-------------<br>");
+                //printf("span: %f, mod_value: %f<br>", $altitude_span, $mod_value);
+                //printf("<br>-------------<br>");
+
                 foreach ($thepath[$callsign] as $idx => $tuple) {
 
-                    //printf ("<br>--%s:%d--<br>", $callsign, $idx);
-                    //print_r($tuple);
-                    //printf ("<br>----<br>");
-
-                    if ($i < $len - 1 && $i > 0 && $i % 10 == 0) {
+                    if ($i < $len - 1 && $i > 0 && $i % $mod_value == 0) {
                         if ($firsttime == 0)
                             printf (", ");
                         $firsttime = 0;
 
                         //This is the GeoJSON object for the breadcrumb within the predicted flight path 
-                        if ($tuple[3] > 9999) 
-                            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
-                                json_encode($callsign . "_predictionpoint_" . $i), 
-                                json_encode($callsign), 
-                                json_encode("/J"), 
-                                json_encode($tuple[3]), 
-                                json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"), 
-                                json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"),
-                                json_encode($config["iconsize"])
-                                );
-                        else 
-                            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"iconsize\" : %s },", 
-                                json_encode($callsign . "_predictionpoint_" . $i), 
-                                json_encode($callsign), 
-                                json_encode("/J"), 
-                                json_encode($tuple[3]), 
-                                json_encode($config["iconsize"])
-                                );
+                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
+                            json_encode($callsign . "_predictionpoint_" . $i), 
+                            json_encode($callsign), 
+                            json_encode("/J"), 
+                            json_encode($tuple[3]), 
+                            json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"), 
+                            json_encode(round(floatval($tuple[3]) / 1000.0) . "k ft"),
+                            json_encode($config["iconsize"])
+                            );
                         printf (" \"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($tuple[1], $tuple[0])));
                     }
                     $i += 1;
