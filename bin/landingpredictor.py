@@ -1,4 +1,4 @@
-#!/usr/bin/python
+
 
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
@@ -1268,6 +1268,137 @@ class LandingPredictor(PredictorBase):
             return ([], False)
 
 
+    ################################
+    # Function to query the database for those stations nearest to a predicted landing location (ranked by distance), 
+    # and compute a weighted average of the estimated elevation at the predicted landing 
+    def getLandingElevation(self, balloon_callsign, distance):
+
+        # Check if we're connected to the database or not.
+        if not self.connectToDatabase() or balloon_callsign is None or distance is None: 
+            return 0.0
+
+        if distance <= 0:
+            return 0.0
+
+        try: 
+            # database cursor
+            elev_cur = self.landingconn.cursor()
+
+            # Get estimated elevation near the predicted landing
+            elevation_sql = """
+                select
+                    z.balloon,
+                    round(sum(z.altitude * z.weight) / sum(z.weight)) as avg_weighted_elevation,
+                    round(avg(z.altitude)) as avg_elevation
+
+                from
+                    (
+                    select
+                        date_trunc('second', a.tm)::timestamp without time zone as station_time,
+                        lp.callsign as balloon,
+                        a.callsign,
+                        a.altitude,
+                        round(cast(st_y(a.location2d) as numeric), 4) as station_lat,
+                        round(cast(st_x(a.location2d) as numeric), 4) as station_lon,
+                        round(cast(st_y(lp.location2d) as numeric), 4) as landing_lat,
+                        round(cast(st_x(lp.location2d) as numeric), 4) as landing_lon,
+                        round(cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric),4) as dist,
+                        10000 / (1.1 ^ cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric)) as weight,
+                        rank () over (partition by 
+                            lp.callsign,
+                            a.callsign
+                            order by
+                            ST_DistanceSphere(lp.location2d, a.location2d) asc,
+                            a.tm desc
+                        ) as station_rank
+
+                    from
+                        packets a,
+                        flights f,
+                        flightmap fm
+                        left outer join
+                        (
+                            select
+                                l.tm as thetime,
+                                l.flightid,
+                                l.callsign,
+                                l.location2d,
+                                rank () over (partition by l.flightid, l.callsign order by l.tm desc)
+
+                            from
+                                landingpredictions l
+
+                            where
+                                l.tm > (now() - interval '06:00:00')
+
+                            order by
+                                thetime desc,
+                                l.flightid,
+                                l.callsign
+                        ) as lp
+                        on lp.flightid = fm.flightid and lp.callsign = fm.callsign
+
+                    where
+                        lp.callsign is not null
+                        and lp.rank = 1
+                        and a.tm > (now() - interval '23:59:59')
+                        and fm.flightid = f.flightid
+                        and f.active = 'y'
+                        and a.callsign != fm.callsign
+                        and fm.callsign = %s
+                        and a.altitude > 0
+                        and a.location2d != ''
+                        and a.symbol != '/O'
+                        and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
+
+                    order by
+                        lp.callsign,
+                        a.callsign,
+                        station_rank
+                    ) as z
+
+                where
+                    z.station_rank = 1
+                    
+                group by
+                    z.balloon
+
+                order by
+                    z.balloon
+                ;
+            """
+
+            # Execute the SQL query
+            # Parameters:  balloon callsign, maximum distance a station can be from the predicted landing to be computed in the estimated elevation
+            debugmsg("Executing nearby station query with balloon_callsign=%s and distance=%f" % (balloon_callsign, distance))
+            #debugmsg("Nearby station query" + elevation_sql % (balloon_callsign, str(distance)))
+            elev_cur.execute(elevation_sql, [ balloon_callsign, distance ])
+
+            # fetch all the rows returned
+            rows = elev_cur.fetchall()
+            
+            if debug:
+                print "landing elevation rows[", len(rows), "]: ", rows
+
+            # if there were rows returned then proceed to return the estimated elevation near the landing location
+            if len(rows) > 0:
+                elevation = rows[0][1]
+            else:
+                elevation = 0
+
+            # Close the database cursor
+            elev_cur.close()
+
+            # return the elevation
+            return elevation
+
+        except pg.DatabaseError as error:
+            # If there was a connection error, then close these, just in case they're open
+            elev_cur.close()
+            self.landingconn.close()
+            print(error)
+            return 0.0
+
 
     ################################
     # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
@@ -1458,6 +1589,7 @@ class LandingPredictor(PredictorBase):
                 gpsposition = self.getGPSPosition()
 
                 # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
+                debugmsg("Setting initial landing prediction elevation to launchsite elevation: %d" % launchsite['elevation'])
                 landingprediction_floor = launchsite['elevation']
 
                 # Get a list of the latest packets for this callsign
@@ -1531,6 +1663,7 @@ class LandingPredictor(PredictorBase):
                     # The idea being that if we're close to the balloon, then our current elevation is likely close to the elevation of the 
                     # balloon's ultimate landing location.  ...and we want to have the prediction algorithm calculate predicitons down to 
                     # that elevation.  This should increase landing prediction accuracy a small amount.
+                    gps_estimate = False
                     if gpsposition['isvalid']:
                         # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet 
                         # received from the balloon
@@ -1542,8 +1675,17 @@ class LandingPredictor(PredictorBase):
                                 )
 
                         # If we're close to the balloon, then set the prediction floor to that elevation
-                        if dist_to_balloon < 35:
+                        if dist_to_balloon < 30:
+                            debugmsg("Current location < 30 miles from the current flight, using GPS for landing prediction elevation")
                             landingprediction_floor = float(gpsposition['altitude'])
+                            gps_estimate = True
+
+                    # If we were unable to get an estimate elevation from the brick's GPS, then then query the database for nearby stations
+                    if gps_estimate == False:
+                        debugmsg("Checking for stations near the landing prediction to estimate landing prediction elevation")
+                        estimate = self.getLandingElevation(callsign, 30)
+                        if estimate > 0:
+                            landingprediction_floor = float(estimate)
 
                     debugmsg("Prediction floor set to: %f" % landingprediction_floor)
 
