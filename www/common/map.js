@@ -1499,14 +1499,17 @@ function getTrackers() {
         });
         
         var themap;
-        var mapnum = 0;
+        var mapnum = 2;
         switch (mapnum) {
             case 0:
                 themap = tilelayer;
+                break;
             case 1:
                 themap = basic;
+                break;
             case 2:
                 themap = osmbright;
+                break;
             default:
                 themap = osmbright;
         }
