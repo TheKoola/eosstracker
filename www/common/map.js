@@ -1489,13 +1489,11 @@ function getTrackers() {
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
         var osmbright = L.mapboxGL({
-            accessToken: 'notneeded',
             style: '/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
         var basic = L.mapboxGL({
-            accessToken: 'notneeded',
             style: '/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
