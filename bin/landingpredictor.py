@@ -1249,7 +1249,7 @@ class LandingPredictor(PredictorBase):
                 wxcur.execute(wx_sql, [ position[0], position[1], position[0] ])
                 wxrows = wxcur.fetchall()
                 if len(wxrows) > 0:
-                    if wxrows[0][0] is not None and wxrows[0][1] is not None:
+                    if wxrows[0][0] is not None and wxrows[0][1] is not None and wxrows[0][3] is not None and wxrows[0][4] is not None and wxrows[0][5] is not None:
                         windrates = [ float(wxrows[0][0]), float(wxrows[0][1]), float(wxrows[0][3]), float(wxrows[0][4]), float(wxrows[0][5]) ]
                         validity = True
                         debugmsg("windrates[0]: %f, windrates[1]: %f " % (windrates[0], windrates[1]))
