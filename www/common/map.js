@@ -43,6 +43,7 @@
     var canvasRender;
     var pathsPane;
     var flightPane;
+    var landingPredictionPane;
     var flightTooltipPane;
     var otherTooltipPane;
     var breadcrumbPane;
@@ -327,7 +328,7 @@
                    if (feature.properties.label)
                        var markercolor = 'black';
 
-		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
                }
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
@@ -548,7 +549,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -739,7 +740,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -758,7 +759,7 @@
                        tooltipAnchor: [0, tipanchor]
                    }); 
 
-                   return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
+                   return L.marker(latlon, { icon: myIcon, pane: "landingPredictionPane" });
                }
            }
         }).on('update', function(ev) { updateLandingPredictions(ev, this); });
@@ -1527,6 +1528,10 @@ function getTrackers() {
         // Pane for all tracks, to put them at the bottom of the z-order
         pathsPane = map.createPane("pathsPane");
         pathsPane.style.zIndex = 300; 
+
+        // Pane for all landing predictions
+        landingPredictionPane = map.createPane("landingPredictionPane");
+        landingPredictionPane.style.zIndex = 660; 
 
         // Pane for all flights, to put them at the top of the z-order
         flightPane = map.createPane("flightPane");
