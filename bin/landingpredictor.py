@@ -1303,7 +1303,7 @@ class LandingPredictor(PredictorBase):
                         round(cast(st_y(lp.location2d) as numeric), 4) as landing_lat,
                         round(cast(st_x(lp.location2d) as numeric), 4) as landing_lon,
                         round(cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric),4) as dist,
-                        10000 / (1.1 ^ cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric)) as weight,
+                        10000 / exp(cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric)) as weight,
                         rank () over (partition by 
                             lp.callsign,
                             a.callsign
@@ -1348,7 +1348,7 @@ class LandingPredictor(PredictorBase):
                         and fm.callsign = %s
                         and a.altitude > 0
                         and a.location2d != ''
-                        and a.symbol != '/O'
+                        and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%', '\S', 'S%', '\^', '^%')
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
 
                     order by
