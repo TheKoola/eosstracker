@@ -24,6 +24,7 @@
  */
 
 
+    header("Content-Type:  application/json;");
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
@@ -89,7 +90,7 @@
         date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
         case
             when a.raw similar to '%[0-9]{6}h%' then 
-                date_trunc('milliseconds', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
             else
                 date_trunc('milliseconds', a.tm)::time without time zone
         end as packet_time,
@@ -185,7 +186,12 @@
             $pressure = "";
 
         $hash = $row['hash'];
-        list($time_trunc, $microseconds) = explode(".", $thetime);
+        if (strpos($thetime, ".") === false) {
+            $time_trunc = $thetime;
+            $microseconds = 0;
+        }
+        else
+            list($time_trunc, $microseconds) = explode(".", $thetime);
 
         // calculate the vertical rate for this callsign
         //$time1 = date_create($thetime);

@@ -62,7 +62,7 @@
               date_trunc('seconds', a.tm)::time without time zone as thetime, 
               case
                   when a.raw similar to '%[0-9]{6}h%' then 
-                      date_trunc('second', ((to_timestamp(substring(a.raw from position('h' in a.raw) - 6 for 6), 'HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                      date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
                   else
                       date_trunc('second', a.tm)::time without time zone
               end as packet_time,

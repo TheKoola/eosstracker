@@ -43,8 +43,10 @@
     var canvasRender;
     var pathsPane;
     var flightPane;
+    var landingPredictionPane;
     var flightTooltipPane;
     var otherTooltipPane;
+    var breadcrumbPane;
     var otherStationsPane;
     var lastposition;
     var activeflights = [];
@@ -326,7 +328,7 @@
                    if (feature.properties.label)
                        var markercolor = 'black';
 
-		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
                }
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
@@ -514,10 +516,11 @@
 
                     // If this object has a tooltip or label defined...
                     // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  That's because we'll use a "circleMarker" object 
-                    // instead of a bonfied marker with custom icon.
+                    // instead of a bonified marker with custom icon.
                     var theoffset = [0, 0];
                     if (feature.properties.objecttype == "balloonmarker")
                         theoffset = [0, -12];
+
 
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
@@ -546,7 +549,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -677,7 +680,7 @@
                 var html = "";
                 var objecttype = feature.properties.objecttype;
 
-                if (objecttype == "landingprediction") {
+                if (objecttype == "landingprediction" || objecttype == "balloonmarker") {
                     var id = feature.properties.id;
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
@@ -693,45 +696,71 @@
 
 
                     // Popup for the landing prediction point
-		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+		            layer.bindPopup(html, {className:  'myPopupStyle'} );
 
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+
+                    // If this object has a tooltip or label defined...
+                    // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  
+                    // That's because we'll use a "circleMarker" object instead of a bonified marker with custom icon.
+                    var theoffset = [0, 0];
+                    var mappane = "otherTooltipPane";
+                    if (feature.properties.objecttype == "balloonmarker") {
+                        theoffset = [0, -12];
+                        mappane = "breadcrumbPane";
+                    }
+                    else 
+                        mappane = "otherTooltipPane";
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
                         if (feature.properties.label) {
-                            if (feature.properties.label != "")
-                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9, pane: "otherTooltipPane" }).openTooltip();
+                            if (feature.properties.label != "") {
+                                if (feature.properties.label.indexOf("<br>") !== -1)
+                                    theoffset = [0, -7];
+                                layer.bindTooltip(feature.properties.label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", offset: theoffset, opacity: .9, pane: mappane}).openTooltip();
+                            }
                         }    
                         else {
                             if (feature.properties.tooltip != "")
-                                layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: "otherTooltipPane" } ).openTooltip();
+                                layer.bindTooltip(feature.properties.tooltip, { className:  "myTooltipStyle", permanent:true, direction: "auto", opacity: 0.9, pane: mappane}).openTooltip();
                         }
                     }
-                    
                 }
            },
            pointToLayer:  function (feature, latlon) {
                var filename;
+               var markercolor = 'gray';
                var id = feature.properties.id;
                if (feature.properties.symbol.startsWith('\\') || feature.properties.symbol.startsWith('\/') || feature.properties.symbol.startsWith('1x')) 
                    filename = "/images/aprs/" + symbols[feature.properties.symbol].tocall + ".png";                
                else 
                    filename = "/images/aprs/" + feature.properties.symbol.charAt(0) + "-" + symbols["\\" + feature.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
-               var iconsize_center = Math.trunc(iconsize/2);
-               var tipanchor = iconsize_center + 10;
 
-		       var myIcon = L.icon({
-		           iconUrl: filename,
-    		       iconSize: [iconsize, iconsize],
-    		       iconAnchor: [iconsize_center, iconsize_center], 
-    		       popupAnchor: [0, -iconsize_center],
-    		       tooltipAnchor: [0, tipanchor]
-    		   }); 
+               // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
+               if (feature.properties.objecttype == "balloonmarker") {
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
-               return L.marker(latlon, { icon: myIcon, zIndexOffset: -1000 });
+		           return cm;
+               }
+
+               // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
+               else {
+                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize_center = Math.trunc(iconsize/2);
+                   var tipanchor = iconsize_center + 10;
+
+                   var myIcon = L.icon({
+                       iconUrl: filename,
+                       iconSize: [iconsize, iconsize],
+                       iconAnchor: [iconsize_center, iconsize_center], 
+                       popupAnchor: [0, -iconsize_center],
+                       tooltipAnchor: [0, tipanchor]
+                   }); 
+
+                   return L.marker(latlon, { icon: myIcon, pane: "landingPredictionPane" });
+               }
            }
         }).on('update', function(ev) { updateLandingPredictions(ev, this); });
     }
@@ -822,25 +851,25 @@
                     var mapcenter = map.getCenter();
                     var mapzoom = map.getZoom(); 
                     var id = feature.properties.id;
-    		    html = "<a target=\"_blank\" href=\"map.php" + 
-                              "?followfeatureid=" + feature.properties.id + 
-			      "&latitude=" + feature.geometry.coordinates[1] + 
-			      "&longitude=" + feature.geometry.coordinates[0] + 
-			      "&zoom=" + mapzoom + 
-			      "&showallstations=1\">" + 
-			      "<strong>" + feature.properties.callsign + "</strong></a>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
-			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
-			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
+    		        html = "<a target=\"_blank\" href=\"map.php" + 
+                        "?followfeatureid=" + feature.properties.id + 
+                        "&latitude=" + feature.geometry.coordinates[1] + 
+                        "&longitude=" + feature.geometry.coordinates[0] + 
+                        "&zoom=" + mapzoom + 
+                        "&showallstations=1\">" + 
+                        "<strong>" + feature.properties.callsign + "</strong></a>";
+                        html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+                        (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency + "MHz" + 
+                        (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? ", via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
+                        (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
+                        "<br>Coords: <span id=\"" + id + "-coords\">"
+                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                        + "</span>"
+                        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                        (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
 
-
-		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+                    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
@@ -899,7 +928,7 @@
                }
                else
                    // What to do with a point that doesn't have a symbol?
-		           return L.circleMarker(latlon, { radius: 8, pane: "otherStationsPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 8, pane: "breadcrumbPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
 
                var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
@@ -947,9 +976,10 @@
 		              "&showallstations=1\">" + 
                       "<strong>" + item.properties.callsign + "</strong></a>";
 
-	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
-		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
+	        html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
+		          (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + "MHz" +  
+                      (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? ", via: " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -1452,37 +1482,89 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
+        var osmbright = L.mapboxGL({
+            style: '/tileserver/styles/osm-bright/style.json',
+            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+        });
+
+        var basic = L.mapboxGL({
+            style: '/tileserver/styles/klokantech-basic/style.json',
+            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+        });
+
+        var themap;
+        var mapnum = 0;
+        switch (mapnum) {
+            case 0:
+                themap = tilelayer;
+                break;
+            case 1:
+                themap = basic;
+                break;
+            case 2:
+                themap = osmbright;
+                break;
+            default:
+                themap = osmbright;
+        }
+
+
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ tilelayer ]
+            layers : [ themap ]
         });
 
-        tilelayer.addTo(map);		
-
-        // Pane for all tracks, to put them at the bottom of the z-order
-        pathsPane = map.createPane("pathsPane");
-        pathsPane.style.zIndex = 300; 
-
-        // Pane for all flights, to put them at the top of the z-order
-        flightPane = map.createPane("flightPane");
-        flightPane.style.zIndex = 670; 
+        // Set default map location and zoom
+        if (latitude != 0 && longitude != 0 && zoom != 0)
+            map.setView(new L.latLng(latitude, longitude), zoom);
+        else
+            // This is Denver, CO: 39.739, -104.985
+    	    map.setView(new L.latLng(39.739, -104.985), 10);
 
         // Pane for all flight Tooltips
         flightTooltipPane = map.createPane("flightTooltipPane");
-        flightTooltipPane.style.zIndex = 680; 
 
         // Pane for all non-flight tooltips, to put them underneath regular tooltips
         otherTooltipPane = map.createPane("otherTooltipPane");
-        otherTooltipPane.style.zIndex = 640; 
+
+        // Pane for all flights, to put them at the top of the z-order
+        flightPane = map.createPane("flightPane");
+
+        // Pane for all landing predictions
+        landingPredictionPane = map.createPane("landingPredictionPane");
 
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
-        otherStationsPane.style.zIndex = 590; 
 
-        baselayer = { "OSM Base Map" : tilelayer };
+        // Pane for all non-flight tooltips, to put them underneath regular tooltips.  All L.circleMarker's go here.
+        breadcrumbPane = map.createPane("breadcrumbPane");
+
+        // Pane for all tracks, to put them at the bottom of the z-order.  All paths, lines, polygons go here.
+        pathsPane = map.createPane("pathsPane");
+
+        // Tooltip z-order (default tooltips for leaflet are at 650)
+        flightTooltipPane.style.zIndex = 690; 
+        otherTooltipPane.style.zIndex = 650; 
+
+        // Marker z-order (default markers for leaflet are at 600)
+        flightPane.style.zIndex = 670; 
+        landingPredictionPane.style.zIndex = 665; 
+        otherStationsPane.style.zIndex = 660; 
+
+        // placing breadcrumb layer below normal markers.  That's because we add all "circleMarkers" to this pane.  CircleMarkers are an SVG drawing and therefore
+        // Leaflet creates a <canvas> DOM object for them on the map.  If this layer, then, is "in front of" other layers, it will block click events to those other objects.
+        breadcrumbPane.style.zIndex = 590; 
+
+        // Paths z-order (default paths for leaflet are at 400)
+        // Paths, lines, polygons, etc. are SVG drawings and therefore Leaflet will create a <canvas> DOM object on them map for them.  Consequently, this layer needs to be at a
+        // lower z-order.
+        pathsPane.style.zIndex = 420; 
+
+
+        baselayer = { "Base Map (raster)" : tilelayer };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
@@ -1510,22 +1592,21 @@ function getTrackers() {
 
     }
 
-    /***********
-    * Set map center
-    *
-    * This function will set the map center based on the current latitude, longitude, and zoom level in the global variables:
-    *     latitude
-    *     longitude
-    *     zoom
-    ***********/
-    function set_map_center() {
+    /*********
+    * this function is for styling the non-flight, other generic stations on the map
+    **********/
+    function mapStyle(feature) {
+        var localstyle = {};
+        var pane;
 
-        // Set the map center position
-        if (latitude != "" && longitude != "" && zoom != "")
-	        map.setView(new L.LatLng(latitude, longitude), zoom);
-        else
-            // set the map default starting location.  This is Denver, CO: 39.739, -104.985
-	        map.setView(new L.LatLng(39.739, -104.985), 10);
+        if (feature.geometry) {
+            if (feature.geometry.type == 'Point')
+                pane = 'otherStationsPane';
+            else
+                pane = 'pathsPane';
+            localstyle = { weight: 1, color : 'black', pane: pane };
+        }
+        return localstyle;
     }
 
     /***********
@@ -1535,32 +1616,45 @@ function getTrackers() {
     ***********/
     function initialize_layers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        //var allstations = L.markerClusterGroup();
-        var allstations = L.layerGroup();
+        var allstations = L.markerClusterGroup();
+        //var allstations = L.layerGroup();
+        //var allrfstations = L.layerGroup();
+        var allrfstations = L.markerClusterGroup();
         var mystation = L.layerGroup();
-        var wxstations = L.layerGroup();
+        //var wxstations = L.layerGroup();
+        var wxstations = L.markerClusterGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
-        var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
-        if (showallstations == 1)
+        //var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
+        //var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, function(){ return { color: 'black'}});
+        var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, mapStyle);
+        var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, mapStyle);
+        if (showallstations == 1) {
             a.addTo(map); 
+            a1.addTo(map); 
+        }
 
-        var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
-        var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
-        var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, function(){ return { color: 'black'}});
+        //var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
+        //var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
+        //var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, function(){ return { color: 'black'}});
+        var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, mapStyle);
+        var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, mapStyle);
+        var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, mapStyle);
         b.addTo(map);
         c.addTo(map);
         realtimelayers.push(a);
+        realtimelayers.push(a1);
         realtimelayers.push(b);
         realtimelayers.push(c);
         realtimelayers.push(d);
 
-        layerControl.addOverlay(allstations, "All Other Stations", "Generic Stations");
-        layerControl.addOverlay(wxstations, "Weather Stations", "Generic Stations");
-        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Generic Stations");
-        layerControl.addOverlay(mystation, "My Location", "Generic Stations");
+        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
+        layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
+        layerControl.addOverlay(allrfstations, "Other Stations (RF only)", "Other Stations");
+        layerControl.addOverlay(allstations, "Other Stations (Inet only)", "Other Stations");
+        layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
 
         /*
@@ -1601,7 +1695,6 @@ function getTrackers() {
                 5 * 1000,
                 flightids[key].flightid
             );
-
             d.addTo(map);
             f.addTo(map);
             realtimelayers.push(d);
@@ -1610,7 +1703,7 @@ function getTrackers() {
 
             /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
-            layerControl.addOverlay(predictedpathlayer, "Flight Prediction", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(predictedpathlayer, "Pre-Flight Predicted Path", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
          }
 
@@ -1625,9 +1718,6 @@ function getTrackers() {
     function startup() {
         // initialize the map and its layers
         initialize_map();
-
-        // set the map center
-        setTimeout(function() {set_map_center(); }, 10); 
 
         // load map layers
         setTimeout(function() { initialize_layers(); }, 10);
@@ -1719,10 +1809,10 @@ function getTrackers() {
             lastposition = JSON.parse(data);
             
             // Set the map center position
-            if (latitude != "" && longitude != "" && zoom != "")
-	            map.setView(new L.LatLng(latitude, longitude), zoom);
+            if (latitude != 0 && longitude != 0 && zoom != 0)
+	            map.setView(new L.latLng(latitude, longitude), zoom);
             else
-    	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
+    	        map.setView(new L.latLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
         });
 
 

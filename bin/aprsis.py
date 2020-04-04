@@ -28,6 +28,7 @@ import psycopg2 as pg
 import aprslib
 import logging
 import threading as th
+import socket
 import sys
 import signal
 import random
@@ -64,8 +65,81 @@ def debugmsg(message):
 #####################################
 # base class for connecting to APRS-IS systems
 #####################################
+class aisConnection(aprslib.IS):
+    """
+    Sub class of the aprslib IS class.  Added a function that will cause a blocking socket call to be interrupted via the socket shutdown function.
+
+    """
+    def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152):
+        super(aisConnection, self).__init__(callsign, passwd, host,  port)
+
+    def shutdownSocket(self):
+        self.sock.shutdown(socket.SHUT_RDWR)
+
+    def consumer(self, callback, blocking=True, immortal=False, raw=False):
+        """
+        When a position sentence is received, it will be passed to the callback function
+
+        blocking: if true (default), runs forever, otherwise will return after one sentence
+                  You can still exit the loop, by raising StopIteration in the callback function
+
+        immortal: When true, consumer will try to reconnect and stop propagation of Parse exceptions
+                  if false (default), consumer will return
+
+        raw: when true, raw packet is passed to callback, otherwise the result from aprs.parse()
+        """
+
+        if not self._connected:
+            raise aprslib.ConnectionError("not connected to a server")
+
+        line = ''
+
+        while True:
+            try:
+                for line in self._socket_readlines(blocking):
+                    if line[0] != "#":
+                        if raw:
+                            callback(line)
+                        else:
+                            callback(self._parse(line))
+                    #else:
+                    #    self.logger.debug("Server: %s", line)
+            except aprslib.ParseError as exp:
+                pass
+                #self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
+            except aprslib.UnknownFormat as exp:
+                pass
+                #self.logger.log(9, "%s\n    Packet: %s", exp.message, exp.packet)
+            except aprslib.LoginError as exp:
+                pass
+                #self.logger.error("%s: %s", exp.__class__.__name__, exp.message)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except (aprslib.ConnectionDrop, aprslib.ConnectionError):
+                self.close()
+
+                if not immortal:
+                    raise
+                else:
+                    self.connect(blocking=blocking)
+                    continue
+            except aprslib.GenericError:
+                pass
+            except StopIteration:
+                break
+            except:
+                #self.logger.error("APRS Packet: %s", line)
+                raise
+
+            #if not blocking:
+            #    break
+
+
+#####################################
+# base class for connecting to APRS-IS systems
+#####################################
 class APRSIS(object):
-    def __init__(self, connectionRetryLimit = None, server = None, timezone = None, dbConnectionString = None, callsign = None, aprsRadius = None, stopevent = None):
+    def __init__(self, connectionRetryLimit = None, server = None, timezone = None, dbConnectionString = None, callsign = None, aprsRadius = None, stopevent = None, watchdog = False):
         # The database connection string
         self.dbstring = habconfig.dbConnectionString
         if dbConnectionString:
@@ -95,6 +169,7 @@ class APRSIS(object):
         
         # aprslib connection
         self.ais = None
+        self.connected = False
 
         # The aprs-is server
         self.server = "noam.aprs2.net"
@@ -108,6 +183,7 @@ class APRSIS(object):
         # the connection attempt limit and timeout per try
         self.timeout = 5
         self.long_timeout = 30
+
 
         # by default, the connectionRetryLimit is set to None, which will cause the run() function to loop forever.
         self.connectionRetryLimit = None
@@ -125,15 +201,27 @@ class APRSIS(object):
         else:
             selt.stopevent = mp.Event()
 
+
+        # This is the watchdog timeout.  If a packet hasn't been seen in this many seconds, then close the connection and attempt to reconnect.
+        # This is set at 10mins
+        self.packet_timeout = 10 * 60
+
+        # Start a watchdog thread or not...
+        self.watchdog = watchdog
+
+        # Last time a packet was ingested/handled.  For the watchdog thread.
+        self.ts = datetime.datetime.now()
+
         debugmsg("APRSIS Instance Created:")
-        debugmsg("    dbstring: %s" % self.dbstring)
-        debugmsg("    timezone: %s" % self.timezone)
-        debugmsg("    callsign: %s" % self.callsign)
-        debugmsg("    server: %s" % self.server)
-        debugmsg("    server_port: %s" % self.server_port)
-        debugmsg("    timeout: %s" % self.timeout)
-        debugmsg("    long_timeout: %s" % self.long_timeout)
-        debugmsg("    aprsRadius: %s" % self.aprsRadius)
+        debugmsg("    dbstring:       %s" % self.dbstring)
+        debugmsg("    timezone:       %s" % self.timezone)
+        debugmsg("    callsign:       %s" % self.callsign)
+        debugmsg("    server:         %s" % self.server)
+        debugmsg("    server_port:    %s" % self.server_port)
+        debugmsg("    timeout:        %s" % self.timeout)
+        debugmsg("    long_timeout:   %s" % self.long_timeout)
+        debugmsg("    packet_timeout: %s" % self.packet_timeout)
+        debugmsg("    aprsRadius:     %s" % self.aprsRadius)
 
 
     ################################
@@ -145,12 +233,13 @@ class APRSIS(object):
         try:
             # Create an aprslib object
             debugmsg("APRS-IS connection: callsign: %s, passcode: %s, host: %s, port: %s" % (self.callsign, aprslib.passcode(self.callsign), self.server, '14580'))
-            self.ais = aprslib.IS(self.callsign, aprslib.passcode(self.callsign), host=self.server, port='14580')
+            #self.ais = aprslib.IS(self.callsign, aprslib.passcode(self.callsign), host=self.server, port='14580')
+            self.ais = aisConnection(callsign = self.callsign, passwd = aprslib.passcode(self.callsign), host=self.server, port=14580)
 
             # ...set the getAPRSFilter function
             filterstring = self.getAPRSFilter()
             self.ais.set_filter(filterstring)
-            debugmsg("APRS-IS initial filter string set to: %s" % filterstring)
+            debugmsg("APRS-IS[%s] initial filter string set to: %s" % (self.server, filterstring))
             
             # set the connection retry loop limit
             if self.connectionRetryLimit:
@@ -162,7 +251,14 @@ class APRSIS(object):
             aprsfilter = th.Thread(name="APRS-IS Filter", target=self._aprsFilterThread, args=())
             aprsfilter.setDaemon(True)
             aprsfilter.start()
-            debugmsg("Filter thread created.")
+            debugmsg("Filter thread created for, %s." % self.server)
+
+            # This is the watchdog thread.  If a packet hasn't been seen from the APRS-IS/CWOP server for packet_timeout seconds then abort the connection and reconnect.
+            if self.watchdog:
+                wd = th.Thread(name="APRS-IS Watchdog", target=self._aprsWatchdogThread, args=())
+                wd.setDaemon(True)
+                wd.start()
+                debugmsg("Watchdog thread created for, %s." % self.server)
 
             debugmsg("Connection retry loop limit set to: %s" % trylimit)
 
@@ -185,12 +281,24 @@ class APRSIS(object):
                     print "Aprsc-is connection to ", self.server, " successful"
                     sys.stdout.flush()
 
+                    # Set the connect flag 
+                    self.connected = True
+
+                    # Update the last timestamp
+                    self.ts = datetime.datetime.now()
+
                     # The consumer function blocks forever, calling the writeToDatabase function upon receipt of each APRS packet
-                    self.ais.consumer(self.writeToDatabase, blocking=True, raw=True, immortal=True)
+                    self.ais.consumer(self.writeToDatabase, blocking=True, raw=True, immortal=False)
+                    debugmsg("Consumer function returned [%s]." % self.server)
+
+                    # Close the AIS connection as prep for another iteration of this loop
+                    debugmsg("Closing APRS-IS connection [%s]." % self.server)
+                    self.ais.close()
 
                 except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
-                    print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
-                    sys.stdout.flush()
+                    pass
+                    #print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
+                    #sys.stdout.flush()
 
                 finally:
                     # Increment trycount each time through the loop
@@ -214,6 +322,7 @@ class APRSIS(object):
             if self.ais:
                 debugmsg("Closing APRS-IS connection")
                 self.ais.close()
+                self.connected = False
 
             if self.aprsconn:
                 if not self.aprsconn.closed:
@@ -252,6 +361,7 @@ class APRSIS(object):
             if not self.aprsconn:
                 debugmsg("Connecting to the database: %s" % self.dbstring)
                 self.aprsconn = pg.connect (self.dbstring)
+                self.aprsconn.set_session(autocommit=True)
 
             return True
 
@@ -332,6 +442,9 @@ class APRSIS(object):
     # Write an incoming packet to the database
     def writeToDatabase(self, x): 
         try:
+            # Update the watchdog timer
+            self.ts = datetime.datetime.now()
+
             # Parse the raw APRS packet
             packet = aprslib.parse(x)
             
@@ -410,15 +523,15 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    packet["from"], 
-                    packet["symbol"], 
-                    packet["speed"], 
-                    packet["course"], 
-                    packet["altitude"], 
-                    packet["comment"], 
-                    packet["raw"], 
-                    ptype, 
-                    info
+                    packet["from"].strip(), 
+                    packet["symbol"].strip(), 
+                    packet["speed"],
+                    packet["course"],
+                    packet["altitude"],
+                    packet["comment"].strip(), 
+                    packet["raw"].strip(), 
+                    ptype.strip(), 
+                    info.strip()
                 ])
 
             else:
@@ -456,27 +569,28 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    packet["from"], 
-                    packet["symbol"], 
-                    packet["speed"], 
-                    packet["course"], 
-                    packet["altitude"], 
-                    packet["comment"], 
-                    packet["longitude"], 
-                    packet["latitude"], 
-                    packet["longitude"], 
-                    packet["latitude"], 
-                    packet["altitude"], 
-                    packet["raw"], 
-                    ptype,
-                    info
+                    packet["from"].strip(), 
+                    packet["symbol"].strip(), 
+                    packet["speed"],
+                    packet["course"],
+                    packet["altitude"],
+                    packet["comment"].strip(), 
+                    packet["longitude"],
+                    packet["latitude"],
+                    packet["longitude"],
+                    packet["latitude"],
+                    packet["altitude"],
+                    packet["raw"].strip(), 
+                    ptype.strip(),
+                    info.strip()
                 ])
+
+            # Commit the insert to the database
+            self.aprsconn.commit()
 
             # Close the database cursor
             tapcur.close()
 
-            # Commit the insert to the database
-            self.aprsconn.commit()
              
 
         except (ValueError, UnicodeEncodeError) as error:
@@ -495,6 +609,40 @@ class APRSIS(object):
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
             tapcur.close()
             self.close()
+
+    ##################################################
+    # Watchdog thread for the APRS-IS connection
+    def _aprsWatchdogThread(self):
+       
+        # The time in seconds in between checking
+        # 
+        delta = 15 
+
+        try:
+            # Loop forever (until this thread/process is killed) sleeping each time for "delta" seconds.
+            while not self.stopevent.is_set():
+
+                # If connected to an APRS-IS server then check the last time we heard a packet 
+                if self.connected:
+
+                    # The current date/time
+                    now = datetime.datetime.now()
+
+                    # The difference between now and the last packet
+                    diff = now - self.ts
+
+                    debugmsg("Watchdog delta[%s]: %.2f" % (self.server, diff.total_seconds()))
+
+                    # If that time difference is greater than the packet_timeout, then close the APRS-IS connection.  The "run" loop (above) should attempt a reconnect...
+                    if diff.total_seconds() > self.packet_timeout:
+                        print "Watchdog:  No packets from, %s for %.1f seconds, resetting connection." % (self.server, diff.total_seconds())
+                        self.ais.shutdownSocket()
+
+                # Sleep for delta seconds
+                self.stopevent.wait(delta)
+
+        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+            print "APRS-IS watchdog thread ended"
 
 
     ##################################################
@@ -634,13 +782,21 @@ class aprsTap(APRSIS):
 #####################################
 class cwopTap(APRSIS):
     def __init__(self, server = None, timezone = None,  callsign = None, ssid = None, aprsRadius = None, stopevent = None):
-        super(cwopTap, self).__init__(None, server, timezone, None, callsign, aprsRadius, stopevent)
+        super(cwopTap, self).__init__(None, server, timezone, None, callsign, aprsRadius, stopevent, True)
         self.ssid = ssid
 
     def getAPRSFilter(self):
         try:
+            latitude_sum = 0
+            longitude_sum = 0
+            num_of_positions = 0
+
+
+            if not super(cwopTap, self).connectToDatabase():
+                return ""
+            
             # Get our current location
-            aprsFilter = super(cwopTap, self).getAPRSFilter()
+            #aprsFilter = super(cwopTap, self).getAPRSFilter()
 
             # database cursor
             pgCursor = self.aprsconn.cursor()
@@ -675,7 +831,7 @@ class cwopTap(APRSIS):
                 and f.active = true
                 and l.flightid = f.flightid
                 and l.callsign = fm.callsign
-                and l.tm > now()::date
+                and l.tm > (now() - interval '02:00:00')
 
                 order by
                 l.tm desc
@@ -689,11 +845,14 @@ class cwopTap(APRSIS):
             rows = pgCursor.fetchall()
 
             # Loop through each row, building the APRS-IS filter string
-            lpFilter = ""
+            #lpFilter = ""
             for lp in rows:
-                lpFilter = lpFilter + " r/" + str(lp[3]) + "/" + str(lp[4]) + "/" + str(self.aprsRadius)
+                latitude_sum += float(lp[3])
+                longitude_sum += float(lp[4])
+                num_of_positions += 1
+                #lpFilter = lpFilter + " r/" + str(lp[3]) + "/" + str(lp[4]) + "/" + str(self.aprsRadius)
 
-            aprsFilter = aprsFilter + lpFilter
+            #aprsFilter = aprsFilter + lpFilter
 
             # SQL query to fetch the lat/lon of callsigns for beacons on active flights
             activeBeaconsSql = """select
@@ -725,7 +884,7 @@ class cwopTap(APRSIS):
                 and f.active = true
                 and a.callsign = fm.callsign
                 and a.location2d != ''
-                and a.tm > now()::date
+                and a.tm > (now() - interval '02:00:00')
 
                 order by
                 a.tm desc,
@@ -743,11 +902,27 @@ class cwopTap(APRSIS):
             pgCursor.close()
 
             # Loop through each beacon callsign, building the APRS-IS filter string
-            beaconFilter = ""
+            #beaconFilter = ""
             for beacon in rows:
-                beaconFilter = beaconFilter + " r/" + str(beacon[3]) + "/" + str(beacon[4]) + "/" + str(self.aprsRadius)
+                latitude_sum += float(beacon[3])
+                longitude_sum += float(beacon[4])
+                num_of_positions += 1
+                #beaconFilter = beaconFilter + " r/" + str(beacon[3]) + "/" + str(beacon[4]) + "/" + str(self.aprsRadius)
 
-            aprsFilter = aprsFilter + beaconFilter
+            #aprsFilter = aprsFilter + beaconFilter
+
+            # Get our current location
+            if num_of_positions == 0:
+                gpsposition = super(cwopTap, self).getGPSPosition()
+                if gpsposition["isvalid"]:
+                    latitude_sum += gpsposition["latitude"]
+                    longitude_sum += gpsposition["longitude"]
+                    num_of_positions += 1
+
+            # compute average position and create radius filter based on this position
+            avg_lat = latitude_sum / num_of_positions
+            avg_lon = longitude_sum / num_of_positions
+            aprsFilter = "r/" + str(avg_lat) + "/" + str(avg_lon) + "/" + str(self.aprsRadius)
 
             # Return the resulting APRS-IS filter string
             debugmsg("cwopTap filter: %s" % aprsFilter)
