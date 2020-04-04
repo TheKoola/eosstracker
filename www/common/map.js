@@ -334,7 +334,7 @@
                    if (feature.properties.label)
                        var markercolor = 'black';
 
-		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
                }
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
@@ -555,7 +555,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -746,7 +746,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -935,7 +935,7 @@
                }
                else
                    // What to do with a point that doesn't have a symbol?
-		           return L.circleMarker(latlon, { radius: 8, pane: "otherStationsPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 8, pane: "breadcrumbPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
 
                var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
@@ -1533,33 +1533,44 @@ function getTrackers() {
             // This is Denver, CO: 39.739, -104.985
     	    map.setView(new L.latLng(39.739, -104.985), 10);
 
-        // Pane for all tracks, to put them at the bottom of the z-order
-        pathsPane = map.createPane("pathsPane");
-        pathsPane.style.zIndex = 300; 
-
-        // Pane for all landing predictions
-        landingPredictionPane = map.createPane("landingPredictionPane");
-        landingPredictionPane.style.zIndex = 660; 
-
-        // Pane for all flights, to put them at the top of the z-order
-        flightPane = map.createPane("flightPane");
-        flightPane.style.zIndex = 670; 
-
         // Pane for all flight Tooltips
         flightTooltipPane = map.createPane("flightTooltipPane");
-        flightTooltipPane.style.zIndex = 680; 
 
         // Pane for all non-flight tooltips, to put them underneath regular tooltips
         otherTooltipPane = map.createPane("otherTooltipPane");
-        otherTooltipPane.style.zIndex = 640; 
 
-        // Pane for all non-flight tooltips, to put them underneath regular tooltips
-        breadcrumbPane = map.createPane("breadcrumbPane");
-        breadcrumbPane.style.zIndex = 600;
+        // Pane for all flights, to put them at the top of the z-order
+        flightPane = map.createPane("flightPane");
+
+        // Pane for all landing predictions
+        landingPredictionPane = map.createPane("landingPredictionPane");
 
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
-        otherStationsPane.style.zIndex = 590; 
+
+        // Pane for all non-flight tooltips, to put them underneath regular tooltips.  All L.circleMarker's go here.
+        breadcrumbPane = map.createPane("breadcrumbPane");
+
+        // Pane for all tracks, to put them at the bottom of the z-order.  All paths, lines, polygons go here.
+        pathsPane = map.createPane("pathsPane");
+
+        // Tooltip z-order (default tooltips for leaflet are at 650)
+        flightTooltipPane.style.zIndex = 690; 
+        otherTooltipPane.style.zIndex = 650; 
+
+        // Marker z-order (default markers for leaflet are at 600)
+        flightPane.style.zIndex = 670; 
+        landingPredictionPane.style.zIndex = 665; 
+        otherStationsPane.style.zIndex = 660; 
+
+        // placing breadcrumb layer below normal markers.  That's because we add all "circleMarkers" to this pane.  CircleMarkers are an SVG drawing and therefore
+        // Leaflet creates a <canvas> DOM object for them on the map.  If this layer, then, is "in front of" other layers, it will block click events to those other objects.
+        breadcrumbPane.style.zIndex = 590; 
+
+        // Paths z-order (default paths for leaflet are at 400)
+        // Paths, lines, polygons, etc. are SVG drawings and therefore Leaflet will create a <canvas> DOM object on them map for them.  Consequently, this layer needs to be at a
+        // lower z-order.
+        pathsPane.style.zIndex = 420; 
 
         baselayer = { "OpenStreetMap (raster)" : tilelayer, "Klokantech Basic (vector)" : basic, "OSM Bright (vector)" : osmbright };
  
