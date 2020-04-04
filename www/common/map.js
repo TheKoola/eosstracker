@@ -328,7 +328,7 @@
                    if (feature.properties.label)
                        var markercolor = 'black';
 
-		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
                }
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
@@ -549,7 +549,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -740,7 +740,7 @@
 
                // For balloon markers (i.e. the breadcrumbs within their path) create a Leaflet marker for each one...
                if (feature.properties.objecttype == "balloonmarker") {
-                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "otherStationsPane", fillOpacity: .9, stroke : false, fill: true });
+                   var cm = L.circleMarker(latlon, { radius: 3, fillColor: markercolor, pane: "breadcrumbPane", fillOpacity: .9, stroke : false, fill: true });
 
 		           return cm;
                }
@@ -851,26 +851,25 @@
                     var mapcenter = map.getCenter();
                     var mapzoom = map.getZoom(); 
                     var id = feature.properties.id;
-    		    html = "<a target=\"_blank\" href=\"map.php" + 
-                              "?followfeatureid=" + feature.properties.id + 
-			      "&latitude=" + feature.geometry.coordinates[1] + 
-			      "&longitude=" + feature.geometry.coordinates[0] + 
-			      "&zoom=" + mapzoom + 
-			      "&showallstations=1\">" + 
-			      "<strong>" + feature.properties.callsign + "</strong></a>";
-		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
-			      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency + "MHz" + 
-                      (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? ", via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
-			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
-			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
+    		        html = "<a target=\"_blank\" href=\"map.php" + 
+                        "?followfeatureid=" + feature.properties.id + 
+                        "&latitude=" + feature.geometry.coordinates[1] + 
+                        "&longitude=" + feature.geometry.coordinates[0] + 
+                        "&zoom=" + mapzoom + 
+                        "&showallstations=1\">" + 
+                        "<strong>" + feature.properties.callsign + "</strong></a>";
+                        html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+                        (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
+                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency + "MHz" + 
+                        (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? ", via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
+                        (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
+                        "<br>Coords: <span id=\"" + id + "-coords\">"
+                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                        + "</span>"
+                        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                        (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
 
-
-		    layer.bindPopup(html, {className:  'myPopupStyle'} );
+                    layer.bindPopup(html, {className:  'myPopupStyle'} );
 
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
@@ -929,7 +928,7 @@
                }
                else
                    // What to do with a point that doesn't have a symbol?
-		           return L.circleMarker(latlon, { radius: 8, pane: "otherStationsPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
+		           return L.circleMarker(latlon, { radius: 8, pane: "breadcrumbPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
 
                var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
@@ -1525,33 +1524,45 @@ function getTrackers() {
             // This is Denver, CO: 39.739, -104.985
     	    map.setView(new L.latLng(39.739, -104.985), 10);
 
-        // Pane for all tracks, to put them at the bottom of the z-order
-        pathsPane = map.createPane("pathsPane");
-        pathsPane.style.zIndex = 300; 
-
-        // Pane for all landing predictions
-        landingPredictionPane = map.createPane("landingPredictionPane");
-        landingPredictionPane.style.zIndex = 660; 
-
-        // Pane for all flights, to put them at the top of the z-order
-        flightPane = map.createPane("flightPane");
-        flightPane.style.zIndex = 670; 
-
         // Pane for all flight Tooltips
         flightTooltipPane = map.createPane("flightTooltipPane");
-        flightTooltipPane.style.zIndex = 680; 
 
         // Pane for all non-flight tooltips, to put them underneath regular tooltips
         otherTooltipPane = map.createPane("otherTooltipPane");
-        otherTooltipPane.style.zIndex = 640; 
 
-        // Pane for all non-flight tooltips, to put them underneath regular tooltips
-        breadcrumbPane = map.createPane("breadcrumbPane");
-        breadcrumbPane.style.zIndex = 600; 
+        // Pane for all flights, to put them at the top of the z-order
+        flightPane = map.createPane("flightPane");
+
+        // Pane for all landing predictions
+        landingPredictionPane = map.createPane("landingPredictionPane");
 
         // Pane for all other stations, to put them underneath regular markers/objects
         otherStationsPane = map.createPane("otherStationsPane");
-        otherStationsPane.style.zIndex = 590; 
+
+        // Pane for all non-flight tooltips, to put them underneath regular tooltips.  All L.circleMarker's go here.
+        breadcrumbPane = map.createPane("breadcrumbPane");
+
+        // Pane for all tracks, to put them at the bottom of the z-order.  All paths, lines, polygons go here.
+        pathsPane = map.createPane("pathsPane");
+
+        // Tooltip z-order (default tooltips for leaflet are at 650)
+        flightTooltipPane.style.zIndex = 690; 
+        otherTooltipPane.style.zIndex = 650; 
+
+        // Marker z-order (default markers for leaflet are at 600)
+        flightPane.style.zIndex = 670; 
+        landingPredictionPane.style.zIndex = 665; 
+        otherStationsPane.style.zIndex = 660; 
+
+        // placing breadcrumb layer below normal markers.  That's because we add all "circleMarkers" to this pane.  CircleMarkers are an SVG drawing and therefore
+        // Leaflet creates a <canvas> DOM object for them on the map.  If this layer, then, is "in front of" other layers, it will block click events to those other objects.
+        breadcrumbPane.style.zIndex = 590; 
+
+        // Paths z-order (default paths for leaflet are at 400)
+        // Paths, lines, polygons, etc. are SVG drawings and therefore Leaflet will create a <canvas> DOM object on them map for them.  Consequently, this layer needs to be at a
+        // lower z-order.
+        pathsPane.style.zIndex = 420; 
+
 
         baselayer = { "Base Map (raster)" : tilelayer };
  
@@ -1581,6 +1592,23 @@ function getTrackers() {
 
     }
 
+    /*********
+    * this function is for styling the non-flight, other generic stations on the map
+    **********/
+    function mapStyle(feature) {
+        var localstyle = {};
+        var pane;
+
+        if (feature.geometry) {
+            if (feature.geometry.type == 'Point')
+                pane = 'otherStationsPane';
+            else
+                pane = 'pathsPane';
+            localstyle = { weight: 1, color : 'black', pane: pane };
+        }
+        return localstyle;
+    }
+
     /***********
     * initialize_other function
     *
@@ -1599,16 +1627,21 @@ function getTrackers() {
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
-        var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
-        var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, function(){ return { color: 'black'}});
+        //var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, function(){ return { color: 'black'}});
+        //var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, function(){ return { color: 'black'}});
+        var a = createRealtimeLayer("getallstations.php", allstations, 5 * 1000, mapStyle);
+        var a1 = createRealtimeLayer("getrfstations.php", allrfstations, 5 * 1000, mapStyle);
         if (showallstations == 1) {
             a.addTo(map); 
             a1.addTo(map); 
         }
 
-        var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
-        var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
-        var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, function(){ return { color: 'black'}});
+        //var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, function(){ return { color: 'black'}});
+        //var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, function(){ return { color: 'black'}});
+        //var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, function(){ return { color: 'black'}});
+        var b = createRealtimeLayer("getmystation.php", mystation, 5 * 1000, mapStyle);
+        var c = createRealtimeLayer("gettrackerstations.php", trackersatlarge, 5 * 1000, mapStyle);
+        var d = createRealtimeLayer("getweatherstations.php", wxstations, 5 * 1000, mapStyle);
         b.addTo(map);
         c.addTo(map);
         realtimelayers.push(a);
