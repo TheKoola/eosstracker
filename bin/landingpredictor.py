@@ -758,6 +758,12 @@ class PredictorBase(object):
 
             return flightpath_points
 
+        else:
+            debugmsg("Not processing a prediction, sanity checks failed")
+            return None
+
+
+
 
 #####################################
 # The LandingPredictor Class
@@ -1348,7 +1354,7 @@ class LandingPredictor(PredictorBase):
                         and fm.callsign = %s
                         and a.altitude > 0
                         and a.location2d != ''
-                        and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%', '\S', 'S%', '\^', '^%')
+                        and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
 
                     order by
@@ -1585,9 +1591,6 @@ class LandingPredictor(PredictorBase):
                 if debug:
                     print "Launchsite info: ", launchsite
 
-                # Get our latest position
-                gpsposition = self.getGPSPosition()
-
                 # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
                 debugmsg("Setting initial landing prediction elevation to launchsite elevation: %d" % launchsite['elevation'])
                 landingprediction_floor = launchsite['elevation']
@@ -1663,6 +1666,10 @@ class LandingPredictor(PredictorBase):
                     # The idea being that if we're close to the balloon, then our current elevation is likely close to the elevation of the 
                     # balloon's ultimate landing location.  ...and we want to have the prediction algorithm calculate predicitons down to 
                     # that elevation.  This should increase landing prediction accuracy a small amount.
+
+                    # Get our latest position
+                    gpsposition = self.getGPSPosition()
+
                     gps_estimate = False
                     if gpsposition['isvalid']:
                         # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet 
@@ -1693,11 +1700,30 @@ class LandingPredictor(PredictorBase):
                     # END:  adjust the prediction floor
                     ####################################
 
+
+                    ####################################
+                    # START:  get surface winds 
+                    ####################################
+                    # This will get an estimate of the surface winds in the area of a prior landing prediction.
+                    # If this is the first time through (aka there isn't a prior landing prediction), then the 
+                    # getSurfaceWinds function retuns "None" for winds.
+
                     # Get the surface winds at the landing location:
                     winds, validity = self.getSurfaceWinds(fid)
-                    #print "winds: ", winds
-                    #print "validity: ", validity
+
+                    ####################################
+                    # END:  get surface winds
+                    ####################################
                     
+
+
+                    ####################################
+                    # START:  compute the landing prediction
+                    ####################################
+                    # If we're unable to estimate the surface winds, then just run a "regular" prediction without winds
+                    # However, in either case (surface winds or not) we only want to process a single landing prediction so the javascript/map display
+                    # will only display a single 'X' on the map.
+
                     if not validity:
                         winds = None
                         wind_text = None
@@ -1713,6 +1739,12 @@ class LandingPredictor(PredictorBase):
                         # Call the prediction algo
                         debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
                         flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
+
+                    ####################################
+                    # END:  compute the landing prediction
+                    ####################################
+
+
 
                     ####################################
                     # START:  insert predicted landing record into the database
