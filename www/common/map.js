@@ -1500,7 +1500,7 @@ function getTrackers() {
         });
         
         var themap;
-        var mapnum = 2;
+        var mapnum = 1;
         switch (mapnum) {
             case 0:
                 themap = tilelayer;
