@@ -4,30 +4,142 @@
 
 ### New Features: ###
 
-- APRS icons on the map are now rotated so that they point in the direction of the station's bearing.  This only applies to those APRS symbols that lend themselves to such rotation such as vehicles.
+- Much more mobile device friendly as all web pages including the map now make much better allowances for the small screens of mobile devices (ex. phones, tablets, etc.).  The map sidebar will now shrink the gauges to allow for smaller screens, but if the screen is even smaller (ex. small phones), the gauges are replaced with text indicating the usual Altitude, Veritical Rate, Heading, and Speed.
 
-- Waypoint markers on the map now automatically update their latitude/longitude (within their popup) with their current position after a user drags them to a new location.  In addition, there is a small icon, visibile within the popup, that when clicked, will copy the lat/lon of the waypoint to the user's clipboard.
+- All web pages now have new styling to be "darker" and much more attractive.
 
-- A number of updates to charts on the Data page and on the map within the lefthand side-bar.
+- There is a new Dashboard page that opens under a new browser tab.  It will display the three most recently heard APRS packets in large font for quick identification.
 
-- Audio alerts from the Dashboard page are now available.  A synthesized voice will announce current flight conditions every 30 seconds and/or if certain alert condictions are encountered (ex. burst conditions).
+- Audio Alerts:  A synthesized voice will announce flight details/events when a flight is selected from the Dashboard page.  Audio anouncements will occur ever 30 seconds or upon special events (ex. burst, etc.) and include:  regular flight altitude and distance, time-to-live anouncements when the flight is descending, distance to predicted landing location, and loss of signal.
 
-- If a locally hosted Flight Aware ADS-B instance of dump1090 is detected on the system (see https://github.com/flightaware/dump1090), then a menu option, "ADS-B", will be visible on the web pages.  That link will redirect the user to that locally hosted Flight Aware web page.
+- Initial prep for to the map screens (i.e. underlying Javascript) to enable future accommodation of vector map tile sources.  This includes adding in the Mapbox GL Leafletjs shim as well as the Mapbox GL Javascript library.  This will make it easier (i.e. small code updates) when porting the system to use different map sources.
 
-- Updates to the backend habtracker daemon process so that it will skip over any USB connected SDR unit with a serial number string containing "adsb".  This allows for coexistance with an instance of dump1090 (ADS-B scanner/decoder) running on the same system.
+- The landing predictor will now query the predicted landing area for nearby stations (ex. < 30 miles) that are reporting an altitude/elevation in an attempt to determine the elevation near the landing area.  This uses a weighted exponential average of so that those stations closer to the predicted landing weight more heavily on the elevation computed.  Ultimately the aim of this feature is to improve prediction accuracy by having better knowledge of the landing elevation.
+
+- There are additional layers added to the map for weather stations and those stations heard directly over RF.  There are now three categories (i.e. map layers) for "other stations":  Weather Stations, Other Stations (RF-only), and Other Stations (Internet Only).  Each of these layers uses "clustering" to group nearby stations into a single "bubble" that can be expanded upon when clicked.  
+
+- Breadcrumbs are added to the predicted flight path displayed on the map.  Each breadcrumb shows the altitude of the fight at that point.
+
+- For the last few thousand feet before landing, the landing predictor will now take into account the current direction of the flight as it descends through 4500ft AGL and adjust the predicted landing location accordingly.  The idea being that as the flight is descending into surface winds it will being to change course (obivously), so the landing predictor will now being to "blend in" the current flight's course and speed as it descends through 4500ft AGL.  Once the fligh the flight is below 2500ft AGL, the predictor will assume it is 100% under the influence of surface winds.
+
+- The landing predictor will query the database to search for weather stations near the predicted landing area and use an exponential weighted average to estimate surface winds.  These are used to aid in prediction accuracy.  If surface wind values were available, the landing prediction icon will show "(wind adjusted)" on the map and the icon's popup will display the wind speed and direction.
+
+- The system will attempt to connect to cwop.aprs.net using a radius filter that encompasses the current flight's location and any predicted landing area's.  This ensures that weather data is added to the backend database to aid the landing predictor in estimating surface winds when calculating landing predictions.  This connection will auto-reconnect if no packets have been seen from cwop.aprs.net in the prior 10mins.
+
+- Simplified charts on the "Data" web page in addition to new charts to display temperature and pressure that new firmware on the KC0D payloads will be transmitting.
+
+- If availble, temperature and pressure values transmitted from the new firmware on KC0D payloads is displayed in popups for balloon and breadcrumb icons on the map.
+
+- Large rewrites of the backend Python code to be more modular, class oriented, and better positioned for future changes/additions.
+
+- The landing prediction process now runs every 10secs instead of every 20secs.
+
+- The map page will now dictate a full update of all map data every 30secs (was 90secs) in addition to improved polling routines.
+
+- Remove the algoFloor command line argument for the Python backend as it was unused.  The prediction floor is now completely automatically determined.
+
+- Calculations for determinging vertical rate of flights now use millisecond precision to increase accuracy (i.e. trying to avoid rounding issues).
+
+- There is a new category for Trackers, ZZ-Not Active.  When a tracker is placed on this team, they will not be displayed on the map.  The idea is that for trackers that are on the "bench" for a mission, they can be placed on the ZZ-Not Active team instead of deleted altogether.
+  
+- The Trackers sidebar content on the map is now a read-only list of trackers and team assignments in order to better faciliate code sharing between the code branches.  
+
+- The Live Packets sidebar content on the map is no longer available.  This was of limited use on the map.  The functionality, however, is still available on the "Data" page.
+
+- New feature on the Data web page that shows packet counts (i.e. direct, digipeated, etc.) heard over RF from trackers in tablulated format.
+
+- APRS icons on the map are now rotated to match their advertised (aka beaconed) bearing.
+
+- Waypoint markers on the map now automatically update their latitude/longitude (within their popup) with their current position after a user drags them to a new location. 
+
+- All popups on the map that have lat/lon coordinates displayed also have a small "copy to clipboard" image to make it easier for users to grab/save/copy those coordinates for other use.
+
+- Adjusted the font size used to display the altitude value on the dashboard for better visibility.
+
+- If the local system (ex. the brick) has dump1090-fa installed for monitoring ADS-B transmissions from aircraft, the web pages will automatically add a link to the menu for connecting to the dump1090-fa web page.
+
+- The system will skip over any RTLSDR USB dongle with a serial number containing 'adsb' (case insensitive) at startup.
 
 
-### Bugs Fixed: ###
+### Issues Fixed: ###
 
-- Updates to all database insert statements so that specific column names are used.  This error when encountered would cause the backend process(es) to hang without notifiying the user.
+- Reordering of the map panes (z-order) so that some icons/layers are "covered" and therefore no longer respond to click events.  Also includes fixes to ensure the z-ordering of the landing prediction 'X' on the map is higher than ordinary stations.
 
-- Fixes to the landing prediction routine so that only the latest packets are used as input to the algorithm for calculating a landing location.  This would largely impact the Time-To-Live (TTL) values.
+- Adjustments/fixes to the SQL query for finding stations nearby the landing prediction site to use exponential weighting and to filter out flying objects (ex. balloons, flights, etc.).
 
-- Issue under Setup->System Configuration screens for prepending an "EOSS" string to any RF beaconed APRS packets.  The enabled/disabled checkbox would not fully honor the higher level beaconing checkbox and incorrectly expose the string selection dropdown to the user.  
+- Better checking for NULL values when estimating surface wind values to prevent unintended abends.
 
-- The startup processes now automatically check for permissions for the audio and configuration subdirectories and will change those permissions if needed so that the www-data user has write privledges.
+- Minor issue with parsing timestamp from APRS packet that could cause a +- 4 sec error for web page displayed data.  This did not effect landing prediction calculations.
 
-- Issue with filtering the Dire wolf log file.  The regular expression being used was not accouting for dates being included in timestamps causing RF or Internet beacon transmissions (from direwolf) to be skipped and not listed on the Home page.
+- Correct an error when parsing times that do not have microsecond accuracy for some of the web page displayed data on the map.
+
+- Fixes to the HTML variable comparisons that occur for the map page
+
+- Strip leading/trailing whitespace from strings when inserting packets into the database from APRS-IS sources.
+
+- Fixes to map markers so that all objects display 4 digits precision for any displayed lat/lon coords.
+
+- Add the '-H' flag to sudo so that the backend daemon starts with a HOME directory for the eosstracker user.
+
+- Changes to the map web page in an attempt to load map elements in parallel to improve initial map page load times.
+
+- Corrections to data displayed on the map for flights to use timestamps included in APRS packets regardless of packet type.  This was formerly limited to balloon objects only.
+
+- Correction to the landing prediction algorithm, to average velocity when stepping through altitude levels (step size is 30ft).
+
+- Fixed an incorrect timezone setting used for database connections.
+
+- The map page was usting incorrect syntax calling javascript math methods within the distance function.  This was a low impact fix, but corrected nonetheless.
+
+- Corrections to the map update/polling routines to now indicate that new data is available when new landing predictions are available.
+
+- Fixed an issue where the map wouldn't update a flight path when multiple flights were being tracked.
+
+- Fixed error with SQL update statement when checking landingprediction table columns.  The landing predictor, upon startup, now correctly looks for required columns for the landingpredictions database table.
+
+- Adjustments to the SQL query for getting TTL times to more correctly display the time-to-live (TTL) for flights as they are descending on the map.
+
+- Fix time delta calculations in some web page data.
+
+- Corrected the map telemetry gauges to properly display NaN for invalid altitude and vertical rate values.
+
+- Update the web page postgresql SQL queries to correctly identify milliseconds when querying the database for recent flight data.
+
+- Fixes to the HTML when clicking on a callsign of a beacon on the map.  The correct action is the link should pan the map to the latest position of that beacon.
+
+- Fixed an issue wher the ending time values for the data downloads section were not being padded with leading zeros.
+
+- Corrected an issue on all web pages (i.e. Home, Data, Setup, etc.) where the GPS position query will occur every 5 seconds to update the Map link in the menubar.  The idea is that the map will start centered on the latest GPS position.
+
+- Update the Leaflet javascript library to v1.6.0.
+
+- Fixes to the footer area on the Dashboard page.
+
+- Fixed an issue where a user was unable to move a tracker to the 'At Large' team.
+
+- Corrected the file extension to be .csv for downloads from the Data page.
+
+- Beacon transmissions, RF or Internet, were being skipped because of incorrect regex and not included in JSON output.
+
+- Update to the wording on the Setup page to ensure a clearer meaning for the EOSS string prepended to outgoing APRS RF beacons.  Only applies to those stations using the brick with an external radio for position beaconing.
+
+- Remvoed a legacy directory from the web page file system /eosstracker/www/images/flightindicators/img.
+
+- Correction to several HTML headers to properly specify character encoding for HTML5.
+
+- Issue corrected where the "prepend EOSS" checkbox was being left in the dropdown as enabled under System Configuration settings.
+
+- Fixed the backend Python code to check for permissions on audio and configuration subdirs at system startup.
+
+- Issue with the backend Python using an incorrect column name for database insert statements.
+
+- Correction to the TTL calculations when contact to the flight has been lost.
+
+- Update the time used on database inserts to include millisecond resolution.
+
+- Changed all database insert statements to correctly identify columns, to hopefully insulate against schema changes causing issues.
+
+- Issue with filtering the Dire wolf log file.  The regular expression being used was not accounting for dates being included in timestamps causing RF or Internet beacon transmissions (from Dire Wolf) to be skipped and not listed on the Home page.
 
 
 ## Version 1.2 - August 2019 ##
