@@ -44,8 +44,13 @@
 
     // Check the callsign HTML GET variable
     $get_callsign = "";
-    if (isset($_GET["callsign"])) 
-        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
+    if (isset($_GET["callsign"])) {
+        if (($get_callsign = strtoupper(check_string($_GET["callsign"], 20))) == "")
+            $formerror = true;
+    }
+    else 
+        $formerror = true;
+            
 
     if ($formerror == true) {
         printf ("[]");
@@ -59,83 +64,371 @@
         return 0;
     }
 
-    ## query the list of callsigns for those flights that are active
-    $query = 'select f.flightid, fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = true and f.flightid = $1;';
-    //$result = sql_query($query);
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
+    // Function to create the JSON needed for the GeoJSON feature
+    function createFeatureJSON($packet_array) {
+        if (is_null($packet_array) || empty($packet_array) || ! is_array($packet_array))
+            return "[]";
+
+        global $config;
+
+        // Column list should be:
+        // 0 thetime, 
+        // 1 packet_time, 
+        // 2 callsign, 
+        // 3 flightid,
+        // 4 comment,
+        // 5 symbol,
+        // 6 altitude,
+        // 7 speed_mph,
+        // 8 bearing,
+        // 9 latitude,
+        // 10 longitude,
+        // 11 vert_rate,
+        // 12 lat_rate,
+        // 13 lon_rate,
+        // 14 elapsed_mins,
+        // 15 temperature_k,
+        // 16 pressure_pa
+        //
+
+        $callsign = $packet_array["callsign"];
+        $flightid = $packet_array["flightid"];
+
+        $json = array();
+        $json["type"] = "Feature";
+        $json["properties"]["id"] = $callsign;
+        $json["properties"]["time"] = $packet_array["thetime"];
+        $json["properties"]["packet_time"] = $packet_array["packet_time"];
+        $json["properties"]["callsign"] = $callsign;
+        $json["properties"]["flightid"] = $flightid;
+        $json["properties"]["symbol"] = $packet_array["symbol"];
+        $json["properties"]["altitude"] = $packet_array["altitude"];
+        $json["properties"]["comment"] = "Flight: <strong>" . $flightid. "</strong>" . ($packet_array["comment"] == "" ? "" : "<br>" . $packet_array["comment"]) . "<br>Speed: " . $packet_array["speed_mph"] . " mph<br>Heading: " . $packet_array["bearing"] . "&#176;<br>Vert Rate: " . number_format($packet_array["vert_rate"]) . " ft/min";
+        $json["properties"]["tooltip"] = $callsign;
+        $json["properties"]["objecttype"] = "balloon"; 
+        $json["properties"]["speed"] = ($packet_array["speed_mph"] == null ? "" : $packet_array["speed_mph"]); 
+        $json["properties"]["bearing"] = ($packet_array["bearing"] == null ? "" : $packet_array["bearing"]);
+        $json["properties"]["verticalrate"] = ($packet_array["vert_rate"] == null ? "" : $packet_array["vert_rate"]); 
+        $json["properties"]["label"] = $callsign . "<br>" . number_format($packet_array["altitude"]) . "ft"; 
+        $json["properties"]["iconsize"] = $config["iconsize"];
+        $json["properties"]["temperature"] = ($packet_array["temperature_k"] == null ? "" : $packet_array["temperature_k"]);
+        $json["properties"]["pressure"] = ($packet_array["pressure_pa"] == null ? "" : $packet_array["pressure_pa"]);
+        $json["geometry"]["type"] = "Point";
+        $json["geometry"]["coordinates"][]= $packet_array["longitude"];
+        $json["geometry"]["coordinates"][]= $packet_array["latitude"];
+
+        return $json;
     }
 
-    if (sql_num_rows($result) <= 0) {
-        sql_close($link);
-        printf ("[]");
-        return 0;
+
+    // Function to create the JSON needed for the GeoJSON feature
+    function createOtherJSON($packet_array) {
+        if (is_null($packet_array) || empty($packet_array) || ! is_array($packet_array))
+            return "[]";
+
+        if (count($packet_array) < 1)
+            return "[]";
+
+        global $config;
+
+        // Column list should be:
+        // 0 thetime, 
+        // 1 packet_time, 
+        // 2 callsign, 
+        // 3 flightid,
+        // 4 comment,
+        // 5 symbol,
+        // 6 altitude,
+        // 7 speed_mph,
+        // 8 bearing,
+        // 9 latitude,
+        // 10 longitude,
+        // 11 vert_rate,
+        // 12 lat_rate,
+        // 13 lon_rate,
+        // 14 elapsed_mins,
+        // 15 temperature_k,
+        // 16 pressure_pa
+
+        $linestring = array();
+        $json = array();
+        $breadcrumbsJson = array();
+        
+        // Get the callsign and flightid from the first row
+        $callsign = $packet_array[0]["callsign"];
+        $flightid = $packet_array[0]["flightid"];
+
+        // Loop variables
+        $max_altitude = 0;
+        $max_altitude_idx = 0;
+        $i = 0;
+
+        // Loop through each row saving the coordinates in an array and finding the max altitude
+        foreach ($packet_array as $row) { 
+
+            // the array of coordinates
+            $linestring[] = array($row["longitude"], $row["latitude"]);
+
+            // Looking for the maximum altitude
+            if ($row["altitude"] > $max_altitude) {
+                $max_altitude = $row["altitude"];
+                $max_altitude_idx = $i;
+            }
+
+            $tmpJson = array();
+            $tmpJson["type"] = "Feature";
+            $tmpJson["properties"]["id"] = $callsign . "_point_" . $i;
+            $tmpJson["properties"]["time"] = $row["thetime"];
+            $tmpJson["properties"]["packet_time"] = $row["packet_time"];
+            $tmpJson["properties"]["callsign"] = $callsign;
+            $tmpJson["properties"]["flightid"] = $flightid;
+            $tmpJson["properties"]["symbol"] = "/J";
+            $tmpJson["properties"]["ascending"] = ($row["vert_rate"] > 0 ? "true" : "false");
+            $tmpJson["properties"]["altitude"] = $row["altitude"];
+            $tmpJson["properties"]["comment"] = "Flight: <strong>" . $flightid. "</strong><br>Speed: " . $row["speed_mph"] . " mph<br>Heading: " . $row["bearing"] . "&#176;<br>Vert Rate: " . number_format($row["vert_rate"]) . " ft/min";
+            //$tmpJson["properties"]["tooltip"] = number_format($row["altitude"]) . "ft"; 
+            $tmpJson["properties"]["objecttype"] = "balloonmarker"; 
+            $tmpJson["properties"]["speed"] = ($row["speed_mph"] == null ? "" : $row["speed_mph"]); 
+            $tmpJson["properties"]["bearing"] = ($row["bearing"] == null ? "" : $row["bearing"]);
+            $tmpJson["properties"]["verticalrate"] = ($row["vert_rate"] == null ? "" : $row["vert_rate"]); 
+            //$tmpJson["properties"]["label"] = number_format($row["altitude"]) . "ft"; 
+            $tmpJson["properties"]["iconsize"] = $config["iconsize"];
+            $tmpJson["properties"]["temperature"] = ($row["temperature_k"] == null ? "" : $row["temperature_k"]);
+            $tmpJson["properties"]["pressure"] = ($row["pressure_pa"] == null ? "" : $row["pressure_pa"]);
+            $tmpJson["geometry"]["type"] = "Point";
+            $tmpJson["geometry"]["coordinates"][]= $row["longitude"];
+            $tmpJson["geometry"]["coordinates"][]= $row["latitude"];
+
+
+            $breadcrumbsJson[] = $tmpJson;
+            unset($tmpJson);
+
+            $i += 1;
+        }
+
+        // Remove the last element from the breadcrumbs as that location is where the balloon icon itself will be
+        unset($breadcrumbsJson[count($packet_array) - 1]);
+
+        if (count($linestring) > $max_altitude_idx + 1) { // the flight is now descending...which means we'll have an ascent and a descent portion
+            $ascent_portion = array_slice($linestring, 0, $max_altitude_idx + 1); 
+            $descent_portion = array_slice($linestring, $max_altitude_idx);
+
+            // Remove the burst altitude point from the breadcrumb list as that location is where the burst icon will be
+            unset($breadcrumbsJson[$max_altitude_idx]);
+
+            // The ascent portion JSON
+            $ascentJson = array();
+            $ascentJson["type"] = "Feature";
+            $ascentJson["properties"]["id"] = $callsign . "_ascent_path";
+            $ascentJson["properties"]["ascending"] = "true";
+            $ascentJson["properties"]["objecttype"] = "balloonpath";
+            $ascentJson["properties"]["flightid"] = $flightid;
+            $ascentJson["geometry"]["type"] = "LineString";
+            $ascentJson["geometry"]["coordinates"] = $ascent_portion;
+
+            // The descent portion JSON
+            $descentJson = array();
+            $descentJson["type"] = "Feature";
+            $descentJson["properties"]["id"] = $callsign . "_descent_path";
+            $descentJson["properties"]["ascending"] = "false";
+            $descentJson["properties"]["objecttype"] = "balloonpath";
+            $descentJson["properties"]["flightid"] = $flightid;
+            $descentJson["geometry"]["type"] = "LineString";
+            $descentJson["geometry"]["coordinates"] = $descent_portion;
+
+            // The burst object JSON
+            $burstJson = array();
+            $burstJson["type"] = "Feature";
+            $burstJson["properties"]["id"] = $callsign . "_burst";
+            $burstJson["properties"]["time"] = $packet_array[$max_altitude_idx]["thetime"];
+            $burstJson["properties"]["packet_time"] = $packet_array[$max_altitude_idx]["packet_time"];
+            $burstJson["properties"]["callsign"] = $callsign . " Approximate Burst";
+            $burstJson["properties"]["flightid"] = $flightid;
+            $burstJson["properties"]["symbol"] = "/n";
+            $burstJson["properties"]["altitude"] = $packet_array[$max_altitude_idx]["altitude"];
+            $burstJson["properties"]["comment"] = $flightid . " balloon burst";
+            $burstJson["properties"]["tooltip"] = number_format($max_altitude) . "ft"; 
+            $burstJson["properties"]["objecttype"] = "burstlocation"; 
+            $burstJson["properties"]["speed"] = ($packet_array[$max_altitude_idx]["speed_mph"] == null ? "" : $packet_array[$max_altitude_idx]["speed_mph"]); 
+            $burstJson["properties"]["bearing"] = ($packet_array[$max_altitude_idx]["bearing"] == null ? "" : $packet_array[$max_altitude_idx]["bearing"]);
+            $burstJson["properties"]["verticalrate"] = ($packet_array[$max_altitude_idx]["vert_rate"] == null ? "" : $packet_array[$max_altitude_idx]["vert_rate"]); 
+            $burstJson["properties"]["label"] = number_format($max_altitude) . "ft";
+            $burstJson["properties"]["iconsize"] = $config["iconsize"];
+            $burstJson["properties"]["temperature"] = ($packet_array[$max_altitude_idx]["temperature_k"] == null ? "" : $packet_array[$max_altitude_idx]["temperature_k"]);
+            $burstJson["properties"]["pressure"] = ($packet_array[$max_altitude_idx]["pressure_pa"] == null ? "" : $packet_array[$max_altitude_idx]["pressure_pa"]);
+            $burstJson["geometry"]["type"] = "Point";
+            $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["longitude"];
+            $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["latitude"];
+
+            $json[] = $ascentJson;
+            $json[] = $descentJson;
+            $json[] = $burstJson;
+            $json = array_merge($json, $breadcrumbsJson);
+        }
+        else { // the flight is still ascending...
+            // The ascent portion JSON
+            $ascentJson = array();
+            $ascentJson["type"] = "Feature";
+            $ascentJson["properties"]["id"] = $callsign . "_ascent_path";
+            $ascentJson["properties"]["ascending"] = "true";
+            $ascentJson["properties"]["objecttype"] = "balloonpath";
+            $ascentJson["properties"]["callsign"] = $callsign;
+            $ascentJson["properties"]["flightid"] = $flightid;
+            $ascentJson["geometry"]["type"] = "LineString";
+            $ascentJson["geometry"]["coordinates"] = $linestring;
+
+            $json[] = $ascentJson;
+            $json = array_merge($json, $breadcrumbsJson);
+
+        }
+
+        return $json;
     }
 
-    $callsigns = [];
 
-    if ($get_callsign != "") 
-        $get_callsign = " and fm.callsign = '" . $get_callsign . "' ";
-   
 
-/* ============================ */
+    ## output should return rows like this:
+    #
+    #    thetime    | packet_time | callsign | flightid | altitude | latitude  |  longitude  | vert_rate |       lat_rate        |       lon_rate        | elapsed_mins | temperature_k | pressure_pa
+    # --------------+-------------+----------+----------+----------+-----------+-------------+-----------+-----------------------+-----------------------+--------------+---------------+-------------
+    #  07:58:10.753 | 08:00:19    | JEFF-23  | JEFF-297 |     4951 | 40.474000 | -104.962850 |         0 |                     0 |                     0 |          512 |               |
+    #  07:59:33.657 | 08:30:17    | JEFF-23  | JEFF-297 |     5181 | 40.473600 | -104.962717 |    7.3522 |  2.71098512861998e-08 | -5.42197025723996e-08 |          510 |               |
+    #  07:59:34.66  | 08:30:46    | JEFF-23  | JEFF-297 |     5811 | 40.473283 | -104.962983 |   20.1886 | -1.69128555344827e-07 | -1.42424046235118e-07 |          510 |               |
+    #  07:59:35.161 | 08:31:15    | JEFF-23  | JEFF-297 |     6441 | 40.473633 | -104.962967 |   19.8912 |  1.84177568224633e-07 |   8.7703600408348e-09 |          510 |               |
 
     ## query the last packets from stations...
     $query = "
-        select distinct 
-        --a.tm::timestamp without time zone as thetime, 
-        date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-        case
-            when a.raw similar to '%[0-9]{6}h%' then 
-                date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
-            else
-                date_trunc('milliseconds', a.tm)::time without time zone
-        end as packet_time,
-        a.callsign, 
-        a.comment, 
-        a.symbol, 
-        round(a.altitude) as altitude, 
-        round(a.speed_mph) as speed_mph,
-        a.bearing,
-        round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-        round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
-        case 
-            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-            else
-                NULL
-        end as temperature_k,
-        case 
-            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-            else
-                NULL
-        end as pressure_pa,
-        a.ptype,
-        a.hash,
-        a.raw
+        select
+            date_trunc('second', y.thetime)::time as thetime,
+            y.packet_time,
+            y.callsign,
+            y.flightid,
+            y.comment,
+            y.symbol,
+            round(y.altitude) as altitude,
+            round(y.speed_mph) as speed_mph,
+            round(y.bearing) as bearing,
+            round(y.lat, 6) as latitude,
+            round(y.lon, 6) as longitude,
+            case when y.delta_secs > 0 then
+                round((60 * (y.altitude - y.previous_altitude) / y.delta_secs)::numeric)
+            else 
+                0
+            end as vert_rate,
+            case when y.delta_secs > 0 then
+                (y.lat - y.previous_lat) / y.delta_secs
+            else 
+                0
+            end as lat_rate,
+            case when y.delta_secs > 0 then
+                (y.lon - y.previous_lon) / y.delta_secs
+            else 
+                0
+            end as lon_rate,
+            round(y.elapsed_secs / 60.0) as elapsed_mins,
+            round(y.temperature_k, 6) as temperature_k,
+            round(y.pressure_pa, 6) as pressure_pa
 
-        from 
-        packets a, 
-        flightmap fm,
-        flights fl
+        from
+            (
+            select
+                z.thetime,
+                z.packet_time,
+                z.callsign,
+                z.flightid,
+                z.altitude,
+                z.comment,
+                z.symbol,
+                z.speed_mph,
+                z.bearing,
+                z.lat,
+                z.lon,
+                z.temperature_k,
+                z.pressure_pa,
+                z.ptype, 
+                z.hash,
+                z.raw,
+                lag(z.altitude, 1) over(order by z.packet_time)  as previous_altitude,
+                lag(z.lat, 1) over (order by z.packet_time) as previous_lat,
+                lag(z.lon, 1) over (order by z.packet_time) as previous_lon,
+                extract ('epoch' from (z.packet_time - lag(z.packet_time, 1) over (order by z.packet_time))) as delta_secs,
+                extract ('epoch' from (now()::time - z.thetime)) as elapsed_secs
 
-        where 
-        a.location2d != '' 
-        and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-        and fl.flightid = $3
-        and fm.flightid = fl.flightid 
-        and a.callsign = fm.callsign "
-        . $get_callsign . 
-        " order by thetime asc, a.callsign ;
-        "; 
+            from 
+                (
+                select
+                    date_trunc('milliseconds', a.tm)::time without time zone as thetime,
+                    case
+                        when a.raw similar to '%[0-9]{6}h%' then
+                            date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                        else
+                            date_trunc('milliseconds', a.tm)::time without time zone
+                    end as packet_time,
+                    a.callsign,
+                    f.flightid,
+                    a.altitude,
+                    a.comment,
+                    a.symbol,
+                    a.speed_mph,
+                    a.bearing,
+                    cast(st_y(a.location2d) as numeric) as lat,
+                    cast(st_x(a.location2d) as numeric) as lon,
+                    case
+                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                        round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                    else
+                        NULL
+                    end as temperature_k,
+                    case
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                            round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                        else
+                            NULL
+                    end as pressure_pa,
+                    a.ptype, 
+                    a.hash,
+                    a.raw
+
+                from
+                    packets a,
+                    flights f,
+                    flightmap fm
+
+                where 
+                    a.callsign = fm.callsign
+                    and fm.flightid = f.flightid
+                    and f.active = 'y'
+                    and a.tm > date_trunc('minute', (now() - (to_char(($2)::interval, 'HH24:MI:SS')::time)))
+                    and a.location2d != ''
+                    and a.altitude > 0
+                    and a.callsign = $3
+                    and f.flightid = $4
+
+                order by
+                    thetime,
+                    a.callsign
+
+                ) as z
 
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"]), sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($get_flightid)));
-    //$result = pg_query($link, $query);
+            order by
+                z.packet_time asc,
+                z.callsign
+            ) as y
+
+        order by
+            y.callsign,
+            y.packet_time asc
+        ";
+
+
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["timezone"]), 
+        sql_escape_string($config["lookbackperiod"] . " minute"), 
+        sql_escape_string($get_callsign),
+        sql_escape_string($get_flightid)
+        )
+    );
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -149,284 +442,18 @@
        return;
     }
 
+    $rows = sql_fetch_all($result);
+    $last_packet = end($rows);
 
-    $positioninfo = array();
-    $peak_altitude = 0;
+    $json[] = createFeatureJSON($last_packet);
+    $json = array_merge($json, createOtherJSON($rows));
 
-    $time_prev = [];
-    $altitude_prev = [];
-    $hash_prev = [];
-    $verticalrate = [];
-    $i = 0;
-    
-    while ($row = sql_fetch_array($result)) {
+    $featureCollectionJson = array();
+    $featureCollectionJson["type"] = "FeatureCollection";
+    $featureCollectionJson["properties"]["name"] = "Active Flights";
+    $featureCollectionJson["features"] = $json; 
 
-        // all the data from this return row...
-        $thetime = $row['thetime'];
-        $packettime = $row['packet_time'];
-        $callsign = $row['callsign'];
-        $comment = $row['comment'];
-        $symbol = $row['symbol'];
-        $latitude = $row['latitude'];
-        $longitude = $row['longitude'];
-        $altitude = $row['altitude'];
-        $bearing = $row['bearing'];
-        $speed_mph = $row['speed_mph'];
-
-        # If present, convert temperature to F
-        if ($row["temperature_k"] != "") 
-            $temperature = ($row["temperature_k"] - 273.15) * 9/5 + 32.0;
-        else
-            $temperature = "";
-
-        # If present, convert pressure to atm
-        if ($row["pressure_pa"] != "") 
-            $pressure = $row["pressure_pa"] / 101325.0;
-        else
-            $pressure = "";
-
-        $hash = $row['hash'];
-        if (strpos($thetime, ".") === false) {
-            $time_trunc = $thetime;
-            $microseconds = 0;
-        }
-        else
-            list($time_trunc, $microseconds) = explode(".", $thetime);
-
-        // calculate the vertical rate for this callsign
-        //$time1 = date_create($thetime);
-        $time1 = date_create($packettime);
-        if (array_key_exists($callsign, $time_prev)) {
-            if ($hash != $hash_prev[$callsign]) {
-                $diff = date_diff($time_prev[$callsign], $time1);
-                $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f)/60;
-                //$verticalrate[$callsign] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
-                if ($time_delta > 0)
-                    $verticalrate = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
-                else 
-                    $verticalrate = round(($altitude - $altitude_prev[$callsign])/(1/60), 0);
-                #printf("\ndelta:  %.6f mins\n", $time_delta);
-            }
-        }
-        else
-            $verticalrate = 0;
-
-        /* If the altitude is 0, but the packet is different than the prior one, we're assuming the altitude number has been mangled.
-           ...and therefore set it to the previous altitude value.  We do this because apparently the object is still moving, but its 
-           altitude value is oddball/screwy/messed-up.  */
-	if (array_key_exists($callsign, $hash_prev) && array_key_exists($callsign, $altitude_prev))
-            if ($altitude == 0 && $hash_prev[$callsign] != $hash)
-                $altitude = $altitude_prev[$callsign];
-
-        $features[$callsign][$latitude . $longitude . $altitude] = array($latitude, $longitude, $altitude, $speed_mph, $bearing, $time_trunc, $verticalrate, $callsign, $packettime, $temperature, $pressure);
-        $positioninfo[$callsign] = array($time_trunc, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, $verticalrate, $callsign, $packettime, $temperature, $pressure);
- 
-        if (array_key_exists($callsign, $hash_prev)) {
-            if ($hash != $hash_prev[$callsign]) {
-                 $altitude_prev[$callsign] = $altitude;
-                 $time_prev[$callsign] = $time1;
-             }
-        }
-        if ($i == 0) {
-            $time_prev[$callsign] = $time1;
-            $altitude_prev[$callsign] = $altitude;
-        }
-
-        $hash_prev[$callsign] = $hash;
-        $i++;
-    }    
-
-
-    // this is for the FeatureCollection preamble 
-    printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Active Flights\" }, \"features\" : [" );
-
-    
-    // This loop just prints out the last position report for each beacon on this flight.  So for a two-beacon flight, this loop should run through twice.
-    $firsttimeinloop = 1;
-    if ($numrows > 0) {
-    
-        // Reverse the array so that the newest/latest position report is printed first.
-        $positioninfo_r = array_reverse($positioninfo);
-
-        // Loop through the newest/last/latest position report for each callsign within the flight and print out GeoJSON for it.
-        $i = 0;
-        foreach ($positioninfo_r as $callsign => $ray) {
-            if ($firsttimeinloop == 0)
-                printf (", ");
-            $firsttimeinloop = 0;
-    
-            /* This prints out GeoJSON for the current location of the balloon/object */
-            printf ("{ \"type\" : \"Feature\",");
-            printf ("\"properties\" : { \"id\" : %s, \"flightid\" : %s, \"callsign\" : %s, \"time\" : %s, \"packet_time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"objecttype\" : \"balloon\", \"speed\" : %s, \"bearing\" : %s, \"verticalrate\" : %s, \"label\" : %s, \"iconsize\" : %s, \"temperature\" : %s, \"pressure\" : %s },", 
-            json_encode($callsign), 
-            json_encode($get_flightid), 
-            json_encode($callsign), 
-            json_encode($ray[0]), 
-            json_encode($ray[10]), 
-            json_encode($ray[1]), 
-            json_encode($ray[4]), 
-            json_encode("Flight: <strong>" . $get_flightid. "</strong>" . ($ray[5] == "" ? "" : "<br>" . $ray[5]) . "<br>Speed: " . $ray[6] . " mph<br>Heading: " . $ray[7] . "&#176;<br>Vert Rate: " . number_format($ray[8]) . " ft/min"), 
-            json_encode($callsign), 
-            json_encode($ray[6]), 
-            json_encode($ray[7]), 
-            json_encode($ray[8]),
-	        json_encode($callsign . "<br>" . number_format($ray[4]) . "ft"),
-            json_encode($config["iconsize"]),
-            json_encode($ray[11]),
-            json_encode($ray[12])
-            );
-
-            /* Print out the geometry object for this APRS object.  In this case, just the coordinates of the its current position */
-            printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]} }", $ray[3], $ray[2]);
-            $i += 1;
-        }
-    }
-
-    // This loop if for printing out the GeoJSON that makes up the "path" that each beacon has taken.
-    $firsttimeinloop = 1;
-    if ($numrows > 0) {
-    foreach ($features as $callsign => $ray) {
-
-        /* This block is for gathering up the linestring coordinates for the recent path the APRS object may have taken */
-        if (count($ray) > 1) {
-            printf (", ");
-            $peak_altitude = 0;
-            $peak_altitude_idx = 0;
-            $i = 0;
-
-            /* construct the linestring array that contains the list of coordinates for where we've heard APRS position beacons */
-            /* ...*/
-            /* ...also find the peak altitude thus far. */
-            foreach ($ray as $k => $elem) {
-                $linestring[] = array($elem[1], $elem[0]);
-                if ($elem[2] >= $peak_altitude) {
-                    $peak_altitude = $elem[2];
-                    $peak_altitude_idx = $i;
-                    //printf ("<br>count:  %d, idx:  %d, peak:  %d<br>", count($linestring), $peak_altitude_idx, $peak_altitude);
-                }
-                $i += 1;
-            }
-  
-
-            //find out if this balloon has hit a peak altitude and is now going down
-            // ...if "yes", then we need to split up the flight into two different features:
-            // 1) for the ascent portion of the flight, and 2) for the descent portion of the flight
-            // 
-            //printf ("<br><br>count:  %d, idx:  %d, peak:  %d<br>", count($linestring), $peak_altitude_idx, $peak_altitude);
-
-            /* is the peak altitude the last altitude?  If 'yes', then this object has yet to start descending.  If 'no', then yes..we're descending 
-               to determine that, we check the number of items in the linestring array (see above), if the peak altitude is NOT the 
-               last item in that array...well, then we enter this block of code, because the balloon/object is descending */
-            if (count($linestring) > $peak_altitude_idx + 1) {
-                $ascent_portion = array_slice($linestring, 0, $peak_altitude_idx + 1); 
-                $descent_portion = array_slice($linestring, $peak_altitude_idx);
-                
-                /* This is a GeoJSON object for the ascent portion of the flight */
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"balloonpath\", \"flightid\" : %s  },", json_encode($callsign . "_ascent_path"), json_encode($get_flightid));
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }, ", json_encode($ascent_portion));
-
-                /* This is a GeoJSON object that will denote the peak altitude location we observed.  It's not the "exact" burst 
-                   location for the balloon, but it's the highest altitude APRS beacon we've received for this callsign.
-                   So, we print out a GeoJSON object at this lat/lon. */
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"flightid\" : %s, \"callsign\" : %s, \"tooltip\" : %s, \"symbol\" : \"/n\", \"altitude\" : %s, \"comment\" : %s, \"objecttype\" : \"burstlocation\", \"label\" : %s, \"iconsize\" : %s },", 
-                    json_encode($callsign . "_burst"), 
-                    json_encode($get_flightid), 
-                    json_encode($callsign . " Approximate Burst"), 
-                    json_encode(number_format($peak_altitude) . "ft"), 
-                    json_encode($peak_altitude), 
-                    json_encode($get_flightid . " balloon burst"),
-		            json_encode(number_format($peak_altitude) . "ft"),
-        		    json_encode($config["iconsize"])
-                );
-                printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } }, ", json_encode(end($ascent_portion)));
-
-                /* This is a GeoJSON object for the descent portion of the flight */
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"false\", \"objecttype\" : \"balloonpath\", \"flightid\" : %s},", 
-                    json_encode($callsign . "_descent_path"), 
-                    json_encode($get_flightid)
-                );
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  },", json_encode($descent_portion));
-
-            } 
- 
-            /* ...otherwise the balloon/object is still ascending */
-            else {
-                /* presumably the balloon/object is still ascending so we only print out the GeoJSON object for the  ascending portion 
-                   of the flight thus far...which is the only data we have, btw. */
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"balloonpath\", \"flightid\" : %s },", 
-                    json_encode($callsign . "_ascent_path"), 
-                    json_encode($get_flightid)
-                );
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  },", json_encode($linestring));
-            }
-
-
-            /* This block is for creating a GeoJSON objects to represent the "breadcrumbs" or small markers that represent
-               where along the path of the balloon/object we've received APRS position beacons */
-            $i = 0;
-            $anotherfirsttime = 0;
-            $numpoints = count($ray) - 1;
-            $prev = 0;
-            $alt_prev = 0;
-            $current = 0;
-            $printlabel = false;
-            foreach ($ray as $k => $elem) {
-                $alt = $elem[2];
-
-                if ($alt > $alt_prev)
-                    $current = floor($alt / 10000);
-                else  
-                    $current = ceil($alt / 10000);
-
-                if ($current != $prev && $i != 0)
-                    // we want to print a label...
-                    $printlabel = true;
-                else
-                    $printlabel = false;
-                     
-
-                if ($elem[2] != $peak_altitude && $i < $numpoints) {
-                    if ($anotherfirsttime == 1)
-                        printf (", ");
-                    $anotherfirsttime = 1;
-                    if ($alt > $alt_prev)
-                        $altstring = number_format(floor($alt / 1000)) .  "k ft";
-                    else
-                        $altstring = number_format(ceil($alt / 1000)) .  "k ft";
- 
-                    /* This is for a GeoJSON object denoting the location of the breadcrumb */
-                    printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"time\" : %s, \"packet_time\" : %s, \"flightid\" : %s, \"callsign\" : %s, \"symbol\" : \"/J\", \"altitude\" : %s, \"comment\" : %s, \"objecttype\" : \"balloonmarker\", \"ascending\" : %s, \"speed\" : %s, \"heading\" : %s, \"verticalrate\" : %s, \"iconsize\" : %s, \"temperature\" : %s, \"pressure\" : %s },", 
-                        json_encode($callsign . "_point_" . $i), 
-                        json_encode($elem[5]), 
-                        json_encode($elem[8]), 
-                        json_encode($get_flightid), 
-                        json_encode($callsign), 
-                        json_encode($elem[2]),  
-                        json_encode("Flight: <strong>" . $get_flightid . "</strong><br>Speed: " . $elem[3] . " mph<br>Heading: " . $elem[4] . "&#176;<br>Vert Rate: " . number_format($elem[6]) . " ft/min"), 
-                        json_encode(($i < $peak_altitude_idx ? "true" : "false")), 
-                        json_encode($elem[3]), 
-                        json_encode($elem[4]), 
-		    	        json_encode($elem[6]),
-                        json_encode($config["iconsize"]),
-                        json_encode($elem[9]),
-                        json_encode($elem[10])
-                    );
-
-                    // print out the geometry of this breadcrumb...just it's coordinates in GeoJSON format.
-                    printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($elem[1], $elem[0])));
-                }
-                $alt_prev = $alt;
-                $prev = $current;
-                $i += 1;
-            }
-            unset ($linestring);
-        }
-      }
-   }
-
-    // This is for the ending of the FeatureCollection 
-    printf ("] }");
-
+    printf ("%s", json_encode($featureCollectionJson));
 
     // close our connection to PostGreSQL
     sql_close($link);

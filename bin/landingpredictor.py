@@ -935,45 +935,118 @@ class LandingPredictor(PredictorBase):
         # The SQL statement to get the latest packets for this callsign
         # columns:  timestamp, altitude, latitude, longitude
         # Note:  only those packetst that might have occured within the last 6hrs are queried.
-        latestpackets_sql = """select distinct
-                               case
-                                   when a.raw similar to '%%[0-9]{6}h%%' then 
-                                       date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::timestamp)::time without time zone
-                                   else
-                                       date_trunc('second', a.tm)::time without time zone
-                               end as thetime,
-                               round(a.altitude::numeric) as altitude,
-                               round(ST_Y(a.location2d)::numeric, 6) as lat,
-                               round(ST_X(a.location2d)::numeric, 6) as long,
-                               round(extract(epoch from (now() - a.tm)) / 60.0) as elapsed_mins,
-                               case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                       round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                                   else
-                                       NULL
-                               end as temperature_k,
-                               case 
-                                   when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                       round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                                   else
-                                       NULL
-                               end as pressure_pa
+        latestpackets_sql = """select
+                y.thetime,
+                round(y.altitude) as altitude,
+                round(y.lat, 6) as latitude,
+                round(y.lon, 6) as longitude,
+                case when y.delta_secs > 0 then
+                    (y.altitude - y.previous_altitude) / y.delta_secs
+                else 
+                    0
+                end as vert_rate,
+                case when y.delta_secs > 0 then
+                    (y.lat - y.previous_lat) / y.delta_secs
+                else 
+                    0
+                end as lat_rate,
+                case when y.delta_secs > 0 then
+                    (y.lon - y.previous_lon) / y.delta_secs
+                else 
+                    0
+                end as lon_rate,
+                round(y.elapsed_secs / 60.0) as elapsed_mins,
+                round(y.temperature_k, 6) as temperature_k,
+                round(y.pressure_pa, 6) as pressure_pa
 
-                               from 
-                               packets a
-    
-                               where 
-                               ST_X(a.location2d) != 0 
-                               and ST_Y(a.location2d) != 0 
-                               and a.altitude > 0
-                               and a.callsign = %s
-                               and a.tm > (now() - interval '06:00:00')
-    
-                               order by 
-                               elapsed_mins desc,
-                               thetime asc
-                               ; """
-          
+            from
+                (
+                select
+                    z.thetime,
+                    z.callsign,
+                    z.altitude,
+                    z.comment,
+                    z.symbol,
+                    z.speed_mph,
+                    z.bearing,
+                    z.lat,
+                    z.lon,
+                    z.temperature_k,
+                    z.pressure_pa,
+                    z.ptype, 
+                    z.hash,
+                    z.raw,
+                    lag(z.altitude, 1) over(order by z.thetime)  as previous_altitude,
+                    lag(z.lat, 1) over (order by z.thetime) as previous_lat,
+                    lag(z.lon, 1) over (order by z.thetime) as previous_lon,
+                    extract ('epoch' from (z.thetime - lag(z.thetime, 1) over (order by z.thetime))) as delta_secs,
+                    extract ('epoch' from (now() - z.tm)) as elapsed_secs
+
+                from 
+                    (
+                    select
+                        a.tm,
+                        case
+                            when a.raw similar to '%%[0-9]{6}h%%' then
+                                date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::time)::time without time zone
+                            else
+                                date_trunc('milliseconds', a.tm)::time without time zone
+                        end as thetime,
+                        a.callsign,
+                        a.altitude,
+                        a.comment,
+                        a.symbol,
+                        a.speed_mph,
+                        a.bearing,
+                        cast(st_y(a.location2d) as numeric) as lat,
+                        cast(st_x(a.location2d) as numeric) as lon,
+                        case
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                        else
+                            NULL
+                        end as temperature_k,
+                        case
+                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                                round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                            else
+                                NULL
+                        end as pressure_pa,
+                        a.ptype, 
+                        a.hash,
+                        a.raw
+
+                    from
+                        packets a,
+                        flights f,
+                        flightmap fm
+
+                    where 
+                        a.callsign = fm.callsign
+                        and fm.flightid = f.flightid
+                        and f.active = 'y'
+                        and a.tm > (now() - interval '06:00:00')
+                        and a.location2d != ''
+                        and a.altitude > 0
+                        and a.callsign = %s
+
+                    order by
+                        thetime,
+                        a.callsign
+
+                    ) as z
+
+
+                order by
+                    z.thetime asc,
+                    z.callsign
+                ) as y
+
+
+            order by
+                y.thetime asc
+            ; """
+                      
         try:
             # Check if we're connected to the database or not.
             if not self.connectToDatabase():
@@ -984,70 +1057,7 @@ class LandingPredictor(PredictorBase):
             landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
             rows = landingcur.fetchall()
             landingcur.close()
-
-            # If there is more than one packet to process...
-            if len(rows) > 1:
-                # Loop variables
-                alt_prev = 0
-                lat_prev = 0
-                long_prev = 0
-                alt_rate = 0
-                lat_rate = 0
-                lon_rate = 0
-                current_packets = []
-                first_packet = []
-                firsttime = 0
-
-                # Loop through each row returned (aka each packet for this callsign) calculating rates of change for vertical rate, latitutde rate, and longitude rate
-                for row in rows:
-                    thetime = row[0]
-                    if firsttime == 0:
-                        time_delta = datetime.timedelta(hours=thetime.hour, minutes=thetime.minute, seconds=thetime.second)
-                        firsttime = 1
-                        first_packet = row
-                        current_packets.append([thetime, row[1], row[2], row[3], 0, 0, 0, row[4]])
-                    else:
-                        thetime_delta = datetime.timedelta(hours=thetime.hour, minutes=thetime.minute, seconds=thetime.second)
-                        time_prev_delta = datetime.timedelta(hours=time_prev.hour, minutes=time_prev.minute, seconds=time_prev.second)
-                        time_delta = thetime_delta - time_prev_delta
-                        if time_delta.total_seconds() > 0:
-                            alt_rate = float(row[1] - alt_prev) / float(time_delta.total_seconds())
-                            lat_rate = float(row[2] - lat_prev) / float(time_delta.total_seconds())
-                            lon_rate = float(row[3] - lon_prev) / float(time_delta.total_seconds())
-                            current_packets.append([thetime, row[1], row[2], row[3],  alt_rate, lat_rate, lon_rate, row[4]])
-                    time_prev = thetime
-                    alt_prev = row[1]
-                    lat_prev = row[2]
-                    lon_prev = row[3]
-
-                debugmsg("Latest packets  for %s: %d" % (callsign.upper(), len(rows)))
-                debugmsg("current_packets for %s: %d" % (callsign.upper(), len(current_packets)))
-                debugmsg("rows[first]           : %s, %f, %f, %f" % (rows[0][0], rows[0][1], rows[0][2], rows[0][3]))
-                debugmsg("current_packets[first]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[0][0], 
-                    current_packets[0][1], 
-                    current_packets[0][2], 
-                    current_packets[0][3], 
-                    current_packets[0][4], 
-                    current_packets[0][5],
-                    current_packets[0][6],
-                    current_packets[0][7]
-                    ))
-                debugmsg("rows[last]           : %s, %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2], rows[-1][3]))
-                debugmsg("current_packets[last]: %s, %f, %f, %f, %f, %f, %f, %f" % (current_packets[-1][ 0], 
-                    current_packets[-1][1], 
-                    current_packets[-1][2], 
-                    current_packets[-1][3], 
-                    current_packets[-1][4], 
-                    current_packets[-1][5],
-                    current_packets[-1][6],
-                    current_packets[-1][7]
-                    ))
-
-                return current_packets
-
-            # No packets found, so return an empty numpy array
-            else:
-                return []
+            return rows
 
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
@@ -1618,6 +1628,15 @@ class LandingPredictor(PredictorBase):
                         latestpackets[0,5],
                         latestpackets[0,6],
                         latestpackets[0,7]
+                        ))
+                    debugmsg("latestpackets[-1]:  %s, %f, %f, %f, %f, %f, %f, %f" % (latestpackets[-1,0], 
+                        latestpackets[-1,1],
+                        latestpackets[-1,2],
+                        latestpackets[-1,3],
+                        latestpackets[-1,4],
+                        latestpackets[-1,5],
+                        latestpackets[-1,6],
+                        latestpackets[-1,7]
                         ))
                 # ...if no packets heard, then return.
                 else:
