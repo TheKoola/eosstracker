@@ -86,29 +86,6 @@
     
 
     /***********
-    * coord_distance
-    *
-    * This function return the distance in miles between two lat/lon points
-    ***********/
-    function coord_distance(lat1, lon1, lat2, lon2) {
-        // This is pi (i.e. 3.14159) divided by 180.  Pre-calcualted and entered here as static 
-        // variable so we don't have to calcuate that on every call.
-        var p = 0.017453292519943295;    
-        
-        // The cosine function
-        var c = Math.cos;
-
-        // partial calculation...
-        var a = 0.5 - c((lat2 - lat1) * p)/2 + 
-                c(lat1 * p) * c(lat2 * p) * 
-                (1 - c((lon2 - lon1) * p))/2;
-
-        // Finish the calcs and return the distance in miles
-        return Math.round((12742 * Math.asin(Math.sqrt(a)))*.6213712 * 100)/100; // 2 * R; R = 6371 km
-    }
-
-
-    /***********
     * createchart
     *
     * This is the APRS-IS packet counts chart.
