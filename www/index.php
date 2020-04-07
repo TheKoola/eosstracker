@@ -297,7 +297,7 @@
         printf ("</div>");
 
         // Lastest position packets section
-        printf ("<p class=\"section-header\"><a href=\"#positions\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Position Packets</a>:</p>", $row['flightid'] . "_positionpacketlistlink", $row['flightid'] . "_positionpacketlistsign");
+        printf ("<p class=\"section-header\" id=\"%s\"><a href=\"#positions\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Position Packets</a>:</p>", $row['flightid'] . "_positionpacketssection", $row['flightid'] . "_positionpacketlistlink", $row['flightid'] . "_positionpacketlistsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_positionpacketlist");
         printf ("    <div class=\"div-table\">");
         printf ("        <div class=\"table-row\">");

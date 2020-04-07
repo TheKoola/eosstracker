@@ -1665,6 +1665,8 @@ function getTrackers() {
     function setMyLocation(position) {
         var lat = Number(position.coords.latitude);
         var lon = Number(position.coords.longitude);
+        var heading = (typeof(position.coords.heading) != "undefined" ? 0 : Number(position.coords.heading));
+        var elevation = (typeof(position.coords.altitude) != "undefined" ? 0 : Number(position.coords.altitude * 3.2808));
 
         // call to update the location marker on the map
         // the date/time for right now
@@ -1690,8 +1692,12 @@ function getTrackers() {
             "<br>Time: " + 
             thetime;
 
-        // if this is the first time through, then we need to create the My Location layer, the marker, and finally add that to the map
+        // if this is the first time through, then we need to create the My Location layer, the marker, and finally add that to the map.  In addition to create the relative position instruments.
         if (locationSetup == false) {
+
+            // For the first time through, create the relative gauges within the sidebar for each flight.
+            buildRelativeGauges();
+
             mystation = L.layerGroup();
             layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
@@ -1728,6 +1734,9 @@ function getTrackers() {
             mylocation_marker.setPopupContent(html);
         }
 
+        // Update the relative position instrumentation
+        updateRelativeGauges(lat, lon, heading, elevation);
+
         // If we're following our own location, then pan the map to this new location
         if (followme == true) {
             map.panTo(new L.latLng(lat,lon));
@@ -1736,7 +1745,124 @@ function getTrackers() {
 
 
     /***********
-    * initialize_other function
+    * distance
+    *
+    * This function will calculate the distance in miles between two sets of coordinates
+    ***********/
+    function distance(lat1, lon1, lat2, lon2) {
+        // Convert to Radians
+        var rlon1 = lon1 * (Math.PI / 180);
+        var rlon2 = lon2 * (Math.PI / 180);
+        var rlat1 = lat1 * (Math.PI / 180);
+        var rlat2 = lat2 * (Math.PI / 180);
+
+        // Haversine formula
+        var dlon = rlon2 - rlon1;
+        var dlat = rlat2 - rlat1;
+        var a = Math.pow(Math.sin(dlat/2), 2) + Math.cos(rlat1) * Math.cos(rlat2) * Math.pow(Math.sin(dlon/2), 2);
+        var c = 2 * Math.asin(Math.sqrt(a));
+
+        //#var r = 6371 // Radius of earth in kilometers. Use 3956 for miles
+        var r = 3956 // Radius of earth in kilometers. Use 3956 for miles
+
+        return c * r;
+    }
+
+
+    /***********
+    * updateRelativeGauges
+    *
+    * This function will accept coordinates with the user's current position and upate the relative position gauges appropriately.
+    ***********/
+    function updateRelativeGauges(lat, lon, myheading, myelevation) {
+        var flight;
+
+
+        // Loop through each flight updating our relative position
+        for (flight in flightids) {
+            var data = $("#" + flightids[flight].flightid + "_sidebar").data();
+            if (typeof(data.lastposition) != "undefined") {
+
+                // The last position JSON
+                var lastposition = data.lastposition;
+
+                // The distance between the user's position and the last position heard from the flight
+                var dist = distance(lat, lon, lastposition.lat, lastposition.lon);
+
+                // The value DOM elements
+                var delement = "#" + flightids[flight].flightid + "_relativepositiondistance";
+                var celement = "#" + flightids[flight].flightid + "_relativeballooncoords";
+
+                // These are the gauges and their headers
+                var eelement = "#" + flightids[flight].flightid + "_relativeelevationangle";
+                var evelement = "#" + flightids[flight].flightid + "_relativeelevationanglevalue";
+                var hvelement = "#" + flightids[flight].flightid + "_relativebearingvalue";
+                var mhvelement = "#" + flightids[flight].flightid + "_myheadingvalue";
+
+                // Compute the angles
+                var azimuth = Math.round(Math.atan2(lastposition.lon  - lon, lastposition.lat - lat) * 180.0 / Math.PI);
+                var elevation_angle = Math.round(Math.atan((lastposition.altitude - myelevation) / (dist * 5280)) * 180.0 / Math.PI);
+                var relativeBearing = azimuth - myheading;
+
+                // If less than 0, we need to add (2 * Pi) aka 360deg. 
+                if (relativeBearing < 0)
+                    relativeBearing = 360 + relativeBearing;
+
+                // Update the distance and balloon coords text fields
+                $(delement).html(Math.round(dist * 100) / 100 + " mi" + " @ " + azimuth + "&#176;");
+                $(celement).text(Math.round(lastposition.lat * 10000) / 10000 + ", " + Math.round(lastposition.lon * 10000) / 10000);
+
+                // Update the gauges
+                $(hvelement).data("relativebearing").setRelativeHeading(myheading, azimuth);
+                $(evelement).data("relativeangle").setElevationAngle(elevation_angle);
+
+                // Update the headers for the gauges
+                $(evelement).text(elevation_angle);
+                $(hvelement).text(relativeBearing);
+                $(mhvelement).text(myheading);
+            }
+        }
+
+    }
+
+
+
+    /***********
+    * buildRelativeGauges
+    *
+    * This function will build out the relative gauges on the sidebar 
+    ***********/
+    function buildRelativeGauges() {
+
+        var relativebearing;
+        var relativeangle;
+        var flight;
+
+        // Loop through each flight building the HTML and the instrumentation within the appropriate location within the sidebar
+        for (flight in flightids) {
+
+            // Build the HTML for the gauges
+            buildHTMLforGauges(flightids[flight].flightid);
+
+            // The relative position instruments DOM elements
+            var relativeBearingInstrument = "#" + flightids[flight].flightid + "_relativebearing";
+            var relativeElevationInstrument = "#" + flightids[flight].flightid + "_relativeelevationangle";
+            var relativeBearingValue = "#" + flightids[flight].flightid + "_relativebearingvalue";
+            var relativeElevationValue = "#" + flightids[flight].flightid + "_relativeelevationanglevalue";
+
+            // Create the indivudual gauges themselves
+            relativebearing = $.flightIndicator(relativeBearingInstrument, 'relativeHeading', { showBox: true});
+            relativeangle = $.flightIndicator(relativeElevationInstrument, 'elevationAngle', { showBox: true});
+            $(relativeBearingValue).data('relativebearing', relativebearing);
+            $(relativeElevationValue).data('relativeangle', relativeangle);
+        }
+
+    }
+
+
+
+    /***********
+    * initialize_layers function
     *
     * This function performs all of the heavy lifting to init the data sources displayed on the map for non-flight sources.
     ***********/
@@ -1887,7 +2013,7 @@ function getTrackers() {
                 $(vert_a).click({element: vert_e, link: vert_l }, toggle);
 
                 // We use this to determine when the last packet came in for a given flight.
-                $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
+                //$("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
 
                 i += 1;
             }
@@ -1903,22 +2029,6 @@ function getTrackers() {
         $(window).on('focus', function() { 
             updateAllItems("full", true);
         });
-
-
-        //####################FIXME#####################
-        // Get the latest position from GPS
-        /*
-        $.get("getposition.php", function(data) { 
-            lastposition = JSON.parse(data);
-            
-            // Set the map center position
-            if (latitude != "" && longitude != "" && zoom != "")
-	            map.setView(new L.LatLng(latitude, longitude), zoom);
-            else
-    	        map.setView(new L.LatLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
-        });
-        */
-        //####################FIXME#####################
 
 
         // Listener so that the charts for flights are resized when the screen changes size.
@@ -2158,7 +2268,115 @@ function getTrackers() {
     }
 
 
+    /************
+     * buildHTMLforGauges
+     *
+     * This function builds the HTML part of the relative location gauges
+    *************/
+    function buildHTMLforGauges(theFlight) {
+        var masterdiv = document.getElementById(theFlight + "_sidebar");
+        var insertBeforeElem = document.getElementById(theFlight + "_positionpacketssection");
 
+        // The overall DIV element that contains all of the relative gauge elements
+        var newDIV = document.createElement("DIV");
+        
+        // The section header for the relative gauges
+        var newP = document.createElement("P");
+        
+        // Paragraph attributes
+        newP.setAttribute("class", "section-header");
+
+        // Paragraph HTML
+        newP.innerHTML = "<a href=\"#relative\" class=\"section-link\" id=\"" + theFlight + "_relativepositionlink\">(<span id=\"" + theFlight + "_relativepositionsign\" style=\"color: red;\">+</span>) Relative Position</a>:";
+        
+        // Overall div attributes
+        newDIV.setAttribute("id", theFlight + "_relativeposition");
+        newDIV.setAttribute("style", "display: none;");
+        
+        // Create the first row for the gauges section
+        var tablediv1 = document.createElement("DIV");
+        tablediv1.setAttribute("class", "div-table");
+
+        var tablerow1 = document.createElement("DIV");
+        tablerow1.setAttribute("class", "table-row");
+
+        var cell1 = document.createElement("DIV");
+        cell1.setAttribute("class", "panel-cell toprow bottomrow");
+        cell1.innerHTML = "<div style=\"margin: 5px;\">" + 
+            "<div>&nbsp;</div>" + 
+            "<div id=\"" + theFlight + "_relativeelevationangle\"></div>" + 
+            "<div class=\"instrumenttitle\">Elev Angle</div>" + 
+            "<div>Angle: <span id=\"" + theFlight + "_relativeelevationanglevalue\">--</span>&#176;</div>" + 
+            "</div>";
+
+        var cell2 = document.createElement("DIV");
+        cell2.setAttribute("class", "panel-cell toprow bottomrow");
+        cell2.innerHTML = "<div style=\"margin: 5px;\">" + 
+            "<div class=\"instrumenttitle\">My Hdng</div>" +
+            "<div>Hdng: <span id=\"" + theFlight + "_myheadingvalue\">--</span>&#176;</div>" +
+            "<div id=\"" + theFlight + "_relativebearing\"></div>" + 
+            "<div class=\"instrumenttitle bottomrow\">R. Brng</div>" +
+            "<div>Brng: <span id=\"" + theFlight + "_relativebearingvalue\">--</span>&#176;</div>" +
+            "</div>";
+         
+        tablerow1.appendChild(cell1);
+        tablerow1.appendChild(cell2);
+        tablediv1.appendChild(tablerow1);
+
+
+
+        // Create the second row for the gauges section
+        var tablediv2 = document.createElement("DIV");
+        tablediv2.setAttribute("class", "div-table");
+
+        var tablerow2 = document.createElement("DIV");
+        tablerow2.setAttribute("class", "table-row");
+
+        var cell3 = document.createElement("DIV");
+        cell3.setAttribute("class", "table-cell header toprow");
+        cell3.innerHTML = "Distance To Balloon";
+     
+        var cell4 = document.createElement("DIV");
+        cell4.setAttribute("class", "table-cell header toprow");
+        cell4.innerHTML = "Balloon Coords";
+
+        tablerow2.appendChild(cell3);
+        tablerow2.appendChild(cell4);
+        tablediv2.appendChild(tablerow2);
+
+        var tablerow3 = document.createElement("DIV");
+        tablerow3.setAttribute("class", "table-row");
+
+        var cell5 = document.createElement("DIV");
+        cell5.setAttribute("class", "table-cell big");
+        cell5.innerHTML = "<mark><span id=\"" + theFlight + "_relativepositiondistance\"></span></mark></div>";
+     
+        var cell6 = document.createElement("DIV");
+        cell6.setAttribute("class", "table-cell big");
+        cell6.innerHTML = "<mark><span id=\"" + theFlight + "_relativeballooncoords\"></span></mark></div>";
+
+        tablerow3.appendChild(cell5);
+        tablerow3.appendChild(cell6);
+        tablediv2.appendChild(tablerow3);
+        
+
+        // Add the relative gauges section to the overall div
+        newDIV.appendChild(tablediv1);
+        newDIV.appendChild(tablediv2);
+
+
+        // insert the section header and the overall div into the DOM
+        masterdiv.insertBefore(newP, insertBeforeElem);
+        masterdiv.insertBefore(newDIV, insertBeforeElem);
+
+        // make sure the toggle functionality is working
+        var rel_a = "#" + theFlight + "_relativepositionlink";
+        var rel_l = "#" + theFlight + "_relativepositionsign";
+        var rel_e = "#" + theFlight + "_relativeposition";
+
+        $(rel_a).click({element: rel_e, link: rel_l }, toggle);
+
+    }
 
     /************
      * dispatchPanToEvent
@@ -2347,6 +2565,11 @@ function getTrackers() {
                             $(speedValue).data("airspeed").setAirSpeed(thespeed);
                             $(balloonHeadingValue).text(theheading);
                             $(speedValue).text(thespeed);
+
+                            // Save the lat/lon coords from the most recent packet for this flight within the flightid_sidebar DOM element.
+                            // The relative position gauges will read this value to compute distance from the user's position to the flight's current location
+                            $("#" + fid + "_sidebar").data("lastposition", { lat: item.latitude * 10 / 10, lon: item.longitude * 10 / 10, altitude: item.altitude * 10 / 10 } );
+
                         }
 
 
