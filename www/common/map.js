@@ -1665,8 +1665,8 @@ function getTrackers() {
     function setMyLocation(position) {
         var lat = Number(position.coords.latitude);
         var lon = Number(position.coords.longitude);
-        var heading = (typeof(position.coords.heading) != "undefined" ? 0 : Number(position.coords.heading));
-        var elevation = (typeof(position.coords.altitude) != "undefined" ? 0 : Number(position.coords.altitude * 3.2808));
+        var heading = (typeof(position.coords.heading) == "undefined" ? 0 : Number(position.coords.heading));
+        var elevation = (typeof(position.coords.altitude) == "undefined" ? 0 : Number(position.coords.altitude * 3.2808));
 
         // call to update the location marker on the map
         // the date/time for right now
@@ -1802,6 +1802,7 @@ function getTrackers() {
                 // Compute the angles
                 var azimuth = Math.round(Math.atan2(lastposition.lon  - lon, lastposition.lat - lat) * 180.0 / Math.PI);
                 var elevation_angle = Math.round(Math.atan((lastposition.altitude - myelevation) / (dist * 5280)) * 180.0 / Math.PI);
+                myheading = Math.round(myheading);
                 var relativeBearing = azimuth - myheading;
 
                 // If less than 0, we need to add (2 * Pi) aka 360deg. 
