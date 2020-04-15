@@ -518,6 +518,8 @@ class PredictorBase(object):
             ####################################
             # We're here because:  a) the flight is descending, and b) conditions are such that we want to calculate a prediction.
 
+            # Lambda function that represents our velocity prediction curve
+            v = lambda altitude : function_weight * self.func_x2(altitude, *p) + (1 - function_weight) * pred_v_curve(altitude)
 
             # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
             #for k in ascent_portion[np.where(ascent_portion[:,0] <= last_heard_altitude)]:
@@ -551,21 +553,21 @@ class PredictorBase(object):
                        t = 0
                        h_range = []
                        if k[0] - backstop <= step_size:
-                           v_0 =  function_weight * self.func_x2(backstop, *p) + (1 - function_weight) * pred_v_curve(backstop)
-                           v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
+                           v_0 =  v(backstop)
+                           v_1 =  v(k[0])
                            v_avg = (v_0 + v_1) / 2.0
                            t = abs((k[0] - backstop) / v_avg)
 
                        else:
                            h_range = np.arange(backstop + step_size, k[0], step_size)
                            for h in h_range:
-                               v_0 =  function_weight * self.func_x2(h-step_size, *p) + (1 - function_weight) * pred_v_curve(h-step_size)
-                               v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
+                               v_0 =  v(h - step_size)
+                               v_1 =  v(h)
                                v_avg = (v_0 + v_1) / 2.0
                                t += abs(step_size / v_avg)
 
-                           v_0 =  function_weight * self.func_x2(h_range[-1], *p) + (1 - function_weight) * pred_v_curve(h_range[-1])
-                           v_1 =  function_weight * self.func_x2(k[0], *p) + (1 - function_weight) * pred_v_curve(k[0])
+                           v_0 =  v(h_range[-1])
+                           v_1 =  v(k[0])
                            v_avg = (v_0 + v_1) / 2.0
                            t += abs((k[0] - h_range[-1]) / v_avg)
 
@@ -648,20 +650,20 @@ class PredictorBase(object):
                            t = 0
                            h_range = []
                            if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
-                               v_0 =  function_weight * self.func_x2(backstop, *p) + (1 - function_weight) * pred_v_curve(backstop)
-                               v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
+                               v_0 =  v(backstop)
+                               v_1 =  v(last_heard_altitude)
                                v_avg = (v_0 + v_1) / 2.0
                                t = abs((last_heard_altitude - backstop) / v_avg)
                            else:
                                h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
                                for h in h_range:
-                                   v_0 =  function_weight * self.func_x2(h-step_size, *p) + (1 - function_weight) * pred_v_curve(h-step_size)
-                                   v_1 =  function_weight * self.func_x2(h, *p) + (1 - function_weight) * pred_v_curve(h)
+                                   v_0 =  v(h - step_size)
+                                   v_1 =  v(h)
                                    v_avg = (v_0 + v_1) / 2.0
                                    t += abs(step_size / v_avg)
 
-                               v_0 =  function_weight * self.func_x2(h_range[-1], *p) + (1 - function_weight) * pred_v_curve(h_range[-1])
-                               v_1 =  function_weight * self.func_x2(last_heard_altitude, *p) + (1 - function_weight) * pred_v_curve(last_heard_altitude)
+                               v_0 =  v(h_range[-1])
+                               v_1 =  v(last_heard_altitude)
                                v_avg = (v_0 + v_1) / 2.0
                                t += abs((last_heard_altitude - h_range[-1]) / v_avg)
 
