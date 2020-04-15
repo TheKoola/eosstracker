@@ -55,6 +55,8 @@
     var sidebar;
     var layerControl;
     var tilelayer;
+    var osmbright;
+    var basic;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1482,31 +1484,15 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
 
-        var osmbright = L.mapboxGL({
+        osmbright = L.mapboxGL({
             style: '/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
-        var basic = L.mapboxGL({
+        basic = L.mapboxGL({
             style: '/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
-
-        var themap;
-        var mapnum = 0;
-        switch (mapnum) {
-            case 0:
-                themap = tilelayer;
-                break;
-            case 1:
-                themap = basic;
-                break;
-            case 2:
-                themap = osmbright;
-                break;
-            default:
-                themap = osmbright;
-        }
 
 
         // Create a map object. 
@@ -1514,7 +1500,8 @@ function getTrackers() {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ themap ]
+            minZoom: 4,
+            maxZoom: 20
         });
 
         // Set default map location and zoom
@@ -1563,11 +1550,39 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
-
         baselayer = { "Base Map (raster)" : tilelayer };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
+
+
+        // Prefer to use a vector map as the base layer if one of them is available.
+        $.get(basic.options.style, function(data, textStatus, xhr) {
+
+            // Add the basic vector layer to the map as the default base map layer
+            layerControl.addBaseLayer(basic, "Basic (vector)");
+            basic.addTo(map);
+
+            // Also add the osmbright vector map...if it exists.
+            $.get(osmbright.options.style, function(data, textStatus, xhr) {
+                layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
+            });
+        }).fail(function(data, textStatus, xhr) {
+            // Try to add the osmbright vector map...if it exists...and add it as the default base map layer
+            $.get(osmbright.options.style, function(data, textStatus, xhr) {
+
+                // Add the osmbright vector layer to the map as the default base map layer
+                layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
+                osmbright.addTo(map);
+
+            }).fail(function(data, textSttaus, xhr) {;
+
+                // If no vector maps exist, then fallback to the raster maps being the "base map" layer.
+                tilelayer.addTo(map);
+            });
+        });
+
+
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
