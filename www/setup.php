@@ -57,13 +57,7 @@ include $documentroot . '/common/header.php';
 
     $(document).ready(function () {
 
-        getTrackers();
-        getFlights();
-        getPredictions();
-        getLaunchSites();
-        getFrequencies();
-	    getTimeZones();
-	    getConfiguration();
+        refreshPage();
         var configuration_a = "#configurationSelectionLink";
         var configuration_l = "#configurationSelectionLinkSign";
         var configuration_e = "#configurationSelection";
@@ -98,6 +92,11 @@ include $documentroot . '/common/header.php';
         var freq_l = "#freqSelectionLinkSign";
         var freq_e = "#freqSelection";
         $(freq_a).click({element: freq_e, link: freq_l }, toggle);
+
+        var sync_a = "#syncupLink";
+        var sync_l = "#syncupSign";
+        var sync_e = "#syncup";
+        $(sync_a).click({element: sync_e, link: sync_l }, toggle);
 
         // Update the Map link in the menu bar
         setTimeout(function() {
@@ -136,6 +135,7 @@ include $documentroot . '/common/header.php';
 </script>
 <div>
     <div id="errors"></div>
+
 
     <!-- ###################################### -->
     <!-- Flights configuration section -->
@@ -417,6 +417,35 @@ include $documentroot . '/common/header.php';
                 <span id="frequencies"></span>
             </p>
             </div>
+
+
+    <!-- ###################################### -->
+    <!-- Sync up section -->
+    <!-- ###################################### -->
+    <p class="header">
+        <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+        <a href="#syncup" class="header" id="syncupLink">(<span style="color: red;" id="syncupSign">+</span>) Synchronize Flights, Trackers, etc.</a>
+    </p>
+    <div id="syncup" style="display: none;">
+        <p class="normal-italic">
+            Click the "Synchronize..." button to synchronize this system's flight and tracker definitions with the EOSS Kiosk system running on <a href="https://track.eoss.org/" class="normal-link-black">track.eoss.org</a>.
+        </p>
+        <p class="subheader">
+            Synchronize With The EOSS Kiosk System:
+        </p>
+        <p>
+            <form name="initial-sync" id="initial-sync">
+                    <input class="submitbutton" style="margin: 5px; margin-left: 30px;" type="submit" value="Synchronize..." form="initial-sync" onclick="syncData(); return false;">
+                    <span id="syncup-status"></span>
+            </form>  
+            <div id="syncup-div" style="margin-top: 10px;"></div>
+            </form>
+        </p>
+        <p class="normal-italic">
+            Please restart the System Processes from the <a href="/" class="normal-link-black">Home</a> page for changes to take effect.
+        </p>
+    </div>
+
 
             <!-- ###################################### -->
             <!-- Configuration section -->

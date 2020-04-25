@@ -1696,3 +1696,241 @@
 
 
 
+    /***********
+    * displayKioskData function
+    *
+    * This function queries the track.eoss.org system for the flight, tracker, launchsite, and frequency configuration.
+    * It will use that information to populate an HTML table along with cancel or accept buttons for the user. 
+    ***********/
+    function displayKioskData() {
+
+        // Get the configuration
+        $.get("getconfiguration.php", function(data) {
+            var keys = Object.keys(data);
+            var i;
+
+            //console.log("keys: " + JSON.stringify(keys));
+
+            // The div we want to insert our table into
+            var tablediv = document.getElementById("syncup-div");
+
+            // Create a table and rows to hold our JSON data
+            var table = document.createElement("TABLE");
+            table.setAttribute("class", "packetlist");
+            table.setAttribute("style", "width: auto; margin-left: 30px;");
+            tablediv.innerHTML = "";
+
+            // Create the header row
+            var headerRow = table.insertRow(-1);
+            var headerCell0 = headerRow.insertCell(-1);
+            headerCell0.setAttribute("class", "packetlistheader");
+            headerCell0.innerHTML = "Proposed Changes (from the kiosk system at track.eoss.org)";
+            headerRow.appendChild(headerCell0);
+
+            // Now build the flight rows
+            if ("flights" in data) {
+                var flights = data["flights"];
+                var flightsHeaderRow = table.insertRow(-1);
+                var flightsHeaderCell0 = flightsHeaderRow.insertCell(-1);
+                flightsHeaderCell0.setAttribute("class", "packetlist-highlight");
+                flightsHeaderCell0.innerHTML = "Flights";
+                flightsHeaderRow.appendChild(flightsHeaderCell0);
+
+                var row = table.insertRow(-1);
+                var flightCell = row.insertCell(0);
+                flightCell.setAttribute("class", "packetlist");
+                //flightCell.setAttribute("style", "font-family:  'Lucida Console', Monaco, monospace;");
+                flightCell.setAttribute("style", "font-size: 1.1em;");
+                var flighthtml = "<table class=\"packetlist\"><tr><th class=\"packetlistheader\">Flightid</th><th class=\"packetlistheader\">Status</th><th class=\"packetlistheader\">Beacons</th></tr>";
+
+
+                //Add the data rows.
+                for (i = 0; i < flights.length; i++) {
+    
+                    var flight = flights[i];
+    
+                    beacons = []
+                    if ("flightmap" in data) {
+                        var flightmap = data["flightmap"];
+                        var j;
+                        for (j = 0; j < flightmap.length; j++) {
+                            if (flightmap[j].flightid == flight.flightid)
+                                beacons.push(flightmap[j].callsign + " (" + flightmap[j].freq.toFixed(3) + " MHz)");
+                        }
+                    }
+
+
+                    var activeInactive;
+                    if (flight.active == true) 
+                        activeInactive = " <font style=\"color: #ffbf00;\">(tracking) </font> ";
+                    else
+                        //activeInactive = " <font style=\"color: #ffbf00;\">(tracking) </font> ";
+                        activeInactive = " (inactive) ";
+                    flighthtml = flighthtml + "<tr><td class=\"packetlist\">" + flight.flightid + "</td><td class=\"packetlist\">" + activeInactive + "</td><td class=\"packetlist\">";
+                    var firsttime = 0;
+                    for (b in beacons) {
+                        if (firsttime == 1)
+                            flighthtml = flighthtml + ", ";
+                        firsttime = 1;
+                        flighthtml = flighthtml + beacons[b];
+                    }
+                    flighthtml = flighthtml + "</td></tr>";
+
+                    //if (flight.active == true)
+                    //    flightCell.setAttribute("style", "font-family:  'Lucida Console', Monaco, monospace; color: #ffbf00;");
+                    //else
+                }
+                flightCell.innerHTML = flighthtml + "</table>";
+                row.appendChild(flightCell);
+            }
+
+
+
+            if ("launchsites" in data) {
+                // {"launchsite":"Deer Trail","lat":39.61,"lon":-104.042,"alt":5200}
+                var launchsites = data["launchsites"];
+                var launchsiteHeaderRow = table.insertRow(-1);
+                var launchsiteHeaderCell0 = launchsiteHeaderRow.insertCell(-1);
+                launchsiteHeaderCell0.setAttribute("class", "packetlist-highlight");
+                launchsiteHeaderCell0.innerHTML = "Launch Sites";
+                launchsiteHeaderRow.appendChild(launchsiteHeaderCell0);
+
+                var row = table.insertRow(-1);
+                var siteCell = row.insertCell(0);
+                siteCell.setAttribute("class", "packetlist");
+                //siteCell.setAttribute("style", "font-family:  'Lucida Console', Monaco, monospace;");
+                siteCell.setAttribute("style", "font-size:  1.1em;");
+                var launchsitehtml = "<table class=\"packetlist\"><tr><th class=\"packetlistheader\">Launch Site</th><th class=\"packetlistheader\">Coordinates</th><th class=\"packetlistheader\">Elevation</th></tr>";
+
+
+                //Add the data rows.
+                for (i = 0; i < launchsites.length; i++) {
+                    var site = launchsites[i];
+
+                    launchsitehtml = launchsitehtml + "<tr><td class=\"packetlist\">" + site.launchsite + "</td><td class=\"packetlist\">" + (site.lat * 10 / 10).toFixed(4) + ", " + (site.lon * 10 / 10).toFixed(4) + "</td><td class=\"packetlistright\">" + site.alt.toLocaleString() + " ft</td></tr>";
+                }
+
+                siteCell.innerHTML = launchsitehtml + "</table>";
+                row.appendChild(siteCell);
+            }
+
+
+            if ("trackers" in data) {
+                // trackers: {"callsign":"J3FF-4","tactical":"ZZ-Not Active","notes":"SDFSDF"}
+                // teams:  {"tactical":"Delta","flightid":null}
+                var trackers = data["trackers"];
+
+                var trackersRow = table.insertRow(-1);
+                var trackersHeaderCell = trackersRow.insertCell(-1);
+                trackersHeaderCell.setAttribute("class", "packetlist-highlight");
+                trackersHeaderCell.innerHTML = "Trackers";
+                trackersRow.appendChild(trackersHeaderCell);
+
+                var row = table.insertRow(-1);
+                var trackersCell = row.insertCell(0);
+                trackersCell.setAttribute("class", "packetlist");
+                //trackersCell.setAttribute("style", "font-family:  'Lucida Console', Monaco, monospace;");
+                trackersCell.setAttribute("style", "font-size:  1.1em;");
+                var trackershtml = "<table class=\"packetlist\"><tr><th class=\"packetlistheader\">Team</th><th class=\"packetlistheader\">Callsign</th><th class=\"packetlistheader\">Notes</th></tr>";
+
+
+                //Add the data rows.
+                for (i = 0; i < trackers.length; i++) {
+                    var tracker = trackers[i];
+                    trackershtml = trackershtml + "<tr><td class=\"packetlist\">" + tracker.tactical + "</td><td class=\"packetlist\">" + tracker.callsign + "</td><td class=\"packetlist\">" + tracker.notes + "</td></tr>";
+                }
+                trackersCell.innerHTML = trackershtml + "</table>";
+                row.appendChild(trackersCell);
+            }
+
+
+            if ("freqs" in data) {
+                // {"freq":145.045}
+                var freqs = data["freqs"];
+
+                var freqRow = table.insertRow(-1);
+                var freqHeaderCell = freqRow.insertCell(-1);
+                freqHeaderCell.setAttribute("class", "packetlist-highlight");
+                freqHeaderCell.innerHTML = "Frequencies";
+                freqRow.appendChild(freqHeaderCell);
+
+                var row = table.insertRow(-1);
+                var freqCell = row.insertCell(0);
+                freqCell.setAttribute("class", "packetlist");
+                freqCell.setAttribute("style", "font-size:  1.1em;");
+                var freqhtml = "<table class=\"packetlist\"><tr><th class=\"packetlistheader\">Frequency</th></tr>";
+                freqhtml = freqhtml + "<tr><td class=\"packetlist\">144.390 MHz (standard)</td></tr>";
+
+
+                //Add the data rows.
+                for (i = 0; i < freqs.length; i++) {
+                    var freq = freqs[i];
+                    freqhtml = freqhtml + "<tr><td class=\"packetlist\">" + (freq.freq * 10 / 10).toFixed(3) + " MHz</td></tr>";
+                }
+                freqCell.innerHTML = freqhtml + "</table>";
+                row.appendChild(freqCell);
+            }
+
+            // The Apply an Cancel buttons
+            var buttonHeaderRow = table.insertRow(-1);
+            var buttonHeaderCell = buttonHeaderRow.insertCell(-1);
+            buttonHeaderCell.setAttribute("class", "packetlistheader");
+            buttonHeaderCell.setAttribute("style", "text-align: center");
+            buttonHeaderCell.innerHTML = "Confirmation";
+            buttonHeaderRow.appendChild(buttonHeaderCell);
+
+            var buttonRow = table.insertRow(-1);
+            var buttonCell = buttonRow.insertCell(-1);
+            buttonCell.setAttribute("class","packetlist");
+            buttonCell.setAttribute("style", "text-align: center");
+            buttonCell.innerHTML = "<form name=\"apply-syncup\" id=\"apply-syncup\">"
+                + "<input class=\"submitbutton\" style=\"margin: 5px; font-size: 1.4em;\" type=\"submit\" value=\"Apply Changes\" form=\"apply-syncup\" onclick=\"applySyncup(); return false;\">"
+                + " &nbsp; " 
+                + "<input class=\"submitbutton\" style=\"margin: 5px; font-size: 1.4em;\" type=\"submit\" value=\"Cancel\" form=\"apply-syncup\" onclick=\"cancelSyncup(); return false;\">";
+            buttonRow.appendChild(buttonCell);
+
+
+            tablediv.appendChild(table);
+
+
+        });
+    }
+
+    /***********
+    * displayKioskData function
+    *
+    * This function queries the track.eoss.org system for the flight, tracker, launchsite, and frequency configuration.
+    * It will use that information to populate an HTML table along with cancel or accept buttons for the user. 
+    ***********/
+    function syncData() {
+
+        $.get("syncconfiguration.php", function(data) {
+
+            var color = (data.result > 0 ? "lightgreen" : "yellow");
+            var statushtml = "<mark style=\"background-color: " + color + ";\">" + data.error + "</mark>";
+
+            document.getElementById("syncup-status").innerHTML = statushtml;
+
+            refreshPage();
+
+            setTimeout(function() {
+                document.getElementById("syncup-status").innerHTML = "";
+            }, 3000);
+
+        });
+    }
+
+    /***********
+    * refreshPage function
+    *
+    * This function will refresh all data on the setup page
+    ***********/
+    function refreshPage() {
+        getTrackers();
+        getFlights();
+        getPredictions();
+        getLaunchSites();
+        getFrequencies();
+	    getTimeZones();
+	    getConfiguration();
+    }
