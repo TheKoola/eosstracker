@@ -1448,7 +1448,7 @@ function getTrackers() {
     ***********/
     function getProcessStatus() {
       $.get("getstatus.php", function(data) {
-          var statusJson = JSON.parse(data);
+          var statusJson = data;
           var keys = Object.keys(statusJson.processes);
           var i = 0;
           var k = 0;

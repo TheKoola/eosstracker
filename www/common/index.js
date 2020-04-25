@@ -117,7 +117,7 @@ function shutDownProcesses() {
 ***********/
 function getrecentdata() {
   $.get("getstatus.php", function(data) { 
-      var statusJson = JSON.parse(data);
+      var statusJson = data;
       var keys = Object.keys(statusJson.processes);
       var antennas = statusJson.antennas
       var i = 0;
