@@ -1,7 +1,7 @@
 # Installing an ADS-B Application on the EOSS SDR Tracker System
 
 Application Notes by Marty WA0GEH,
-Version 1.0, Dated 2019-12-11
+Version 1.1, Dated 2020-05-01
 
 ## Installing dump1090 for ADS-B decoding
 
@@ -111,12 +111,12 @@ enter the following commands (Copy and paste OK):
 ```
 sudo apt install librtlsdr-dev libusb-1.0-0-dev dh-systemd libncurses5-dev libbladerf-dev
 cd /tmp
-git clone https://www.github.com/deatojef/dump1090.git
+git clone https://github.com/edgeofspace/dump1090-fa.git
 cd dump1090
 git checkout eoss
 dpkg-buildpackage -b --no-sign -tc
 cd ..
-sudo apt install ./dump1090-fa_3.7.2_amd64.deb
+sudo apt install ./dump1090-fa_3.8.1_amd64.deb
 ```
 
 To verify the installation succeeded, at the command prompt, enter:
