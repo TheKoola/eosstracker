@@ -4,6 +4,8 @@
 
 ### New Features: ###
 
+- On the Setup page, there is a new section for synchronizing one's local SDR system to the kiosk version running at https://track.eoss.org.  This will mirror flights, trackers, launch sites, and frequencies from the kiosk system onto the local system potentially saving the user signficant time in having to add those configuration items themselves.
+
 - Much more mobile device friendly as all web pages including the map now make much better allowances for the small screens of mobile devices (ex. phones, tablets, etc.).  The map sidebar will now shrink the gauges to allow for smaller screens, but if the screen is even smaller (ex. small phones), the gauges are replaced with text indicating the usual Altitude, Veritical Rate, Heading, and Speed.
 
 - All web pages now have new styling to be "darker" and much more attractive.
