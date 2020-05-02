@@ -75,10 +75,10 @@ else
     $file_headers = get_headers($dump1090fa_url, 0, $context);
 
     # Check if the dump1090-fa package has been installed
-    if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
-        $exists = false;
-    else 
+    if(!empty($file_headers) && stristr($file_headers[0], '404 Not Found') === false) 
         $exists = true;
+    else 
+        $exists = false;
 ?>
 
 <body class="cover-page">
