@@ -315,7 +315,27 @@ include $documentroot . '/common/header.php';
                 Use this section to add prediction data to the database for a specific flight.  Select the RAW prediction file for upload.
             </p>
             <p class="subheader">
-                Add a Prediction
+                Add Predictions Automatically
+            </p>
+            <p>
+                <form name="predict-sync" id="predict-sync">
+                    <table cellpadding=0 cellspacing=0 border=0>
+                    <tr><td>
+                        <input class="submitbutton" style="margin: 5px; margin-left: 30px;" type="submit" value="Download Predict Files..." form="predict-sync" onclick="getPredictFiles(); return false;">
+                    </td>
+                    <td>
+                        <span style="margin: 5px; text-align: left;" id="predict-status"></span>
+                    </td>
+                    </table>
+                </form>  
+            </p>
+            <p class="normal-italic" style="margin-top: 10px;">
+                Clicking the "Download Predict Files..." button will attempt to download the RAW predict files from 
+                <a class="normal-link-black" href="https://www.eoss.org/predict">https://www.eoss.org/predict</a> automatically for each flight the system 
+                is actively tracking.  This requires an Internet connection.
+            </p>
+            <p class="subheader">
+                Add a Prediction Manually
             </p>
             <p ><span id="addpredictionerror"></span></p>
             <p >

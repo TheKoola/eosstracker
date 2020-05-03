@@ -757,6 +757,35 @@
 
 
     /***********
+    * getPredictFiles function
+    *
+    * This function will download initiate a predict file download from https://www.eoss.org/predict through the grabprediction.php file
+    ***********/
+    function getPredictFiles() {
+        document.getElementById("predict-status").innerHTML = "<mark>Attempting predict file downloads...</mark>";
+
+        $.get("grabprediction.php", function(data) {
+            var r;
+            var html = "";
+            var firsttime = 1;
+            var datetime = new Date();
+
+            for(r in data) {
+                if (firsttime == 1)
+                    html = "<p class=\"normal-italic\">Last attempt: " + datetime.toLocaleString() + "</p>";
+                firsttime = 0;
+
+                html = html + "<p class=\"normal-italic\"><mark class=\"" + (data[r].result == 0 ? "okay" : "notokay") + "\">" + data[r].flightid + ": " + (data[r].result == 0 ? "Predict file added successfully." : data[r].error) + "</mark></p>";
+            }
+
+            document.getElementById("predict-status").innerHTML = html;
+            getPredictions();
+
+        });
+    }
+
+
+    /***********
     * deletePrediction function
     *
     * This function will delete the specified flight.
@@ -1911,6 +1940,10 @@
 
             document.getElementById("syncup-status").innerHTML = statushtml;
 
+            // Get predict files automatically
+            getPredictFiles();
+
+            // Refresh all data on the page
             refreshPage();
 
             setTimeout(function() {
