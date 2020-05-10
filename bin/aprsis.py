@@ -74,8 +74,12 @@ class aisConnection(aprslib.IS):
         super(aisConnection, self).__init__(callsign, passwd, host,  port)
 
     def shutdownSocket(self):
-        if self.sock is not None:
-            self.sock.shutdown(socket.SHUT_RDWR)
+        try:
+            if self.sock is not None:
+                self.sock.shutdown(socket.SHUT_RDWR)
+        except socket.error as exp:
+            debugmsg("Caught socket error when calling socket.shutdown: %s" % str(exp))
+            pass
 
     def consumer(self, callback, blocking=True, immortal=False, raw=False):
         """
