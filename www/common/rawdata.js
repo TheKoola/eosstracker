@@ -160,8 +160,7 @@
             /*padding: { right: 20 },*/
             size: { width: Math.floor(1.05 * chartwidth/2.1), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                /*type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },*/
-                type: 'spline', json: jsondata, xs: columns },
+                type: 'spline', json: jsondata, xs: columns, axes: axes },
             axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format:  function (x) { return x.toFixed(1) + "k";} }  }, 
                 y: { label: { text: 'Temperature (F)', position: 'outer-middle' } },
                 y2: { show: true, label: { text: 'Pressure (atm)', position: 'outer-middle' } } 
@@ -203,24 +202,19 @@
     }
     
     /***********
-    * updatechart2  
+    * updatechart2
     *
-    * This updates KC0D environmentals chart
+    * This updates KC0D air density chart
     ***********/
-/*
-    function updatechart2 (jsondata, columns, axes) {
-         chart2.load ({ json:  jsondata, xs: columns, axes: axes });
-    }
-    */
     function updatechart2 (jsondata, columns) {
          chart2.load ({ json:  jsondata, xs: columns });
     }
 
-    /*function updatechart4 (jsondata, columns) {
-         chart4.load ({ json:  jsondata, xs: columns });
-    }
-    */
-
+    /***********
+    * updatechart4
+    *
+    * This updates the temp and pressure chart
+    ***********/
     function updatechart4 (jsondata, columns, axes) {
          chart4.load ({ json:  jsondata, xs: columns, axes: axes });
     }

@@ -137,7 +137,7 @@ $config = readconfiguration();
 <p class="subheader"><a href="#c2" class="subheader" id="c2-link">(<span style="color: red;" id="c2-sign">+</span>) KC0D Payload Environmentals</a></p>
 <div id="c2-elem" style="display: none; margin: 5px;">
     <p class="normal-italic">
-       These charts show the air density (kg/m<sup>3</sup>), temperature (F), and pressure (atm) as measured by any KC0D payloads on the flight string.
+       These charts show the air density (kg/m<sup>3</sup>), temperature (F), and pressure (atm) as measured by KC0D payloads on the flight string.
     </p>
 </div>
 <!-- KC0D Payload air density Chart -->
