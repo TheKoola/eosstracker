@@ -87,8 +87,8 @@
         // 12 lat_rate,
         // 13 lon_rate,
         // 14 elapsed_mins,
-        // 15 temperature_k,
-        // 16 pressure_pa
+        // 15 temperature_f,
+        // 16 pressure_atm
         //
 
         $callsign = $packet_array["callsign"];
@@ -111,8 +111,8 @@
         $json["properties"]["verticalrate"] = ($packet_array["vert_rate"] == null ? "" : $packet_array["vert_rate"]); 
         $json["properties"]["label"] = $callsign . "<br>" . number_format($packet_array["altitude"]) . "ft"; 
         $json["properties"]["iconsize"] = $config["iconsize"];
-        $json["properties"]["temperature"] = ($packet_array["temperature_k"] == null ? "" : $packet_array["temperature_k"]);
-        $json["properties"]["pressure"] = ($packet_array["pressure_pa"] == null ? "" : $packet_array["pressure_pa"]);
+        $json["properties"]["temperature"] = ($packet_array["temperature_f"] == null ? "" : $packet_array["temperature_f"]);
+        $json["properties"]["pressure"] = ($packet_array["pressure_atm"] == null ? "" : $packet_array["pressure_atm"]);
         $json["geometry"]["type"] = "Point";
         $json["geometry"]["coordinates"][]= $packet_array["longitude"];
         $json["geometry"]["coordinates"][]= $packet_array["latitude"];
@@ -147,8 +147,8 @@
         // 12 lat_rate,
         // 13 lon_rate,
         // 14 elapsed_mins,
-        // 15 temperature_k,
-        // 16 pressure_pa
+        // 15 temperature_f,
+        // 16 pressure_atm
 
         $linestring = array();
         $json = array();
@@ -193,8 +193,8 @@
             $tmpJson["properties"]["verticalrate"] = ($row["vert_rate"] == null ? "" : $row["vert_rate"]); 
             //$tmpJson["properties"]["label"] = number_format($row["altitude"]) . "ft"; 
             $tmpJson["properties"]["iconsize"] = $config["iconsize"];
-            $tmpJson["properties"]["temperature"] = ($row["temperature_k"] == null ? "" : $row["temperature_k"]);
-            $tmpJson["properties"]["pressure"] = ($row["pressure_pa"] == null ? "" : $row["pressure_pa"]);
+            $tmpJson["properties"]["temperature"] = ($row["temperature_f"] == null ? "" : $row["temperature_f"]);
+            $tmpJson["properties"]["pressure"] = ($row["pressure_atm"] == null ? "" : $row["pressure_atm"]);
             $tmpJson["geometry"]["type"] = "Point";
             $tmpJson["geometry"]["coordinates"][]= $row["longitude"];
             $tmpJson["geometry"]["coordinates"][]= $row["latitude"];
@@ -254,8 +254,8 @@
             $burstJson["properties"]["verticalrate"] = ($packet_array[$max_altitude_idx]["vert_rate"] == null ? "" : $packet_array[$max_altitude_idx]["vert_rate"]); 
             $burstJson["properties"]["label"] = number_format($max_altitude) . "ft";
             $burstJson["properties"]["iconsize"] = $config["iconsize"];
-            $burstJson["properties"]["temperature"] = ($packet_array[$max_altitude_idx]["temperature_k"] == null ? "" : $packet_array[$max_altitude_idx]["temperature_k"]);
-            $burstJson["properties"]["pressure"] = ($packet_array[$max_altitude_idx]["pressure_pa"] == null ? "" : $packet_array[$max_altitude_idx]["pressure_pa"]);
+            $burstJson["properties"]["temperature"] = ($packet_array[$max_altitude_idx]["temperature_f"] == null ? "" : $packet_array[$max_altitude_idx]["temperature_f"]);
+            $burstJson["properties"]["pressure"] = ($packet_array[$max_altitude_idx]["pressure_atm"] == null ? "" : $packet_array[$max_altitude_idx]["pressure_atm"]);
             $burstJson["geometry"]["type"] = "Point";
             $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["longitude"];
             $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["latitude"];
@@ -326,8 +326,8 @@
                 0
             end as lon_rate,
             round(y.elapsed_secs / 60.0) as elapsed_mins,
-            round(y.temperature_k, 6) as temperature_k,
-            round(y.pressure_pa, 6) as pressure_pa
+            round((y.temperature_k - 273.15) * 9 / 5 + 32, 2) as temperature_f,
+            round(y.pressure_pa / 101325, 4) as pressure_atm
 
         from
             (
