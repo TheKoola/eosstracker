@@ -136,36 +136,40 @@
     function createchart2 (jsondata, columns) {
         chart2 = c3.generate({
             bindto: '#chart2',
-            /*padding: { right: 20 },*/
-            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            padding: { right: 10 },
+            size: { width: Math.floor(.95 * chartwidth/2.1), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
-            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Temperature (F)', position: 'outer-middle' } } },
+                type: 'spline', json: jsondata, xs: columns },
+            axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format: function (x) { return x.toFixed(1) + "k"; } }  }, 
+                y: { label: { text: 'Air Density (kg/m3)', position: 'outer-middle' } } },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
             color: { pattern: chartcolors },
-            title: { text: "Temperature (F)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
-        }); }
+            title: { text: "Air Density (kg/m3)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+        }); 
+    }
 
     /***********
     * createchart4
     *
     * This is the KC0D payload Pressure chart
     ***********/
-    function createchart4 (jsondata, columns) {
+    function createchart4 (jsondata, columns, axes) {
         chart4 = c3.generate({
             bindto: '#chart4',
             /*padding: { right: 20 },*/
-            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            size: { width: Math.floor(1.05 * chartwidth/2.1), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
-            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Pressure (atm)', position: 'outer-middle' } } },
+                /*type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },*/
+                type: 'spline', json: jsondata, xs: columns },
+            axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format:  function (x) { return x.toFixed(1) + "k";} }  }, 
+                y: { label: { text: 'Temperature (F)', position: 'outer-middle' } },
+                y2: { show: true, label: { text: 'Pressure (atm)', position: 'outer-middle' } } 
+            },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
             color: { pattern: chartcolors },
-            title: { text: "Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
+            title: { text: "Temperature (F) and Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
         });
     }
 
@@ -212,8 +216,13 @@
          chart2.load ({ json:  jsondata, xs: columns });
     }
 
-    function updatechart4 (jsondata, columns) {
+    /*function updatechart4 (jsondata, columns) {
          chart4.load ({ json:  jsondata, xs: columns });
+    }
+    */
+
+    function updatechart4 (jsondata, columns, axes) {
+         chart4.load ({ json:  jsondata, xs: columns, axes: axes });
     }
 
     /***********
@@ -801,9 +810,9 @@
 
         // populate the charts with data
         getchartdata(createchart, "getpacketperformance.php");
-        getchartdata(createchart2, "gettemp.php");
+        getchartdata(createchart2, "getairdensity.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
-        getchartdata(createchart4, "getpressure.php");
+        getchartdata2(createchart4, "gettemppressure.php");
         getdigidata();
         gettrackerdata();
 
@@ -824,12 +833,12 @@
 
             chart2.resize({
                 height: h,
-                width: small_w 
+                width: small_w * .95
             });
 
             chart4.resize({
                 height: h,
-                width: small_w
+                width: small_w * 1.05
             });
 
             chart3.resize({
@@ -844,9 +853,9 @@
             updateMapLink();
             getrecentdata(); 
             getchartdata(updatechart, "getpacketperformance.php"); 
-            getchartdata(updatechart2, "gettemp.php"); 
+            getchartdata(updatechart2, "getairdensity.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
-            getchartdata(updatechart4, "getpressure.php"); 
+            getchartdata2(updatechart4, "gettemppressure.php"); 
             getdigidata();
             gettrackerdata();
         }, 5000);
