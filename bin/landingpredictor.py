@@ -168,6 +168,9 @@ class PredictorBase(object):
     #    launch_lon:  (float) the longitude (in decimal degrees) of the launch location
     #    launch_elev:  (float) the elevation (in feet) of the launch location
     #    algo_floor:  (float) the altitude below which the prediction algorithm will no longer compute predictions.  Should be ground level near the landing area.
+    #    surface_winds:  (boolean) This controls if allowances for surface winds are used as a flight descends from upper wind levels to surface wind levels
+    #    wind_rates:  (list) of the surface wind components
+    #    airdensity_function:  (callable) this is a callback function that accepts an altitude as input and returned the air density at that altitude.
     #
     # Returns:
     #    flightpath:  (list) list of points (lat, lon, altitude) of the predicted flight path
@@ -176,13 +179,23 @@ class PredictorBase(object):
     #    ttl:  (float) the time remaining before touchdown (in minutes)
     #    err:  (boolean) if true, then an error occured and the variables values are invalid
     #
-    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False, wind_rates = None):
+    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False, wind_rates = None, airdensity_function = None):
         debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, algo_floor))
         debugmsg("latestpackets size: %d" % latestpackets.shape[0])
 
         # if invalid arguments then return
         if not launch_lat or not launch_lon or not launch_elev or not algo_floor:
             return None
+
+        # Check the airdensity function
+        if airdensity_function is not None:
+            if callable(airdensity_function):
+                debugmsg("PredictionAlgo:  using supplied air density function.")
+                ad = airdensity_function
+            else:
+                ad = self.airdensity
+        else:
+            ad = self.airdensity
 
         # if no packets are provided then return
         if latestpackets.shape[0] <= 0:
@@ -395,13 +408,13 @@ class PredictorBase(object):
 
             # Here we want to compute the k-value for this parachute, weight, drag combo
             # parachute_coef - this is the constant that represents 2m/CdA for this parachute, flight-string combo
-            parachute_coef = np.mean(((balloon_velocities **2) * self.airdensity(balloon_altitudes)) / self.g(balloon_altitudes))
+            parachute_coef = np.mean(((balloon_velocities **2) * ad(balloon_altitudes)) / self.g(balloon_altitudes))
             debugmsg("parachute_coef: %f" % parachute_coef)
 
             # This is a list of points with the predicted velocity for various altitudes beyond the last altitude we've seen (aka the future)
             alts = np.arange(self.prediction_floor / 2, balloon_altitudes[-1] + 10000, 500)
             debugmsg("alts length: %f" % alts.shape[0])
-            pred_v = np.sqrt(parachute_coef * self.g(alts) / self.airdensity(alts))
+            pred_v = np.sqrt(parachute_coef * self.g(alts) / ad(alts))
             pred_v_curve = interpolate.interp1d(alts, pred_v, kind='cubic')
 
             # Perform curve fitting for predictions when in the early stages of the descent.
@@ -959,7 +972,15 @@ class LandingPredictor(PredictorBase):
                 end as lon_rate,
                 round(y.elapsed_secs / 60.0) as elapsed_mins,
                 round(y.temperature_k, 6) as temperature_k,
-                round(y.pressure_pa, 6) as pressure_pa
+                round(y.pressure_pa, 6) as pressure_pa,
+
+                -- Air density (for our purposes needs to be in English units...i.e. slugs/ft^3)
+                case when y.temperature_k > 0 then
+                    round((y.pressure_pa / (287.05 * y.temperature_k)) / 515.2381961366, 6)
+                else
+                    NULL
+                end as air_density_slugs_per_ft3
+
 
             from
                 (
@@ -1666,8 +1687,8 @@ class LandingPredictor(PredictorBase):
                 debugmsg("processPredictions: Max altitude heard thus far: %d" % max_altitude)
 
                 # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
-                ascent_portion = np.array(latestpackets[0:(idx+1), 1:7], dtype='f')
-                descent_portion = np.array(latestpackets[idx:, 1:7], dtype='f')
+                ascent_portion = np.array(latestpackets[0:(idx+1), 1:], dtype='f')
+                descent_portion = np.array(latestpackets[idx:, 1:], dtype='f')
                 debugmsg("processPredictions: ascent_portion.shape: %s" % str(ascent_portion.shape))
                 debugmsg("processPredictions: descent_portion.shape: %s" % str(descent_portion.shape))
      
@@ -1739,12 +1760,76 @@ class LandingPredictor(PredictorBase):
 
 
                     ####################################
+                    # START:  Check if there were KC0D airdensity values
+                    ####################################
+
+                    # slice (aka list) off just the altitude and air_density columns
+                    ad = np.array(ascent_portion[0:, [0,9]], dtype='float64')
+
+                    # Check that the values aren't just a bunch of NULL's
+                    num = 0
+                    for alt, d in ad:
+                        if np.isnan(d):
+                            num += 1
+
+                    debugmsg("Percentage of NULL data points from payload measured air density: %.2f%%." % (100 * num / ad.shape[0]))
+
+                    # Check that the number of NULLs is minimal (ex. < 5%)
+                    if num / ad.shape[0] < .05:
+
+                        debugmsg("Using payload measured air density.")
+
+                        # Beginning and ending altitudes for flight air densities
+                        beginning_alt = ad[0,0]
+                        ending_alt = ad[-1, 0]
+
+                        # now find the splice points for inserting the air densities from the flight in to the standard engineering defined ones.
+                        # starting splice point
+                        start_splice_idx = 0
+                        for alt, d in self.airdensities:
+                            if alt > beginning_alt:
+                                break
+                            start_splice_idx += 1
+
+                        # ending splice point
+                        end_splice_idx = self.airdensities.shape[0]
+                        for alt, d in self.airdensities[::-1]:
+                            if alt < ending_alt:
+                                break
+                            end_splice_idx -= 1
+
+                        # Adjust for the fact that self.airdensities is in 10^-4 values.
+                        temp_ad = np.copy(self.airdensities)
+                        temp_ad[:,1] *= 10**-4
+
+                        # splice together the various pieces to build the array of air densities 
+                        final_air_densities = temp_ad[0:start_splice_idx, 0:]
+                        final_air_densities = np.concatenate((final_air_densities, ad), axis=0)
+                        if end_splice_idx < self.airdensities.shape[0] - 1:
+                            final_air_densities = np.concatenate((final_air_densities, temp_ad[end_splice_idx:, 0:]), axis=0)
+
+                        # Create a curve that represents the air density
+                        airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+
+                    # Otherwise, we just use the standard engineering air densities
+                    else:
+                        debugmsg("Using pre-calculated air density instead of payload measured values.")
+                        airdensity_curve = self.airdensity
+
+                    ####################################
+                    # END:  airdensity section
+                    ####################################
+
+
+
+                    ####################################
                     # START:  compute the landing prediction
                     ####################################
                     # If we're unable to estimate the surface winds, then just run a "regular" prediction without winds
                     # However, in either case (surface winds or not) we only want to process a single landing prediction so the javascript/map display
                     # will only display a single 'X' on the map.
 
+                    validity = False
                     if not validity:
                         winds = None
                         wind_text = None
@@ -1752,14 +1837,14 @@ class LandingPredictor(PredictorBase):
 
                         # Call the prediction algo
                         debugmsg("Running prediction regular prediction")
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, airdensity_function = airdensity_curve)
                     else:
                         wind_text = "ARRAY[" + str(round(winds[2])) + ", " + str(round(winds[3])) + ", " + str(round(winds[4])) + "]"
                         predictiontype = "wind_adjusted"
 
                         # Call the prediction algo
                         debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, wind_rates = winds, airdensity_function = airdensity_curve)
 
                     ####################################
                     # END:  compute the landing prediction
