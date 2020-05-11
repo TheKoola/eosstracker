@@ -1829,7 +1829,6 @@ class LandingPredictor(PredictorBase):
                     # However, in either case (surface winds or not) we only want to process a single landing prediction so the javascript/map display
                     # will only display a single 'X' on the map.
 
-                    validity = False
                     if not validity:
                         winds = None
                         wind_text = None
