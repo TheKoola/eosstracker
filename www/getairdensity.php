@@ -102,12 +102,14 @@
 
     $query = "select 
         y.callsign,
+        y.tm,
         y.altitude,
-        round(avg(y.pressure_pa / (287.05 * y.temperature_k)), 6) as air_density_kg_per_m3
+        round(y.pressure_pa / (287.05 * y.temperature_k), 6) as air_density_kg_per_m3
 
         from 
             (select
             a.callsign,
+            a.tm,
             round(a.altitude / 1000, 2) as altitude,
             case
                 when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
@@ -136,7 +138,7 @@
             and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
             and a.tm > $2
 
-            order by 1,2,3,4
+            order by 1,2
         ) as y
  
         where 
@@ -144,7 +146,6 @@
             and y.temperature_k is not NULL
             and y.pressure_pa is not NULL
 
-        group by 1,2
         order by 1,2
 
         ;";
@@ -174,7 +175,27 @@
             if ($firsttime == 0)
                 printf (", ");
             $firsttime = 0;
-            generateJSON($tdata[$callsign], $fdata[$callsign], $callsign . "_Air-Density");
+
+            // Looking for the maximum altitude
+            $max = max($tdata[$callsign]);
+            $max_idx = array_search($max, $tdata[$callsign]);
+
+            if ($max_idx > 0) {
+                $ascent_tdata  = array_slice($tdata[$callsign], 0, $max_idx);
+                $ascent_fdata  = array_slice($fdata[$callsign], 0, $max_idx);
+
+                generateJSON($ascent_tdata, $ascent_fdata, $callsign . "_Ascent");
+            }
+
+            if ($max_idx < sizeof($tdata[$callsign]) + 1) {
+                $descent_tdata = array_slice($tdata[$callsign], $max_idx + 1);
+                $descent_fdata = array_slice($fdata[$callsign], $max_idx + 1);
+
+                if ($max_idx > 0)
+                    printf (", ");
+                generateJSON($descent_tdata, $descent_fdata, $callsign . "_Descent");
+            }
+            //generateJSON($tdata[$callsign], $fdata[$callsign], $callsign . "_Air-Density");
         }
         printf ("}");
     }

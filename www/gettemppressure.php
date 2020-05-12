@@ -100,11 +100,13 @@
         $mycallsign = $status["direwolfcallsign"];
     }
 
-    $query = " select
+    $query = "
+        select
         a.callsign,
+        a.tm,
         round(a.altitude / 1000, 1) as altitude,
-        round(avg(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0), 2) as temperature_f,
-        round(avg(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0), 4) as pressure_atm
+        round(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2) as temperature_f,
+        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0, 4) as pressure_atm
 
         from 
         packets a,
@@ -119,7 +121,6 @@
         and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
         and a.tm > $2
 
-        group by 1,2
         order by 1,2
         ;";
 
@@ -150,9 +151,33 @@
             if ($firsttime == 0)
                 printf (", ");
             $firsttime = 0;
-            generateJSON($tdata[$callsign], $fdata[$callsign], $callsign . "_Temp");
-            printf (", ");
-            generateJSON($tdata[$callsign], $pdata[$callsign], $callsign . "_Pressure");
+
+            // Looking for the maximum altitude
+            $max = max($tdata[$callsign]);
+            $max_idx = array_search($max, $tdata[$callsign]);
+
+            if ($max_idx > 0) {
+                $ascent_tdata  = array_slice($tdata[$callsign], 0, $max_idx);
+                $ascent_fdata  = array_slice($fdata[$callsign], 0, $max_idx);
+                $ascent_pdata  = array_slice($pdata[$callsign], 0, $max_idx);
+
+                generateJSON($ascent_tdata, $ascent_fdata, $callsign . "_Ascent_T");
+                printf (", ");
+                generateJSON($ascent_tdata, $ascent_pdata, $callsign . "_Ascent_P");
+            }
+
+            if ($max_idx < sizeof($tdata[$callsign]) + 1) {
+                $descent_tdata = array_slice($tdata[$callsign], $max_idx + 1);
+                $descent_fdata = array_slice($fdata[$callsign], $max_idx + 1);
+                $descent_pdata = array_slice($pdata[$callsign], $max_idx + 1);
+                //printf ("<br>max_idx: %d, len: %d<br>\n", $max_idx, sizeof($tdata[$callsign]));
+
+                if ($max_idx > 0)
+                    printf (", ");
+                generateJSON($descent_tdata, $descent_fdata, $callsign . "_Descent_T");
+                printf (", ");
+                generateJSON($descent_tdata, $descent_pdata, $callsign . "_Descent_P");
+            }
         }
         printf ("}");
     }

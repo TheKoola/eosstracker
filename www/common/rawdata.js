@@ -131,7 +131,7 @@
     /***********
     * createchart2
     *
-    * This is the KC0D payload Temperature chart
+    * This is the KC0D payload air density chart
     ***********/
     function createchart2 (jsondata, columns) {
         chart2 = c3.generate({
@@ -152,7 +152,7 @@
     /***********
     * createchart4
     *
-    * This is the KC0D payload Pressure chart
+    * This is the KC0D payload Temperature and Pressure chart
     ***********/
     function createchart4 (jsondata, columns, axes) {
         chart4 = c3.generate({
@@ -170,6 +170,35 @@
             color: { pattern: chartcolors },
             title: { text: "Temperature (F) and Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
         });
+    }
+
+    /***********
+    * getSeries
+    *
+    * This is returns a list of data series current loaded in the chart4 object
+    ***********/
+    function getSeries(chart, search) {
+        var series = chart.data();
+        var series_list = [];
+        var a;
+
+        for (s in series) {
+            if (series[s].id.indexOf(search) != -1)
+                series_list.push(series[s].id);
+        }
+
+        //document.getElementById("chart4-output").innerHTML = JSON.stringify(series_list);
+
+        return series_list;
+    }
+
+    /***********
+    * addButtons
+    *
+    * This is will add the ascent/descent selector buttons for chart4
+    ***********/
+    function addButtons() {
+        var element = document.getElementById("chart4-buttons");
     }
 
     /***********
@@ -246,9 +275,9 @@
             for (i = 0; i < thekeys.length; i++) {
                 if (! thekeys[i].startsWith("tm-")) {
                     mycolumns[thekeys[i]] = "tm-" + thekeys[i];
-                    if (thekeys[i].indexOf("emperature") != -1) 
+                    if (thekeys[i].indexOf("_T") != -1) 
                         axes[thekeys[i]] = "y";
-                    if (thekeys[i].indexOf("essure") != -1) 
+                    if (thekeys[i].indexOf("_P") != -1) 
                         axes[thekeys[i]] = "y2";
                 }
             }
@@ -781,7 +810,6 @@
 
         // Add a listener for that event to the page
         document.body.addEventListener("updatepackets", displaypackets, false);
-
         
         // have the search fields and operation dropdown call the updatepackets function when their value/state changes
         var e = document.getElementById('searchfield');
@@ -809,6 +837,9 @@
         getchartdata2(createchart4, "gettemppressure.php");
         getdigidata();
         gettrackerdata();
+
+        // add ascent/descent selector buttons to the temp and pressure chart
+        addButtons();
 
         // Update the Map link in the menubar
         updateMapLink();

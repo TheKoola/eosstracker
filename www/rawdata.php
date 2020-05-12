@@ -141,12 +141,34 @@ $config = readconfiguration();
     </p>
 </div>
 <!-- KC0D Payload air density Chart -->
-<div class="inverted" style="float:left;" id="chart2"></div>
+<div class="inverted" style="float:left;">
+    <div class="inverted" style="float:left;" id="chart2"></div>
+    <div class="inverted" style="text-align: center;" id="chart2-buttons">
+        <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
+        <input type="checkbox" checked onchange='chart2.toggle(getSeries(chart2, "Ascent" ), {withLegend: true});'> Ascent
+        &nbsp;
+        <input type="checkbox" checked onchange='chart2.toggle(getSeries(chart2, "Descent"), {withLegend: true});'> Descent
+        </p>
+    </div>
+</div>
 
 <!-- KC0D Payload Temp & Pressure Chart -->
-<div class="inverted" style="float:left;" id="chart4"></div>
+<div class="inverted" style="float:left;">
+    <div class="inverted" style="text-align: center;" id="chart4"></div>
+    <div class="inverted" style="text-align: center;" id="chart4-buttons">
+        <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
+        <input type="checkbox" checked onchange='chart4.toggle(getSeries(chart4, "Ascent" ), {withLegend: true});'> Ascent
+        &nbsp;
+        <input type="checkbox" checked onchange='chart4.toggle(getSeries(chart4, "Descent"), {withLegend: true});'> Descent
+        </p>
+    </div>
+</div>
 
-<div style="margin-top: 20px; margin-bottom: 20px; float; none; clear: both;"> &nbsp; </div>
+
+<div style="margin-top: 20px; margin-bottom: 20px; float; none; clear: both;"> &nbsp; 
+    <div><p id="chart4-output"></p></div>
+
+</div>
 
 
 <!-- Live packets section -->
