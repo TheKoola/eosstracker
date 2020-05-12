@@ -145,9 +145,9 @@ $config = readconfiguration();
     <div class="inverted" style="float:left;" id="chart2"></div>
     <div class="inverted" style="text-align: center;" id="chart2-buttons">
         <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
-        <input type="checkbox" checked onchange='chart2.toggle(getSeries(chart2, "Ascent" ), {withLegend: true});'> Ascent
+        <input type="checkbox" id="chart2-ascent" checked onchange='chart2.toggle(getSeries(chart2, "Ascent" ), {withLegend: true});'> Ascent
         &nbsp;
-        <input type="checkbox" checked onchange='chart2.toggle(getSeries(chart2, "Descent"), {withLegend: true});'> Descent
+        <input type="checkbox" id="chart2-descent" checked onchange='chart2.toggle(getSeries(chart2, "Descent"), {withLegend: true});'> Descent
         </p>
     </div>
 </div>
@@ -157,9 +157,9 @@ $config = readconfiguration();
     <div class="inverted" style="text-align: center;" id="chart4"></div>
     <div class="inverted" style="text-align: center;" id="chart4-buttons">
         <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
-        <input type="checkbox" checked onchange='chart4.toggle(getSeries(chart4, "Ascent" ), {withLegend: true});'> Ascent
+        <input type="checkbox" id="chart4-ascent" checked onchange='chart4.toggle(getSeries(chart4, "Ascent" ), {withLegend: true});'> Ascent
         &nbsp;
-        <input type="checkbox" checked onchange='chart4.toggle(getSeries(chart4, "Descent"), {withLegend: true});'> Descent
+        <input type="checkbox" id="chart4-descent" checked onchange='chart4.toggle(getSeries(chart4, "Descent"), {withLegend: true});'> Descent
         </p>
     </div>
 </div>

@@ -147,6 +147,8 @@
             color: { pattern: chartcolors },
             title: { text: "Air Density (kg/m3)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         }); 
+        document.getElementById("chart2-ascent").checked = true;
+        document.getElementById("chart2-descent").checked = true;
     }
 
     /***********
@@ -170,6 +172,8 @@
             color: { pattern: chartcolors },
             title: { text: "Temperature (F) and Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
         });
+        document.getElementById("chart4-ascent").checked = true;
+        document.getElementById("chart4-descent").checked = true;
     }
 
     /***********
