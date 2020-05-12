@@ -23,6 +23,7 @@
 *
  */
 
+    header("Content-Type:  application/json;");
     session_start();
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
