@@ -83,15 +83,15 @@ include $documentroot . '/common/header.php';
         </div>
         <div class="table-row">
             <div class="table-cell">aprsc</div>
-            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
         <div class="table-row">
             <div class="table-cell">gpsd</div>
-            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
         <div class="table-row">
             <div class="table-cell">backend daemon</div>
-            <div class="table-cell" style="text-align: right;"><span id="habtracker-d-status"><mark class="nookay">Not okay</mark></span></div>
+            <div class="table-cell" style="text-align: right;"><span id="habtracker-d-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
     </div>
 
