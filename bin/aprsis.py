@@ -74,7 +74,8 @@ class aisConnection(aprslib.IS):
         super(aisConnection, self).__init__(callsign, passwd, host,  port)
 
     def shutdownSocket(self):
-        self.sock.shutdown(socket.SHUT_RDWR)
+        if self.sock is not None:
+            self.sock.shutdown(socket.SHUT_RDWR)
 
     def consumer(self, callback, blocking=True, immortal=False, raw=False):
         """
