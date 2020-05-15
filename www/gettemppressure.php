@@ -157,16 +157,16 @@
             $max_idx = array_search($max, $tdata[$callsign]);
 
             if ($max_idx > 0) {
-                $ascent_tdata  = array_slice($tdata[$callsign], 0, $max_idx);
-                $ascent_fdata  = array_slice($fdata[$callsign], 0, $max_idx);
-                $ascent_pdata  = array_slice($pdata[$callsign], 0, $max_idx);
+                $ascent_tdata  = array_slice($tdata[$callsign], 0, $max_idx + 1);
+                $ascent_fdata  = array_slice($fdata[$callsign], 0, $max_idx + 1);
+                $ascent_pdata  = array_slice($pdata[$callsign], 0, $max_idx + 1);
 
                 generateJSON($ascent_tdata, $ascent_fdata, $callsign . "_Ascent_T");
                 printf (", ");
                 generateJSON($ascent_tdata, $ascent_pdata, $callsign . "_Ascent_P");
             }
 
-            if ($max_idx < sizeof($tdata[$callsign]) + 1) {
+            if ($max_idx < sizeof($tdata[$callsign]) - 1) {
                 $descent_tdata = array_slice($tdata[$callsign], $max_idx + 1);
                 $descent_fdata = array_slice($fdata[$callsign], $max_idx + 1);
                 $descent_pdata = array_slice($pdata[$callsign], $max_idx + 1);
