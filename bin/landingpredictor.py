@@ -1603,6 +1603,19 @@ class LandingPredictor(PredictorBase):
 
         try:
 
+            # Grab the configuration and check if "Use payload air density" key has been enabled
+            try:
+                with open('/eosstracker/www/configuration/config.txt') as json_data:
+                    config = json.load(json_data)
+            except:
+                # Otherwise, we don't use the air density from the KC0D payloads
+                config = { "airdensity" : "off" }
+
+            # Make sure the airdensity key is present, otherwise set it to "off"
+            if "airdensity" not in config:
+                config["airdensity"] = "off"
+
+
             # Loop through each record creating a prediction
             for rec in flightids:
             
@@ -1763,18 +1776,6 @@ class LandingPredictor(PredictorBase):
                     ####################################
                     # START:  Check if there were KC0D airdensity values
                     ####################################
-
-                    # Grab the configuration and check if "Use payload air density" key has been enabled
-                    try:
-                        with open('/eosstracker/www/configuration/config.txt') as json_data:
-                            config = json.load(json_data)
-                    except:
-                        # Otherwise, we don't use the air density from the KC0D payloads
-                        config = { "airdensity" : "off" }
-
-                    # Make sure the airdensity key is present, otherwise set it to "off"
-                    if "airdensity" not in config:
-                        config["airdensity"] = "off"
 
                     # Only use the air density from the kc0d payloads if the option is explictly set to true
                     if config["airdensity"] == "on":
