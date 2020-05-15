@@ -161,7 +161,7 @@
         chart4 = c3.generate({
             bindto: '#chart4',
             //padding: { right: 20 },
-            size: { width: Math.floor(chartwidth), height: chartheight },
+            size: { width: Math.floor(chartwidth/2), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, axes: axes },
             axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format:  function (x) { return x.toFixed(1) + "k";} }  }, 
