@@ -1095,6 +1095,7 @@
             var iconsize = document.getElementById("iconsize");
             var lookbackperiod = document.getElementById("lookbackperiod");
             var plottracks = document.getElementById("plottracks").checked;
+            var airdensity = document.getElementById("airdensity").checked;
             var form_data = new FormData();
 
             if (!iconsize.checkValidity()) {
@@ -1110,6 +1111,7 @@
             form_data.append("iconsize", iconsize.value);
             form_data.append("lookbackperiod", lookbackperiod.value);
             form_data.append("plottracks", (plottracks == true ? "on" : "off"));
+            form_data.append("airdensity", (airdensity == true ? "on" : "off"));
             $.ajax({
                 url: "setconfiguration.php",
                 dataType: 'json',
@@ -1127,6 +1129,10 @@
 			            document.getElementById("plottracks").checked = true;
 		            else
 			            document.getElementById("plottracks").checked = false;
+		            if (jsonData.airdensity == "on")
+			            document.getElementById("airdensity").checked = true;
+		            else
+			            document.getElementById("airdensity").checked = false;
                     document.getElementById("systemsettings_error").innerHTML = "Settings saved.";
                     setTimeout(function() {
                         document.getElementById("systemsettings_error").innerHTML = "";
@@ -1154,6 +1160,10 @@
 			    document.getElementById("plottracks").checked = true;
 		    else
 			    document.getElementById("plottracks").checked = false;
+		    if (jsonData.airdensity == "on")
+			    document.getElementById("airdensity").checked = true;
+		    else
+			    document.getElementById("airdensity").checked = false;
             });
     }
 

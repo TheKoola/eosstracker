@@ -304,6 +304,16 @@
                             <input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences">
                         </div>
                     </div>
+                    <div class="table-row">
+                        <div class="table-cell">Use Temperature and Pressure from KC0D Payloads:<br>
+                            <p class="lorem">The KC0D payloads have the ability to measure temperature and pressure.  Enabling this option allows the landing prediction 
+                                routines to use these values to help improve landing predictions for the KC0D payloads.
+                            </p>
+                        </div>
+                        <div class="table-cell">
+                            <input type="checkbox" name="airdensity" id="airdensity" checked form="userpreferences">
+                        </div>
+                    </div>
                 </div>
                 <div class="div-table">
                     <input type="submit" class="buttonstyle" value="Save Settings" form="userpreferences" onclick="setConfiguration(); return false;" 

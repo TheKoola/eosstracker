@@ -108,48 +108,62 @@ $config = readconfiguration();
 <div id="trackertable"></div>
 
 
-<!-- APRS-IS Packet Source chart -->
-
-<!-- APRS-IS Packet Source chart -->
-<p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) APRS-IS Packet Source</a></p>
-<div id="c1-elem" style="display: none; margin: 5px;">
+<!-- Packet count charts -->
+<p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) Packet Counts</a></p>
+<div id="c1-elem" style="display: none; margin: 5px; margin-bottom: 15px;">
     <p class="normal-italic">
+       <strong> APRS-IS Packet Source: </strong>
        These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
        the RF packet count shows the number of packets that were heard over RF that were <strong>not</strong> already known 
        through an APRS-IS connection - it's a subtle distinction not to be confused with absolute packet counts 
        <strong>heard</strong> over an RF channel.
     </p>
-</div>
-<div class="inverted" id="chart1"></div>
-
-<!-- RF Packet Counts chart -->
-<p class="subheader"><a href="#c3" class="subheader" id="c3-link">(<span style="color: red;" id="c3-sign">+</span>) RF Packet Counts</a></p>
-<div id="c3-elem" style="display: none; margin: 5px;">
+    <br>
     <p class="normal-italic">
+       <strong>RF Packet Counts: </strong>
        This chart shows total RF packet count (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
        These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
     </p>
 </div>
-<div class="inverted" id="chart3"></div>
-
+<div class="inverted" id="chart1" style="float: left;"></div>
+<div class="inverted" id="chart3" style="margin-bottom: 15px; float: left;"></div>
 
 <!-- KC0D Payload Environmentals Data -->
 <p class="subheader"><a href="#c2" class="subheader" id="c2-link">(<span style="color: red;" id="c2-sign">+</span>) KC0D Payload Environmentals</a></p>
 <div id="c2-elem" style="display: none; margin: 5px;">
     <p class="normal-italic">
-       These charts shows the temperature (F) and pressure (atm) as measured by any KC0D payloads on the flight string.
+       These charts show the air density (kg/m<sup>3</sup>), temperature (F), and pressure (atm) as measured by KC0D payloads on the flight string.
     </p>
 </div>
-<!-- KC0D Payload Temperature Chart -->
-<div class="inverted" style="float:left;" id="chart2"></div>
+<!-- KC0D Payload air density Chart -->
+<div class="inverted" style="float:left;">
+    <div class="inverted" style="float:left;" id="chart2"></div>
+    <div class="inverted" style="text-align: center;" id="chart2-buttons">
+        <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
+        <input type="checkbox" id="chart2-ascent" checked onchange='chart2.toggle(getSeries(chart2, "Ascent" ), {withLegend: true});'> Ascent
+        &nbsp;
+        <input type="checkbox" id="chart2-descent" checked onchange='chart2.toggle(getSeries(chart2, "Descent"), {withLegend: true});'> Descent
+        </p>
+    </div>
+</div>
 
-<!-- KC0D Payload Pressure Chart -->
-<div class="inverted" style="float:left;" id="chart4"></div>
+<!-- KC0D Payload Temp & Pressure Chart -->
+<div class="inverted" style="float:left;">
+    <div class="inverted" style="text-align: center;" id="chart4"></div>
+    <div class="inverted" style="text-align: center;" id="chart4-buttons">
+        <p class="subheader" style="text-align: center; margin: 0px; margin-top: 5px; color: #f8f8f8;">
+        <input type="checkbox" id="chart4-ascent" checked onchange='chart4.toggle(getSeries(chart4, "Ascent" ), {withLegend: true});'> Ascent
+        &nbsp;
+        <input type="checkbox" id="chart4-descent" checked onchange='chart4.toggle(getSeries(chart4, "Descent"), {withLegend: true});'> Descent
+        </p>
+    </div>
+</div>
 
-<!-- KC0D Payload Battery Voltage Chart -->
-<div class="inverted" style="float:left;" id="chart5"></div>
 
-<div style="margin-top: 20px; margin-bottom: 20px; float; none; clear: both;"> &nbsp; </div>
+<div style="margin-top: 20px; margin-bottom: 20px; float; none; clear: both;"> &nbsp; 
+    <div><p id="chart4-output"></p></div>
+
+</div>
 
 
 <!-- Live packets section -->
