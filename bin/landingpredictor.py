@@ -33,6 +33,7 @@ from scipy.integrate import *
 from scipy.interpolate import *
 from scipy.optimize import *
 from inspect import getframeinfo, stack
+import json
 
 #import local configuration items
 import habconfig 
@@ -1763,58 +1764,79 @@ class LandingPredictor(PredictorBase):
                     # START:  Check if there were KC0D airdensity values
                     ####################################
 
-                    # slice (aka list) off just the altitude and air_density columns
-                    ad = np.array(ascent_portion[0:, [0,9]], dtype='float64')
+                    # Grab the configuration and check if "Use payload air density" key has been enabled
+                    try:
+                        with open('/eosstracker/www/configuration/config.txt') as json_data:
+                            config = json.load(json_data)
+                    except:
+                        # Otherwise, we don't use the air density from the KC0D payloads
+                        config = { "airdensity" : "off" }
 
-                    # Check that the values aren't just a bunch of NULL's
-                    num = 0
-                    for alt, d in ad:
-                        if np.isnan(d):
-                            num += 1
+                    # Make sure the airdensity key is present, otherwise set it to "off"
+                    if "airdensity" not in config:
+                        config["airdensity"] = "off"
 
-                    debugmsg("Percentage of NULL data points from payload measured air density: %.2f%%." % (100 * num / ad.shape[0]))
+                    # Only use the air density from the kc0d payloads if the option is explictly set to true
+                    if config["airdensity"] == "on":
 
-                    # Check that the number of NULLs is minimal (ex. < 5%)
-                    if num / ad.shape[0] < .05:
+                        debugmsg("Airdensity option was set to ON.")
 
-                        debugmsg("Using payload measured air density.")
+                        # slice (aka list) off just the altitude and air_density columns
+                        ad = np.array(ascent_portion[0:, [0,9]], dtype='float64')
 
-                        # Beginning and ending altitudes for flight air densities
-                        beginning_alt = ad[0,0]
-                        ending_alt = ad[-1, 0]
+                        # Check that the values aren't just a bunch of NULL's
+                        num = 0
+                        for alt, d in ad:
+                            if np.isnan(d):
+                                num += 1
 
-                        # now find the splice points for inserting the air densities from the flight in to the standard engineering defined ones.
-                        # starting splice point
-                        start_splice_idx = 0
-                        for alt, d in self.airdensities:
-                            if alt > beginning_alt:
-                                break
-                            start_splice_idx += 1
+                        debugmsg("Percentage of NULL data points from payload measured air density: %.2f%%." % (100 * num / ad.shape[0]))
 
-                        # ending splice point
-                        end_splice_idx = self.airdensities.shape[0]
-                        for alt, d in self.airdensities[::-1]:
-                            if alt < ending_alt:
-                                break
-                            end_splice_idx -= 1
+                        # Check that the number of NULLs is minimal (ex. < 5%)
+                        if num / ad.shape[0] < .05:
 
-                        # Adjust for the fact that self.airdensities is in 10^-4 values.
-                        temp_ad = np.copy(self.airdensities)
-                        temp_ad[:,1] *= 10**-4
+                            debugmsg("Using payload measured air density.")
 
-                        # splice together the various pieces to build the array of air densities 
-                        final_air_densities = temp_ad[0:start_splice_idx, 0:]
-                        final_air_densities = np.concatenate((final_air_densities, ad), axis=0)
-                        if end_splice_idx < self.airdensities.shape[0] - 1:
-                            final_air_densities = np.concatenate((final_air_densities, temp_ad[end_splice_idx:, 0:]), axis=0)
+                            # Beginning and ending altitudes for flight air densities
+                            beginning_alt = ad[0,0]
+                            ending_alt = ad[-1, 0]
 
-                        # Create a curve that represents the air density
-                        airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+                            # now find the splice points for inserting the air densities from the flight in to the standard engineering defined ones.
+                            # starting splice point
+                            start_splice_idx = 0
+                            for alt, d in self.airdensities:
+                                if alt > beginning_alt:
+                                    break
+                                start_splice_idx += 1
 
-                    # Otherwise, we just use the standard engineering air densities
+                            # ending splice point
+                            end_splice_idx = self.airdensities.shape[0]
+                            for alt, d in self.airdensities[::-1]:
+                                if alt < ending_alt:
+                                    break
+                                end_splice_idx -= 1
+
+                            # Adjust for the fact that self.airdensities is in 10^-4 values.
+                            temp_ad = np.copy(self.airdensities)
+                            temp_ad[:,1] *= 10**-4
+
+                            # splice together the various pieces to build the array of air densities 
+                            final_air_densities = temp_ad[0:start_splice_idx, 0:]
+                            final_air_densities = np.concatenate((final_air_densities, ad), axis=0)
+                            if end_splice_idx < self.airdensities.shape[0] - 1:
+                                final_air_densities = np.concatenate((final_air_densities, temp_ad[end_splice_idx:, 0:]), axis=0)
+
+                            # Create a curve that represents the air density
+                            airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+
+                        # Otherwise, we just use the standard engineering air densities
+                        else:
+                            debugmsg("Using pre-calculated air density instead of payload measured values.")
+                            airdensity_curve = self.airdensity
                     else:
-                        debugmsg("Using pre-calculated air density instead of payload measured values.")
+                        debugmsg("kc0dairdensity configuration setting set not true, skipping airdensity calcs.")
                         airdensity_curve = self.airdensity
+
 
                     ####################################
                     # END:  airdensity section

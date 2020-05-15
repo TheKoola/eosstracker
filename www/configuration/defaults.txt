@@ -1,4 +1,5 @@
 {
+    "airdensity": "false",
     "audiodev": "0",
     "beaconing": "false",
     "beaconlimit": "02:00",
