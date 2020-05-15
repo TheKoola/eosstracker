@@ -116,15 +116,16 @@
     function createchart (jsondata, columns) {
         chart = c3.generate({
             bindto: '#chart1',
-            padding: { right: 20 },
-            size: { width: chartwidth, height: chartheight },
+            padding: { right: 10 },
+            size: { width: chartwidth/2, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             grid: { x: { show: true }, y: { show: true } },
             point: { show: true },
-            color: { pattern: chartcolors }
+            color: { pattern: chartcolors },
+            title: { text: "APRS-IS Packet Source", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
 
@@ -137,7 +138,7 @@
         chart2 = c3.generate({
             bindto: '#chart2',
             padding: { right: 10 },
-            size: { width: Math.floor(.95 * chartwidth/2.1), height: chartheight },
+            size: { width: Math.floor(chartwidth/2), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns },
             axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format: function (x) { return x.toFixed(1) + "k"; } }  }, 
@@ -159,8 +160,8 @@
     function createchart4 (jsondata, columns, axes) {
         chart4 = c3.generate({
             bindto: '#chart4',
-            /*padding: { right: 20 },*/
-            size: { width: Math.floor(1.05 * chartwidth/2.1), height: chartheight },
+            //padding: { right: 20 },
+            size: { width: Math.floor(chartwidth), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, axes: axes },
             axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format:  function (x) { return x.toFixed(1) + "k";} }  }, 
@@ -209,19 +210,20 @@
     * createchart3
     *
     * This is the Direwolf RF Packets chart.
-    ***********/
+    **********/
     function createchart3 (jsondata, columns) {
         chart3 = c3.generate({
             bindto: '#chart3',
-            padding: { right: 20 },
-            size: { width: chartwidth, height: chartheight },
+            padding: { right: 10 },
+            size: { width: chartwidth/2, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
-            color: { pattern: chartcolors }
+            color: { pattern: chartcolors },
+            title: { text: "RF Packet Counts", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
 
@@ -597,11 +599,6 @@
         var c2_e = "#c2-elem";
         $(c2_a).click({element: c2_e, link: c2_l }, toggle);
 
-        var c3_a = "#c3-link";
-        var c3_l = "#c3-sign";
-        var c3_e = "#c3-elem";
-        $(c3_a).click({element: c3_e, link: c3_l }, toggle);
-
         var t1_a = "#t1-link";
         var t1_l = "#t1-sign";
         var t1_e = "#t1-elem";
@@ -853,26 +850,26 @@
             var w = getChartWidth();
             var h = getChartHeight();
 
-            var small_w = Math.floor(w / 2.1);
+            var small_w = Math.floor(w / 2);
 
             chart.resize({
                 height: h,
-                width: w
+                width: w/2
             });
 
             chart2.resize({
                 height: h,
-                width: small_w * .95
+                width: w/2
             });
 
             chart4.resize({
                 height: h,
-                width: small_w * 1.05
+                width: w/2
             });
 
             chart3.resize({
                 height: h,
-                width: w
+                width: w/2
             });
 
         }, false);

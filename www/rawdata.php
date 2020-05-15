@@ -108,30 +108,25 @@ $config = readconfiguration();
 <div id="trackertable"></div>
 
 
-<!-- APRS-IS Packet Source chart -->
-
-<!-- APRS-IS Packet Source chart -->
-<p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) APRS-IS Packet Source</a></p>
-<div id="c1-elem" style="display: none; margin: 5px;">
+<!-- Packet count charts -->
+<p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) Packet Counts</a></p>
+<div id="c1-elem" style="display: none; margin: 5px; margin-bottom: 15px;">
     <p class="normal-italic">
+       <strong> APRS-IS Packet Source: </strong>
        These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
        the RF packet count shows the number of packets that were heard over RF that were <strong>not</strong> already known 
        through an APRS-IS connection - it's a subtle distinction not to be confused with absolute packet counts 
        <strong>heard</strong> over an RF channel.
     </p>
-</div>
-<div class="inverted" id="chart1"></div>
-
-<!-- RF Packet Counts chart -->
-<p class="subheader"><a href="#c3" class="subheader" id="c3-link">(<span style="color: red;" id="c3-sign">+</span>) RF Packet Counts</a></p>
-<div id="c3-elem" style="display: none; margin: 5px;">
+    <br>
     <p class="normal-italic">
+       <strong>RF Packet Counts: </strong>
        This chart shows total RF packet count (every packet decoded by Dire Wolf) for each SDR/Frequency combination currently running.  
        These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
     </p>
 </div>
-<div class="inverted" id="chart3"></div>
-
+<div class="inverted" id="chart1" style="float: left;"></div>
+<div class="inverted" id="chart3" style="margin-bottom: 15px; float: left;"></div>
 
 <!-- KC0D Payload Environmentals Data -->
 <p class="subheader"><a href="#c2" class="subheader" id="c2-link">(<span style="color: red;" id="c2-sign">+</span>) KC0D Payload Environmentals</a></p>
