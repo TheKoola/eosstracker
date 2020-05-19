@@ -87,9 +87,12 @@
 
         from
             (
-            select distinct on (a.hash)
-            a.tm,
+            select distinct on ( 
+                date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
+                a.hash)
+            date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
             a.hash,
+            a.tm,
             a.callsign,
             a.heardfrom,
             a.raw
@@ -107,6 +110,7 @@
             and a.tm > $1
 
             order by
+            date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
             a.hash,
             a.tm,
             a.callsign,
