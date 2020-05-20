@@ -234,8 +234,6 @@
             $firsttime = 1;
             if (!empty($thepath[$callsign])) {
                 $len = sizeof($thepath[$callsign]);
-                if ($len > 0)
-                    print (", ");
 
                 // Get the first and last element of the $thepath array
                 $first_tuple = reset($thepath[$callsign]);
@@ -256,12 +254,8 @@
                 foreach ($thepath[$callsign] as $idx => $tuple) {
 
                     if ($i < $len - 1 && $i > 0 && $i % $mod_value == 0) {
-                        if ($firsttime == 0)
-                            printf (", ");
-                        $firsttime = 0;
-
                         //This is the GeoJSON object for the breadcrumb within the predicted flight path 
-                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
+                        printf (", { \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
                             json_encode($callsign . "_predictionpoint_" . $i), 
                             json_encode($callsign), 
                             json_encode("/J"), 
