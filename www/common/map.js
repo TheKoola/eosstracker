@@ -1572,7 +1572,7 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
-        baselayer = { "OpenStreetMap (raster)" : tilelayer, "Klokantech Basic (vector)" : basic, "OSM Bright (vector)" : osmbright };
+        baselayer = { "OpenStreetMap (raster)" : tilelayer, "Basic (vector)" : basic, "OSM Bright (vector)" : osmbright };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
