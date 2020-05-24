@@ -276,9 +276,26 @@
         # tactical | text |           |          |
         # notes    | text |           |          |
 
+        # Move all trackers to the ZZ-Not Active team.
+        if (sizeof($data["trackers"]) > 0) {
+
+            # SQL for setting each tracker to have a tactical of 'ZZ-Not Active'
+            $reset_sql = "update trackers set tactical='ZZ-Not Active';";
+
+            # Execute the SQL query
+            $result = pg_query($reset_sql);
+
+            # Check the result
+            if (!$result) {
+                printf ("{\"result\": \"0\", \"error\": %s}", json_encode(sql_last_error()));
+                sql_close($link);
+                return 0;
+            }
+        }
+
         # Loop through each item
         foreach ($data["trackers"] as $tracker) {
-            
+
             # SQL for inserting or updating the record
             $insert_sql = "insert into trackers (callsign, tactical, notes) values ($1, $2, NULLIF($3, ''))
                on conflict (callsign) do update
@@ -290,8 +307,6 @@
                 sql_escape_string($tracker["tactical"]),
                 sql_escape_string($tracker["notes"])
             ));
-
-            #printf ("%s\n", pg_result_status($result, PGSQL_STATUS_STRING));
 
             # Check the result
             if (!$result) {
