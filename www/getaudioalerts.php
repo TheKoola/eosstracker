@@ -327,7 +327,7 @@
         if ($ray["ttl"][0] != "" && $ray["landingdistance_miles"][0] != "") {
             $ttl = floor($ray["ttl"][0] / 60.0);
 
-            # If we haven't seen a packets from this flight for > 120 secs, then we subtract that delta from the last calculated time-to-live figure.
+            # If we haven't seen a packet from this flight for > 120 secs, then we subtract that delta from the last calculated time-to-live figure.
             # This provides a more accurate estimate of WHEN the flight might land in the event we lose contact with it.
             if ($secs_last_packet > 120) {
                 $ttl = floor(($ray["ttl"][0] - $secs_last_packet) / 60.0);
@@ -335,10 +335,17 @@
                     $ttl = 0;
             }
 
+            $words = $words . " Time to live, " . $ttl . " minutes";
+
             # The distance to the landing location from our own position (i.e. from GPS).
             $landingdistance = ceil($ray["landingdistance_miles"][0]);
 
-            $words = $words . " Time to live, " . $ttl . " minutes, predicted landing, " . $landingdistance . " miles away."; 
+            # if the landing distance is greater than zero, then add that phrase to the end of our statement.  If the distance value is < 0, then most likely the system doesn't
+            # have a valid GPS position recorded yet so it doesn't make sense to add a phrase about "distance".
+            if ($landingdistance > 0)  
+                $words = $words . ", predicted landing, " . $landingdistance . " miles away."; 
+            else
+                $words = $words . ".";
         }
 
 
