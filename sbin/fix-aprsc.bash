@@ -8,6 +8,8 @@ BASEDIR=/opt/aprsc
 DIRNAME=aprsc
 NAME=fix-aprsc
 
+ORIGRCLOCAL="$DESTFILE-$(date +%Y%m%d%H%M%S)"
+
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
         echo "$NAME: not running as root... exiting"
@@ -17,7 +19,7 @@ fi
 # Edits to rc.local
 if [ -f $DESTFILE ]; then
         echo "$NAME: Updating $DESTFILE..."
-        /bin/cp $DESTFILE $DESTFILE.orig
+        /bin/cp $DESTFILE $ORIGRCLOCAL
 
 echo "#!/bin/bash
 #
