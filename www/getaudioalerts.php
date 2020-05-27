@@ -124,12 +124,14 @@
     if ($numgpsrows > 0) {
         $mylat = $gpsrow["latitude"];
         $mylon = $gpsrow["longitude"];
-        $GPS_STRING =  "round(cast(ST_DistanceSphere(ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), a.location2d)*.621371/1000 as numeric),1)";
-        $GPS_STRING2 = "round(cast(ST_DistanceSphere(ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), l.location2d)*.621371/1000 as numeric),1)";
+        $GPS_STRING =  "round(cast(ST_DistanceSphere (ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), a.location2d)*.621371/1000 as numeric),1)";
+        $GPS_STRING2 = "round(cast(ST_DistanceSphere (ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), l.location2d)*.621371/1000 as numeric),1)";
+        $GPS_STRING3 = "round(cast(degrees(ST_Azimuth(ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), a.location2d)) as numeric))";
     }
     else {
         $GPS_STRING = "-1";
         $GPS_STRING2 = "-1";
+        $GPS_STRING3 = "-999";
     }
 
 
@@ -146,6 +148,7 @@
             dt.symbol, 
             dt.speed_mph,
             dt.bearing,
+            dt.azimuth,
             trunc(dt.altitude) as altitude,
             dt.comment, 
             dt.latitude,
@@ -177,6 +180,12 @@
                     else
                         -1
                 end as distance_miles,
+                case
+                    when a.location2d != \'\' then '
+                        . $GPS_STRING3 . ' 
+                    else
+                        -999
+                end as azimuth,
                 raw,
                 rank () over (
                     partition by fl.flightid order by 
@@ -266,6 +275,7 @@
         $flights[$row["flightid"]]["lastsecs"][] = $row["lastsecs"];
         $flights[$row["flightid"]]["ttl"][] = $row["ttl"];
         $flights[$row["flightid"]]["landingdistance_miles"][] = $row["landingdistance_miles"];
+        $flights[$row["flightid"]]["azimuth"][] = $row["azimuth"];
     }
 
     # this array is used to collect the JSON for each flight and is ultimately what is printed out at the end..
@@ -306,22 +316,31 @@
 
         # Split out the range.  These should be in the form of 23, etc.. 
         if ($ray["distance_miles"][0] > 0) {
-            $range_words = ", " . $ray["distance_miles"][0] . " miles.";
+            $range_words = ", " . $ray["distance_miles"][0] . " miles";
         }
         else
             $range_words = "";
 
+        # If the relative bearing is > 0 (in degrees), then add in a "bearing" statement only if we're not declaring a burst condition.
+        if ($ray["azimuth"][0] > 0 && $burst == "") {
+            # convert the numeric value of the bearing to a string with the numerals seperated by spaces.  For example, "163" becomes "1 6 3".
+            $azimuth  = implode(' ',str_split(strval($ray["azimuth"][0]))); 
+
+            # The phrase used for the bearing to the flight.
+            $azimuth_words = ", bearing " . $azimuth . " degrees";
+        }
+        else
+            $azimuth_words = "";
+
         # Our default sentance.  We form up the words needed.
-        $words = "Flight " . $flightnum . $burst .  $alt_words .  $range_words;
+        $words = "Flight " . $flightnum . $burst .  $alt_words .  $range_words . $azimuth_words . ".";
 
-
-        # No packets alert.  If we havn't heard something from the flight for > 90 seconds, then we override the normal message.
+        # No packets alert.  If we havn't heard something from the flight for > 120 seconds, then we override the normal message.
         $secs_last_packet = $ray["lastsecs"][0];
         $nummins = ceil($secs_last_packet / 60.0);
         if ($secs_last_packet > 120) {
-            $words = "Warning, flight " . $flightnum . ". No packets for " . $nummins . " minutes.  Last update " . $alt_words . $range_words;  
+            $words = "Warning, flight " . $flightnum . ". No packets for " . $nummins . " minutes.  Last update" . $alt_words . $range_words . $azimuth_words . ".";  
         }
-
 
         # If there is a landing prediction availble, then we use a different sentance
         if ($ray["ttl"][0] != "" && $ray["landingdistance_miles"][0] != "") {
