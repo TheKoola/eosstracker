@@ -92,31 +92,83 @@
 
     
     ## get the latest time to live
-    $query = 'select distinct on (l.tm, l.flightid)
-        l.tm::timestamp without time zone, 
-        l.flightid, 
-        l.ttl
+    $query = "select distinct 
+            dt.thetime,
+            extract(epoch from now() - dt.thetime) as lastsecs,
+            dt.flightid,
+            dt.callsign,
+            lp.ttl
+ 
+        from (
+            select
+                fl.flightid,
+                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                a.callsign, 
+                a.symbol, 
+                rank () over (
+                    partition by fl.flightid order by 
+                        case
+                            when a.raw similar to '%[0-9]{6}h%' then 
+                                date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                            else
+                                date_trunc('second', a.tm)::time without time zone
+                        end desc
+                    ) as rank
+        
+            from 
+                packets a,
+                flightmap fm,
+                flights fl
+        
+            where 
+                a.location2d != ''
+                and a.altitude > 0
+                and fm.flightid = fl.flightid
+                and a.callsign = fm.callsign 
+                and fl.active = 't'
+                and fl.flightid = $2 
+                and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time)  
+                
+        ) as dt 
+        left outer join
+        (
+            select
+                max(l.tm) as thetime,
+                l.flightid,
+                l.callsign,
+                l.ttl
+                
+            from
+                landingpredictions l
 
-        from 
-        landingpredictions l, 
-        flights f,
-        (select flightid, max(tm) as thetime from landingpredictions group by flightid order by flightid) as a 
+            where
+                l.tm > now() - time '00:05:00'
+                and l.ttl is not null
 
-        where 
-        f.flightid = l.flightid 
-        and f.active = \'t\' 
-        and l.flightid = $1 
-        and l.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time)  
-        and l.flightid = a.flightid
-        and l.tm = a.thetime
+            group by
+                l.flightid,
+                l.callsign,
+                l.ttl
 
-        order by 
-        l.tm asc, 
-        l.flightid,
-        l.ttl asc
+            order by
+                thetime,
+                l.flightid,
+                l.callsign
 
-        limit 1; ';
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid), sql_escape_string($config["lookbackperiod"] . " minute")));
+        ) as lp
+        on dt.flightid = lp.flightid and dt.callsign = lp.callsign
+
+        where rank = 1
+
+        order by
+            dt.flightid,
+            dt.thetime desc,
+            dt.callsign
+        limit 1; ";
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config['timezone']),
+        sql_escape_string($get_flightid), 
+        sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -125,13 +177,21 @@
 
     $firsttimeinloop = 1;
     while ($row = sql_fetch_array($result)) {
-        $thetime = $row['tm'];
+        $thetime = $row['thetime'];
         $flightid = $row['flightid'];
-        $ttl = $row['ttl'];
+        $lastsecs = $row['lastsecs'];
+
+        # If it's been > 120 seconds since the last heard packet, then we subtract that time from the time-to-live value. 
+        # This accounts for the case where we haven't heard a packet from a beacon for xx minutes, but obviously the flight is still descending.
+        $ttl = $row['ttl'] - ($lastsecs > 120 ? $lastsecs : 0);
         if ($firsttimeinloop == 0)
             printf (", ");
         $firsttimeinloop = 0;
-        printf ("{ \"flightid\" : %s, \"time\" : %s, \"ttl\" : %s }", json_encode($flightid), json_encode($thetime), json_encode(($ttl <= 0 ? "n/a" : round($ttl/60.0)))); 
+        printf ("{ \"flightid\" : %s, \"time\" : %s, \"ttl\" : %s }", 
+            json_encode($flightid), 
+            json_encode($thetime), 
+            json_encode(($ttl <= 0 ? "n/a" : floor($ttl/60.0)))
+        ); 
     }
 
     if (sql_num_rows($result) <= 0)

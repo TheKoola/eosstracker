@@ -27,7 +27,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html">
-<meta http-equiv="Content-Language" content="utf-8">
+<meta charset="utf-8">
 <meta name="description" content="HAB Tracker">
 <meta name="generator" content="None other than the tried and true vi editor!">
 <meta name="keywords" content="HAB Tracker">
@@ -68,6 +68,15 @@ else
 <script src="/common/jquery.flightindicators.js"></script>
 <script src="/common/leaflet.markercluster.js"></script>
 <script src="/common/Control.SimpleMarkers.js"></script>
+<script src="/common/leaflet.rotatedMarker.js"></script>
+
+<!-- Mapbox GL JS -->
+<script src="/common/mapbox-gl.js"></script>
+<link href="/common/mapbox-gl.css" rel="stylesheet">
+
+<!-- Leaflet shim for mapbox -->
+<script src="/common/leaflet-mapbox-gl.js"></script>
+
 
 </head>
 <body>

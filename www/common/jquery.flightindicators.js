@@ -15,13 +15,13 @@
 		// Initial configuration
 		var attitude = this;
 		var settings = $.extend({
-			size : 200,
+			//size : 180,
 			roll : 0,
 			pitch : 0,
 			turn : 0,
 			heading: 0,
-                        relativeHeading: 0,
-                        elevationAngle: 0,
+            relativeHeading: 0,
+            elevationAngle: 0,
 			vario: 0,
 			airspeed: 0,
 			altitude: 0,
@@ -74,7 +74,7 @@
 					_setRoll(settings.roll);
 					_setPitch(settings.pitch);
 			}
-			$(this).find('div.instrument').css({height : settings.size, width : settings.size});
+			//$(this).find('div.instrument').css({height : settings.size, width : settings.size});
 			$(this).find('div.instrument img.box.background').toggle(settings.showBox);
 		});
 

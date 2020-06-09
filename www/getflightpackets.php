@@ -137,12 +137,12 @@
     ## query the last packets from stations...
     $query = '
 select distinct on (thetime, a.hash)
-date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
+date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
 case
-    when a.ptype = \'/\' and a.raw similar to \'%[0-9]{6}h%\' then 
-        date_trunc(\'second\', ((to_timestamp(substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
+    when a.raw similar to \'%[0-9]{6}h%\' then 
+        date_trunc(\'milliseconds\', ((to_timestamp(now()::date || \' \' || substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'YYYY-MM-DD HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
     else
-        date_trunc(\'second\', a.tm)::time without time zone
+        date_trunc(\'milliseconds\', a.tm)::time without time zone
 end as packet_time,
 a.callsign, 
 a.comment, 
@@ -201,7 +201,14 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         $raw = $row['raw'];
         $ptype = $row['ptype'];
 
-        $allpackets[$callsign][] = array($thetime, $get_flightid, $callsign, $raw);
+        if (strpos($thetime, ".") === false) {
+            $time_trunc = $thetime;
+            $microseconds = 0;
+        }
+        else
+            list($time_trunc, $microseconds) = explode(".", $thetime);
+
+        $allpackets[$callsign][] = array($time_trunc, $get_flightid, $callsign, $raw);
 
         if ($latitude != '' && $longitude !='' && $altitude != '') {
             // this is a position packet
@@ -211,7 +218,8 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
             if (array_key_exists($callsign, $time_prev)) {
                 if ($hash != $hash_prev[$callsign]) {
                     $diff = date_diff($time_prev[$callsign], $time1);
-                    $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60;
+                    //print_r($diff);
+                    $time_delta = ($diff->h)*60 + ($diff->i) + ($diff->s)/60 + ($diff->f)/60;
                     if ($time_delta > 0)
                         $verticalrate[$callsign] = round(($altitude - $altitude_prev[$callsign])/$time_delta, 0);
                     else
@@ -220,7 +228,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
                 }
             }
 
-            $packets[] = array($thetime, $callsign, $get_flightid, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, (array_key_exists($callsign, $verticalrate) ? $verticalrate[$callsign] : 0));
+            $packets[] = array($time_trunc, $callsign, $get_flightid, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, (array_key_exists($callsign, $verticalrate) ? $verticalrate[$callsign] : 0));
 
             if (array_key_exists($callsign, $hash_prev)) {
                 if ($hash != $hash_prev[$callsign]) {
@@ -239,7 +247,7 @@ and a.tm > (now() - (to_char(($2)::interval, \'HH24:MI:SS\'))::time) '
         else if ($ptype == ">") {
             // this is a status packet
             $r = preg_split('/:>/', $raw);
-            $statuspackets[] = array($thetime, $get_flightid, $callsign, $r[1]);
+            $statuspackets[] = array($time_trunc, $get_flightid, $callsign, $r[1]);
         }
     }    
 

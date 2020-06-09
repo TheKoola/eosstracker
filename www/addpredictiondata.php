@@ -207,7 +207,8 @@ try {
                                    $longrate = ($line_data[9] - $thelaunchsite["lon"]) / 60;
 
                                    // the database insert statement
-                                   $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+                                   $insertstmt = "insert into predictiondata (flightid, launchsite, thedate, thetime, altitude, latitude, longitude, altrate, latrate, longrate) 
+                                       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
     
                                    // Execute the database statement
                                    $result = pg_query_params($link, $insertstmt, array(
@@ -234,7 +235,8 @@ try {
                                    // All subsequent lines land here...
                                    //
                                    // the database insert statement
-                                   $insertstmt = "insert into predictiondata values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
+                                   $insertstmt = "insert into predictiondata (flightid, launchsite, thedate, thetime, altitude, latitude, longitude, altrate, latrate, longrate) 
+                                       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);";
     
                                    // Execute the database statement
                                    $result = pg_query_params($link, $insertstmt, array(

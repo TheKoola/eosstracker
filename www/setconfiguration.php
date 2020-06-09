@@ -54,6 +54,7 @@
     $ray["overlay"] = "";
     $ray["ibeaconrate"] = "15:00";
     $ray["ibeacon"] = "false";
+    $ray["airdensity"] = "false";
     $fallbackJSON = json_encode($ray);
 
 

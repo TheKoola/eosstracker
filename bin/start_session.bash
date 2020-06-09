@@ -35,12 +35,6 @@
 #     need to be edited.
 CALLSIGN="E0SS"
 
-
-# This is the elevation at the predicted landing location.  This is a starting value as the algorithm will auto-adjust this to 
-# be equal to the launch site elevation.  This doesn't need to edited.
-GROUNDLEVEL=4900
-
-
 # Locations of things
 HOMEDIR=/eosstracker
 BINDIR=${HOMEDIR}/bin
@@ -81,5 +75,5 @@ echo "###################" >> ${LOGFILE}
 #echo "###################" >> ${LOGFILE}
 
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
-nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} --algoFloor=${GROUNDLEVEL} >> ${LOGFILE} 2>${STDERR} &
+nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &
 

@@ -123,13 +123,8 @@
     ***********/
 function getTrackers() {
     $.get("getflights.php", function(fdata) {
-        var flightsJson = JSON.parse(fdata)
-        var flightids = [];
+        var flightids = JSON.parse(fdata)
         var f;
-
-        for (f in flightsJson) {
-            flightids.push(flightsJson[f].flight);
-        }
 
         $.get("getteams.php", function(data) {
             var teamsJson = JSON.parse(data);
@@ -184,17 +179,17 @@ function getTrackers() {
 
                     teamcell.setAttribute("class", "trackerlist");
                     if (i % 2)
-                        teamcell.setAttribute("style", "background-color: lightsteelblue;"); 
+                        teamcell.setAttribute("style", "background-color: #737373;"); 
  
  
                     for (flight in flightids) {
-                        if (flightids[flight] == trackerJson[i].flightid) {
+                        if (flightids[flight].flight == trackerJson[i].flightid) {
                             checked = "selected=\"selected\""; 
                             foundmatch = 1;
+                            html = html + "<option value=" + flightids[flight].flight + " " + checked + " >" + flightids[flight].flight + "</option>";
                         }
-                        else
-                            checked = "";
-                        html = html + "<option value=" + flightids[flight] + " " + checked + " >" + flightids[flight] + "</option>";
+                        else if (flightids[flight].active == 't')
+                            html = html + "<option value=" + flightids[flight].flight + " >" + flightids[flight].flight + "</option>";
                     }
                     if (trackerJson[i].flightid == "At Large" || foundmatch == 0)
                         checked = "selected=\"selected\""; 
@@ -224,20 +219,20 @@ function getTrackers() {
                         var cellCallsign = row.insertCell(-1);
                         cellCallsign.setAttribute("class", "trackerlist");
                         if (i % 2)
-                            cellCallsign.setAttribute("style", "background-color: lightsteelblue;"); 
+                            cellCallsign.setAttribute("style", "background-color: #737373;"); 
                         cellCallsign.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"width: 22px; height: 22px;\" onclick=\'deleteTracker(\"" + trackers[j].callsign + "\")\'> &nbsp; " + trackers[j].callsign;
     
                         var cellNotes = row.insertCell(-1);
                         cellNotes.setAttribute("class", "trackerlist");
                         cellNotes.setAttribute("style", "white-space: normal; word-wrap: break-word;"); 
                         if (i % 2)
-                            cellNotes.setAttribute("style", "background-color: lightsteelblue; white-space: normal; word-wrap: break-word;"); 
+                            cellNotes.setAttribute("style", "background-color: #737373; white-space: normal; word-wrap: break-word;"); 
                         cellNotes.innerHTML = trackers[j].notes;
     
                         var cellFlightid = row.insertCell(-1);
                         cellFlightid.setAttribute("class", "trackerlist");
                         if (i % 2)
-                            cellFlightid.setAttribute("style", "background-color: lightsteelblue;"); 
+                            cellFlightid.setAttribute("style", "background-color: #737373;"); 
                         cellFlightid.innerHTML = teamhtml;
     
                     }

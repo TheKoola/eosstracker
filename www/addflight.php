@@ -85,7 +85,12 @@ include $documentroot . '/common/functions.php';
         $c = check_string($_GET[$cstr], 20);
         $d = check_string($_GET[$dstr], 64);
         if ($c != "" && $d != "" && check_number($_GET[$fstr], 144.0, 146.0)) {
-            $beacons[] = array(sql_escape_string($flightid), sql_escape_string($c), sql_escape_string($d), floatval($_GET[$fstr]));
+            $beacons[] = array(
+                sql_escape_string($flightid), 
+                sql_escape_string($c), 
+                sql_escape_string($d), 
+                floatval($_GET[$fstr]
+            ));
         } 
         else 
             $formerror = true;
@@ -94,7 +99,7 @@ include $documentroot . '/common/functions.php';
         $formerror = true;
 
     // Loop through the remaining beacons
-    for ($i = 2; $i < 6; $i++) {
+    for ($i = 2; $i < 3; $i++) {
         $cstr = "beacon" . $i . "_callsign";
         $fstr = "beacon" . $i . "_frequency";
         $dstr = "beacon" . $i . "_description";
@@ -119,8 +124,13 @@ include $documentroot . '/common/functions.php';
         }
         else {
             // insert a new row into the flights table
-            $query = "insert into flights values (upper(btrim($1)), $2, now()::date, $3, $4);";
-            $result = pg_query_params($link, $query, array(sql_escape_string($flightid), sql_escape_string($description), sql_escape_string($active), sql_escape_string($launchsite)));
+            $query = "insert into flights (flightid, description, thedate, active, launchsite) values (upper(btrim($1)), $2, now()::date, $3, $4);";
+            $result = pg_query_params($link, $query, array(
+                sql_escape_string($flightid), 
+                sql_escape_string($description), 
+                sql_escape_string($active), 
+                sql_escape_string($launchsite)
+            ));
             if (!$result) {
                 printf ("{\"result\": \"0\", \"error\": %s}", json_encode(sql_last_error()));
                 sql_close($link);
@@ -128,7 +138,7 @@ include $documentroot . '/common/functions.php';
             }
 
             // insert rows into the flightmap table
-            $query = "insert into flightmap values (upper(btrim($1)), upper(btrim($2)), $3, $4);";
+            $query = "insert into flightmap (flightid, callsign, location, freq) values (upper(btrim($1)), upper(btrim($2)), $3, $4);";
             //print_r($beacons);
             foreach ($beacons as $bray) {
                 $result = pg_query_params($link, $query, $bray);

@@ -133,6 +133,18 @@ include_once $documentroot . '/common/functions.php';
                           p.comment,
                           ST_Y(p.location2d) as lat,
                           ST_X(p.location2d) as lon,
+                          case
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
+                                  round(32 + 1.8 * cast(substring(substring(substring(p.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                              else
+                                  NULL
+                          end as temperature_f,
+                          case
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
+                                  cast(substring(substring(p.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0
+                              else
+                                  NULL
+                          end as pressure_atm,
                           p.hash as md5_hash,
                           p.raw
 
@@ -163,7 +175,7 @@ include_once $documentroot . '/common/functions.php';
         	        header("Content-Type: text/csv");
 			header('Content-Disposition: attachement; filename="' . $flightid . '.csv"');
 			$f = fopen("php://output", "w");
-        		fputcsv($f, array("datetime", "flightid", "callsign", "aprs_symbol", "speed_mph", "bearing", "altitude_ft", "lat", "lon", "comment", "md5_hash", "raw_packet"));
+        		fputcsv($f, array("datetime", "flightid", "callsign", "aprs_symbol", "speed_mph", "bearing", "altitude_ft", "lat", "lon", "comment", "temperature_f", "pressure_atm", "md5_hash", "raw_packet"));
         	        while ($row = sql_fetch_array($result)) {
 				fputcsv($f, array((string)($row["thedate"] . " " . $row["thetime"]), 
 					(string)$row['flightid'],
@@ -175,6 +187,8 @@ include_once $documentroot . '/common/functions.php';
 					round($row["lat"], 6), 
 					round($row["lon"], 6),
 					(string)$row["comment"],
+					round($row["temperature_f"], 2),
+					round($row["pressure_atm"], 8),
 					(string)$row["md5_hash"],
 					(string)$row["raw"]
 				));

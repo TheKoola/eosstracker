@@ -52,7 +52,7 @@
         return 0;
     }
 
-    $query = "insert into freqs values ($1);";
+    $query = "insert into freqs (freq) values ($1);";
     $result = pg_query_params($link, $query, array(sql_escape_string($get_freq)));
     if (!$result) {
         printf ("{\"result\" : 0, \"error\": %s}", json_encode(sql_last_error()));

@@ -31,30 +31,64 @@ include_once $documentroot . '/common/functions.php';
 include $documentroot . '/common/header.php';
 
 ?>
-<div class="main">
-    <div class="gallery-area" style="float:  left;">
-            <p class="header" style="clear:  none;">
-                <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-                About
-            </p>
-            <p class="normal-black" style="float:left;">
-	    The EOSS Tracker application aids tracking and recovery of high altitude balloons by  
-	    leveraging open source software and the amateur radio <a class="normal-link-black" target="_blank" href="http://www.aprs.org">Automatic Packet Reporting System</a> to provide near real time status and location updates.
-            </p>
-            <p class="normal-black">
-	        <?php include_once $documentroot . '/localinfo.php'; ?>
-            </p>
-</div>
+<script>
+    /***********
+    * updateMapLink
+    *
+    * This function will query the server for the latest GPS position and update the Map link in the menubar accordingly.
+    ***********/
+    function updateMapLink() {
+        // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
+        //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter"
+        //     itself thus improving the user map experience.
+        setTimeout (function () {
+            $.get("getposition.php", function(data) {
+                var lastposition = JSON.parse(data);
+                var lat = lastposition.geometry.coordinates[1];
+                var lon = lastposition.geometry.coordinates[0];
+                var zoom = 10;
 
+                var maplink = document.getElementById("maplink");
+                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+                maplink.setAttribute("href", url);
+            });
+        }, 10);
+    }
+
+    $(document).ready(function () {
+        setTimeout (function () {
+            updateMapLink();
+        }, 10);
+
+        setInterval (function() {
+            updateMapLink();
+        }, 5000);
+    });
+</script>
+<div style="width: 90%;"> 
+    <p class="header">
+        <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+        About
+    </p>
+    <p>
+	    The EOSS Tracker application aids tracking and recovery of high altitude balloons by  
+        leveraging open source software and the amateur radio 
+        <a target="_blank" href="http://www.aprs.org">Automatic Packet Reporting System</a> 
+        to provide near real time status and location updates.
+    </p>
+    <div style="margin: 10px; border: solid 1px black; background-color: white; float: right; box-shadow: 5px 5px 8px black; padding: 10px;">
+        <a target="_blank" href="https://www.eoss.org"> 
+            <img src="/images/graphics/eoss-logo-small.png">
+        </a>
+    </div>
+    <p style="margin-top: 10px;">
+        <a target="_blank" href="https://www.eoss.org">Edge of Space Sciences</a> uses the 
+        EOSS Tracker application to help fulfill their mission of promoting science and 
+        education through high altitude balloons and amateur radio.
+    </p>
+</div>
 <?php
     include $documentroot . '/common/footer.php';
 ?>
-</div>
-
-</div>
-</div>
-</div>
-</div>
-</div>
 </body>
 </html>

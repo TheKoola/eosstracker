@@ -22,9 +22,87 @@
 *
 */
 
+    // Global variables
     var lastStation = "";
     var lastStationTime = new Date(1970, 1, 1, 0, 0, 0, 0);
     var currentflight = "";
+
+    // The audio device
+    var audio;
+    var playing;
+
+    // Our audio queue
+    var sndqueue;
+
+    // Used to hold the session ID passed to getaudioalerts.php
+    var callerid;
+
+
+    /************
+     * queue class
+     *
+     * implemented to queue objects
+    *************/
+    class Queue {
+        constructor(...items) {
+            //initialize the items in queue
+            this._items = [];
+
+            // enqueuing the items passed to the constructor
+            this.enqueue(...items);
+        }
+
+        enqueue(...items) {
+            //push items into the queue
+            items.forEach( item => this._items.push(item) );
+
+            return this._items;
+        }
+
+        dequeue(count=1) {
+            //pull out the first item from the queue
+            this._items.splice(0,count);
+
+            return this._items;
+        }
+
+        peek() {
+            //peek at the first item from the queue
+            return this._items[0];
+        }
+
+        size() {
+            //get the length of queue
+            return this._items.length;
+        }
+
+        isEmpty() {
+            //find whether the queue is empty or no
+            return this._items.length===0;
+        }
+
+        empty() {
+            this._items = [];
+            return this._items;
+        }
+    }
+    
+
+    /************
+     * makeid
+     *
+     * This function will construct a random character string to serve as the session ID for calls to the getaudioalerts.php page
+    *************/
+    function makeid(lengthOfString) {
+        var result = "";
+        var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        var charactersLength = characters.length;
+
+        for ( var i = 0; i < lengthOfString; i++ ) {
+           result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
 
     /************
      * toggle
@@ -42,6 +120,24 @@
                 signEle.text('normal');
              }
         });
+    }
+
+    /************
+     * toggleMute
+     *
+     * This function will toggle the audio Mute clickydoo
+    *************/
+    function toggleMute(event) {
+        var signEle = $(event.data.link);
+
+        if (audio.muted == true) {
+            audio.muted = false;        
+            signEle.text('enabled');
+        }
+        else  {
+            audio.muted = true;        
+            signEle.text('disabled');
+        }
     }
 
     /***********
@@ -68,17 +164,78 @@
     * This function will run with the page is fully loaded.
     ***********/
     $(document).ready(function () {
+
+        // Create an audio element
+        audio = new Audio();
+        audio.muted = true;
+        playing = false;
+
+        // For toggling visibility of the expanded station list
         var list_a = "#listSelectionLink";
         var list_l = "#listSelectionLinkSign";
         var list_e = "#stationlist";
         $(list_a).click({element: list_e, link: list_l }, toggle);
 
+        // For toggling mute on the audio element
+        var audio_a = "#audioSelectionLink";
+        var audio_l = "#audioSelectionLinkSign";
+        $(audio_a).click({ link: audio_l }, toggleMute);
+
+        // Create the queue for audio alerts
+        sndqueue = new Queue(); 
+
+        // Set the handlers for the audio object
+        audio.onloadeddata = function() {
+            playing = true;
+            audio.play();
+        };
+
+        audio.onended = function() {
+            sndqueue.dequeue();
+            audio.src = "";
+            playing = false;
+            processSoundQueue();
+        };
+
+
+        // Create our session ID string for calls to getaudioalerts.php
+        callerid = makeid(20);
+
+        // Get initial data
         getFlights();
-        getrecentdata();
-        setInterval(function() {getrecentdata(); }, 5000);
+       //getrecentdata();
+
+        // Set a timer so that we refresh data every 5 secs
+        setInterval(function() {
+          getrecentdata(); 
+          getAudioAlerts();
+          //processSoundQueue();
+        }, 5000);
     });
 
+    /***********
+    * processSoundQueue
+    *
+    * This function will determine if audio is playing, and if not, then start the snowball rolling...
+    ***********/
+    function processSoundQueue() {
+        var i;
+        var queuesize = sndqueue.size();
+
+        //console.log("queue: " + JSON.stringify(sndqueue._items));
+        
+        if (queuesize > 0 && playing == false) {
+            audio.src = sndqueue.peek().sndfile;
+            audio.load();
+        }
+    }
+
     
+    /***********
+    * getrecentdata
+    *
+    * This function will query the server for recent packets and update the webpage.
+    ***********/
     function getrecentdata() {
         var url;
 
@@ -93,6 +250,10 @@
             var i;
             var j;
             var k;
+
+            // Get the currently selected flight
+            var flightid = currentflight;
+
 
             
             //Create a HTML Table element for the list of callsigns.
@@ -112,6 +273,7 @@
             stationtablespan = document.getElementById("station");
             stationtable.setAttribute("style", "border: 0px; color: white; margin: 10px;");
 
+            // Loop through each packet in the JSON
             for (i = 0; i < keys.length; i++) {
                 var station = jsonData[i];
                 var row = table.insertRow(-1);
@@ -119,8 +281,12 @@
                 var cell2 = row.insertCell(-1);
                 var cell3 = row.insertCell(-1);
                 var filename = "";
+
+                // Check if this incoming packets are "new".  If they are, then we want to have them fade red to white.
+                // ...also if this is new data, then we want to grab audio reports
                 var thisStationDate = new Date(station.thetime.replace(/ /g, "T"));
                 if (thisStationDate > lastStationTime) {
+                    // Update cell attributes for the red-to-white fade effect.
                     cell2.setAttribute("class", "redToWhite");
                     cell3.setAttribute("class", "redToWhite");
                 }
@@ -152,6 +318,7 @@
                 cell2.innerHTML = station.callsign;
                 cell3.innerHTML = station.thetime.split(" ")[1].split(".")[0];
 
+                // We only want to update the dashboard web page with the first three packets (aka the latest ones).
                 if (i < 3) {
                     var srow = stationtable.insertRow(-1);
                     var stationSymbol = srow.insertCell(-1);
@@ -167,7 +334,11 @@
                     else
                         stationSymbol.innerHTML = "<font style=\"font-size: 2em;\">n/a";
 
-                    stationCallsign.innerHTML = "<font style=\"font-size: 4em;\">" + station.callsign + "</font>";
+                    stationCallsign.innerHTML = "<font style=\"font-size: 4em;\">" + station.callsign + "</font> &nbsp; <font style=\"font-size: 3em;\">"
+                        + (typeof(station.altitude) == "undefined" ? 
+                            "" : 
+                            (station.altitude > 0 ? (station.altitude * 10 / 10).toLocaleString() + " ft" : ""))
+                        + "</font>";
 
                     var srow2 = stationtable.insertRow(-1);
                     var stationDetails = srow2.insertCell(-1);
@@ -261,14 +432,50 @@
                     lastStationTime = new Date(jsonData[0].thetime.replace(/ /g, "T"));
                 }
             }
+
+            // Update the station list
             stationtablespan.innerHTML = "";
             stationtablespan.appendChild(stationtable);
 
+            // update the table with the latest packet
             tablespan.innerHTML = "";
             tablespan.appendChild(table);
+            
         });
     }
 
+    /***********
+    * getAudioAlerts
+    *
+    * This function will query for any audio alerts if a flight is selected (i.e. the radio buttons) and add any alerts to the sndqueue.
+    ***********/
+    function getAudioAlerts() {
+        // get audio alerts and add any alerts to the sound queue
+        if (currentflight != "" || currentflight != "allpackets") {
+            $.get("getaudioalerts.php?callerid=" + callerid + "&flightid=" + currentflight, function(d) {
+                var jsonData = JSON.parse(d);
+                var a = 0;
+                var t = Object.keys(jsonData);
+                var f = currentflight;
+
+                // Loop through the JSON records
+                for (a = 0; a < t.length; a++) {
+                    if (jsonData[a].flightid == f) {
+                        // Our flight has an audio alert...add it to the queue
+                        sndqueue.enqueue({sndfile: jsonData[a].audiofile, flightid: f}); 
+                    }
+                }
+                processSoundQueue();
+            });
+        } 
+    }
+
+
+    /***********
+    * getFlights
+    *
+    * This function will create the selection radio buttons
+    ***********/
     function getFlights() {
         $.get("getflightsformap.php", function(data) {
             var jsondata = JSON.parse(data);
@@ -290,15 +497,27 @@
             document.getElementById("flights").innerHTML = html;
 
             currentflight = "allpackets";
-            $('input[type="radio"]').on('click change', function(e) {
+            //$('input[type="radio"]').on('click change', function(e) {
+            $('input[type="radio"]').on('change', function(e) {
                 currentflight = selectedflight();
                 getrecentdata();
+
+                // if the selected radio button is an actual flight, then we display the audio control
+                if (currentflight == "" || currentflight == "allpackets")
+                    $("#audioalerts").hide();
+                else
+                    $("#audioalerts").show();
             });
 
             getrecentdata();
         });
     }
 
+    /***********
+    * selectedflight
+    *
+    * This function will return the value of the flight selection radio buttons
+    ***********/
     function selectedflight() {
         var radios = document.getElementsByName("flight");
         var selectedValue;

@@ -39,38 +39,85 @@
     }
 
     // Check if this should be a full update or not
-    $get_fullupdate = " and a.tm > (now() - (to_char(('7 second')::interval, 'HH24:MI:SS'))::time) ";
+    $get_fullupdate = " where p.flightid is not null or d.flightid is not null ";
     if (isset($_GET["fullupdate"])) {
         if ($_GET["fullupdate"] == "full")
-            $get_fullupdate = " and a.tm > now()::date ";
+            $get_fullupdate = " ";
     }
 
 
     ## Query the database for those active flights that have new packets within the past few seconds.
-    $query = "select distinct 
-         fl.flightid,
-         a.callsign,
-         count(a.*) as count
+    $query = "select
+        f.flightid,
+        f.callsign,
+        case when p.count is not null or d.count is not null then 1 else 1 end as update
 
-         from 
-         packets a, 
-         flightmap fm,
-         flights fl
+        from
+        (select distinct
+        f.flightid,
+        fm.callsign
 
-         where 
-         a.location2d != '' " 
-         . $get_fullupdate .          
-        "and fm.flightid = fl.flightid 
-         and a.callsign = fm.callsign 
-         and fl.active = 'y'
+        from
+        flightmap fm,
+        flights f
 
-         group by
-         fl.flightid,
-         a.callsign
+        where
+        fm.flightid = f.flightid
+        and f.active = 'y'
 
-         order by 
-         3 desc, 1, 2
-         ;";
+        order by
+        f.flightid,
+        fm.callsign
+        ) as f  
+
+        left join
+        (select distinct
+        l.flightid, 
+        l.callsign,
+        1 as count
+
+        from 
+        landingpredictions l
+
+        where 
+        l.tm > (now() - interval '11 second')
+
+        order by 
+        l.flightid, 
+        l.callsign
+        ) as d
+        on f.flightid = d.flightid and f.callsign = d.callsign
+
+        left join
+        (select distinct 
+        fl.flightid,
+        a.callsign,
+        1 as count
+
+        from 
+        packets a,
+        flightmap fm, 
+        flights fl
+
+        where 
+        a.location2d != '' 
+        and a.tm > (now() - interval '11 second')
+        and fm.flightid = fl.flightid 
+        and a.callsign = fm.callsign 
+        and fl.active = 'y'
+
+        group by
+        fl.flightid,
+        a.callsign
+
+        order by 
+        3 desc, 1, 2
+        ) as p
+        on f.flightid = p.flightid and f.callsign = p.callsign
+
+         " . $get_fullupdate . " 
+
+        ;";
 
     $result = sql_query($query);
     if (!$result) {
