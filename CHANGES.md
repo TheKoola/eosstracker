@@ -1,8 +1,12 @@
 # Revision History #
 
-## Version 1.3 - Under Development ##
+## Version 1.3 - June 2020 ##
 
 ### New Features: ###
+
+- Enable KC0D airdensity calculations as part of landing predictions to be enabled/disabled dynamically from the configuration settings on the Map page along with new graphs on the Data page.
+
+- A "Synchronize..." button is now available for downloading the latest Predict File for a filght from the www.eoss.org website.  This greatly simplifies getting a pre-flight predict file uploaded to the SDR system.
 
 - On the Setup page, there is a new section for synchronizing one's local SDR system to the kiosk version running at https://track.eoss.org.  This will mirror flights, trackers, launch sites, and frequencies from the kiosk system onto the local system potentially saving the user signficant time in having to add those configuration items themselves.
 
@@ -64,6 +68,14 @@
 
 
 ### Issues Fixed: ###
+
+- Fixes to the SQL code used to count the number of packets heard from payload beacons and trackers.
+
+- Error with the JSON output being malformed under certain conditions that prevented the landing prediction being displayed on the map.
+
+- Adjustments to trackers so that tactical designations are mirrored from the track.eoss.org when synchronizing a local system.
+
+- Fix issue where audio alerts would 'state' a negative distance value when the system GPS could not obtain a position fix.
 
 - Reordering of the map panes (z-order) so that some icons/layers are "covered" and therefore no longer respond to click events.  Also includes fixes to ensure the z-ordering of the landing prediction 'X' on the map is higher than ordinary stations.
 
