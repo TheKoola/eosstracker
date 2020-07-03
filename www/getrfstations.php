@@ -170,7 +170,8 @@
                     --group by a.hash, packet_time, a.sourcename, a.comment, a.source_symbol, a.bearing, a.speed_mph, altitude, latitude, longitude, temperature_k, pressure_pa, ptype, a.heardfrom, freq
 
                     order by
-                    a.hash
+                    a.hash, 
+                    a.channel
             ) as f
             left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on f.sourcename = b.callsign
             left outer join (select t.callsign from trackers t order by t.callsign) as c 
@@ -223,7 +224,7 @@
         $symbol = $row['symbol'];
         $speed = $row['speed_mph'];
         $heardfrom = $row['heardfrom'];
-        $frequency = $row['freq'];
+        $frequency = ($row['freq'] == "" ? "ext radio" : $row['freq']);
         $bearing = $row['bearing'];
         $latitude = $row['latitude'];
         $longitude = $row['longitude'];
