@@ -2126,7 +2126,7 @@ def runLandingPredictor(schedule, e, config):
 
 
         # Create a new LandingPredictor object
-        lp = LandingPredictor(habconfig.dbConnectionString, timezone=config['timezone'], timeout = 60)
+        lp = LandingPredictor(habconfig.dbConnectionString, timezone=config['timezone'], timeout = 20)
 
         # run the landing predictor function continuously, every "schedule" seconds.
         while not e.is_set():
