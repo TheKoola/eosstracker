@@ -1565,13 +1565,14 @@ function getTrackers() {
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
 
+        // Add the raster map as the default base layer
+        tilelayer.addTo(map);
 
-        // Prefer to use a vector map as the base layer if one of them is available.
+        // Add vector maps as base layers if available.
         $.get(basic.options.style, function(data, textStatus, xhr) {
 
             // Add the basic vector layer to the map as the default base map layer
             layerControl.addBaseLayer(basic, "Basic (vector)");
-            basic.addTo(map);
 
             // Also add the osmbright vector map...if it exists.
             $.get(osmbright.options.style, function(data, textStatus, xhr) {
@@ -1583,15 +1584,8 @@ function getTrackers() {
 
                 // Add the osmbright vector layer to the map as the default base map layer
                 layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
-                osmbright.addTo(map);
-
-            }).fail(function(data, textSttaus, xhr) {;
-
-                // If no vector maps exist, then fallback to the raster maps being the "base map" layer.
-                tilelayer.addTo(map);
             });
         });
-
 
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
@@ -1643,8 +1637,8 @@ function getTrackers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         var allstations = L.markerClusterGroup();
         //var allstations = L.layerGroup();
-        //var allrfstations = L.layerGroup();
-        var allrfstations = L.markerClusterGroup();
+        var allrfstations = L.layerGroup();
+        //var allrfstations = L.markerClusterGroup();
         var mystation = L.layerGroup();
         //var wxstations = L.layerGroup();
         var wxstations = L.markerClusterGroup();
