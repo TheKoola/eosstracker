@@ -591,18 +591,24 @@ include $documentroot . '/common/header.php';
 
         <tr>
 		    <td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps;">APRS RF Smart Beaconing</td>
-                </tr>
+        </tr>
 		<tr>
-                    <td class="packetlist-highlight2" rowspan=11><div style="-webkit-transform: rotate(270deg);  
-                              -ms-transform: rotate(270deg); 
-                              transform: rotate(270deg); 
-                              font-variant: small-caps; 
-                              vertical-align: middle; 
-                              text-align: center;">Beaconing</div></td>
-                    <td class="packetlist" id="beaconingtexta"><strong>Enable RF beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
-                    <td class="packetlist" id="beaconingtextb" style="text-align: center; white-space: nowrap;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
-                    </td>
-                </tr>
+            <td class="packetlist-highlight2" rowspan=12><div style="-webkit-transform: rotate(270deg);  
+                -ms-transform: rotate(270deg); 
+                transform: rotate(270deg); 
+                font-variant: small-caps; 
+                vertical-align: middle; 
+                text-align: center;">Beaconing</div></td>
+            <td class="packetlist" id="beaconingtexta"><strong>Enable RF beaconing</strong> of position with APRS over RF.  This requires an external radio set to an appropriate frequency.</td>
+            <td class="packetlist" id="beaconingtextb" style="text-align: center; white-space: nowrap;">Enable beaconing: <input type="checkbox" name="beaconing" disabled="disabled" id="beaconing" onchange="checkBeaconing();" ></td>
+        </tr>
+		<tr>
+            <td class="packetlist" id="objectbeacona"><strong>Enable beaconing of landing predictions</strong> over RF so other stations have access to this system's 
+                predicted landing locations.  This will transmit an APRS object (flag symbol) every 2 minutes using the latest predicted landing coordinates.  The name of the objects 
+                will take the form of, YOURCALLSIGN.xx.
+            </td>
+            <td class="packetlist" id="objectbeaconb" style="text-align: center; white-space: nowrap;">Enable object beaconing: <input type="checkbox" name="objectbeaconing" disabled="disabled" id="objectbeaconing"></td>
+        </tr>
 
 		<tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" or "EOSSx" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.</td>
             <td class="packetlist" id="beaconingtext9b" style="text-align: center; white-space: nowrap;">
@@ -619,7 +625,7 @@ include $documentroot . '/common/header.php';
                 <option value="EOSSH">EOSSH</option>
             </select>
             </td>
-                </tr>
+        </tr>
 
 
 		<tr><td class="packetlist" id="beaconingtext1a"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>

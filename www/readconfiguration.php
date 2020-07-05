@@ -36,6 +36,7 @@
     $ray["ssid"] = "9";
     $ray["igating"] =  "false";
     $ray["beaconing"] = "false";
+    $ray["objectbeaconing"] = "false";
     $ray["passcode"] = "";
     $ray["fastspeed"] = "45";
     $ray["fastrate"] = "01:00";
@@ -77,7 +78,6 @@
             $configuration[$key] = $defaults[$key];
     }
 
-    //header("Content-Type:  application/json;");
     printf ("%s", json_encode($configuration));
 
 ?>

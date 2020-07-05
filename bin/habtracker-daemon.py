@@ -57,7 +57,7 @@ import habconfig
 import landingpredictor as lp
 import gpspoller
 import aprsis
-
+import infocmd
 
 class GracefulExit(Exception):
     pass
@@ -983,7 +983,7 @@ def main():
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400"}
+    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400", "objectbeaconing" : "false"}
 
     for the_key, the_value in defaultkeys.iteritems():
         if the_key not in configuration:
@@ -1051,6 +1051,7 @@ def main():
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
             # For each SDR dongle found, start a separate GnuRadio listening process
+            total_freqs = 0
             for k in sdrs:
 
                 print "Using SDR:  ", k
@@ -1068,6 +1069,7 @@ def main():
                 ant["rtl_product"] = k["product"]
                 for freq,udpport in freqlist:
                     ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
+                    total_freqs += 1
                 antennas.append(ant) 
 
                 # append this frequency/UDP port list to the list for Direwolf
@@ -1087,6 +1089,20 @@ def main():
             dfprocess.daemon = True
             dfprocess.name = "Direwolf"
             processes.append(dfprocess)
+
+
+            print "objectbeaconing: ", configuration["objectbeaconing"]
+            if configuration["beaconing"] == "true" and configuration["objectbeaconing"] == "true":
+
+                configuration["xmit_channel"] = total_freqs * 2
+
+                # The beaconing process (this is different from the position beacons that direwolf will transmit)
+                print "Starting object beaconing process..."
+                icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
+                icprocess.daemon = True
+                icprocess.name = "Object beaconing"
+                processes.append(icprocess)
+
         else:
             status["rf_mode"] = 0
             status["direwolfcallsign"] = ""
