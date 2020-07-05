@@ -1081,6 +1081,48 @@ class LandingPredictor(PredictorBase):
             landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
             rows = landingcur.fetchall()
             landingcur.close()
+
+
+            # Check for packets from other systems
+            #other_sql = """select distinct
+            #    a.raw 
+
+            #from 
+            #    packets a
+
+            #where 
+            #    a.tm > (now() - interval '06:00:00')
+            #    and a.raw like %s
+
+            #order by 
+            #    a.raw asc
+            #;
+            #"""
+
+            #landingcur = self.landingconn.cursor()
+            #landingcur.execute(other_sql, [ '{{z' + callsign.upper() + "|A%%" ])
+            #otherrows = landingcur.fetchall()
+            #landingcur.close()
+
+
+            #if len(otherrows) > 0:
+            #    for r in otherrows:
+            #        elems = r.split("|")
+            #        for e in elems:
+            #            if e[0].isdigit():
+            #                nums = e.split(",")
+            #                if len(nums) == 4:
+            #                    packet.append(nums)
+
+                # Now check/insert these rows into the normal rows
+            #    print "other rows: ", otherrows
+
+            if len(rows) > 0:
+                # If the last heard packet is > 20mins old, return zero rows....because we don't want to process a landing prediction for a flight that is over/stale/lost/etc.
+                if rows[-1][7] > 20:
+                    debugmsg("Last packet for %s is > 20mins old: %dmins." % (callsign, rows[-1][7]))
+                    return []
+
             return rows
 
         except pg.DatabaseError as error:
