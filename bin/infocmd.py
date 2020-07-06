@@ -791,8 +791,8 @@ class infoCmd(object):
         flightids = self.db_getFlights()
 
         l = []
-        for l in [self.packets(flightids), self.surface_winds(flightids), self.landing_coords(flightids)]:
-        #for l in [self.landing_coords(flightids)]:
+        #for l in [self.packets(flightids), self.surface_winds(flightids), self.landing_coords(flightids)]:
+        for l in [self.landing_coords(flightids)]:
             if len(l) > 0:
                 for str in l:
                     if str is not None and str != "":
