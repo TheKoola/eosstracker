@@ -50,7 +50,7 @@ def signal_handler(signum, frame):
 
 #####################################
 ## Set this to "True" to have debugging text output when running
-debug = True
+debug = False
 #####################################
 
 
