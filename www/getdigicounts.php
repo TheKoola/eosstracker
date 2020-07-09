@@ -95,6 +95,35 @@
         return 0;
     }
 
+    # SQL to determine if the dw_packets table exists
+    $dw_packets_sql = "select exists(select * from information_schema.tables where table_name='dw_packets');";
+
+    # We assume that the dw_packets table does not exist by default
+    $dw_packets = false;
+
+    # Execute the SQL statement and make sure there wasn't an error
+    $result = pg_query($link, $dw_packets_sql);
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    # Get the number of rows return...there should be just one.
+    $num_rows = pg_num_rows($result);
+
+    # If the number of rows was > 0 then grab them, and check the result
+    if ($num_rows > 0) {
+        $rows = sql_fetch_all($result);
+
+        # Check of the dw_packets table exists
+        if ($rows[0]['exists'] == 't')
+            $dw_packets = 1;
+        else
+            $dw_packets = 0;
+    }
+
+
     if ($status["direwolfcallsign"] == "")
         $mycallsign = "E0SS";
     else {
@@ -149,34 +178,38 @@
             b.heardfrom
         ;";
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-   
-    $tdata = [];
-    $ydata = [];
-    if (sql_num_rows($result) > 0) {
-        $firsttime = 1;
-        while ($row = sql_fetch_array($result)) {
-            $heardfrom = $row['heardfrom'];
-            $tdata[$heardfrom][] = $row['thedate'] . " " . $row['theminute'];
-            $ydata[$heardfrom][] = $row['digipackets'];
-        }    
-
+    if ($dw_packets) {
+        $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+        if (!$result) {
+            db_error(sql_last_error());
+            sql_close($link);
+            return 0;
+        }
+       
+        $tdata = [];
+        $ydata = [];
         if (sql_num_rows($result) > 0) {
-            printf (" { ");
             $firsttime = 1;
-            foreach ($ydata as $key => $series) {
-                if ($firsttime == 0)
-                    printf (", ");
-                $firsttime = 0;
-                $timeseries = $tdata[$key];
-                generateJSON($timeseries, $series, $key);
+            while ($row = sql_fetch_array($result)) {
+                $heardfrom = $row['heardfrom'];
+                $tdata[$heardfrom][] = $row['thedate'] . " " . $row['theminute'];
+                $ydata[$heardfrom][] = $row['digipackets'];
+            }    
+
+            if (sql_num_rows($result) > 0) {
+                printf (" { ");
+                $firsttime = 1;
+                foreach ($ydata as $key => $series) {
+                    if ($firsttime == 0)
+                        printf (", ");
+                    $firsttime = 0;
+                    $timeseries = $tdata[$key];
+                    generateJSON($timeseries, $series, $key);
+                }
+                printf ("}");
             }
-            printf ("}");
+            else
+                printf ("[]");
         }
         else
             printf ("[]");
