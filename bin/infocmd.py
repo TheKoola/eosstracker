@@ -50,7 +50,7 @@ def signal_handler(signum, frame):
 
 #####################################
 ## Set this to "True" to have debugging text output when running
-debug = False
+debug = True
 #####################################
 
 
@@ -866,10 +866,11 @@ class infoCmd(object):
                     if "-" in self.callsign:
                         call,ssid = self.callsign.split("-")
 
-                    # compute the md5 hash of the user's callsign, but save only the last three hex digits.  This will become this user's unique identifier.
-                    md5hash = hashlib.md5(call).hexdigest()[-3:]
+                    # compute the md5 hash of the beacon and user's callsigns, but save only the last four hex digits.  This will become a unique string to identify the object.
+                    hash_this = callsign.upper() + self.callsign.upper()
+                    md5hash = hashlib.md5(hash_this).hexdigest()[-4:]
 
-                    objectname = callsign.split("-")[0][0:5] + "." + md5hash.upper()
+                    objectname = callsign.split("-")[0][0:4] + "." + md5hash.upper()
                     objectname = objectname + " "*(9 - len(objectname))
 
                     # timestamp
