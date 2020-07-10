@@ -345,6 +345,8 @@
 
             where
             a.location2d != ''
+            and b.callsign is null
+            and c.callsign is null
             and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
             and a.symbol != '/_'
             and a.raw like '%qAO," . $mycallsign . "%:%'
