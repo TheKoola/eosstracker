@@ -76,9 +76,13 @@ rm -f www/images/flightindicators/flightindicators
 rm -f www/common/COPYING
 rm -f www/common/sessionvariables.php
 rm -f www/common/symbols.js
+rm -f www/common/header-setup.php
+rm -f www/common/menubar.php
 rm -f www/images/graphics/eosslogo.png
 rm -f www/predictiondata/*.txt
 rm -f www/preferences.php
+rm -f www/eosslogo.png
+rm -f www/localinfo.php
 rm -rf /eosstracker/.git
 rm -rf /eosstracker/www/images/flightindicators/img
 cp -rpa /tmp/eosstracker/.git /eosstracker
