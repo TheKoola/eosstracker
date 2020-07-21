@@ -124,7 +124,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
             foreach($content as $line) {
 
                 // if this line starts with 12 columns, then continue...sanity check...
-                $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,4}[ \t]*[0-9A-Z]{1,6}[ \t]*[0-9]{1,6}[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\,\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
+                $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,4}[ \t]*[0-9A-Z]{1,6}[ \t]*[0-9]{1,6}[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\.\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
                 if ($p) {
 
                     // Split the line into an array using whitespace as the delimiter
