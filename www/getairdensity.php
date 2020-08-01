@@ -61,10 +61,10 @@
         
     # if the habtracker-daemon is not running then don't return any rows...technically we could return rows, but we dont know 
     # when to start looking at packets as we don't know the prior habtracker-daemon start time.
-    if ($status["active"] == 0) {
-        printf ("[]");
-        return;
-    }
+    #if ($status["active"] == 0) {
+    #    printf ("[]");
+    #    return;
+    #}
 
 
     function generateJSON($timeseries, $dataseries, $seriesname) {
@@ -115,13 +115,13 @@
             a.tm,
             round(a.altitude / 1000, 2) as altitude,
             case
-                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                    round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                    round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                 else
                     NULL
             end as temperature_k,
             case
-                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
                     round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
                 else
                     NULL
@@ -138,8 +138,10 @@
             and a.callsign = fm.callsign
             and fm.flightid = f.flightid
             and f.active = 'y'
-            and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
-            and a.tm > $2
+            and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
+            --and a.tm > $2
+            and a.tm > now()::date
+            and a.source = 'other'
 
             order by 1,2
         ) as y
@@ -153,7 +155,9 @@
 
         ;";
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute") 
+    ));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
