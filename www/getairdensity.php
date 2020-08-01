@@ -141,7 +141,6 @@
             and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
             --and a.tm > $2
             and a.tm > now()::date
-            and a.source = 'other'
 
             order by 1,2
         ) as y

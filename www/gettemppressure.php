@@ -122,7 +122,6 @@
         and fm.flightid = f.flightid
         and f.active = 'y'
         and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
-        and a.source = 'other'
         and a.tm > now()::date
 
         order by
