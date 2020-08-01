@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -977,7 +977,7 @@ class LandingPredictor(PredictorBase):
 
                 -- Air density (for our purposes needs to be in English units...i.e. slugs/ft^3)
                 case when y.temperature_k > 0 then
-                    round((y.pressure_pa / (287.05 * y.temperature_k)) / 515.2381961366, 6)
+                    round((y.pressure_pa / (287.05 * y.temperature_k)) / 515.2381961366, 8)
                 else
                     NULL
                 end as air_density_slugs_per_ft3
@@ -1025,14 +1025,14 @@ class LandingPredictor(PredictorBase):
                         cast(st_y(a.location2d) as numeric) as lat,
                         cast(st_x(a.location2d) as numeric) as lon,
                         case
-                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                         else
                             NULL
                         end as temperature_k,
                         case
-                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                                round(abs(cast(substring(substring(a.raw from '[-]{0,1}[0-9]{1,6}P') from '[0-9]{1,6}') as numeric) * 10.0), 2)
                             else
                                 NULL
                         end as pressure_pa,
@@ -1081,41 +1081,6 @@ class LandingPredictor(PredictorBase):
             landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
             rows = landingcur.fetchall()
             landingcur.close()
-
-
-            # Check for packets from other systems
-            #other_sql = """select distinct
-            #    a.raw 
-
-            #from 
-            #    packets a
-
-            #where 
-            #    a.tm > (now() - interval '06:00:00')
-            #    and a.raw like %s
-
-            #order by 
-            #    a.raw asc
-            #;
-            #"""
-
-            #landingcur = self.landingconn.cursor()
-            #landingcur.execute(other_sql, [ '{{z' + callsign.upper() + "|A%%" ])
-            #otherrows = landingcur.fetchall()
-            #landingcur.close()
-
-
-            #if len(otherrows) > 0:
-            #    for r in otherrows:
-            #        elems = r.split("|")
-            #        for e in elems:
-            #            if e[0].isdigit():
-            #                nums = e.split(",")
-            #                if len(nums) == 4:
-            #                    packet.append(nums)
-
-                # Now check/insert these rows into the normal rows
-            #    print "other rows: ", otherrows
 
             if len(rows) > 0:
                 # If the last heard packet is > 20mins old, return zero rows....because we don't want to process a landing prediction for a flight that is over/stale/lost/etc.
@@ -1836,7 +1801,7 @@ class LandingPredictor(PredictorBase):
                         debugmsg("Percentage of NULL data points from payload measured air density: %.2f%%." % (100 * num / ad.shape[0]))
 
                         # Check that the number of NULLs is minimal (ex. < 5%)
-                        if num / ad.shape[0] < .05:
+                        if num / ad.shape[0] < .05 and ad.shape[0] > 3:
 
                             debugmsg("Using payload measured air density.")
 
@@ -1864,13 +1829,32 @@ class LandingPredictor(PredictorBase):
                             temp_ad[:,1] *= 10**-4
 
                             # splice together the various pieces to build the array of air densities 
-                            final_air_densities = temp_ad[0:start_splice_idx, 0:]
-                            final_air_densities = np.concatenate((final_air_densities, ad), axis=0)
+                            temp1 = temp_ad[0:start_splice_idx, 0:]
+                            temp2 = np.concatenate((temp1, ad), axis=0)
                             if end_splice_idx < self.airdensities.shape[0] - 1:
-                                final_air_densities = np.concatenate((final_air_densities, temp_ad[end_splice_idx:, 0:]), axis=0)
+                                temp3 = np.concatenate((temp2, temp_ad[end_splice_idx:, 0:]), axis=0)
 
-                            # Create a curve that represents the air density
-                            airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+                            # Remove duplicate values from the array
+                            temp4 = []
+                            prev_alt = -99
+                            for alt,den in temp3:
+                                if alt != prev_alt:
+                                    temp4.append([alt, den])
+                                prev_alt = alt
+
+                            # Finally convert the resulting list to a numpy array
+                            final_air_densities = np.array(temp4)
+
+                            # Catch any values errors that occur and fallback to using the pre-calculated air desnsity values.
+                            try:
+                                # Create a curve that represents the air density
+                                airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+
+                            except ValueError as e:
+                                debugmsg("ValueError in creating interpolated curve for air density: {}".format(e))
+                                debugmsg("Falling back to using pre-calculated air density instead of payload measured values.")
+                                airdensity_curve = self.airdensity
+
 
                         # Otherwise, we just use the standard engineering air densities
                         else:
