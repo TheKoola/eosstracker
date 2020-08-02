@@ -162,6 +162,7 @@
         
         where 
         a.tm > (now() -  time \'00:20:00\')
+        and a.ptype = \'T\'
         
         order by 
         thetime desc
@@ -199,6 +200,7 @@
         and fl.flightid = $1
         and fm.flightid = fl.flightid
         and a.callsign = fm.callsign 
+        and a.ptype = \'T\'
         
         order by 
         thetime desc
