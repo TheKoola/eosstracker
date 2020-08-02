@@ -1,9 +1,7 @@
-#!/usr/bin/python
-
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -103,12 +101,13 @@ class aisConnection(aprslib.IS):
             try:
                 for line in self._socket_readlines(blocking):
                     if line[0] != "#":
+
                         if raw:
                             callback(line)
                         else:
                             callback(self._parse(line))
-                    #else:
-                    #    self.logger.debug("Server: %s", line)
+                    else:
+                        debugmsg("line[0] = {}.  line: {}".format(line[0], line))
             except aprslib.ParseError as exp:
                 pass
                 #self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
@@ -338,11 +337,7 @@ class APRSIS(object):
             else:
                 debugmsg("Database connection not created.")
         except pg.DatabaseError as error:
-            print(error)
-
-
-    ################################
-    # Set the database connection string
+            print error 
     def setDBConnection(self, dbstring = None):
         # Set the database connection 
         if dbstring:
@@ -373,7 +368,7 @@ class APRSIS(object):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            print(error)
+            print error 
             return False
 
 
@@ -439,16 +434,33 @@ class APRSIS(object):
             # If there was a connection error, then close these, just in case they're open
             gpscur.close()
             self.close()
-            print(error)
+            print error 
             return gpsposition
 
 
     ##################################################
     # Write an incoming packet to the database
     def writeToDatabase(self, x): 
+
+        # If packet is None then just return
+        if not x:
+            debugmsg("writeToDatabase: packet is None.")
+            return
+
+        debugmsg("writeToDatabase.  x (%s): %s" % (type(x), x))
+
         try:
+            # Create a database cursor
+            tapcur = self.aprsconn.cursor()
+
             # Update the watchdog timer
             self.ts = datetime.datetime.now()
+            
+            # The source (i.e. we're listening to packets from an APRS-IS source)
+            source = "other"
+
+            # This the direwolf channel, which we're not using so we set it to -1
+            channel = -1
 
             # Parse the raw APRS packet
             packet = aprslib.parse(x)
@@ -484,6 +496,13 @@ class APRSIS(object):
             if ppart[2] != "":
                 ptype = ppart[2][0]
                 info = ppart[2][0:] 
+
+                # Make sure the info part is a string
+                if type(info) is bytes:
+                    info = info.decode("UTF-8", "ignore")
+
+                # remvove nul chars from info
+                info = info.replace(chr(0x00), '')
             else:
                 ptype = ""
                 info = ""
@@ -494,8 +513,6 @@ class APRSIS(object):
             if packet["object_name"] != "":
                 packet["from"] = packet["object_name"]
 
-            # Create a database cursor
-            tapcur = self.aprsconn.cursor()
 
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
             if packet["latitude"] == "" or packet["longitude"] == "":
@@ -599,18 +616,100 @@ class APRSIS(object):
              
 
         except (ValueError, UnicodeEncodeError) as error:
-            print "Encoding error: ", error
+            print "Encoding error: ", error 
             print "Skipping DB insert for: ", x
             sys.stdout.flush()
             pass
 
         except pg.DatabaseError as error:
-            print "[cwopWriteToDatabase] Database error:  ", error
-            print "[cwopWriteToDatabase] raw packet: ", x
+            print "Database error:  ", error
+            print "Raw packet: ", x
             tapcur.close()
             self.close()
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
-            pass
+
+            # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
+            debugmsg("Unable to parse APRS packet: {}".format(exp))
+
+            # If this is s bytes string, then convert it to UTF-8
+            if type(x) is bytes:
+                x = x.decode("UTF-8", "ignore")
+
+            # Find the ">" character and get the length of the packet string
+            s = x.find(">")
+            l = len(x)
+
+            callsign = None
+            if s > 0 and l > s:
+                # The callsign
+                callsign = x[0:s].strip()
+
+            # Get the packet type
+            s = x.find(":")
+
+            ptype = None
+            info = None
+            if s >= 0 and l > s+1:
+                # The packet type
+                ptype = x[s+1:s+2]
+
+                # Get the infomation part of the packet
+                info = x[s+1:]
+
+                # Make sure the info part is a string
+                if type(info) is bytes:
+                    info = info.decode("UTF-8", "ignore")
+
+                # remvove nul chars from info
+                info = info.replace(chr(0x00), '')
+
+            # if we've been able to parse the packet then proceed, otherwise, we skip
+            if callsign and ptype and info:
+
+                # Make sure the packet doesn't have a null character in it.
+                x.replace(chr(0x00), '')
+
+                # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
+                sql = """insert into packets (tm, callsign, raw, ptype, hash) values (
+                    now()::timestamp with time zone,
+                    %s,
+                    %s,
+                    %s,
+                    md5(%s)
+                );"""
+
+                # Execute the SQL statement
+                debugmsg("Packet SQL: " + sql % (
+                    callsign.strip(),
+                    x,
+                    ptype.strip(),
+                    info.strip()
+                    ))
+                try:
+                    tapcur.execute(sql, [
+                        callsign.strip(),
+                        x,
+                        ptype.strip(),
+                        info.strip()
+                    ])
+
+                    # Commit the insert to the database
+                    self.aprsconn.commit()
+
+                    # Close the database cursor
+                    tapcur.close()
+
+                except pg.DatabaseError as error:
+                    print "Database error:  ", error 
+                    print "Raw packet: ", x 
+                    tapcur.close()
+
+                except ValueError as e:
+                    print "aprsis.py, Error adding packet: ", e 
+                    print "aprsis.py, packet: ", x 
+                    print "aprsis.py, info: ", info 
+                    tapcur.close()
+
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
             tapcur.close()
             self.close()
@@ -640,14 +739,14 @@ class APRSIS(object):
 
                     # If that time difference is greater than the packet_timeout, then close the APRS-IS connection.  The "run" loop (above) should attempt a reconnect...
                     if diff.total_seconds() > self.packet_timeout:
-                        print "Watchdog:  No packets from, %s for %.1f seconds, resetting connection." % (self.server, diff.total_seconds())
+                        print "Watchdog:  No packets from, %s for %.1f seconds, resetting connection." % (self.server, diff.total_seconds()) 
                         self.ais.shutdownSocket()
 
                 # Sleep for delta seconds
                 self.stopevent.wait(delta)
 
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
-            print "APRS-IS watchdog thread ended"
+            print "APRS-IS watchdog thread ended" 
 
 
     ##################################################
@@ -672,7 +771,7 @@ class APRSIS(object):
                 self.ais.set_filter(filterstring)
 
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
-            print "APRS-IS filter thread ended"
+            print "APRS-IS filter thread ended" 
 
 
     ##################################################
@@ -698,7 +797,7 @@ class APRSIS(object):
 
         except pg.DatabaseError as error:
             self.close()
-            print "Database error:  ", error
+            print "Database error:  ", error 
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
             self.close()
 
@@ -709,7 +808,7 @@ class APRSIS(object):
 #####################################
 class aprsTap(APRSIS):
     def __init__(self, server = None, timezone = None,  callsign = None, ssid = None, aprsRadius = None, stopevent = None):
-        super(aprsTap, self).__init__(server = server, timezone = timezone, callsign = callsign, aprsRadius = aprsRadius, stopevent = stopevent)
+        super(aprsTap, self).__init__(server = server, timezone = timezone, callsign = callsign, aprsRadius = aprsRadius, stopevent = stopevent, watchdog = True)
         self.ssid = ssid
 
         # the callsign for what Direwolf is using, defaults to the underlying callsign
@@ -776,7 +875,7 @@ class aprsTap(APRSIS):
         except pg.DatabaseError as error:
             pgCursor.close()
             self.close()
-            print "Database error:  ", error
+            print "Database error:  ", error 
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
             pgCursor.close()
             self.close()
@@ -936,7 +1035,7 @@ class cwopTap(APRSIS):
         except pg.DatabaseError as error:
             pgCursor.close()
             self.close()
-            print "Database error:  ", error
+            print "Database error:  ", error 
         except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
             pgCursor.close()
             self.close()
