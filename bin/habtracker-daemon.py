@@ -25,7 +25,6 @@ import multiprocessing as mp
 import subprocess as sb
 import os
 import math
-import osmosdr
 import time
 import datetime 
 import psycopg2 as pg
