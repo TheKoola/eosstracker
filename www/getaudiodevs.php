@@ -27,22 +27,4 @@
     $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    $command = "awk '/^[ \t]*[0-9]/ && !/HDMI/' /proc/asound/cards";
-    $cmdoutput = shell_exec($command);
-    if ($cmdoutput == null) {
-        printf ("[]");
-        return 0;
-    }
-
-    $a = explode("\n", $cmdoutput);
-    $cards = [];
-    foreach($a as $line) {
-        $ray = preg_split('/\]:/', trim($line));
-	$idx = substr($ray[0], 0, 1);
-	if (is_numeric($idx))
-	    $cards[] = array("device" => $idx, "description" => trim($ray[1]));
-    }
-
-    printf("%s", json_encode($cards));
-?>
-
+    printf ("[]");
