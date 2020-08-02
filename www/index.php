@@ -208,18 +208,6 @@
                     <p class="section-header" style="text-decoration: underline;">System Status</p>
                     <p class="normal" style="margin-bottom: 0px;">Current Status: <span id="systemstatus"></span></p>
                     <p class="normal" style="margin-top: 0px; margin-bottom: 20px;">System Name: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?></p>
-                    <div class="table-row">
-                        <div class="table-cell header toprow">Process</div>
-                        <div class="table-cell header toprow">Status</div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">aprsc</div>
-                        <div class="table-cell"><span id="aprsc-status"></span></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">backend daemon</div>
-                        <div class="table-cell"><span id="habtracker-d-status"></span></div>
-                    </div>
                 </div>
                 <div class="div-table" style="margin-top: 30px;">
                     <p class="section-header" style="text-decoration: underline;">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>

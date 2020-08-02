@@ -33,7 +33,7 @@
         The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
      </p>
      <p class="copyright">
-        Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
+        Copyright (C) 2019,2020 Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
      </p>
      <p class="copyright" style="margin-bottom: 10px;">
          System Version: <?php if (isset($version)) printf("%s", $version); ?> 

@@ -26,7 +26,7 @@
 
 
 
-$version = "1.3 Beta";
+$version = "1.4 Kiosk";
 ?>
 
 
