@@ -20,7 +20,6 @@
 #
 ##################################################
 
-from gnuradio.eng_option import eng_option
 from optparse import OptionParser
 import multiprocessing as mp
 import subprocess as sb
@@ -92,15 +91,15 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
 ##################################################
 def argument_parser():
     description = 'Backend daemon for the HAB Tracker application'
-    parser = OptionParser(usage="%prog: [options]", option_class=eng_option, description=description)
+    parser = OptionParser(usage="%prog: [options]", description=description)
     parser.add_option(
         "", "--callsign", dest="callsign", type="string", default='E0SS',
         help="Provide your callsign (this is optional) [default=%default]")
     parser.add_option(
-        "", "--aprsisRadius", dest="aprsisRadius", type="intx", default=50,
+        "", "--aprsisRadius", dest="aprsisRadius", type="int", default=50,
         help="Set the radius (in kilometers) for filtering packets from APRS-IS [default=%default]")
     parser.add_option(
-        "", "--algoInterval", dest="algoInterval", type="intx", default=10,
+        "", "--algoInterval", dest="algoInterval", type="int", default=10,
         help="How often (in secs) the landing predictor run [default=%default]")
     parser.add_option(
         "", "--kill", dest="kill", action="store_true", 
