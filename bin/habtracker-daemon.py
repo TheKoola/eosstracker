@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -38,8 +38,6 @@ import datetime
 import psycopg2 as pg
 import aprslib
 import logging
-import usb.core
-import usb.util
 import threading as th
 import sys
 import numpy as np
@@ -58,6 +56,7 @@ import landingpredictor as lp
 import gpspoller
 import aprsis
 import infocmd
+import searchrtlsdr
 
 class GracefulExit(Exception):
     pass
@@ -142,7 +141,8 @@ class aprs_receiver(gr.top_block):
 def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
     try:
   
-        #print "GR [%d], listening on: " % rtl, flist
+        #print "rtl, {}, variable type: {}".format(rtl, type(rtl))
+        #print "GnuRadio [rtl={}], listening on: {}".format(rtl, flist)
  
         # create an instance of the aprs receiver class
         tb = aprs_receiver(freqlist=flist, rtl=rtl)
@@ -358,34 +358,6 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
         tap.close()
         print "Tap ended: ", aprsserver
 
-
-##################################################
-# Get the number of RTL-SDR dongles that are attached via USB
-##################################################
-def getNumberOfSDRs():
-    i = 0
-    sdrs = []
-    devices = usb.core.find(idVendor=0x0bda, idProduct=0x2838, find_all=True)
-    if devices is None:
-        return 0
-    else:
-        for dev in devices:
-            m = usb.util.get_string(dev, dev.iManufacturer)
-            p = usb.util.get_string(dev, dev.iProduct)
-            s = usb.util.get_string(dev, dev.iSerialNumber)
-            rtl = { "rtl" : i, "manufacturer" : m, "product" : p, "serialnumber" : s }
-
-            # Check if the RTLSDR is using a serial number string that contains "adsb".  
-            #     The idea being, not to use any SDR attached that is to be used for ADS-B reception instead.
-            if "adsb" in s.lower():
-                print "Skipping SDR: ", rtl
-            else:
-                sdrs.append(rtl)
-
-            i = i+1
-        #print json.dumps(sdrs)
-        return sdrs
-        #return i
 
 
 ##################################################
@@ -1021,7 +993,7 @@ def main():
         direwolfFreqList = []
 
         # Get the RTL-SDR USB dongles that are attached
-        sdrs = getNumberOfSDRs()
+        sdrs = searchrtlsdr.getUSBDevices()
 
         # The number of SDRs
         i = len(sdrs)
