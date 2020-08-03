@@ -114,12 +114,13 @@
         from 
         packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = \'t\') as b on a.callsign = b.callsign
         left outer join (select t.callsign from trackers t order by t.callsign) as c 
-        on case
-           when c.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
-               a.callsign  = c.callsign
-           else 
-               a.callsign like c.callsign || \'-%\'
-        end
+        on a.callsign = c.callsign or a.callsign like c.callsign || \'-%\'
+        --on case
+        --   when c.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
+        --       a.callsign  = c.callsign
+        --   else 
+        --       a.callsign like c.callsign || \'-%\'
+        --end
 
         where 
         b.callsign is null

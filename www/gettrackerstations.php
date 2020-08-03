@@ -94,12 +94,13 @@ where
 b.callsign is null
 and a.location2d != \'\' 
 and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
-and case
-   when tr.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
-       a.callsign  = tr.callsign
-   else 
-       a.callsign like tr.callsign || \'-%\'
-end
+and (a.callsign = tr.callsign or a.callsign like tr.callsign || \'-%\')
+--and case
+--   when tr.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
+--       a.callsign  = tr.callsign
+--   else 
+--       a.callsign like tr.callsign || \'-%\'
+--end
 and t.tactical != \'ZZ-Not Active\'
 and tr.tactical = t.tactical ' .
 ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $2 ") . '
