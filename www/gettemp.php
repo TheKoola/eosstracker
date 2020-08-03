@@ -108,7 +108,7 @@
         date_trunc('day', a.tm)::date as thedate, 
         date_trunc('hour', a.tm)::time as thehour,
         date_trunc('minute', a.tm)::time as theminute,
-        round(avg(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0), 2) as temperature_f
+        round(avg(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0), 2) as temperature_f
 
         from 
         packets a,
@@ -120,7 +120,7 @@
         and a.callsign = fm.callsign
         and fm.flightid = f.flightid
         and f.active = 'y'
-        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
+        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
         and a.tm > $2
 
         group by 1,2,3,4

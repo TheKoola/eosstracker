@@ -137,13 +137,13 @@ include_once $documentroot . '/common/functions.php';
                           ST_Y(p.location2d) as lat,
                           ST_X(p.location2d) as lon,
                           case
-                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
-                                  round(32 + 1.8 * cast(substring(substring(substring(p.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%' then
+                                  round(32 + 1.8 * cast(substring(substring(substring(p.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                               else
                                   NULL
                           end as temperature_f,
                           case
-                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%' then
                                   cast(substring(substring(p.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0
                               else
                                   NULL

@@ -109,7 +109,7 @@
         a.tm,
         round(a.altitude / 1000, 1) as altitude,
         round(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as numeric) / 10.0, 2) as temperature_f,
-        abs(round(cast(substring(substring(a.raw from '[-]{0,1}[0-9]{1,6}P') from '[-]{0,1}[0-9]{1,6}') as numeric) * 10.0 / 101325.0, 8)) as pressure_atm
+        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as numeric) * 10.0 / 101325.0, 8) as pressure_atm
 
         from 
         packets a,

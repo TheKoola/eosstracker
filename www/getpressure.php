@@ -120,7 +120,7 @@
         and a.callsign = fm.callsign
         and fm.flightid = f.flightid
         and f.active = 'y'
-        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
+        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
         and a.tm > $2
 
         group by 1,2,3,4
