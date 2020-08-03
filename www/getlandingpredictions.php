@@ -98,6 +98,9 @@
         and fm.flightid = f.flightid
         and a.callsign = fm.callsign
         and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
+
+        group by
+        f.flightid
         ;";
 
     $result = pg_query_params($link, $query, array(
