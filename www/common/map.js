@@ -1483,11 +1483,6 @@ function getTrackers() {
         var overlays;
 
 
-        // create the tile layer referencing the local system as the url (i.e. "/maps/....")
-        var osmUrl='/maps/{z}/{x}/{y}.png';
-        var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-        tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
-
         var osmbright = L.mapboxGL({
             style: '/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
@@ -1498,29 +1493,12 @@ function getTrackers() {
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
         
-        var themap;
-        var mapnum = 1;
-        switch (mapnum) {
-            case 0:
-                themap = tilelayer;
-                break;
-            case 1:
-                themap = basic;
-                break;
-            case 2:
-                themap = osmbright;
-                break;
-            default:
-                themap = osmbright;
-        }
-
-        
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
             zoomControloption: false,
-            layers : [ themap ],
+            layers : [ basic ],
             minZoom: 4,
             maxZoom: 20
         });
@@ -1571,7 +1549,7 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
-        baselayer = { "OpenStreetMap (raster)" : tilelayer, "Basic (vector)" : basic, "OSM Bright (vector)" : osmbright };
+        baselayer = { "Basic Map" : basic, "Bright Map" : osmbright };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
