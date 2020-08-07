@@ -842,6 +842,7 @@ class infoCmd(object):
 
                     where 
                         l.flightid = %s
+                        and l.callsign = %s
                         and l.tm > (now() - interval '00:20:00')
                         and l.tm > now()::date
 
@@ -852,7 +853,7 @@ class infoCmd(object):
                     ;
                 """
 
-                wxcur.execute(lastlandingprediction_sql, [ fid ])
+                wxcur.execute(lastlandingprediction_sql, [ fid, callsign ])
                 rows = wxcur.fetchall()
 
                 # Loop through the rows returned creating an APRS object packet for the landing prediction
