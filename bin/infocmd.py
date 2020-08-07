@@ -74,8 +74,6 @@ def debugmsg(message):
 #####################################
 class infoCmd(object):
 
-
-
     ################################
     # constructor
     def __init__(self, my_callsign, dbConnectionString = None, timezone = 'America/Denver', dw_channel = 0, viapath="WIDE1-1,WIDE2-1"):
@@ -292,13 +290,13 @@ class infoCmd(object):
                         cast(st_y(a.location2d) as numeric) as lat,
                         cast(st_x(a.location2d) as numeric) as lon,
                         case
-                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                         else
                             NULL
                         end as temperature_k,
                         case
-                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
+                            when a.raw similar to '%% [-]{0,1}[0-9][-]{0,1}{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
                                 round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
                             else
                                 NULL
