@@ -1,9 +1,7 @@
-#!/usr/bin/python
-
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -40,12 +38,6 @@ import habconfig
 
 #logging.basicConfig(level=0)
 
-class GracefulExit(Exception):
-    pass
-
-def signal_handler(signum, frame):
-    print "Caught SIGTERM..."
-    raise GracefulExit()
 
 #####################################
 ## Set this to "True" to have debugging text output when running
@@ -60,6 +52,21 @@ def debugmsg(message):
         caller = getframeinfo(stack()[1][0])
         print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
         sys.stdout.flush()
+
+
+class GracefulExit(Exception):
+    pass
+
+def signal_handler(signum, frame):
+    ts = datetime.datetime.now()
+    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+    pid = os.getpid()
+    
+    caller = getframeinfo(stack()[1][0])
+    print "{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno)
+    sys.stdout.flush()
+    raise GracefulExit()
+
 
 
 #####################################
@@ -81,7 +88,7 @@ class aisConnection(aprslib.IS):
             debugmsg("Caught socket error when calling socket.shutdown: %s" % str(exp))
             pass
 
-    def consumer(self, callback, blocking=True, immortal=False, raw=False):
+    def consumer(self, callback, blocking=True, immortal=False, raw=False, e = mp.Event()):
         """
         When a position sentence is received, it will be passed to the callback function
 
@@ -99,16 +106,17 @@ class aisConnection(aprslib.IS):
 
         line = ''
 
-        while True:
+        while not e.is_set():
             try:
                 for line in self._socket_readlines(blocking):
                     if line[0] != "#":
+
                         if raw:
                             callback(line)
                         else:
                             callback(self._parse(line))
-                    #else:
-                    #    self.logger.debug("Server: %s", line)
+                    else:
+                        debugmsg("line[0] = {}.  line: {}".format(line[0], line))
             except aprslib.ParseError as exp:
                 pass
                 #self.logger.log(11, "%s\n    Packet: %s", exp.message, exp.packet)
@@ -138,6 +146,7 @@ class aisConnection(aprslib.IS):
 
             #if not blocking:
             #    break
+        print "Consumer function ended."
 
 
 #####################################
@@ -253,14 +262,14 @@ class APRSIS(object):
                 trylimit = 999999999
 
             # This is the thread which updates the filter used with the APRS-IS connectipon
-            aprsfilter = th.Thread(name="APRS-IS Filter", target=self._aprsFilterThread, args=())
+            aprsfilter = th.Thread(name="APRS-IS Filter", target=self._aprsFilterThread, args=(self.stopevent,))
             aprsfilter.setDaemon(True)
             aprsfilter.start()
             debugmsg("Filter thread created for, %s." % self.server)
 
             # This is the watchdog thread.  If a packet hasn't been seen from the APRS-IS/CWOP server for packet_timeout seconds then abort the connection and reconnect.
             if self.watchdog:
-                wd = th.Thread(name="APRS-IS Watchdog", target=self._aprsWatchdogThread, args=())
+                wd = th.Thread(name="APRS-IS Watchdog", target=self._aprsWatchdogThread, args=(self.stopevent,))
                 wd.setDaemon(True)
                 wd.start()
                 debugmsg("Watchdog thread created for, %s." % self.server)
@@ -293,7 +302,7 @@ class APRSIS(object):
                     self.ts = datetime.datetime.now()
 
                     # The consumer function blocks forever, calling the writeToDatabase function upon receipt of each APRS packet
-                    self.ais.consumer(self.writeToDatabase, blocking=True, raw=True, immortal=False)
+                    self.ais.consumer(self.writeToDatabase, blocking=False, raw=True, immortal=False, e=self.stopevent)
                     debugmsg("Consumer function returned [%s]." % self.server)
 
                     # Close the AIS connection as prep for another iteration of this loop
@@ -302,14 +311,17 @@ class APRSIS(object):
 
                 except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
                     pass
-                    #print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
+                    #print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error
                     #sys.stdout.flush()
 
                 finally:
                     # Increment trycount each time through the loop
                     trycount += 1
 
-        except (GracefulExit, KeyboardInterrupt, SystemExit):
+            self.close()
+
+
+        except (KeyboardInterrupt, SystemExit):
             self.close()
 
 
@@ -338,7 +350,7 @@ class APRSIS(object):
             else:
                 debugmsg("Database connection not created.")
         except pg.DatabaseError as error:
-            print(error)
+            print error
 
 
     ################################
@@ -373,7 +385,7 @@ class APRSIS(object):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            print(error)
+            print error
             return False
 
 
@@ -439,16 +451,33 @@ class APRSIS(object):
             # If there was a connection error, then close these, just in case they're open
             gpscur.close()
             self.close()
-            print(error)
+            print error
             return gpsposition
 
 
     ##################################################
     # Write an incoming packet to the database
     def writeToDatabase(self, x): 
+
+        # If packet is None then just return
+        if not x:
+            debugmsg("writeToDatabase: packet is None.")
+            return
+
+        debugmsg("writeToDatabase.  x (%s): %s" % (type(x), x))
+
         try:
+            # Create a database cursor
+            tapcur = self.aprsconn.cursor()
+
             # Update the watchdog timer
             self.ts = datetime.datetime.now()
+            
+            # The source (i.e. we're listening to packets from an APRS-IS source)
+            source = "other"
+
+            # This the direwolf channel, which we're not using so we set it to -1
+            channel = -1
 
             # Parse the raw APRS packet
             packet = aprslib.parse(x)
@@ -484,6 +513,13 @@ class APRSIS(object):
             if ppart[2] != "":
                 ptype = ppart[2][0]
                 info = ppart[2][0:] 
+
+                # Make sure the info part is a string
+                if type(info) is bytes:
+                    info = info.decode("UTF-8", "ignore")
+
+                # remvove nul chars from info
+                info = info.replace(chr(0x00), '')
             else:
                 ptype = ""
                 info = ""
@@ -494,14 +530,15 @@ class APRSIS(object):
             if packet["object_name"] != "":
                 packet["from"] = packet["object_name"]
 
-            # Create a database cursor
-            tapcur = self.aprsconn.cursor()
 
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
             if packet["latitude"] == "" or packet["longitude"] == "":
                 # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
-                sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
+                sql = """insert into packets (tm, source, channel, frequency, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                     now()::timestamp with time zone, 
+                    %s,
+                    %s::numeric,
+                    NULL,
                     %s, 
                     %s, 
                     round((%s::numeric) * 0.6213712), 
@@ -517,6 +554,8 @@ class APRSIS(object):
 
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (
+                    source, 
+                    channel,
                     packet["from"], 
                     packet["symbol"], 
                     packet["speed"], 
@@ -528,6 +567,8 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
+                    source, 
+                    channel,
                     packet["from"].strip(), 
                     packet["symbol"].strip(), 
                     packet["speed"],
@@ -541,8 +582,11 @@ class APRSIS(object):
 
             else:
                 # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
-                sql = """insert into packets (tm, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
+                sql = """insert into packets (tm, source, channel, frequency, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                     now()::timestamp with time zone, 
+                    %s, 
+                    %s::numeric,
+                    NULL,
                     %s, 
                     %s, 
                     round((%s::numeric) * 0.6213712), 
@@ -558,6 +602,8 @@ class APRSIS(object):
 
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (
+                    source,
+                    channel,
                     packet["from"], 
                     packet["symbol"], 
                     packet["speed"], 
@@ -574,6 +620,8 @@ class APRSIS(object):
                     info)
                     )
                 tapcur.execute(sql, [
+                    source,
+                    channel,
                     packet["from"].strip(), 
                     packet["symbol"].strip(), 
                     packet["speed"],
@@ -605,19 +653,107 @@ class APRSIS(object):
             pass
 
         except pg.DatabaseError as error:
-            print "[cwopWriteToDatabase] Database error:  ", error
-            print "[cwopWriteToDatabase] raw packet: ", x
+            print "Database error:  ", error
+            print "Raw packet: ", x
             tapcur.close()
             self.close()
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
-            pass
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+
+            # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
+            debugmsg("Unable to parse APRS packet: {}".format(exp))
+
+            # If this is s bytes string, then convert it to UTF-8
+            if type(x) is bytes:
+                x = x.decode("UTF-8", "ignore")
+
+            # Find the ">" character and get the length of the packet string
+            s = x.find(">")
+            l = len(x)
+
+            callsign = None
+            if s > 0 and l > s:
+                # The callsign
+                callsign = x[0:s].strip()
+
+            # Get the packet type
+            s = x.find(":")
+
+            ptype = None
+            info = None
+            if s >= 0 and l > s+1:
+                # The packet type
+                ptype = x[s+1:s+2]
+
+                # Get the infomation part of the packet
+                info = x[s+1:]
+
+                # Make sure the info part is a string
+                if type(info) is bytes:
+                    info = info.decode("UTF-8", "ignore")
+
+                # remvove nul chars from info
+                info = info.replace(chr(0x00), '')
+
+            # if we've been able to parse the packet then proceed, otherwise, we skip
+            if callsign and ptype and info:
+
+                # Make sure the packet doesn't have a null character in it.
+                x.replace(chr(0x00), '')
+
+                # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
+                sql = """insert into packets (tm, source, channel, callsign, raw, ptype, hash) values (
+                    now()::timestamp with time zone,
+                    %s,
+                    %s::numeric,
+                    %s,
+                    %s,
+                    %s,
+                    md5(%s)
+                );"""
+
+                # Execute the SQL statement
+                debugmsg("Packet SQL: " + sql % (
+                    source,
+                    channel,
+                    callsign.strip(),
+                    x,
+                    ptype.strip(),
+                    info.strip()
+                    ))
+                try:
+                    tapcur.execute(sql, [
+                        source,
+                        channel,
+                        callsign.strip(),
+                        x,
+                        ptype.strip(),
+                        info.strip()
+                    ])
+
+                    # Commit the insert to the database
+                    self.aprsconn.commit()
+
+                    # Close the database cursor
+                    tapcur.close()
+
+                except pg.DatabaseError as error:
+                    print "Database error:  ", error
+                    print "Raw packet: ", x
+                    tapcur.close()
+
+                except ValueError as e:
+                    print "aprsis.py, Error adding packet: ", e
+                    print "aprsis.py, packet: ", x
+                    print "aprsis.py, info: ", info
+                    tapcur.close()
+
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             tapcur.close()
             self.close()
 
     ##################################################
     # Watchdog thread for the APRS-IS connection
-    def _aprsWatchdogThread(self):
+    def _aprsWatchdogThread(self, e):
        
         # The time in seconds in between checking
         # 
@@ -625,7 +761,7 @@ class APRSIS(object):
 
         try:
             # Loop forever (until this thread/process is killed) sleeping each time for "delta" seconds.
-            while not self.stopevent.is_set():
+            while not e.is_set():
 
                 # If connected to an APRS-IS server then check the last time we heard a packet 
                 if self.connected:
@@ -644,15 +780,17 @@ class APRSIS(object):
                         self.ais.shutdownSocket()
 
                 # Sleep for delta seconds
-                self.stopevent.wait(delta)
+                e.wait(delta)
 
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+            print "APRS-IS watchdog thread ended"
+
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             print "APRS-IS watchdog thread ended"
 
 
     ##################################################
     # Thread for updating APRS-IS filter
-    def _aprsFilterThread(self):
+    def _aprsFilterThread(self, e):
        
         # The time in seconds in between updating the APRS-IS filter.
         # 
@@ -660,9 +798,9 @@ class APRSIS(object):
 
         try:
             # Loop forever (until this thread/process is killed) sleeping each time for "delta" seconds.
-            while not self.stopevent.is_set():
+            while not e.is_set():
                 # Sleep for delta seconds
-                self.stopevent.wait(delta)
+                e.wait(delta)
 
                 # Get a new APRS-IS filter string (i.e. our lat/lon location could have changed, beacon callsigns could have changed, etc.)
                 filterstring = self.getAPRSFilter()
@@ -671,7 +809,9 @@ class APRSIS(object):
                 # Put this filter into effect
                 self.ais.set_filter(filterstring)
 
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+            print "APRS-IS filter thread ended"
+
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             print "APRS-IS filter thread ended"
 
 
@@ -699,7 +839,7 @@ class APRSIS(object):
         except pg.DatabaseError as error:
             self.close()
             print "Database error:  ", error
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             self.close()
 
 
@@ -777,7 +917,7 @@ class aprsTap(APRSIS):
             pgCursor.close()
             self.close()
             print "Database error:  ", error
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
 
@@ -937,7 +1077,34 @@ class cwopTap(APRSIS):
             pgCursor.close()
             self.close()
             print "Database error:  ", error
-        except (StopIteration, KeyboardInterrupt, GracefulExit, SystemExit): 
+        except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
+
+##################################################
+# Process for connecting to APRS-IS
+##################################################
+def tapProcess(configuration, aprsserver, typeoftap, radius, e):
+
+    try:
+        if typeoftap == "cwop":
+            tap = cwopTap(server = str(aprsserver), callsign = str(configuration['callsign']), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
+        elif typeoftap == "aprs":
+            tap = aprsTap(server = str(aprsserver), callsign = str(configuration['callsign']), ssid = str(configuration["ssid"]), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
+        else:
+            return
+
+        tap.run()
+
+    except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
+        print("Closing APRS(", aprsserver, ") Tap: ", error)
+        tap.close()
+        print("Tap ended: ", aprsserver)
+
+    except pg.DatabaseError as error:
+        print("[tapProcess(", aprsserver, ")] Database error:  ", error)
+        tap.close()
+    except (KeyboardInterrupt, SystemExit):
+        tap.close()
+        print("Tap ended: ", aprsserver)
 

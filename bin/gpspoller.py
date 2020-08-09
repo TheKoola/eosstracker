@@ -38,14 +38,6 @@ from gps import *
 import habconfig
 
 
-class GracefulExit(Exception):
-    pass
-
-def signal_handler(signum, frame):
-    print "Caught SIGTERM..."
-    raise GracefulExit()
-
-
 
 ##################################################
 # Save GPS status to JSON file
@@ -368,7 +360,7 @@ def GpsPoller(e):
 
         print "GPS poller ended."
 
-    except (GracefulExit, KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit):
 
         # Close GPSD connection.
         if gpsd is not None:

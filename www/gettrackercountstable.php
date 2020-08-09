@@ -72,113 +72,102 @@
         return 0;
     }
 
-    # SQL to determine if the dw_packets table exists
-    $dw_packets_sql = "select exists(select * from information_schema.tables where table_name='dw_packets');";
-
-    # We assume that the dw_packets table does not exist by default
-    $dw_packets = false;
-
-    # Execute the SQL statement and make sure there wasn't an error
-    $result = pg_query($link, $dw_packets_sql);
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-
-    # Get the number of rows return...there should be just one.
-    $num_rows = pg_num_rows($result);
-
-    # If the number of rows was > 0 then grab them, and check the result
-    if ($num_rows > 0) {
-        $rows = sql_fetch_all($result);
-
-        # Check of the dw_packets table exists
-        if ($rows[0]['exists'] == 't')
-            $dw_packets = 1;
-        else
-            $dw_packets = 0;
-    }
-
-
-    # Check if the callsign that direwolf is using has been set (presumably to the user's personal call).
-    if ($status["direwolfcallsign"] == "")
-        $mycallsign = "E0SS";
-    else {
-        $mycallsign = $status["direwolfcallsign"];
-    }
-
 
     # The SQL that will grab packet counts for each tracker callsign.
     $query = "
         select
-            b.heardfrom || ' (' || b.tactical || ')' as callsign,
-            count(b.raw) filter (where b.callsign != b.heardfrom) as digipackets,
-            count(b.raw) filter (where b.callsign = b.heardfrom) as nondigipackets,
-            count(b.raw) filter (where b.callsign = b.heardfrom or b.callsign != b.heardfrom ) as total_packets
+            coalesce(tr.callsign, t.callsign) || ' (' || coalesce(tr.tactical, t.tactical) || ')' as callsign,
+            count(b.raw) filter (where b.sourcename != b.heardfrom) as digipackets,
+            count(b.raw) filter (where b.sourcename = b.heardfrom) as nondigipackets,
+            count(b.raw) filter (where b.sourcename  = b.heardfrom or b.sourcename != b.heardfrom ) as total_packets
 
         from
-            (
-            select distinct on ( 
-                date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
-                a.hash)
-            date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
-            a.hash,
+        (
+            select
             a.tm,
             a.callsign,
-            a.heardfrom,
-            tr.tactical,
+            case when array_length(a.path, 1) > 0 then
+                a.path[array_length(a.path, 1)]
+            else
+                a.sourcename
+            end as heardfrom,
+            a.sourcename,
             a.raw
 
             from
-            dw_packets a,
-            trackers tr
+            (   select
+                a.hash,
+                a.tm,
+                a.callsign,
+                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
+                    split_part(a.raw, '>', 1)
+                else
+                    NULL
+                end as sourcename,
+                case when a.raw similar to '%>%:%' then
+                        (string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]
+                    else
+                        NULL
+                end as path,
+                a.raw
 
-            where
-            case
-               when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
-                   a.heardfrom = tr.callsign
-               else 
-                   a.heardfrom like tr.callsign || '-%'
-            end
-            and a.tm > now()::date
-            and a.tm > $1
+                from
+                    packets a
+
+                where
+                    a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
+                    and a.tm > $2
+                    and a.source = 'direwolf'
+
+                order by
+                    a.tm,
+                    a.callsign
+
+            ) as a
 
             order by
             date_trunc('minute', a.tm) + cast(round(date_part('seconds', a.tm)/10)*10 || ' seconds' as interval),
             a.hash,
             a.tm,
             a.callsign,
-            a.heardfrom
-            ) as b
+            heardfrom
 
-        group by 
-            1
+        ) as b
+        left outer join
+        trackers as tr on b.heardfrom = tr.callsign and tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}'
+        left outer join
+        trackers as t on b.heardfrom like t.callsign || '-%' and t.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}'
 
-        order by 
-            4 desc
-                ;";
+        where
+            t.callsign is not null or tr.callsign is not null
 
-    if ($dw_packets) {
-        # Execute the query
-        $result = pg_query_params($link, $query, array(sql_escape_string($status["starttime"] . " " . $status["timezone"])));
-        if (!$result) {
-            db_error(sql_last_error());
-            sql_close($link);
-            return 0;
-        }
-       
-        # Collect the rows into an array
-        $rows = [];
-        if (sql_num_rows($result) > 0) {
-            $rows = sql_fetch_all($result);
-        }
+        group by
+        1
 
-        # print out the results as JSON
-        printf ("%s", json_encode($rows));
+        order by
+        4 desc
+        ;
+    ";
+
+    # Execute the query
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute"),
+        sql_escape_string($status["starttime"] . " " . $status["timezone"])
+    ));
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
     }
-    else 
-        printf ("[]");
+   
+    # Collect the rows into an array
+    $rows = [];
+    if (sql_num_rows($result) > 0) {
+        $rows = sql_fetch_all($result);
+    }
+
+    # print out the results as JSON
+    printf ("%s", json_encode($rows));
 
     sql_close($link);
 ?>

@@ -836,8 +836,8 @@
         getchartdata(createchart2, "getairdensity.php");
         getchartdata(createchart3, "getdirewolfperformance.php");
         getchartdata2(createchart4, "gettemppressure.php");
-        getdigidata();
-        gettrackerdata();
+        //getdigidata();
+        //gettrackerdata();
 
         // add ascent/descent selector buttons to the temp and pressure chart
         addButtons();
@@ -882,8 +882,8 @@
             getchartdata(updatechart2, "getairdensity.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
             getchartdata2(updatechart4, "gettemppressure.php"); 
-            getdigidata();
-            gettrackerdata();
+            //getdigidata();
+            //gettrackerdata();
         }, 5000);
     }
 

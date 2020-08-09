@@ -1,4 +1,3 @@
-#!/usr/bin/python
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -27,7 +26,6 @@ import datetime
 import psycopg2 as pg
 import sys
 import numpy as np
-#import matplotlib.pyplot as plt
 from scipy.integrate import *
 from scipy.interpolate import *
 from scipy.optimize import *
@@ -38,14 +36,6 @@ import hashlib
 #import local configuration items
 import habconfig 
 import kiss
-
-
-class GracefulExit(Exception):
-    pass
-
-def signal_handler(signum, frame):
-    print "Caught SIGTERM..."
-    raise GracefulExit()
 
 
 #####################################
@@ -96,7 +86,8 @@ class infoCmd(object):
         self.timeout = 260
 
         # The KISS object
-        self.direwolf = kiss.KISS(my_callsign.upper(), port=8001, channel = dw_channel, via=viapath)
+        self.direwolf = kiss.txKISS(my_callsign.upper(), port=8001, channel = dw_channel, via=viapath)
+
 
         debugmsg("infoCmd constructor")
         debugmsg("Using viapath: %s" % viapath)
@@ -318,6 +309,7 @@ class infoCmd(object):
                         and a.location2d != ''
                         and a.altitude > 0
                         and a.callsign = %s
+                        and a.source = 'other'
 
                     order by
                         thetime,
@@ -536,6 +528,7 @@ class infoCmd(object):
                                     a.tm > now()::date
                                     and a1.callsign is not null
                                     and a.ptype = '@'
+                                    and a.source = 'other'
 
                                 order by
                                     a.tm asc
@@ -1072,7 +1065,7 @@ class infoCmd(object):
         except pg.DatabaseError as error:
             infocur.close()
             self.dbconn.close()
-        except (GracefulExit, KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit):
             infocur.close()
             self.dbconn.close()
 
@@ -1112,7 +1105,7 @@ def runInfoCmd(schedule, e, config):
             infocmd.processInfoCmd()
             e.wait(schedule)
 
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+    except (KeyboardInterrupt, SystemExit): 
         print "infoCmd ended"
         pass
 

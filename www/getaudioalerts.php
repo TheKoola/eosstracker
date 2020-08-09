@@ -29,6 +29,7 @@
 # This will return JSON of the form:  {"flightid" : "abcd-xxx", "audiofile" : "filename" }
 
     session_start();
+    header("Content-Type:  application/json;");
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
     else
@@ -139,7 +140,7 @@
 
 
     ## query the last packets from stations...
-    $query = '
+    $query = "
         select distinct 
             dt.thetime,
             dt.packet_time,
@@ -162,12 +163,12 @@
         from (
             select
                 fl.flightid,
-                date_trunc(\'milliseconds\', a.tm)::timestamp without time zone as thetime,
+                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                 case
-                    when a.raw similar to \'%[0-9]{6}h%\' then 
-                        date_trunc(\'second\', ((to_timestamp(now()::date || \' \' || substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'YYYY-MM-DD HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
+                    when a.raw similar to '%[0-9]{6}h%' then 
+                        date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
                     else
-                        date_trunc(\'second\', a.tm)::time without time zone
+                        date_trunc('second', a.tm)::time without time zone
                 end as packet_time,
                 a.callsign, 
                 a.symbol, 
@@ -178,41 +179,71 @@
                 round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
                 round(cast(ST_X(a.location2d) as numeric), 6) as longitude,
                 case
-                    when a.location2d != \'\' then ' 
-                        . $GPS_STRING . ' 
+                    when a.location2d != '' and m.location2d != '' then
+                        round(cast (ST_DistanceSphere(m.location2d, a.location2d)*.621371/1000 as numeric))
                     else
-                        -1
+                        -99
                 end as distance_miles,
                 case
-                    when a.location2d != \'\' then '
-                        . $GPS_STRING3 . ' 
+                    when a.location2d != '' and m.location2d != '' and a.altitude > 0 and m.altitude > 0 then
+                        round(cast(degrees(atan((a.altitude - m.altitude) / (cast(ST_DistanceSphere(m.location2d, a.location2d) as numeric) * 3.28084))) as numeric), 2)
                     else
-                        -999
+                        -99
+                end as angle,
+                case
+                    when a.location2d != '' and m.location2d != '' then
+                        round(cast(degrees(ST_Azimuth(m.location2d, a.location2d)) as numeric))
+                    else
+                        -99
                 end as azimuth,
-                raw,
+                case
+                    when m.bearing is not null  then
+                        round(cast(m.bearing as numeric), 2)
+                    else
+                        -99
+                end as myheading,
+                a.raw,
                 rank () over (
                     partition by fl.flightid order by 
                         case
-                            when a.raw similar to \'%[0-9]{6}h%\' then 
-                                date_trunc(\'second\', ((to_timestamp(now()::date || \' \' || substring(a.raw from position(\'h\' in a.raw) - 6 for 6), \'YYYY-MM-DD HH24MISS\')::timestamp at time zone \'UTC\') at time zone $1)::time)::time without time zone
+                            when a.raw similar to '%[0-9]{6}h%' then 
+                                date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $2)::time)::time without time zone
                             else
-                                date_trunc(\'second\', a.tm)::time without time zone
+                                date_trunc('second', a.tm)::time without time zone
                         end desc
                     ) as rank
         
             from 
                 packets a,
                 flightmap fm,
-                flights fl
+                flights fl,
+                (
+                    select
+                    date_trunc('second', g.tm)::timestamp without time zone as thetime,
+                    g.location2d,
+                    g.bearing,
+                    g.altitude_ft as altitude
+
+                    from
+                    gpsposition g
+
+                    where
+                    g.location2d is not null
+
+                    order by
+                    1 desc
+                    limit 1
+                ) as m
         
             where 
-                a.tm > (now() -  time \'00:20:00\')
-                and a.location2d != \'\'
+                a.tm > (now() -  time '00:20:00')
+                and a.location2d != ''
                 and a.altitude > 0
                 and fm.flightid = fl.flightid
                 and a.callsign = fm.callsign 
-                and fl.active = \'t\' ' 
-                . $get_flightid . '  
+                and a.source = 'other'
+                and fl.active = 't' 
+                and fl.flightid = 'RSONDE-000'
         ) as dt
         left outer join
         (   
@@ -221,25 +252,43 @@
                 l.flightid,
                 l.callsign,
                 l.ttl,
-                case 
-                    when l.location2d != \'\' then '
-                        . $GPS_STRING2 . ' 
+                case
+                    when l.location2d != '' and m.location2d != '' then
+                        round(cast (ST_DistanceSphere(m.location2d, l.location2d)*.621371/1000 as numeric))
                     else
-                        -1
+                        -99
                 end as landingdistance_miles
                 
             from
-                landingpredictions l
+                landingpredictions l,
+                (
+                    select
+                    date_trunc('second', g.tm)::timestamp without time zone as thetime,
+                    g.location2d,
+                    g.bearing,
+                    g.altitude_ft as altitude
+
+                    from
+                    gpsposition g
+
+                    where
+                    g.location2d is not null
+
+                    order by
+                    1 desc
+                    limit 1
+                ) as m
             
             where
-                l.tm > now() - time \'00:05:00\'
+                l.tm > now() - time '00:05:00'
                 and l.ttl is not null
             
             group by
                 l.flightid,
                 l.callsign,
                 l.ttl,
-                l.location2d
+                l.location2d,
+                m.location2d
             
             order by
                 thetime,
@@ -254,9 +303,11 @@
         order by
             dt.flightid,
             dt.thetime desc
-            --dt.packet_time desc
-    ;';
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["timezone"])));
+    ;";
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["timezone"]),
+        sql_escape_string($config["timezone"])
+    ));
 
     if (!$result) {
         db_error(sql_last_error());
@@ -330,6 +381,8 @@
             $azimuth  = implode(' ',str_split(strval($ray["azimuth"][0]))); 
 
             # The phrase used for the bearing to the flight.
+            if (sizeof($azimuth) == 1)
+                $azimuth = "0 " . $azimuth;
             $azimuth_words = ", bearing " . $azimuth . " degrees";
         }
         else

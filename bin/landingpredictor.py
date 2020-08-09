@@ -1,5 +1,3 @@
-
-
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -38,14 +36,6 @@ import json
 #import local configuration items
 import habconfig 
 
-
-
-class GracefulExit(Exception):
-    pass
-
-def signal_handler(signum, frame):
-    print "Caught SIGTERM..."
-    raise GracefulExit()
 
 
 #####################################
@@ -1053,6 +1043,7 @@ class LandingPredictor(PredictorBase):
                         and a.location2d != ''
                         and a.altitude > 0
                         and a.callsign = %s
+                        and a.source = 'other'
 
                     order by
                         thetime,
@@ -1275,6 +1266,7 @@ class LandingPredictor(PredictorBase):
                                     a.tm > now()::date
                                     and a1.callsign is not null
                                     and a.ptype = '@'
+                                    and a.source = 'other'
 
                                 order by
                                     a.tm asc
@@ -1397,6 +1389,7 @@ class LandingPredictor(PredictorBase):
                         and a.location2d != ''
                         and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
+                        and a.source = 'other'
 
                     order by
                         lp.callsign,
@@ -2095,7 +2088,7 @@ class LandingPredictor(PredictorBase):
             landingcur.close()
             self.landingconn.close()
             print(error)
-        except (GracefulExit, KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit):
             landingcur.close()
             self.landingconn.close()
 
@@ -2148,7 +2141,7 @@ def runLandingPredictor(schedule, e, config):
         except pg.DatabaseError as error:
             dbcur.close()
             dbconn.close()
-            print(error)
+            print error
 
 
         # Create a new LandingPredictor object
@@ -2161,7 +2154,7 @@ def runLandingPredictor(schedule, e, config):
 
         print "Prediction scheduler ended"
 
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+    except (KeyboardInterrupt, SystemExit): 
         print "Prediction scheduler ended"
         pass
 

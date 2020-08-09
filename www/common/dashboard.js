@@ -245,7 +245,7 @@
             url = "getdashboardpackets.php?flightid=" + currentflight;
 
         $.get(url, function(data) {
-            var jsonData = JSON.parse(data);
+            var jsonData = data;
             var keys = Object.keys(jsonData);
             var i;
             var j;
@@ -299,7 +299,7 @@
 
                 // Determine what the APRS symbol is for this object, then determine path to the corresponding icon file.
                 if (typeof(station.symbol) != "undefined") {
-                    if (station.symbol != "") {
+                    if (station.symbol != "" && station.symbol != "null" && station.symbol != null) {
                         if (station.symbol.startsWith('\\') || station.symbol.startsWith('\/') || station.symbol.startsWith('1x'))
                             filename = "/images/aprs/" + symbols[station.symbol].tocall + ".png";
                         else
@@ -359,7 +359,7 @@
                     commentcell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     commentcell2.setAttribute("style", "vertical-align: top; text-align: left; word-break: break-all; word-wrap: break-word;");
                     commentcell1.innerHTML = "<font style=\"font-weight: bold;\">Comment: </font>";
-                    commentcell2.innerHTML = (typeof(station.comment) == "undefined" ? "n/a" : station.comment);
+                    commentcell2.innerHTML = (typeof(station.comment) == "undefined" ? "n/a" : (station.comment == null ? "n/a" : station.comment) );
 
                     var speedrow = detailstable.insertRow(-1); 
                     var speedcell1 = speedrow.insertCell(-1);
@@ -367,15 +367,15 @@
                     speedcell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     speedcell2.setAttribute("style", "vertical-align: top; text-align: left;");
                     speedcell1.innerHTML = "<font style=\"font-weight: bold;\">Speed (MPH): </font>";
-                    speedcell2.innerHTML = (typeof(station.speed_mph) == "undefined" ? "n/a" : station.speed_mph + " mph");
+                    speedcell2.innerHTML = (typeof(station.speed_mph) == "undefined" ? "n/a" : (station.speed_mph == null ? "n/a" : station.speed_mph + " mph"));
 
                     var bearingrow = detailstable.insertRow(-1); 
                     var bearingcell1 = bearingrow.insertCell(-1);
                     var bearingcell2 = bearingrow.insertCell(-1);
                     bearingcell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     bearingcell2.setAttribute("style", "vertical-align: top; text-align: left;");
-                    bearingcell1.innerHTML = "<font style=\"font-weight: bold;\">Bearing: </font>";
-                    bearingcell2.innerHTML = (typeof(station.bearing) == "undefined" ? "n/a" : station.bearing + "&#176");
+                    bearingcell1.innerHTML = "<font style=\"font-weight: bold;\">Heading: </font>";
+                    bearingcell2.innerHTML = (typeof(station.bearing) == "undefined" ? "n/a" : (station.bearing == null ? "n/a" : station.bearing + "&#176"));
 
                     var altituderow = detailstable.insertRow(-1); 
                     var altitudecell1 = altituderow.insertCell(-1);
@@ -383,17 +383,18 @@
                     altitudecell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     altitudecell2.setAttribute("style", "vertical-align: top; text-align: left;");
                     altitudecell1.innerHTML = "<font style=\"font-weight: bold;\">Altitude (ft): </font>";
-                    altitudecell2.innerHTML = (typeof(station.altitude) == "undefined" ? "n/a" : (station.altitude > 0 ? "<mark>" + (station.altitude * 10 / 10).toLocaleString() + " ft" + "</mark>" : station.altitude + " ft"));
+                    altitudecell2.innerHTML = (typeof(station.altitude) == "undefined" ? "n/a" : (station.altitude == null ? "n/a" : (station.altitude > 0 ? "<mark>" + (station.altitude * 10 / 10).toLocaleString() + " ft" + "</mark>" : station.altitude + " ft")));
 
                     var rangerow = detailstable.insertRow(-1); 
                     var rangecell1 = rangerow.insertCell(-1);
                     var rangecell2 = rangerow.insertCell(-1);
                     rangecell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     rangecell2.setAttribute("style", "vertical-align: top; text-align: left;");
-                    rangecell1.innerHTML = "<font style=\"font-weight: bold;\">Relative Pos.:</font>";
-                    rangecell2.innerHTML = (typeof(station.distance_miles) == "undefined" ? "" : (station.distance_miles > 0 ? "<mark style=\"background-color: lightgreen;\">range: " + station.distance_miles + " mi</mark>" : ""))
-                        + (typeof(station.relative_bearing) == "undefined" ? "" : (station.relative_bearing > 0 ? "<br>heading: " + station.relative_bearing + "&#176;  (relative to N)" : ""))
-                        + (typeof(station.angle) == "undefined" ? "" : (station.angle > -99 ? "<br>elevation angle: " + station.angle + "&#176;" : ""));
+                    rangecell1.innerHTML = "<font style=\"font-weight: bold;\">Range/Bearing:</font>";
+                    rangecell2.innerHTML = 
+                        (typeof(station.distance_miles) == "undefined" ? "" : (station.distance_miles > 0 ? "<mark style=\"background-color: lightgreen;\">" + station.distance_miles + "mi</mark>" : ""))
+                        + (typeof(station.relative_bearing) == "undefined" ? "" : (station.relative_bearing >= 0 ? "<mark style=\"background-color: lightgreen;\"> @ " + station.relative_bearing + "&#176;</mark> <font style=\"font-size: .8em;\">(relative to N)</font>" : ""))
+                        + (typeof(station.angle) == "undefined" ? "" : (station.angle > -99 ? "<br><mark style=\"background-color: lightgreen;\">elev angle: " + station.angle + "&#176;</mark>" : ""));
 
                     var coordsrow = detailstable.insertRow(-1); 
                     var coordscell1 = coordsrow.insertCell(-1);
@@ -401,7 +402,8 @@
                     coordscell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     coordscell2.setAttribute("style", "vertical-align: top; text-align: left; word-break: break-all; word-wrap: break-word;");
                     coordscell1.innerHTML = "<font style=\"font-weight: bold;\">Coords: </font>";
-                    coordscell2.innerHTML = (typeof(station.latitude) == "undefined" ? "n/a" : station.latitude) + ", " + (typeof(station.longitude) == "undefined" ? "n/a" : station.longitude);
+                    coordscell2.innerHTML = (typeof(station.latitude) == "undefined" ? "n/a" : (station.latitude == null ? "n/a" : station.latitude)) + ", " 
+                        + (typeof(station.longitude) == "undefined" ? "n/a" : (station.longitude == null ? "n/a" : station.longitude));
 
                     var timerow = detailstable.insertRow(-1); 
                     var timecell1 = timerow.insertCell(-1);
@@ -453,7 +455,7 @@
         // get audio alerts and add any alerts to the sound queue
         if (currentflight != "" || currentflight != "allpackets") {
             $.get("getaudioalerts.php?callerid=" + callerid + "&flightid=" + currentflight, function(d) {
-                var jsonData = JSON.parse(d);
+                var jsonData = d;
                 var a = 0;
                 var t = Object.keys(jsonData);
                 var f = currentflight;
