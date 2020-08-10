@@ -380,9 +380,11 @@
             # convert the numeric value of the bearing to a string with the numerals seperated by spaces.  For example, "163" becomes "1 6 3".
             $azimuth  = implode(' ',str_split(strval($ray["azimuth"][0]))); 
 
-            # The phrase used for the bearing to the flight.
-            if (sizeof($azimuth) == 1)
+            # If the bearing angle is < 10, then prepend a zero to the phrase
+            if (strlen($azimuth) == 1)
                 $azimuth = "0 " . $azimuth;
+
+            # The phrase used for the bearing to the flight.
             $azimuth_words = ", bearing " . $azimuth . " degrees";
         }
         else
