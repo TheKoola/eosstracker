@@ -90,29 +90,6 @@ $config = readconfiguration();
 ?>
 </p>
 
-<!--
-Packet counts table for active beacons
-<p class="subheader"><a href="#t1" class="subheader" id="t1-link">(<span style="color: red;" id="t1-sign">+</span>) RF Packet Counts For Beacons</a></p>
-<div id="t1-elem" style="display: none; margin: 5px;">
-    <p class="normal-italic">
-       This chart shows digipeated packet counts for each beacon on an active flight.
-       These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
-    </p>
-</div>
-<div id="digitable"></div>
-
-Packet counts table for trackers
-<p class="subheader"><a href="#t2" class="subheader" id="t2-link">(<span style="color: red;" id="t2-sign">+</span>) RF Packet Counts For Trackers</a></p>
-<div id="t2-elem" style="display: none; margin: 5px;">
-    <p class="normal-italic">
-       This chart shows packet counts for each tracker.
-       These statistics are only available when running a custom direwolf instance which is normally included in the EOSS SDR distribution.
-    </p>
-</div>
-<div id="trackertable"></div>
-
--->
-
 <!-- Packet count charts -->
 <p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) Packet Counts</a></p>
 <div id="c1-elem" style="display: none; margin: 5px; margin-bottom: 15px;">

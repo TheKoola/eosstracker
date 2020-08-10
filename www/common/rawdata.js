@@ -217,7 +217,11 @@
             padding: { right: 10 },
             size: { width: chartwidth/2, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+                type: 'spline', 
+                json: jsondata, 
+                xs: columns, 
+                xFormat: '%Y-%m-%d %H:%M:%S'
+            },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             point: { show: true },
@@ -226,6 +230,7 @@
             title: { text: "RF Packet Counts", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
+
 
     /***********
     * updatechart
