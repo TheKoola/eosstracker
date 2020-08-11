@@ -74,45 +74,45 @@
     
 
     ## query the last packets from stations...
-    $query = '
-select distinct 
---a.tm::timestamp without time zone as thetime, 
-date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
-a.callsign, 
-a.comment, 
-a.symbol, 
-a.bearing, 
-round(a.altitude) as altitude, 
-round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
-a.ptype,
-upper(t.tactical) as tactical
+    $query = "
+        select distinct 
+        --a.tm::timestamp without time zone as thetime, 
+        date_trunc('second', a.tm)::timestamp without time zone as thetime,
+        a.callsign, 
+        a.comment, 
+        a.symbol, 
+        a.bearing, 
+        round(a.altitude) as altitude, 
+        round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
+        round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
+        a.ptype,
+        upper(t.tactical) as tactical
 
-from 
-packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = \'t\') as b on a.callsign = b.callsign,
-teams t, 
-trackers tr
+        from 
+        packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign,
+        teams t, 
+        trackers tr
 
-where 
-b.callsign is null
-and a.location2d != \'\' 
-and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
-and case
-   when tr.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
-       a.callsign  = tr.callsign
-   else 
-       a.callsign like tr.callsign || \'-%\'
-end
-and t.tactical != \'ZZ-Not Active\'
-and a.source = \'other\'
-and tr.tactical = t.tactical ' .
-($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $2 ") . '
+        where 
+        b.callsign is null
+        and a.location2d != '' 
+        and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
+        and case
+           when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
+               a.callsign  = tr.callsign
+           else 
+               a.callsign like tr.callsign || '-%'
+        end
+        and t.tactical != 'ZZ-Not Active'
+        and a.source = 'other'
+        and tr.tactical = t.tactical " .
+        ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $2 ") . "
 
-order by 
-thetime asc, 
-a.callsign ;'; 
+        order by 
+        thetime asc, 
+        a.callsign ;"; 
 
-#--and a.callsign like tr.callsign || \'-%\'
+#--and a.callsign like tr.callsign || '-%'
 
 
     if ($get_flightid == "")
