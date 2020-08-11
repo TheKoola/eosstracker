@@ -1896,7 +1896,7 @@ function getTrackers() {
                 bindto: altElement,
                 size: { width: getChartWidth(), height: getChartHeight() },
                 padding: {right: 10 },
-                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
+                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%Y-%m-%d %H:%M:%S'  },
                 axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
                     type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                     y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },

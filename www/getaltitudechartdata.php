@@ -66,7 +66,7 @@
     $query = "select distinct on (f.flightid, a.callsign, thetime) 
 a.callsign, 
 f.flightid, 
-date_trunc('second', a.tm)::time without time zone as thetime, 
+date_trunc('second', a.tm)::timestamp without time zone as thetime, 
 round(a.altitude, 0) as altitude
 
 from 
@@ -108,8 +108,7 @@ thetime asc; ";
     }    
 
 
-    if ($numrows > 0)
-        printf ("[");
+    printf ("[");
     $superfirsttime = 1;
     foreach ($callsigns as $flightid => $ray) {
         if (! $superfirsttime)
@@ -145,11 +144,8 @@ thetime asc; ";
         }
         printf ("} }");
     }
-    if ($numrows > 0)
-        printf ("]");
+    printf ("]");
 
     sql_close($link);
-
-
 
 ?>

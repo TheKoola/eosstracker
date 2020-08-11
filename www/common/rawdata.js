@@ -27,6 +27,7 @@
     var chart2;
     var chart3;
     var chart4;
+    var chart5;
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
@@ -220,7 +221,7 @@
                 type: 'spline', 
                 json: jsondata, 
                 xs: columns, 
-                xFormat: '%Y-%m-%d %H:%M:%S'
+                xFormat: '%Y-%m-%d %H:%M:%S',
             },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
@@ -231,6 +232,53 @@
         });
     }
 
+
+    /***********
+    * createchart5
+    *
+    * This is the flight beacon telemetry chart
+    **********/
+    function createchart5 (jsondata, columns) {
+        chart5 = c3.generate({
+            bindto: '#chart5',
+            padding: { right: 10 },
+            size: { width: chartwidth, height: chartheight },
+            onrendered: function() {
+                d3.select("#chart5")
+                 .selectAll(".c3-texts .c3-text")
+                 .style("transform", "translate(30px, 13px)")
+                 .style("font-size", "1.8em")
+                 .style("text-align", "left")
+                ;
+
+            },
+            data: { empty : { label: { text: "No Data Available" } }, 
+                type: 'spline', 
+                json: jsondata, 
+                xs: columns, 
+                xFormat: '%Y-%m-%d %H:%M:%S',
+                labels: {
+                    format: function(v, id, i, j) {
+                        if (typeof(j) != "undefined") {
+                            var k = j.length;
+                            if (k-1 == i) {
+                                var a = Math.round(v/100) / 10;
+                                return a + "k";
+                            }
+                        }
+                        else
+                            return "";
+                    }
+                }
+            },
+            axis: { x: { max: new Date(Date.now() + 1200 * 1000),  label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
+            point: { show: true },
+            grid: { x: { show: true }, y: { show: true } },
+            color: { pattern: chartcolors },
+            title: { text: "Altitude vs Time", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+        });
+    }
 
     /***********
     * updatechart
@@ -265,8 +313,34 @@
     * This updates the Direwolf RF Packets chart.
     ***********/
     function updatechart3 (jsondata, columns) {
-         chart3.load ({ json:  jsondata, xs : columns});
+
+        // Get last timestamp from each series from the chart 
+        var chartdata = chart3.data();
+        var keys = Object.keys(chartdata);
+        var i;
+        var maxdate = new Date('January 1, 1970 00:00:01');
+
+        for (i = 0; i < keys.length; i++) {
+            var lastdate = chartdata[i].values[chartdata[i].values.length - 1].x;
+            if (lastdate > maxdate)
+                maxdate = lastdate;
+        }
+        chart3.load ({ json:  jsondata, xs : columns});
+        //chart3.axis.max({ x: new Date(maxdate.getTime() + 1200 * 1000) });
     }
+
+
+
+    /***********
+    * updatechart5
+    *
+    * This updates the flight beacons telemetry chart
+    ***********/
+    function updatechart5 (data, columns) {
+        chart5.load ({ json:  data, xs : columns});
+    }
+
+
 
     /***********
     * getchartdata2
@@ -307,6 +381,8 @@
     * It accepts a function and a URL.
     ***********/
     function getchartdata(chartupdatefunction, url) {
+
+        
         /* Call the URL provided */
         $.get(url, function(data) {
             var jsonOutput = JSON.parse(data);
@@ -324,6 +400,43 @@
             chartupdatefunction(jsonOutput, mycolumns);
         });
     }
+
+    /***********
+    * getchartdata5
+    *
+    * This function serves as a front-end for the updatechart functions.  
+    * It accepts a function and a URL.
+    ***********/
+    function getchartdata5(chartupdatefunction, url) {
+        
+        /* Call the URL provided */
+        $.get(url, function(data) {
+            var jsonOutput = JSON.parse(data);
+            var mycolumns = {};
+            var i = 0;
+            var j = 0;
+            var thekeys = Object.keys(jsonOutput);
+            var series = {};
+
+            for (i = 0; i < thekeys.length; i++) {
+                var flight = jsonOutput[i];
+                var jsondata = flight.chartdata;
+                var chartkeys = Object.keys(jsondata);
+
+                for (j = 0; j < chartkeys.length; j++) {
+                    series[chartkeys[j]] = jsondata[chartkeys[j]];
+                    if (! chartkeys[j].startsWith("tm-")) {
+                        mycolumns[chartkeys[j]] = "tm-" + chartkeys[j];
+                    }
+                }
+            }
+            //document.getElementById("error").innerHTML = JSON.stringify(mycolumns) + "<br>" + JSON.stringify(series);
+
+            /* call the provided update function with the JSON returned from the URL */
+            chartupdatefunction(series, mycolumns);
+        });
+    }
+
 
     /***********
     * gettrackerdata
@@ -604,6 +717,11 @@
         var c2_e = "#c2-elem";
         $(c2_a).click({element: c2_e, link: c2_l }, toggle);
 
+        /*var c5_a = "#c5-link";
+        var c5_l = "#c5-sign";
+        var c5_e = "#c5-elem";
+        $(c5_a).click({element: c5_e, link: c5_l }, toggle);
+
         var t1_a = "#t1-link";
         var t1_l = "#t1-sign";
         var t1_e = "#t1-elem";
@@ -613,6 +731,8 @@
         var t2_l = "#t2-sign";
         var t2_e = "#t2-elem";
         $(t2_a).click({element: t2_e, link: t2_l }, toggle);
+        */
+
     }
 
 

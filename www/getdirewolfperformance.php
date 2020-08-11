@@ -32,6 +32,12 @@
 
     $config = readconfiguration();
 
+    // Check the starttime HTML GET variable
+    $get_starttime = "";
+    if (isset($_GET["starttime"])) 
+        if (check_number($_GET["starttime"], 0, 2114384400))
+            $get_starttime = floatval($_GET["starttime"]);
+
     # read in the status JSON file from the habtracker-daemon
     $ray = array();
     $ray["active"] = 0;
@@ -95,31 +101,60 @@
         return 0;
     }
 
+    if ($get_starttime == "")  {
+        $query = "select 
+               date_trunc('day', a.tm)::date as thedate, 
+               date_trunc('hour', a.tm)::time as thehour,
+               date_trunc('minute', a.tm)::time as theminute, 
+               a.channel,
+               a.frequency,
+               count(a.*)
 
-    $query = "select 
-           date_trunc('day', a.tm)::date as thedate, 
-           date_trunc('hour', a.tm)::time as thehour,
-           date_trunc('minute', a.tm)::time as theminute, 
-           a.channel,
-           a.frequency,
-           count(a.*)
+               from 
+               packets a
 
-           from 
-           packets a
+               where 
+               a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
+               and a.tm > $2
+               and a.source = 'direwolf'
 
-           where 
-           a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
-           and a.tm > $2
-           and a.source = 'direwolf'
-
-           group by 1,2,3,4,5
-           order by 1,2,3,4,5
-
+               group by 1,2,3,4,5
+               order by 1,2,3,4,5
         ;";
+        $result = pg_query_params($link, $query, array(
+            sql_escape_string($config["lookbackperiod"] . " minute"), 
+            sql_escape_string($status["starttime"] . " " . $status["timezone"])
+        ));
+    }
+    else {
+        $query = "select 
+               date_trunc('day', a.tm)::date as thedate, 
+               date_trunc('hour', a.tm)::time as thehour,
+               date_trunc('minute', a.tm)::time as theminute, 
+               a.channel,
+               a.frequency,
+               count(a.*)
 
-    $result = pg_query_params($link, $query, array(
-    sql_escape_string($config["lookbackperiod"] . " minute"), 
-    sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+               from 
+               packets a
+
+               where 
+               a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
+               and a.tm > to_timestamp($2)::timestamp at time zone $3
+               and a.source = 'direwolf'
+
+               group by 1,2,3,4,5
+               order by 1,2,3,4,5;";
+
+        $result = pg_query_params($link, $query, array(
+            sql_escape_string($config["lookbackperiod"] . " minute"), 
+            sql_escape_string($get_starttime),
+            sql_escape_string($config["timezone"])
+        ));
+    }
+
+
+
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
