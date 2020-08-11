@@ -214,7 +214,7 @@
     * This function is for creating a new realtime layer object.
     *********/
     function createActiveFlightsLayer(url, container, interval, fid) {
-        return L.geolayer(url, {
+        return L.realtime(url, {
             interval: interval,
             container: container,
             color: 'black',
@@ -489,7 +489,7 @@
     * This function is for creating a new realtime layer object.
     *********/
     function createFlightPredictionLayer(url, container, interval) {
-        return L.geolayer(url, {
+        return L.realtime(url, {
             interval: interval,
             container: container,
             color: 'black',
@@ -674,7 +674,7 @@
     * This function is for creating a new realtime layer object.
     *********/
     function createLandingPredictionsLayer(url, container, interval, fid) {
-        return L.geolayer(url, {
+        return L.realtime(url, {
             interval: interval,
             container: container,
             color: 'black',
@@ -845,7 +845,7 @@
     * This function is for creating a new realtime layer object.
     *********/
     function createRealtimeLayer(url, container, interval, styleFunction) {
-        return L.geolayer(url, {
+        return L.realtime(url, {
             interval: interval,
             container: container,
             color: 'black',

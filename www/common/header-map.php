@@ -64,7 +64,7 @@ else
 <script src="/common/c3.min.js"></script>
 <script src="/leaflet/leaflet.js"></script>
 <script src="/common/jquery-3.4.1.min.js"></script>
-<script src="/common/leaflet-geolayer.js"></script>
+<script src="/common/leaflet-realtime.js"></script>
 <script src="/common/symbols-map.js"></script>
 <script src="/common/leaflet.groupedlayercontrol.min.js"></script>
 <script src="/common/leaflet-sidebar.js"></script>
