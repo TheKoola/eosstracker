@@ -32,6 +32,7 @@ import signal
 import random
 from inspect import getframeinfo, stack
 import string
+import select
 
 #import local configuration items
 import habconfig 
@@ -108,6 +109,9 @@ class aisConnection(aprslib.IS):
 
         while not e.is_set():
             try:
+                # Check socket readiness
+                ready = select.select([self.sock], [], [], 10.0)
+
                 for line in self._socket_readlines(blocking):
                     if line[0] != "#":
 
@@ -303,6 +307,7 @@ class APRSIS(object):
 
                     # The consumer function blocks forever, calling the writeToDatabase function upon receipt of each APRS packet
                     self.ais.consumer(self.writeToDatabase, blocking=False, raw=True, immortal=False, e=self.stopevent)
+                    #  self.stopevent.wait(.25)
                     debugmsg("Consumer function returned [%s]." % self.server)
 
                     # Close the AIS connection as prep for another iteration of this loop
