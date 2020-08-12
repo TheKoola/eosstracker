@@ -110,7 +110,8 @@ class aisConnection(aprslib.IS):
         while not e.is_set():
             try:
                 # Check socket readiness
-                ready = select.select([self.sock], [], [], 10.0)
+                if not blocking:
+                    ready = select.select([self.sock], [], [], 10.0)
 
                 for line in self._socket_readlines(blocking):
                     if line[0] != "#":
