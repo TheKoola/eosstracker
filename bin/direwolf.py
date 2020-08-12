@@ -103,21 +103,13 @@ def createDirewolfConfig(callsign, l, configdata):
                 f.write("###########################################\n\n")
 
 
-            # The rest of the direwolf configuration
-            # We're using the localhost address because that's where aprsc is running
-            f.write("# APRS-IS Info\n")
-            f.write("IGSERVER 127.0.0.1\n")
-
-            # Login info for aprsc
-            # If igating is enabled, then the user has supplied their own callsign-ssid along with APRS-IS passcode for use as the APRS-IS login name that direwolf uses.
-            # Note that this APRS-IS login name is different than the callsign-ssid that is tagged as having "igated" a packet.  That is defined above with the MYCALL parameter.
+            #### Only if we're igating... 
             if configdata["igating"] == "true":
                 password = configdata["passcode"]
-            else:
-                # Okay, we're not igating, so we need to generate a passcode for this callsign.
-                password = aprslib.passcode(str(callsign))
-
-            f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
+                f.write("# APRS-IS Info\n")
+                f.write("IGSERVER noam.aprs2.net\n")
+                f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
+                #password = aprslib.passcode(str(callsign))
 
             # The rest of the direwolf configuration
             f.write("AGWPORT 8000\n")
