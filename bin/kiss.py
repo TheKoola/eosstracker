@@ -27,8 +27,6 @@ import multiprocessing as mp
 import time
 import select
 
-import struct
-
 KISS_FEND = 0xC0    # Frame start/end marker
 KISS_FESC = 0xDB    # Escape character
 KISS_TFEND = 0xDC   # If after an escape, means there was an 0xC0 in the source message
@@ -296,6 +294,14 @@ class KISS(object):
              
     def parseFrame(self, frame):
         pos = 0
+        
+        # Length of the frame
+        length = len(frame)
+
+        # If it's not at least 14 chars then eject...
+        if length < 14:
+            print "Frame not long enough [", length, "]: ", frame
+            return None
 
         # destination address
         (dest_addr, dest_hrr, dest_ext) = self.decode_addr(frame, pos)
@@ -319,13 +325,16 @@ class KISS(object):
         while ext == 0:
             rpt_addr, rpt_h, ext = self.decode_addr(frame, pos)
             if rpt_addr is None:
-                return None
+                break
 
-            #print rpt_addr, ",  ", bin(rpt_h), ", ", ext
-            #if rpt_h == 1:
-            #    rpt_addr += "*"
             repeater_list += "," + rpt_addr 
             pos += 7
+
+
+
+        # make sure this packet wasn't truncated...
+        if pos >= length:
+            return None
 
         # control code
         ctrl = ord(frame[pos])
@@ -335,14 +344,22 @@ class KISS(object):
         info = ""
         if (ctrl & 0x3) == 0x3:
             info = self.decode_uframe(ctrl, frame, pos)
+            if info == None:
+                info = ""
         else:
             return None
 
         debugmsg("src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list))
 
-        packet = src_addr + ">" + dest_addr + repeater_list + ":" + info
+        try:
+            packet = src_addr + ">" + dest_addr + repeater_list + ":" + info
+            return packet
+        except TypeError as e: 
+            print "Type Error occured: ", e
+            print "src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list)
 
-        return packet
+            return None
+
 
 
 class txKISS(KISS):
@@ -437,6 +454,12 @@ class txKISS(KISS):
         #packet += bytearray(c_byte + pid) + msg
         packet += c_byte + pid + msg
         chan_cmd = self.channel << 4
+        if chan_cmd == KISS_FEND:
+            chan_cmd = [KISS_FESC, KISS_TFEND]
+        else:
+            chan_cmd = [chan_cmd]
+
+        debugmsg("Channel command: {}".format(chan_cmd))
 
         # Escape the packet in case either KISS_FEND or KISS_FESC ended up in our stream
         packet_escaped = []
@@ -449,12 +472,11 @@ class txKISS(KISS):
                 packet_escaped += [x]
 
         # Build the frame that we will send to Dire Wolf and turn it into a string
-        kiss_frame = [KISS_FEND, chan_cmd] + packet_escaped + [KISS_FEND]
+        kiss_frame = [KISS_FEND] + chan_cmd + packet_escaped + [KISS_FEND]
 
-        if debug:
-            print "kiss_frame: ", bytes(kiss_frame)
+        debugmsg("kiss_frame to be transmitted: [{}]".format(', '.join(hex(a) for a in kiss_frame)))
 
-        output = str(bytearray(kiss_frame))
+        output = bytearray(kiss_frame)
 
         return output
 
