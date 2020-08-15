@@ -828,7 +828,8 @@ class infoCmd(object):
                     select 
                         l.tm as thetime,
                         st_y(l.location2d) as lat,
-                        st_x(l.location2d) as lon
+                        st_x(l.location2d) as lon,
+                        ttl
 
                     from
                         landingpredictions l
@@ -878,8 +879,12 @@ class infoCmd(object):
                     degrees = int(r[2])
                     minutes = (r[2] - degrees) * 60
                     lon = "{:02d}{:05.2f}{}".format(abs(degrees), abs(minutes), "E" if r[2] >= 0 else "W")
+
+                    # create a string for the TTL value
+                    ttl = float(r[3]) / 60.0
+                    ttl_string = "Time to live: " + str(int(ttl)) + "mins " + str(int((ttl - int(ttl)) * 60.0)) + "secs"
           
-                    objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + " (from " + self.callsign + ")"
+                    objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
 
             except pg.DatabaseError as error:
