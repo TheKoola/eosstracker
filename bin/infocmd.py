@@ -829,7 +829,7 @@ class infoCmd(object):
                         l.tm as thetime,
                         st_y(l.location2d) as lat,
                         st_x(l.location2d) as lon,
-                        ttl
+                        round(ttl) as ttl
 
                     from
                         landingpredictions l
@@ -882,7 +882,7 @@ class infoCmd(object):
 
                     # create a string for the TTL value
                     ttl = float(r[3]) / 60.0
-                    ttl_string = "Time to live: " + str(int(ttl)) + "mins " + str(int((ttl - int(ttl)) * 60.0)) + "secs"
+                    ttl_string = "Time to live: " + str(int(ttl)) + "mins"
           
                     objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
