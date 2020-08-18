@@ -105,7 +105,7 @@
                 order by
                 z.hash
             --) as dw on dw.callsign = a.callsign and (abs(extract(epoch from (dw.thetime  - a.tm))) < 1  or dw.thetime >= a.tm or dw.hash = a.hash)
-            ) as dw on dw.callsign = a.callsign and (abs(extract(epoch from (dw.thetime  - a.tm))) < 1  or dw.thetime >= (a.tm + interval '00:00:01'))
+            ) as dw on dw.callsign = a.callsign and dw.thetime >= (a.tm - interval '00:00:08') 
 
             where 
             b.callsign is null
