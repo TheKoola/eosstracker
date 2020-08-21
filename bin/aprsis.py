@@ -297,7 +297,7 @@ class APRSIS(object):
                     self.ais.connect()
 
                     debugmsg("Running AIS consumer function....")
-                    print "Aprsc-is connection to ", self.server, " successful"
+                    print "Aprs-is connection to ", self.server, " successful"
                     sys.stdout.flush()
 
                     # Set the connect flag 
@@ -317,7 +317,7 @@ class APRSIS(object):
 
                 except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
                     pass
-                    #print "[%s] Aprsc-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error
+                    #print "[%s] Aprs-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error
                     #sys.stdout.flush()
 
                 finally:
