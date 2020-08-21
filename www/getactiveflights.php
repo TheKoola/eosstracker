@@ -55,6 +55,14 @@
         $formerror = true;
             
 
+    // Check the starttime HTML GET variable
+    // Must be > 1/1/2020 01:01:01
+    // ...and <  12/31/2037 23:59:59
+    $get_starttime = 1577840561;
+    if (isset($_GET["starttime"]))
+        if (check_number($_GET["starttime"], 1577840461, 2145916799))
+            $get_starttime = intval($_GET["starttime"]);
+
     if ($formerror == true) {
         printf ("[]");
         return 0;
@@ -426,6 +434,7 @@
                             where
                             z.location2d != '' 
                             and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+                            and z.tm > to_timestamp(cast($9 as bigint))
                             and z.source = 'direwolf'
 
                             group by
@@ -442,6 +451,7 @@
                         a.location2d != '' 
                         and dw.hash is null
                         and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
+                        and a.tm > to_timestamp(cast($10 as bigint))
                         and a.source = 'other'
                         and fm.flightid = f.flightid
                         and f.active = 'y'
@@ -556,6 +566,7 @@
                                 where
                                 z.location2d != '' 
                                 and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
+                                and z.tm > to_timestamp(cast($11 as bigint))
                                 and z.source = 'other'
 
                                 group by
@@ -572,6 +583,7 @@
                             dw.hash is null
                             and a.location2d != '' 
                             and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
+                            and a.tm > to_timestamp(cast($12 as bigint))
                             and fm.flightid = f.flightid
                             and f.active = 'y'
                             and a.callsign = fm.callsign
@@ -614,7 +626,11 @@
         sql_escape_string($config["lookbackperiod"] . " minute"), 
         sql_escape_string($config["lookbackperiod"] . " minute"), 
         sql_escape_string($get_callsign),
-        sql_escape_string($get_flightid)
+        sql_escape_string($get_flightid),
+        $get_starttime,
+        $get_starttime,
+        $get_starttime,
+        $get_starttime
         )
     );
     if (!$result) {
