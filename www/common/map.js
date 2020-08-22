@@ -2231,7 +2231,7 @@ function getTrackers() {
 
                 // Update all the gauges as well as the last position, last status, and packet source tables
                 $.get("getflightpackets.php?flightid=" + theflight, function(data) {
-                    var flightJsonData = JSON.parse(data);
+                    var flightJsonData = data;
                     var k = 0;
                     var i = 0;
                     var positionPackets = flightJsonData.positionpackets;
