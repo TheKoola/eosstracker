@@ -107,6 +107,7 @@
                 round(a.frequency / 1000000.0,3) as freq, 
                 dense_rank () over (partition by a.hash order by cast(
                     cardinality((string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]) as int) asc, 
+                    a.channel asc,
                     date_trunc('millisecond', a.tm) asc
                 ), 
                 a.raw,
