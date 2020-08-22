@@ -18,6 +18,7 @@
     "lookbackperiod": "180",
     "objectbeaconing": "false",
     "overlay": "",
+    "mobilestation": "true",
     "passcode": "",
     "plottracks": "off",
     "serialport": "none",

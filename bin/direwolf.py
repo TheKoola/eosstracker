@@ -28,7 +28,7 @@ import aprslib
 ##################################################
 # This creates the configuration file for Direwolf
 ##################################################
-def createDirewolfConfig(callsign, l, configdata):
+def createDirewolfConfig(callsign, l, configdata, gpsposition):
 
     # Name of the direwolf configuration file
     filename = "/eosstracker/etc/direwolf.conf"
@@ -77,9 +77,11 @@ def createDirewolfConfig(callsign, l, configdata):
                 overlay = ""
 
             f.write("GPSD\n\n")
+
+            # Are we connected to an external radio?  And are we wanting to beacon our position over RF?
             if configdata["beaconing"] == "true":
                 f.write("###########################################\n\n")
-                f.write("# This is for beaconing our position\n")
+                f.write("# This is the external radio connection\n")
                 f.write("ADEVICE" + str(adevice) + " plughw:" + str(configdata["audiodev"]) + ",0\n")
                 f.write("ARATE 48000\n")
                 f.write("ACHANNELS 1\n")
@@ -90,16 +92,43 @@ def createDirewolfConfig(callsign, l, configdata):
                     f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
                 f.write("\n\n")
                 f.write("######### beaconing configuration #########\n")
-                f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=" + str(eoss) + "WIDE1-1,WIDE2-1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-                f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
+
+                # If this is a mobile station, then we want to turn on "smart" beaconing.
+                if configdata["mobilestation"] == "true":
+                    f.write("# This is for a mobile station\n")
+                    f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1    via=" + str(eoss) + "WIDE1-1,WIDE2-1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
+                
+                # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
+                else:
+                    # Only beacon our position if there is a valid GPS location
+                    if gpsposition["isvalid"]:
+                        f.write("# This is for a fixed station\n")
+                        f.write("PBEACON sendto=" + str(channel) + " delay=0:30 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
+
+                if configdata["igating"] == "true":
+                    f.write("IBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["ibeaconrate"]) + "\n")
                 f.write("###########################################\n\n")
 
-            if configdata["igating"] == "true" and configdata["ibeacon"] == "true":
+            # If this station is beaconing directly to APRS-IS...
+            if configdata["ibeacon"] == "true":
                 f.write("########## for internet beaconing #########\n");
-                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-                f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
-                #if configdata["beaconing"] == "false":
-                #    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
+
+                # If this is a mobile station, then we want to turn on "smart" beaconing.
+                if configdata["mobilestation"] == "true":
+                    f.write("# This is for a mobile station\n")
+                    f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+
+                # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
+                else:
+                    # Only beacon our position if there is a valid GPS location
+                    if gpsposition["isvalid"]:
+                        f.write("# This is for a fixed station\n")
+                        f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
+
+                if configdata["igating"] == "true":
+                    f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
+
                 f.write("###########################################\n\n")
 
 
@@ -130,7 +159,7 @@ def createDirewolfConfig(callsign, l, configdata):
 ##################################################
 # Run direwolf
 ##################################################
-def direwolf(e, callsign, freqlist, config):
+def direwolf(e, callsign, freqlist, config, position):
     # Location of the direwolf binary
     df_binary = "/usr/local/bin/direwolf"
 
@@ -138,7 +167,7 @@ def direwolf(e, callsign, freqlist, config):
     logfile = "/eosstracker/logs/direwolf.out"
 
     # (re)create the direwolf configuration file without database support
-    configfile = createDirewolfConfig(callsign, freqlist, config)
+    configfile = createDirewolfConfig(callsign, freqlist, config, position)
 
     # The command string and arguments for running direwolf.
     df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]

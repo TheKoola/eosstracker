@@ -205,6 +205,77 @@ def checkBenchTeam():
         print error
 
 
+################################
+# Function to query the database for latest GPS position and return an object containing alt, lat, lon.
+def getGPSPosition():
+    # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
+    gps_sql = """select 
+        tm::timestamp without time zone as time, 
+        round(speed_mph) as speed_mph, 
+        bearing, 
+        round(altitude_ft / 3.2808399, 2) as altitude_m, 
+        round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
+        round(cast(ST_X(location2d) as numeric), 6) as longitude 
+       
+        from 
+        gpsposition 
+      
+        order by 
+        tm desc 
+        limit 1;"""
+
+
+    gpsposition = {
+            "altitude" : 0.0,
+            "latitude" : 0.0,
+            "longitude" : 0.0,
+            "isvalid" : False
+            }
+
+
+    # Database connection objects
+    dbconn = None
+    dbcur = None
+
+    try:
+
+        # Database connection 
+        dbconn = pg.connect (habconfig.dbConnectionString)
+        dbcur = dbconn.cursor()
+
+        # Execute the SQL statment and get all rows returned
+        dbcur = dbconn.cursor()
+        dbcur.execute(gps_sql)
+        gpsrows = dbcur.fetchall()
+        dbcur.close()
+        dbconn.close()
+
+        # There should only be one row returned from the above query, but just in case we loop through each row saving our 
+        # last altitude, latitude, and longitude
+        if len(gpsrows) > 0:
+            for gpsrow in gpsrows:
+                #my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
+                my_alt = gpsrow[3]
+                my_lat = gpsrow[4]
+                my_lon = gpsrow[5]
+
+            gpsposition = {
+                    "altitude" : float(my_alt),
+                    "latitude" : float(my_lat),
+                    "longitude" : float(my_lon),
+                    "isvalid" : True
+                    }
+
+        return gpsposition
+
+    except pg.DatabaseError as error:
+        # If there was a connection error, then close these, just in case they're open
+        dbcur.close()
+        dbconn.close()
+        print error
+        return gpsposition
+
+
 ##################################################
 # main function
 ##################################################
@@ -320,7 +391,7 @@ def main():
         configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400", "objectbeaconing" : "false"}
+    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400", "objectbeaconing" : "false", "mobilestation" : "true"}
 
     for the_key in defaultkeys.keys():
         if the_key not in configuration:
@@ -427,8 +498,11 @@ def main():
 
             status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
 
+            # Get our our current position
+            myposition = getGPSPosition()
+
             # The direwolf process
-            dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration))
+            dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
             dfprocess.daemon = True
             dfprocess.name = "Direwolf"
             processes.append(dfprocess)

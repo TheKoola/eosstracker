@@ -1059,19 +1059,16 @@
         //document.getElementById("beaconing").disabled = true;
         //document.getElementById("beaconingtext").className = "disabled";
             
-        document.getElementById("fastspeed").disabled = true;
-        document.getElementById("fastrate").disabled = true;
-        document.getElementById("slowspeed").disabled = true;
-        document.getElementById("slowrate").disabled = true;
-        document.getElementById("beaconlimit").disabled = true;
-        document.getElementById("fastturn").disabled = true;
-        document.getElementById("slowturn").disabled = true;
         document.getElementById("audiodev").disabled = true;
         document.getElementById("serialport").disabled = true;
         document.getElementById("serialproto").disabled = true;
         document.getElementById("includeeoss").disabled = true;
         document.getElementById("eoss_string").disabled = true;
         document.getElementById("objectbeaconing").disabled = true;
+        document.getElementById("mobilestation").disabled = true;
+        document.getElementById("mobiletext1").className = "disabled";
+        document.getElementById("mobiletext2").className = "disabled";
+        checkMobile();
         
         var igating = document.getElementById("igating").checked;
         if (!igating) {
@@ -1090,16 +1087,6 @@
                 document.getElementById("overlaytext").className = "disabled-noborders";
             }
         }
-        document.getElementById("beaconingtext1a").className = "disabled";
-        document.getElementById("beaconingtext1b").className = "disabled";
-        document.getElementById("beaconingtext2a").className = "disabled";
-        document.getElementById("beaconingtext2b").className = "disabled";
-        document.getElementById("beaconingtext3a").className = "disabled";
-        document.getElementById("beaconingtext3b").className = "disabled";
-        document.getElementById("beaconingtext4a").className = "disabled";
-        document.getElementById("beaconingtext4b").className = "disabled";
-        document.getElementById("beaconingtext5a").className = "disabled";
-        document.getElementById("beaconingtext5b").className = "disabled";
         document.getElementById("beaconingtext6a").className = "disabled";
         document.getElementById("beaconingtext6b").className = "disabled";
         document.getElementById("beaconingtext7a").className = "disabled";
@@ -1352,20 +1339,17 @@
         var beaconing = document.getElementById("beaconing");
 	
         if (beaconing.checked) {
-            document.getElementById("fastspeed").disabled = false;
-            document.getElementById("fastrate").disabled = false;
-            document.getElementById("slowspeed").disabled = false;
-            document.getElementById("slowrate").disabled = false;
-            document.getElementById("beaconlimit").disabled = false;
-            document.getElementById("fastturn").disabled = false;
-            document.getElementById("slowturn").disabled = false;
             document.getElementById("audiodev").disabled = false;
             document.getElementById("serialport").disabled = false;
             document.getElementById("serialproto").disabled = false;
             document.getElementById("comment").disabled = false;
             document.getElementById("includeeoss").disabled = false;
             document.getElementById("objectbeaconing").disabled = false;
+            document.getElementById("mobilestation").disabled = false;
+            document.getElementById("mobiletext1").className = "normal";
+            document.getElementById("mobiletext2").className = "normal";
             checkEOSS();
+            checkMobile();
             document.getElementById("symbol").disabled = false;
             if (checkOverlay()) {
                 document.getElementById("overlay").disabled = false;
@@ -1375,16 +1359,6 @@
                 document.getElementById("overlay").disabled = true;
                 document.getElementById("overlaytext").className = "disabled-noborders";
             }
-            document.getElementById("beaconingtext1a").className = "normal";
-            document.getElementById("beaconingtext1b").className = "normal";
-            document.getElementById("beaconingtext2a").className = "normal";
-            document.getElementById("beaconingtext2b").className = "normal";
-            document.getElementById("beaconingtext3a").className = "normal";
-            document.getElementById("beaconingtext3b").className = "normal";
-            document.getElementById("beaconingtext4a").className = "normal";
-            document.getElementById("beaconingtext4b").className = "normal";
-            document.getElementById("beaconingtext5a").className = "normal";
-            document.getElementById("beaconingtext5b").className = "normal";
             document.getElementById("beaconingtext6a").className = "normal";
             document.getElementById("beaconingtext6b").className = "normal";
             document.getElementById("beaconingtext7a").className = "normal";
@@ -1402,6 +1376,57 @@
             disableBeaconing();
         }
     }
+
+
+    /***********
+    * checkMobile function
+    *
+    * This function will check that the checkbox "Mobile station" is checked and if so, enable some input fields.
+    ***********/
+    function checkMobile() {
+        var mobilestation = document.getElementById("mobilestation");
+        var rfbeaconing = document.getElementById("beaconing");
+
+        if (mobilestation.checked && rfbeaconing.checked)  {
+            document.getElementById("fastspeed").disabled   = false;
+            document.getElementById("fastrate").disabled    = false;
+            document.getElementById("slowspeed").disabled   = false;
+            document.getElementById("slowrate").disabled    = false;
+            document.getElementById("beaconlimit").disabled = false;
+            document.getElementById("fastturn").disabled    = false;
+            document.getElementById("slowturn").disabled    = false;
+            document.getElementById("beaconingtext1a").className = "normal";
+            document.getElementById("beaconingtext1b").className = "normal";
+            document.getElementById("beaconingtext2a").className = "normal";
+            document.getElementById("beaconingtext2b").className = "normal";
+            document.getElementById("beaconingtext3a").className = "normal";
+            document.getElementById("beaconingtext3b").className = "normal";
+            document.getElementById("beaconingtext4a").className = "normal";
+            document.getElementById("beaconingtext4b").className = "normal";
+            document.getElementById("beaconingtext5a").className = "normal";
+            document.getElementById("beaconingtext5b").className = "normal";
+        }
+        else {
+            document.getElementById("fastspeed").disabled   = true;
+            document.getElementById("fastrate").disabled    = true;
+            document.getElementById("slowspeed").disabled   = true;
+            document.getElementById("slowrate").disabled    = true;
+            document.getElementById("beaconlimit").disabled = true;
+            document.getElementById("fastturn").disabled    = true;
+            document.getElementById("slowturn").disabled    = true;
+            document.getElementById("beaconingtext1a").className = "disabled";
+            document.getElementById("beaconingtext1b").className = "disabled";
+            document.getElementById("beaconingtext2a").className = "disabled";
+            document.getElementById("beaconingtext2b").className = "disabled";
+            document.getElementById("beaconingtext3a").className = "disabled";
+            document.getElementById("beaconingtext3b").className = "disabled";
+            document.getElementById("beaconingtext4a").className = "disabled";
+            document.getElementById("beaconingtext4b").className = "disabled";
+            document.getElementById("beaconingtext5a").className = "disabled";
+            document.getElementById("beaconingtext5b").className = "disabled";
+        }
+    }
+
 
     /***********
     * checkEOSS function
@@ -1447,6 +1472,7 @@
             document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
             document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
+            document.getElementById("mobilestation").checked = (typeof(jsonData.mobilestation) == "undefined" ? false : (jsonData.mobilestation == "true" ? true : false));
             document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
             document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
             var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
@@ -1601,6 +1627,7 @@
 	    var serialport = document.getElementById("serialport");
 	    var serialproto = document.getElementById("serialproto");
 	    var includeeoss = document.getElementById("includeeoss");
+	    var mobilestation = document.getElementById("mobilestation");
         var eoss = document.getElementById("eoss_string");
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
@@ -1663,6 +1690,7 @@
 		    form_data.append("passcode", "");
         }
 
+        form_data.append("mobilestation", mobilestation.checked.toString());
 
 	    if (beaconing.checked) {
 		    for (f of fields) {

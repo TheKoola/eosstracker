@@ -59,6 +59,7 @@
     $ray["ibeaconrate"] = "15:00";
     $ray["ibeacon"] = "false";
     $ray["airdensity"] = "false";
+    $ray["mobilestation"] = "true";
     $fallbackJSON = json_encode($ray);
 
     // Defaults

@@ -593,10 +593,10 @@ include $documentroot . '/common/header.php';
         </tr>
 
         <tr>
-		    <td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps;">APRS RF Smart Beaconing</td>
+		    <td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps;">APRS RF Beaconing</td>
         </tr>
 		<tr>
-            <td class="packetlist-highlight2" rowspan=12><div style="-webkit-transform: rotate(270deg);  
+            <td class="packetlist-highlight2" rowspan=13><div style="-webkit-transform: rotate(270deg);  
                 -ms-transform: rotate(270deg); 
                 transform: rotate(270deg); 
                 font-variant: small-caps; 
@@ -630,6 +630,12 @@ include $documentroot . '/common/header.php';
             </td>
         </tr>
 
+        <tr><td class="packetlist" id="mobiletext1"><strong>Type of Station. </strong>Check this box if this system is on a vehicle or other facility that 
+            moves (ex. car, boat, plane, spaceship, etc.).  Selecting this enables APRS "Smart" beaconing and uses the below parameters.  If this system is in a fixed location (ex. 
+            a house, building, tower, etc.) then do not select this. </td>
+            <td class="packetlist" id="mobiletext2" style="white-space: nowrap; text-align: center;">Mobile station:
+                <input type="checkbox" name="mobilestation" id="mobilestation" disabled="disabled" form="configuration_form" checked onchange="checkMobile();"></td>
+        </tr> 
 
 		<tr><td class="packetlist" id="beaconingtext1a"><strong>Fast speed threshold</strong>.  For speeds above this value, beacon this frequently.</td>
 		    <td class="packetlist" id="beaconingtext1b" style="white-space: nowrap; text-align: center;">Mph <input type="number" form="configuration_form" id="fastspeed" name="fastspeed" required="required" min="1" max="99" placeholder="nn">
