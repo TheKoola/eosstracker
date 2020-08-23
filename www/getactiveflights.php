@@ -63,6 +63,8 @@
         if (check_number($_GET["starttime"], 1577840461, 2145916799))
             $get_starttime = intval($_GET["starttime"]);
 
+    printf ("starttime: %s\n\n", $get_starttime);
+
     if ($formerror == true) {
         printf ("[]");
         return 0;
@@ -434,7 +436,7 @@
                             where
                             z.location2d != '' 
                             and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-                            and z.tm > to_timestamp(cast($9 as bigint))
+                            and z.tm > (to_timestamp($9)::timestamp)
                             and z.source = 'direwolf'
 
                             group by
@@ -451,7 +453,7 @@
                         a.location2d != '' 
                         and dw.hash is null
                         and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
-                        and a.tm > to_timestamp(cast($10 as bigint))
+                        and a.tm > (to_timestamp($10)::timestamp)
                         and a.source = 'other'
                         and fm.flightid = f.flightid
                         and f.active = 'y'
@@ -566,7 +568,7 @@
                                 where
                                 z.location2d != '' 
                                 and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
-                                and z.tm > to_timestamp(cast($11 as bigint))
+                                and z.tm > (to_timestamp($11)::timestamp)
                                 and z.source = 'other'
 
                                 group by
@@ -583,7 +585,7 @@
                             dw.hash is null
                             and a.location2d != '' 
                             and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
-                            and a.tm > to_timestamp(cast($12 as bigint))
+                            and a.tm > (to_timestamp($12)::timestamp)
                             and fm.flightid = f.flightid
                             and f.active = 'y'
                             and a.callsign = fm.callsign
