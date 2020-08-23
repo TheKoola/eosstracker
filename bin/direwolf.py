@@ -107,7 +107,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                         f.write("PBEACON sendto=" + str(channel) + " delay=0:30 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
 
                 if configdata["igating"] == "true":
-                    f.write("IBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["ibeaconrate"]) + "\n")
+                    f.write("IBEACON sendto=" + str(channel) + " delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
                 f.write("###########################################\n\n")
 
             # If this station is beaconing directly to APRS-IS...
@@ -127,7 +127,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                         f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
 
                 if configdata["igating"] == "true":
-                    f.write("IBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
+                    f.write("IBEACON sendto=IG  delay=0:50 every=" + str(configdata["ibeaconrate"]) + "\n")
 
                 f.write("###########################################\n\n")
 
