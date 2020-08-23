@@ -63,8 +63,6 @@
         if (check_number($_GET["starttime"], 1577840461, 2145916799))
             $get_starttime = intval($_GET["starttime"]);
 
-    printf ("starttime: %s\n\n", $get_starttime);
-
     if ($formerror == true) {
         printf ("[]");
         return 0;
