@@ -204,10 +204,6 @@
                         <div class="table-cell"><span id="direwolf-status"></span></div>
                     </div>
                     <div class="table-row">
-                        <div class="table-cell">aprsc</div>
-                        <div class="table-cell"><span id="aprsc-status"></span></div>
-                    </div>
-                    <div class="table-row">
                         <div class="table-cell">gpsd</div>
                         <div class="table-cell"><span id="gpsd-status"></span></div>
                     </div>
@@ -407,10 +403,10 @@
         printf ("       <div class=\"panel-cell toprow bottomrow\">");
         printf ("           <div style=\"margin: 5px;\">");
         printf ("               <div class=\"instrumenttitle\">My Hdng</div>");
-        printf ("               <div>Hdng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_myheadingvalue");
+        printf ("               <div>My Hdng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_myheadingvalue");
         printf ("               <div id=\"%s\"></div>", $row['flightid'] . "_relativebearing");
         printf ("               <div class=\"instrumenttitle bottomrow\">R. Brng</div>");
-        printf ("               <div>Brng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_relativebearingvalue");
+        printf ("               <div>R. Brng: <span id=\"%s\">--</span>&#176;</div>", $row['flightid'] . "_relativebearingvalue");
         printf ("           </div>");
         printf ("       </div>");
         printf ("   </div>");
@@ -451,7 +447,7 @@
         printf ("</div>");
 
         // Lastest status packets section
-        printf ("<p class=\"section-header\"><a href=\"#status\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Status Packets</a>:</p>", $row['flightid'] . "_statuspacketlistlink", $row['flightid'] . "_statuspacketlistsign");
+/*        printf ("<p class=\"section-header\"><a href=\"#status\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Status Packets</a>:</p>", $row['flightid'] . "_statuspacketlistlink", $row['flightid'] . "_statuspacketlistsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_statuspacketlist");
         printf ("    <div class=\"div-table\">");
         printf ("        <div class=\"table-row\">");
@@ -468,6 +464,7 @@
         }
         printf ("    </div>");
         printf ("</div>");
+ */
 
         // Lastest packet path section
         printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");
