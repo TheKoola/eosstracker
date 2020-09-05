@@ -24,6 +24,7 @@
  */
 
 
+    header("Content-Type:  application/json;");
     session_start();
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
@@ -172,123 +173,123 @@
         }
     }
 
-    //printf ("<br>positioninfo array:<br>"); print_r($positioninfo); printf("<br><br>");
-    printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Predicted Fight Paths\" }, \"features\" : [");
+    if (sizeof($features) > 0) {
+        printf ("{ \"type\" : \"FeatureCollection\", \"properties\" : { \"name\" : \"Predicted Fight Paths\" }, \"features\" : [");
 
-    $output = array();
-    $firsttimeinloop = 1;
-    foreach ($features as $flightid => $ray) {
-        if ($firsttimeinloop == 0)
-            printf (", ");
-        $firsttimeinloop = 0;
-        //printf ("{ \"type\" : \"FeatureCollection\", \"features\" : [ { \"type\" : \"Feature\",\n");
-        printf ("{ \"type\" : \"Feature\",\n");
-	printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"comment\" : %s, \"objecttype\" : \"flightprediction\", \"iconsize\" : %s },", 
-		json_encode($flightid . "_prediction"), 
-		json_encode($flightid), 
-		json_encode($positioninfo[$flightid][1]), 
-		json_encode($positioninfo[$flightid][5]),
-		json_encode($config["iconsize"])
-	);
-        printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}", $positioninfo[$flightid][3], $positioninfo[$flightid][2]);
-        printf ("}");
-        if (count($ray) > 1) {
-            printf (", ");
-            $peak_altitude = 0;
-            $peak_altitude_idx = 0;
-            $i = 0;
-            foreach ($ray as $k => $elem) {
-                $linestring[] = array($elem[1], $elem[0]);
-                if ($elem[2] > $peak_altitude) {
-                   $peak_altitude = $elem[2];
-                   $peak_altitude_idx = $i;
-                }
-                $i += 1;
-            }
-            //find out if this balloon has hit a peak altitude and is now going down
-            // ...if "yes", then we need to split up the flight into two different features:
-            // 1) for the ascent portion of the flight, and 2) for the descent portion of the flight
-            // 
-            if (count($linestring) > $peak_altitude_idx + 1) {
-                $ascent_portion = array_slice($linestring, 0, $peak_altitude_idx + 1); 
-                $descent_portion = array_slice($linestring, $peak_altitude_idx);
-                //printf ("<br><br>peak:  %d, idx:  %d", $peak_altitude, $peak_altitude_idx);
-                //printf ("<br><br>");
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_ascent_path_prediction"));
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }, ", json_encode($ascent_portion));
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : \"/n\", \"altitude\" : %s, \"comment\" : \"Predicted burst\", \"objecttype\" : \"burstlocation\", \"label\" : %s, \"iconsize\" : %s },", 
-                    json_encode($flightid . "_burst_predicted"), 
-                    json_encode($flightid . " Predicted Burst"), 
-                    json_encode(number_format($peak_altitude) . "ft"), 
-                    json_encode($peak_altitude),
-		    json_encode(number_format($peak_altitude) . "ft"),
-		    json_encode($config["iconsize"])
-                );
-                printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } }, ", json_encode(end($ascent_portion)));
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"false\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_descent_path_prediction"));
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($descent_portion));
-            } 
-            else {
-                printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_ascent_path_prediction"));
-                printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
-            }
-
-            printf (", ");
-            $i = 0;
-            $prev = 0;
-            $prev_alt = 0;
-            $prev_array = [];
-            foreach ($ray as $k => $elem) {
-                if ($i == 0)
-                    $prev_array = $elem;
-
-                $alt = $elem[2];
-                $current = floor($elem[2] / 10000);
-                if ($alt > $prev_alt) # ...ascending 
-                    $ascending = 1;
-                else   # ...descending
-                    $ascending = 0;
-
-                if ($current != $prev) {
-                    if ($ascending)
-                        $element = $elem;
-                    else
-                        $element = $prev_array;
-
-                    
-                    if ($element[2] != $peak_altitude) {
-                        if ($i > 0)
-                            printf (", ");
-                    /* This is the GeoJSON object for the breadcrumb within the predicted flight path */ 
-                        printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
-                        //printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s },", 
-                            json_encode($flightid . "_predictionpoint_" . $i), 
-                            json_encode($flightid), 
-                            json_encode("/J"), 
-                            json_encode($element[2]), 
-                            json_encode($elem[3]),
-                            json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"), 
-			    json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"),
-			    json_encode($config["iconsize"])
-                            //json_encode(number_format($element[2]) . "ft"),
-                            //json_encode(number_format($element[2]) . "ft")
-                        );
-                        printf (" \"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($element[1], $element[0])));
-                        $i += 1;
+        $output = array();
+        $firsttimeinloop = 1;
+        foreach ($features as $flightid => $ray) {
+            if ($firsttimeinloop == 0)
+                printf (", ");
+            $firsttimeinloop = 0;
+            //printf ("{ \"type\" : \"FeatureCollection\", \"features\" : [ { \"type\" : \"Feature\",\n");
+            printf ("{ \"type\" : \"Feature\",\n");
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"comment\" : %s, \"objecttype\" : \"flightprediction\", \"iconsize\" : %s },", 
+            json_encode($flightid . "_prediction"), 
+            json_encode($flightid), 
+            json_encode($positioninfo[$flightid][1]), 
+            json_encode($positioninfo[$flightid][5]),
+            json_encode($config["iconsize"])
+        );
+            printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}", $positioninfo[$flightid][3], $positioninfo[$flightid][2]);
+            printf ("}");
+            if (count($ray) > 1) {
+                printf (", ");
+                $peak_altitude = 0;
+                $peak_altitude_idx = 0;
+                $i = 0;
+                foreach ($ray as $k => $elem) {
+                    $linestring[] = array($elem[1], $elem[0]);
+                    if ($elem[2] > $peak_altitude) {
+                       $peak_altitude = $elem[2];
+                       $peak_altitude_idx = $i;
                     }
+                    $i += 1;
                 }
-                $prev_array = $elem;
-                $prev = $current;
-                $prev_alt = $alt;
-            } 
-            unset ($linestring);
-        }
-        //printf ("] }");
-    }
-    printf ("] }");
+                //find out if this balloon has hit a peak altitude and is now going down
+                // ...if "yes", then we need to split up the flight into two different features:
+                // 1) for the ascent portion of the flight, and 2) for the descent portion of the flight
+                // 
+                if (count($linestring) > $peak_altitude_idx + 1) {
+                    $ascent_portion = array_slice($linestring, 0, $peak_altitude_idx + 1); 
+                    $descent_portion = array_slice($linestring, $peak_altitude_idx);
+                    //printf ("<br><br>peak:  %d, idx:  %d", $peak_altitude, $peak_altitude_idx);
+                    //printf ("<br><br>");
+                    printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_ascent_path_prediction"));
+                    printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }, ", json_encode($ascent_portion));
+                    printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : \"/n\", \"altitude\" : %s, \"comment\" : \"Predicted burst\", \"objecttype\" : \"burstlocation\", \"label\" : %s, \"iconsize\" : %s },", 
+                        json_encode($flightid . "_burst_predicted"), 
+                        json_encode($flightid . " Predicted Burst"), 
+                        json_encode(number_format($peak_altitude) . "ft"), 
+                        json_encode($peak_altitude),
+                json_encode(number_format($peak_altitude) . "ft"),
+                json_encode($config["iconsize"])
+                    );
+                    printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } }, ", json_encode(end($ascent_portion)));
+                    printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"false\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_descent_path_prediction"));
+                    printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($descent_portion));
+                } 
+                else {
+                    printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"ascending\" : \"true\", \"objecttype\" : \"flightpredictionpath\" },", json_encode($flightid . "_ascent_path_prediction"));
+                    printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }", json_encode($linestring));
+                }
 
+                printf (", ");
+                $i = 0;
+                $prev = 0;
+                $prev_alt = 0;
+                $prev_array = [];
+                foreach ($ray as $k => $elem) {
+                    if ($i == 0)
+                        $prev_array = $elem;
+
+                    $alt = $elem[2];
+                    $current = floor($elem[2] / 10000);
+                    if ($alt > $prev_alt) # ...ascending 
+                        $ascending = 1;
+                    else   # ...descending
+                        $ascending = 0;
+
+                    if ($current != $prev) {
+                        if ($ascending)
+                            $element = $elem;
+                        else
+                            $element = $prev_array;
+
+                        
+                        if ($element[2] != $peak_altitude) {
+                            if ($i > 0)
+                                printf (", ");
+                        /* This is the GeoJSON object for the breadcrumb within the predicted flight path */ 
+                            printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s },", 
+                            //printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s, \"callsign\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : \"Flight prediction\", \"objecttype\" : \"balloonmarker\", \"time\" : %s },", 
+                                json_encode($flightid . "_predictionpoint_" . $i), 
+                                json_encode($flightid), 
+                                json_encode("/J"), 
+                                json_encode($element[2]), 
+                                json_encode($elem[3]),
+                                json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"), 
+                    json_encode(number_format(($element[2] < 10000 ? floor($element[2] / 1000) : 10 * floor($element[2] / 10000))) . "k ft"),
+                    json_encode($config["iconsize"])
+                                //json_encode(number_format($element[2]) . "ft"),
+                                //json_encode(number_format($element[2]) . "ft")
+                            );
+                            printf (" \"geometry\" : { \"type\" : \"Point\", \"coordinates\" : %s } } ", json_encode(array($element[1], $element[0])));
+                            $i += 1;
+                        }
+                    }
+                    $prev_array = $elem;
+                    $prev = $current;
+                    $prev_alt = $alt;
+                } 
+                unset ($linestring);
+            }
+            //printf ("] }");
+        }
+        printf ("] }");
+    }
+    else
+        printf ("[]");
 
     sql_close($link);
-
-
 ?>
