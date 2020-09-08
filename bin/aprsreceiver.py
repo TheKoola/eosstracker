@@ -104,7 +104,7 @@ class aprs_receiver(gr.top_block):
 def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
     try:
 
-        #print("GR [%d], listening on: " % rtl, flist)
+        #print "GR [%d], listening on: " % rtl, flist
 
         # create an instance of the aprs receiver class
         tb = aprs_receiver(freqlist=flist, rtl=rtl)

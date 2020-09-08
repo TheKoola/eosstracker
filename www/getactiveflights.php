@@ -124,6 +124,11 @@
         $json["properties"]["iconsize"] = $config["iconsize"];
         $json["properties"]["temperature"] = ($packet_array["temperature_f"] == null ? "" : $packet_array["temperature_f"]);
         $json["properties"]["pressure"] = ($packet_array["pressure_atm"] == null ? "" : $packet_array["pressure_atm"]);
+        $json["properties"]["myheading"] = $packet_array["mybearing"];
+        $json["properties"]["rel_bearing"] = $packet_array["relative_bearing"];
+        $json["properties"]["rel_angle"] = $packet_array["angle"];
+        $json["properties"]["rel_distance"] = $packet_array["distance"];
+        $json["properties"]["source"] = $packet_array["source"];
         $json["geometry"]["type"] = "Point";
         $json["geometry"]["coordinates"][]= $packet_array["longitude"];
         $json["geometry"]["coordinates"][]= $packet_array["latitude"];
@@ -297,8 +302,44 @@
     }
 
 
+    # Get the latest GPS location
+    $gps_query = "
+        select 
+        g.tm, 
+        g.altitude_ft, 
+        st_astext(g.location2d) as location2d,
+        g.bearing 
 
-    ## output should return rows like this:
+        from 
+        gpsposition g 
+
+        where
+        g.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
+
+        order by 
+        g.tm desc
+
+        limit 1;
+    ";
+
+    $gpsresult = pg_query_params($link, $gps_query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute")
+    ));
+
+    if (!$gpsresult) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+
+    $gpsrows = sql_fetch_all($gpsresult);
+    $gps_location2d = $gpsrows[0]["location2d"];
+    $gps_altitude = $gpsrows[0]["altitude_ft"];
+    $gps_bearing = $gpsrows[0]["bearing"];
+
+
+    ## output should return rows similar this:
     #
     #    thetime    | packet_time | callsign | flightid | altitude | latitude  |  longitude  | vert_rate |       lat_rate        |       lon_rate        | elapsed_mins | temperature_k | pressure_pa
     # --------------+-------------+----------+----------+----------+-----------+-------------+-----------+-----------------------+-----------------------+--------------+---------------+-------------
@@ -310,7 +351,7 @@
     ## query the last packets from stations...
     $query = "
         select
-            date_trunc('second', y.thetime)::time as thetime,
+            date_trunc('second', y.thetime)::timestamp as thetime,
             y.packet_time,
             y.callsign,
             y.flightid,
@@ -343,8 +384,12 @@
             y.freq,
             y.channel,
             y.heardfrom,
-            y.source
-
+            y.source,
+            round(cast(ST_DistanceSphere(y.location2d, st_geomfromtext($13, 4326))*.621371/1000 as numeric), 2) as distance,
+            round(cast(degrees(atan((y.altitude  - $14) / (cast(ST_DistanceSphere(y.location2d, st_geomfromtext($15, 4326)) as numeric) * 3.28084))) as numeric)) as angle,
+            round(cast(degrees(ST_Azimuth(st_geomfromtext($16, 4326), y.location2d)) as numeric)) as relative_bearing,
+            round($17) as mybearing,
+            floor(lp.ttl / 60.0) as ttl
 
             from 
             (
@@ -358,6 +403,7 @@
                     c.symbol,
                     c.speed_mph,
                     c.bearing,
+                    c.location2d,
                     c.lat,
                     c.lon,
                     c.temperature_k,
@@ -369,7 +415,7 @@
                     lag(c.lat, 1) over (order by c.packet_time) as previous_lat,
                     lag(c.lon, 1) over (order by c.packet_time) as previous_lon,
                     extract ('epoch' from (c.packet_time - lag(c.packet_time, 1) over (order by c.packet_time))) as delta_secs,
-                    extract ('epoch' from (now()::time - c.thetime)) as elapsed_secs,
+                    extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
                     c.sourcename,
                     c.heardfrom,
                     c.freq,
@@ -381,7 +427,7 @@
                     (
                         -- This is the internet-only side of the union
                         select distinct
-                        date_trunc('milliseconds', a.tm)::time without time zone as thetime,
+                        date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                         case
                             when a.raw similar to '%[0-9]{6}h%' then
                                 date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
@@ -395,6 +441,7 @@
                         a.symbol, 
                         a.speed_mph,
                         a.bearing,
+                        a.location2d,
                         cast(ST_Y(a.location2d) as numeric) as lat,
                         cast(ST_X(a.location2d) as numeric) as lon,
                         NULL as sourcename,
@@ -471,6 +518,7 @@
                         z.symbol,
                         z.speed_mph,
                         z.bearing,
+                        z.location2d,
                         z.lat,
                         z.lon,
                         z.sourcename,
@@ -491,7 +539,7 @@
                         from
                             (
                             select distinct
-                            date_trunc('milliseconds', a.tm)::time without time zone as thetime,
+                            date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                             case
                                 when a.raw similar to '%[0-9]{6}h%' then
                                     date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $4)::time)::time without time zone
@@ -501,6 +549,7 @@
                             a.callsign, 
                             f.flightid,
                             a.altitude,
+                            a.location2d,
                             a.comment, 
                             a.symbol, 
                             a.speed_mph,
@@ -605,7 +654,31 @@
                     -- c is the union
 
                 ) as y
-                -- y uses the window functions (i.e. lag) to calculate vert, lat, and lon rates.
+                left outer join
+                (
+                    select distinct on (l.flightid, l.callsign)
+                    max(l.tm) as thetime,
+                    l.flightid,
+                    l.callsign,
+                    l.ttl
+
+                    from
+                    landingpredictions l
+
+                    where
+                    l.tm > now() - interval '00:10:00'
+                    and l.ttl is not null
+
+                    group by
+                    l.flightid,
+                    l.callsign,
+                    l.ttl
+      
+                    order by
+                    l.flightid,
+                    l.callsign
+                ) as lp
+                on lp.flightid = y.flightid and lp.callsign = y.callsign
 
             where 
                 y.callsign = $7
@@ -630,7 +703,12 @@
         $get_starttime,
         $get_starttime,
         $get_starttime,
-        $get_starttime
+        $get_starttime,
+        $gps_location2d,
+        $gps_altitude, 
+        $gps_location2d,
+        $gps_location2d,
+        $gps_bearing
         )
     );
     if (!$result) {

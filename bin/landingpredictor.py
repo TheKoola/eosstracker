@@ -826,7 +826,7 @@ class LandingPredictor(PredictorBase):
                 debugmsg("LandingPredictor destructor:  closing database connection.")
                 self.landingconn.close()
         except pg.DatabaseError as error:
-            print(error)
+            print error
 
 
     ################################
@@ -867,7 +867,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.landingconn.close()
-            print(error)
+            print error
             return False
 
 
@@ -924,7 +924,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return np.array([])
         
 
@@ -1262,7 +1262,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return []
 
 
@@ -1480,7 +1480,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             wxcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return ([], False)
 
 
@@ -1613,7 +1613,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             elev_cur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return 0.0
 
 
@@ -1678,7 +1678,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return gpsposition
 
 
@@ -1756,7 +1756,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return np.array([])
 
 
@@ -2264,7 +2264,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
         except (KeyboardInterrupt, SystemExit):
             landingcur.close()
             self.landingconn.close()

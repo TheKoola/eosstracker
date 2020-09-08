@@ -23,7 +23,7 @@
 *
  */
 
-
+    header("Content-Type:  application/json;");
     session_start();
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
@@ -62,8 +62,14 @@
     }
 
 
-//    print_r ($_SESSION);
- //   printf ("<br>");
+    // Check the starttime HTML GET variable
+    // Must be > 1/1/2020 01:01:01
+    // ...and <  12/31/2037 23:59:59
+    $get_starttime = 1577840561;
+    if (isset($_GET["starttime"]))
+        if (check_number($_GET["starttime"], 1577840461, 2145916799))
+            $get_starttime = intval($_GET["starttime"]);
+
 
     ## Connect to the database
     $link = connect_to_database();
@@ -75,50 +81,144 @@
 
     ## query the last packets from stations...
     $query = "
-        select distinct 
-        --a.tm::timestamp without time zone as thetime, 
-        date_trunc('second', a.tm)::timestamp without time zone as thetime,
-        a.callsign, 
-        a.comment, 
-        a.symbol, 
-        a.bearing, 
-        round(a.altitude) as altitude, 
-        round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-        round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
-        a.ptype,
-        upper(t.tactical) as tactical
+        select
+            y.thetime,
+            y.callsign,
+            y.hash,
+            y.flightid,
+            y.comment,
+            y.symbol,
+            round(y.altitude) as altitude,
+            round(y.speed_mph) as speed_mph,
+            round(y.bearing) as bearing,
+            round(y.lat, 6) as latitude,
+            round(y.lon, 6) as longitude,
+            y.sourcename,
+            y.freq,
+            y.channel,
+            case when array_length(y.path, 1) > 0 then
+                y.path[array_length(y.path, 1)]
+            else
+                y.sourcename
+            end as heardfrom,
+            y.source,
+            y.ptype,
+            upper(y.tactical) as tactical
 
         from 
-        packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign,
-        teams t, 
-        trackers tr
+            (select 
+                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                a.callsign,
+                t.flightid,
+                a.altitude,
+                a.comment,
+                a.symbol,
+                a.speed_mph,
+                a.bearing,
+                cast(ST_Y(a.location2d) as numeric) as lat,
+                cast(ST_X(a.location2d) as numeric) as lon,
 
-        where 
-        b.callsign is null
-        and a.location2d != '' 
-        and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
-        and case
-           when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
-               a.callsign  = tr.callsign
-           else 
-               a.callsign like tr.callsign || '-%'
-        end
-        and t.tactical != 'ZZ-Not Active'
-        and a.source = 'other'
-        and tr.tactical = t.tactical " .
-        ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $2 ") . "
+                -- This is the source name.  Basically the name of the RF station that we heard this packet from
+                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
+                    split_part(a.raw, '>', 1)
+                else
+                    NULL
+                end as sourcename,
 
-        order by 
-        thetime asc, 
-        a.callsign ;"; 
+                -- The frequency this packet was heard on
+                round(a.frequency / 1000000.0,3) as freq,
+                
 
-#--and a.callsign like tr.callsign || '-%'
+                -- The Dire Wolf channel
+                a.channel,
 
+                -- The ranking of whether this was heard directly or via a digipeater
+                dense_rank () over (partition by a.callsign order by 
+                    date_trunc('millisecond', a.tm) desc,
+                    a.channel asc,
+                    cast(
+                        cardinality(
+                            (
+                                array_remove(
+                                string_to_array(
+                                    regexp_replace(
+                                        split_part(
+                                            split_part(a.raw, ':', 1), 
+                                            '>', 
+                                            2), 
+                                        ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)', 
+                                        '', 
+                                        'g'), 
+                                    ',',''),
+                                NULL)
+                            )[2:]
+                    ) as int) asc
+                ),
+                a.ptype,
+                a.hash,
+                a.raw,
+                a.source,
+                t.tactical,
+                case when a.raw similar to '%>%:%' then
+                    (array_remove(string_to_array(regexp_replace(
+                                    split_part(
+                                        split_part(a.raw, ':', 1),
+                                        '>',
+                                        2),
+                                    ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                    '',
+                                    'g'),
+                                ',',''), NULL))[2:]
+                else
+                    NULL
+                end as path
+
+
+                from packets a
+                left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign,
+                teams t,
+                trackers tr
+
+                where
+                b.callsign is null
+                and a.location2d != ''
+                and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
+                and a.tm > (to_timestamp($2)::timestamp)
+                and case
+                    when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
+                        a.callsign  = tr.callsign
+                    else
+                        a.callsign like tr.callsign || '-%'
+                end
+                and t.tactical != 'ZZ-Not Active'
+                and tr.tactical = t.tactical " .
+                ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $3 ") . "
+
+                order by
+                dense_rank,
+                a.callsign,
+                thetime) as y
+
+            where
+            y.dense_rank = 1
+
+            order by
+            y.thetime,
+            y.callsign
+                ;
+    ";
 
     if ($get_flightid == "")
-        $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
+        $result = pg_query_params($link, $query, array(
+            sql_escape_string($config["lookbackperiod"] . " minute"),
+            $get_starttime
+        ));
     else
-        $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($get_flightid)));
+        $result = pg_query_params($link, $query, array(
+            sql_escape_string($config["lookbackperiod"] . " minute"), 
+            $get_starttime,
+            sql_escape_string($get_flightid)
+        ));
 
     if (!$result) {
         db_error(sql_last_error());
@@ -144,13 +244,20 @@
         $longitude = $row['longitude'];
         $altitude = $row['altitude'];
         $tactical = $row['tactical'];
+        $speed_mph = $row['speed_mph'];
+        $heardfrom = $row['heardfrom'];
+        if ($row["source"] == 'direwolf')
+            $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
+        else
+            $frequency = "TCPIP";
+
 
         $features[$callsign][$latitude . $longitude . $altitude] = array($latitude, $longitude, $altitude);
 
         if (array_key_exists($callsign, $positioninfo)) {
             $speed = calc_speed($latitude, $longitude, $positioninfo[$callsign][2], $positioninfo[$callsign][3], $positioninfo[$callsign][0], $thetime);
             if ($speed < 310) 
-                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing);
+                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency);
             else {
                 //printf ("<br><strong>ERROR2:</strong> %s speed=%f<br>\n", $callsign, $speed);
                 //print_r($positioninfo[$callsign]);
@@ -159,7 +266,7 @@
             }
         }
         else
-            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing);
+            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency);
     }    
 
 
@@ -175,7 +282,7 @@
        
         /* This prints out the GeoJSON object for this station */
         printf ("{ \"type\" : \"Feature\",\n");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s, \"bearing\" : %s },\n", 
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"time\" : %s, \"symbol\" : %s, \"altitude\" : %s, \"comment\" : %s, \"tooltip\" : %s, \"label\" : %s, \"iconsize\" : %s, \"bearing\" : %s, \"speed\" : %s, \"heardfrom\" : %s, \"frequency\" : %s  },\n", 
             json_encode($callsign), 
             json_encode($callsign), 
             json_encode($positioninfo[$callsign][0]), 
@@ -185,7 +292,10 @@
             json_encode($positioninfo[$callsign][6]),
             json_encode($positioninfo[$callsign][6]),
             json_encode($config["iconsize"]),
-            json_encode($positioninfo[$callsign][7])
+            json_encode($positioninfo[$callsign][7]),
+            json_encode($positioninfo[$callsign][8]),  // speed
+            json_encode(($positioninfo[$callsign][9] == $callsign ? "direct" : $positioninfo[$callsign][9])),  // heardfrom
+            json_encode($positioninfo[$callsign][10])  // frequency
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");

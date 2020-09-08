@@ -281,7 +281,7 @@
                             <p class="lorem">How far back in time the map will look, when plotting APRS objects and paths.</p>
                         </div>
                         <div class="table-cell">
-                             <input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"  
+                             <input type="text" name="lookbackperiod" id="lookbackperiod" size="4" pattern="[0-9]{1,3}" placeholder="nnn"
                                  form="userpreferences" title="from 1 to 999 minutes"> minutes
                         </div>
                     </div>
@@ -447,7 +447,7 @@
         printf ("</div>");
 
         // Lastest status packets section
-/*        printf ("<p class=\"section-header\"><a href=\"#status\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Status Packets</a>:</p>", $row['flightid'] . "_statuspacketlistlink", $row['flightid'] . "_statuspacketlistsign");
+        printf ("<p class=\"section-header\"><a href=\"#status\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Most Recent Status Packets</a>:</p>", $row['flightid'] . "_statuspacketlistlink", $row['flightid'] . "_statuspacketlistsign");
         printf ("<div id=\"%s\" style=\"display: none;\">", $row['flightid'] . "_statuspacketlist");
         printf ("    <div class=\"div-table\">");
         printf ("        <div class=\"table-row\">");
@@ -464,7 +464,6 @@
         }
         printf ("    </div>");
         printf ("</div>");
- */
 
         // Lastest packet path section
         printf ("<p class=\"section-header\"><a href=\"#lastpacketpath\" class=\"section-link\" id=\"%s\">(<span style=\"color: red;\" id=\"%s\">+</span>) Latest Packet Receive Path</a>:</p>", $row['flightid'] . "_lastpacketpathlink", $row['flightid'] . "_lastpacketpathsign");

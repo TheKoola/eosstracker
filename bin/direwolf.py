@@ -154,7 +154,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
         f.close()
         return ""
     except IOError as error:
-        print("Unable to create direwolf configuration file.\n %s" % error)
+        print "Unable to create direwolf configuration file.\n %s" % error
         return ""
             
 
@@ -188,22 +188,22 @@ def direwolf(e, callsign, freqlist, config, position):
 
         # Direwolf should not be running, but if it is, we need to kill it
         if p.poll() is None:
-            print("Terminating direwolf...")
+            print "Terminating direwolf..."
             p.terminate()
-            print("Waiting for direwolf to end..")
+            print "Waiting for direwolf to end.."
             p.wait()
-            print("Direwolf ended")
+            print "Direwolf ended"
 
         # Close the log file
         l.close()
 
     except (KeyboardInterrupt, SystemExit):
         if p.poll() is None:
-            print("Terminating direwolf...")
+            print "Terminating direwolf..."
             p.terminate()
-            print("Waiting for direwolf to end..")
+            print "Waiting for direwolf to end.."
             p.wait()
-            print("Direwolf ended")
+            print "Direwolf ended"
 
         # Close the log file
         l.close()

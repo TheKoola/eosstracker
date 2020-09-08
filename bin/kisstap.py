@@ -454,11 +454,14 @@ class kissTap(object):
 
                 # remvove nul chars from info
                 info = info.replace(chr(0x00), '')
+
             else:
                 ptype = ""
                 info = ""
 
-            
+            # The raw packet...but with any NUL characters removed.
+            raw = packet["raw"].replace(chr(0x00), '').strip()
+
             # For those APRS packets that have an "object name" (presumably for an APRS "object") then we set the "from" field to the "object name".
             # ...even though the object packet was likely transmitted from a different callsign/station, sitting the from field to this object name
             # makes for niceness downstream when displaying APRS items on the map.
@@ -499,7 +502,7 @@ class kissTap(object):
                     packet["course"], 
                     packet["altitude"], 
                     packet["comment"], 
-                    packet["raw"], 
+                    raw, 
                     ptype, 
                     info)
                     )
@@ -513,7 +516,7 @@ class kissTap(object):
                     packet["course"],
                     packet["altitude"],
                     packet["comment"].strip(), 
-                    packet["raw"].strip(), 
+                    raw, 
                     ptype.strip(), 
                     info.strip()
                 ])
@@ -554,7 +557,7 @@ class kissTap(object):
                     packet["longitude"], 
                     packet["latitude"], 
                     packet["altitude"], 
-                    packet["raw"], 
+                    raw,
                     ptype,
                     info)
                     )
@@ -573,7 +576,7 @@ class kissTap(object):
                     packet["longitude"],
                     packet["latitude"],
                     packet["altitude"],
-                    packet["raw"].strip(), 
+                    raw,
                     ptype.strip(),
                     info.strip()
                 ])
@@ -587,23 +590,28 @@ class kissTap(object):
              
 
         except (ValueError, UnicodeEncodeError) as error:
-            print "Encoding error: ", error
-            print "Skipping DB insert for: ", x
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Skipping DB insert for packet(", x, "):  ", error
             sys.stdout.flush()
             pass
 
         except pg.DatabaseError as error:
-            print "Database error:  ", error
-            print "Raw packet: ", x
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Database error with packet(", x, "):  ", error
             tapcur.close()
             self.close()
 
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
             # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
 
+            # Remove any NUL characters in the packet
+            x = x.replace(chr(0x00), '')
+
             # If this is s bytes string, then convert it to UTF-8
             if type(x) is bytes:
-                x = x.decode("UTF-8", "ignore")
+                x = x.decode("UTF-8", "ignore").strip()
 
             # Find the ">" character and get the length of the packet string
             s = x.find(">")
@@ -626,18 +634,25 @@ class kissTap(object):
                 # Get the infomation part of the packet
                 info = x[s+1:]
 
+                if info.find(chr(0x00)) >= 0:
+                    print "unable to parse. null character, info:  ", info
+
+                # remvove nul chars from info
+                info = info.replace(chr(0x00), '')
+
                 # Make sure the info part is a string
                 if type(info) is bytes:
                     info = info.decode("UTF-8", "ignore")
 
-                # remvove nul chars from info
-                info = info.replace(chr(0x00), '')
+                if info.find(chr(0x00)) >= 0:
+                    print "unable to parse again. null character, info:  ", info
+
 
             # if we've been able to parse the packet then proceed, otherwise, we skip
             if callsign and ptype and info:
 
                 # Make sure the packet doesn't have a null character in it.
-                x.replace(chr(0x00), '')
+                x = x.replace(chr(0x00), '')
 
                 sql = """insert into packets (tm, source, channel, frequency, callsign, raw, ptype, hash) values (
                     now()::timestamp with time zone, 
@@ -671,14 +686,15 @@ class kissTap(object):
                         info.strip()
                     ])
                 except pg.DatabaseError as error:
-                    print "Database error:  ", error
-                    print "Raw packet: ", x
+                    ts = datetime.datetime.now()
+                    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                    print thetime, "Database error with packet(", x, "):  ", error
                     tapcur.close()
                     
                 except ValueError as e:
-                    print "kisstap.py, Error adding packet: ", e
-                    print "kisstap.py, packet: ", x
-                    print "kisstap.py, info: ", info
+                    ts = datetime.datetime.now()
+                    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                    print thetime, "kisstap. Error adding packet(", x, "): ", e
                     tapcur.close()
 
 

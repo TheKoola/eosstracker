@@ -129,7 +129,7 @@
     
     ## get the landing predictions...
     $query = "select 
-        l.tm, 
+        date_trunc('millisecond', l.tm)::timestamp without time zone as thetime,
         l.flightid, 
         l.callsign, 
         l.thetype, 
@@ -169,7 +169,7 @@
     $flightpath = array();
     $thepath = array();
     while ($row = sql_fetch_array($result)) {
-        $thetime = $row['tm'];
+        $thetime = $row['thetime'];
         $callsign = $row['callsign'];
         $thepath[$callsign] = json_decode($row['thepath']);
         $thewind[$callsign] = json_decode($row['thewind']);
@@ -179,7 +179,7 @@
         $longitude = $row['long'];
         $flightpath[$callsign] = $row['flightpath'];
         $ttl[$callsign] = $row['ttl'];
-        $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude, $row['thetype']);
+        $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude, $row['thetype'], $thetime);
     }
 
 
@@ -199,15 +199,18 @@
         else
             $wind_html = "";
 
+        // Timestamp of the latest landing prediction record
+        $timevalue = end($ray)[3];
 
         // This is the point for the landing prediction itself
         printf ("{ \"type\" : \"Feature\",");
-        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : \"\", \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s, \"ttl\" : %s },", 
+        printf ("\"properties\" : { \"id\" : %s, \"callsign\" : %s, \"tooltip\" : %s,  \"symbol\" : %s, \"comment\" : %s, \"frequency\" : \"\", \"altitude\" : \"\", \"time\" : %s, \"objecttype\" : \"landingprediction\", \"label\" : %s, \"iconsize\" : %s, \"ttl\" : %s },", 
             json_encode($callsign . "_landing"), 
             json_encode($callsign . " Predicted Landing"), 
             json_encode($callsign . " Landing"), 
             json_encode("/J"), 
             json_encode("Landing prediction" . $wind_html),
+            json_encode($timevalue),
 	        json_encode($callsign . " Landing" . ($thetype[$callsign] == "wind_adjusted" ? "<br>(wind adjusted)" : "")),
             json_encode($config["iconsize"]),
             json_encode($ttl[$callsign])

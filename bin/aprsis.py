@@ -536,6 +536,8 @@ class APRSIS(object):
             if packet["object_name"] != "":
                 packet["from"] = packet["object_name"]
 
+            # The raw packet...but with any NUL characters removed.
+            raw = packet["raw"].replace(chr(0x00), '').strip()
 
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
             if packet["latitude"] == "" or packet["longitude"] == "":
@@ -568,7 +570,7 @@ class APRSIS(object):
                     packet["course"], 
                     packet["altitude"], 
                     packet["comment"], 
-                    packet["raw"], 
+                    raw,
                     ptype, 
                     info)
                     )
@@ -581,7 +583,7 @@ class APRSIS(object):
                     packet["course"],
                     packet["altitude"],
                     packet["comment"].strip(), 
-                    packet["raw"].strip(), 
+                    raw,
                     ptype.strip(), 
                     info.strip()
                 ])
@@ -621,7 +623,7 @@ class APRSIS(object):
                     packet["longitude"], 
                     packet["latitude"], 
                     packet["altitude"], 
-                    packet["raw"], 
+                    raw,
                     ptype,
                     info)
                     )
@@ -639,7 +641,7 @@ class APRSIS(object):
                     packet["longitude"],
                     packet["latitude"],
                     packet["altitude"],
-                    packet["raw"].strip(), 
+                    raw,
                     ptype.strip(),
                     info.strip()
                 ])
@@ -653,20 +655,25 @@ class APRSIS(object):
              
 
         except (ValueError, UnicodeEncodeError) as error:
-            print "Encoding error: ", error
-            print "Skipping DB insert for: ", x
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Skipping DB insert for packet(", x, "):  ", error
             sys.stdout.flush()
             pass
 
         except pg.DatabaseError as error:
-            print "Database error:  ", error
-            print "Raw packet: ", x
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Database error with packet(", x, "):  ", error
             tapcur.close()
             self.close()
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
 
             # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
             debugmsg("Unable to parse APRS packet: {}".format(exp))
+
+            # Remove any NUL characters in the packet
+            x = x.replace(chr(0x00), '')
 
             # If this is s bytes string, then convert it to UTF-8
             if type(x) is bytes:
@@ -704,7 +711,7 @@ class APRSIS(object):
             if callsign and ptype and info:
 
                 # Make sure the packet doesn't have a null character in it.
-                x.replace(chr(0x00), '')
+                x = x.replace(chr(0x00), '').strip()
 
                 # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
                 sql = """insert into packets (tm, source, channel, callsign, raw, ptype, hash) values (
@@ -743,14 +750,15 @@ class APRSIS(object):
                     tapcur.close()
 
                 except pg.DatabaseError as error:
-                    print "Database error:  ", error
-                    print "Raw packet: ", x
+                    ts = datetime.datetime.now()
+                    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                    print thetime, "Database error with packet(", x, "):  ", error
                     tapcur.close()
 
                 except ValueError as e:
-                    print "aprsis.py, Error adding packet: ", e
-                    print "aprsis.py, packet: ", x
-                    print "aprsis.py, info: ", info
+                    ts = datetime.datetime.now()
+                    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                    print thetime,"aprsis.py, Error adding packet(", x, "): ", e
                     tapcur.close()
 
         except (StopIteration, KeyboardInterrupt, SystemExit): 
@@ -844,7 +852,9 @@ class APRSIS(object):
 
         except pg.DatabaseError as error:
             self.close()
-            print "Database error:  ", error
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Database error:  ", error
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             self.close()
 
@@ -922,7 +932,9 @@ class aprsTap(APRSIS):
         except pg.DatabaseError as error:
             pgCursor.close()
             self.close()
-            print "Database error:  ", error
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Database error:  ", error
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
@@ -1082,7 +1094,9 @@ class cwopTap(APRSIS):
         except pg.DatabaseError as error:
             pgCursor.close()
             self.close()
-            print "Database error:  ", error
+            ts = datetime.datetime.now()
+            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            print thetime, "Database error:  ", error
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
@@ -1103,14 +1117,18 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
         tap.run()
 
     except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
-        print("Closing APRS(", aprsserver, ") Tap: ", error)
+        ts = datetime.datetime.now()
+        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+        print thetime, "Closing APRS(", aprsserver, ") Tap: ", error
         tap.close()
-        print("Tap ended: ", aprsserver)
+        print "Tap ended: ", aprsserver
 
     except pg.DatabaseError as error:
-        print("[tapProcess(", aprsserver, ")] Database error:  ", error)
+        ts = datetime.datetime.now()
+        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+        print thetime, "[tapProcess(", aprsserver, ")] Database error:  ", error
         tap.close()
     except (KeyboardInterrupt, SystemExit):
         tap.close()
-        print("Tap ended: ", aprsserver)
+        print "Tap ended: ", aprsserver
 

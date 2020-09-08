@@ -55,7 +55,13 @@
         return $speed;
     }
 
-
+    // Check the starttime HTML GET variable
+    // Must be > 1/1/2020 01:01:01
+    // ...and <  12/31/2037 23:59:59
+    $get_starttime = 1577840561;
+    if (isset($_GET["starttime"]))
+        if (check_number($_GET["starttime"], 1577840461, 2145916799))
+            $get_starttime = intval($_GET["starttime"]);
 
     ## Connect to the database
     $link = connect_to_database();
@@ -96,6 +102,7 @@
                 where
                 z.location2d != '' 
                 and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
+                and z.tm > (to_timestamp($2)::timestamp)
                 and z.source = 'direwolf'
 
                 group by
@@ -112,7 +119,8 @@
             and c.callsign is null
             and a.location2d != '' 
             and dw.hash is null
-            and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+            and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
+            and a.tm > (to_timestamp($4)::timestamp)
             and a.symbol != '/_'
             and a.source = 'other'
 
@@ -124,7 +132,9 @@
 
         $result = pg_query_params($link, $query, array(
             sql_escape_string($config["lookbackperiod"] . " minute"),
-            sql_escape_string($config["lookbackperiod"] . " minute")
+            $get_starttime,
+            sql_escape_string($config["lookbackperiod"] . " minute"),
+            $get_starttime
         ));
 
     if (!$result) {

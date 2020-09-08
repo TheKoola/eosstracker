@@ -25,6 +25,7 @@
 
     ###  This will query the database for the n most recent packets.  
 
+    header("Content-Type:  application/json;");
     session_start();
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
