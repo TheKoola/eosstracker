@@ -1349,6 +1349,20 @@
                     $ascent_portion = array_slice($linestring, 0, $peak_altitude_idx + 1); 
                     $descent_portion = array_slice($linestring, $peak_altitude_idx);
 
+                    // This is the ascent portion
+                    $predictfeatures[] = array(
+                        "type" => "Feature",
+                        "properties" => array(
+                            "id" => $flightid . "_ascent_path_prediction",
+                            "ascending" => "true",
+                            "objecttype" => "flightpredictionpath"
+                        ),
+                        "geometry" => array(
+                            "type" => "LineString",
+                            "coordinates" => $ascent_portion
+                        )
+                    );
+
                     // This is the burst location itself 
                     $predictfeatures[] = array(
                         "type" => "Feature",
