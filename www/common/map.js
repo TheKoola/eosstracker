@@ -2380,7 +2380,7 @@ function getTrackers() {
 
         // If we collected objects to delete, them remove them from the Realtime layer
         if (delthese.length > 0) {
-            group.remove({"features": delthese});
+            rl.remove({"features": delthese});
         }
     }
 
