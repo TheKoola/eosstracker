@@ -2348,7 +2348,7 @@ function getTrackers() {
                 var layer_ts = parseDate(l.feature.properties.time);
 
                 // Check how old this feature is...and add it to the list for removal
-                if (layer_ts < cutoff) {
+                if (layer_ts && layer_ts < cutoff) {
                     features.push({ "properties": { "id": l.feature.properties.id}});
                 }
             }
