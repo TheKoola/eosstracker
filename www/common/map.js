@@ -2327,6 +2327,29 @@ function getTrackers() {
 
 
     /************
+     * clearRealtimeLayer
+     *
+     * This function will remove all features from a Realtime layer.
+     *
+    *************/
+    function clearRealtimeLayer(rl) {
+
+        // This is the LeafletJS layer group 
+        var group = rl.options.container;
+        var features = [];
+
+        // for each feature/item within that layer group, execute this function...
+        group.eachLayer(function(l) {
+            features.push({ "properties": { "id": l.feature.properties.id}});
+        });
+
+        if (features.length > 0) {
+            rl.remove({"features": features});
+        }
+    }
+
+
+    /************
      * pruneRealtimeLayer
      *
      * This function will remove those features from a realtime layer that are older than the cutoff timestamp
@@ -2602,6 +2625,11 @@ function getTrackers() {
                                 removeBalloonMarkers(flight.predictlayer);
                                 flight.predictlayer.update(predictJSON);
                             }
+                            else {
+                                // if a predict file is "not" provided in this JSON, then we need to remove any legacy predict file from the map.
+                                clearRealtimeLayer(flight.predictlayer);
+                            }
+
 
                             if (trackersJSON.features.length > 0) {
                                 var x;
