@@ -881,8 +881,10 @@ class infoCmd(object):
                     lon = "{:02d}{:05.2f}{}".format(abs(degrees), abs(minutes), "E" if r[2] >= 0 else "W")
 
                     # create a string for the TTL value
-                    ttl = float(r[3]) / 60.0
-                    ttl_string = "Time to live: " + str(int(ttl)) + "mins"
+                    ttl_string = "";
+                    if r[3]:
+                        ttl = float(r[3]) / 60.0
+                        ttl_string = "Time to live: " + str(int(ttl)) + "mins"
           
                     objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
