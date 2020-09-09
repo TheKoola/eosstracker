@@ -1778,8 +1778,8 @@
                 y.flightid = $7
 
             order by
-                y.callsign,
-                y.packet_time asc
+                y.thetime asc,
+                y.callsign
         ;
     ";
 
