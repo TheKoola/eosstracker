@@ -294,7 +294,7 @@
                                 min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels
                         </div>
                     </div>
-                    <div class="table-row">
+                    <!--<div class="table-row">
                         <div class="table-cell">Plot tracks:<br>
                             <p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are 
                                 always plotted for flights).</p>
@@ -302,7 +302,7 @@
                         <div class="table-cell">
                             <input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences">
                         </div>
-                    </div>
+                    </div> -->
                     <div class="table-row">
                         <div class="table-cell">Use Temperature and Pressure from KC0D Payloads:<br>
                             <p class="lorem">The KC0D payloads have the ability to measure temperature and pressure.  Enabling this option allows the landing prediction 

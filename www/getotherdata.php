@@ -257,7 +257,7 @@
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");
-        if (count($ray) > 1 && $config["plottracks"] == "on") {
+        /*if (count($ray) > 1 && $config["plottracks"] == "on") {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 $linestring[] = array($elem[1], $elem[0]);
@@ -266,6 +266,7 @@
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }\n", json_encode($linestring));
             unset ($linestring);
         }
+         */
     }
 
 /* This is for the ending of a FeatureCollection */
@@ -446,7 +447,7 @@
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");
-        if (count($ray) > 1 && $config["plottracks"] == "on") {
+        /*if (count($ray) > 1 && $config["plottracks"] == "on") {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 $linestring[] = array($elem[1], $elem[0]);
@@ -454,7 +455,7 @@
             printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s },", json_encode($callsign . "_path"));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }\n", json_encode($linestring));
             unset ($linestring);
-        }
+        }*/
     }
 
 /* This is for the ending of a FeatureCollection */
@@ -593,7 +594,7 @@
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");
-        if (count($ray) > 1 && $config["plottracks"] == "on") {
+        /*if (count($ray) > 1 && $config["plottracks"] == "on") {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 $linestring[] = array($elem[1], $elem[0]);
@@ -601,7 +602,7 @@
             printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s },", json_encode($callsign . "_path"));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }\n", json_encode($linestring));
             unset ($linestring);
-        }
+        }*/
     }
 
 /* This is for the ending of a FeatureCollection */
@@ -817,7 +818,7 @@
         );
         printf ("\"geometry\" : { \"type\" : \"Point\", \"coordinates\" : [%s, %s]}\n", $positioninfo[$callsign][3], $positioninfo[$callsign][2]);
         printf ("}");
-        if (count($ray) > 1 && $config["plottracks"] == "on") {
+        /*if (count($ray) > 1 && $config["plottracks"] == "on") {
             printf (", ");
             foreach ($ray as $k => $elem) {
                 $linestring[] = array($elem[1], $elem[0]);
@@ -825,7 +826,7 @@
             printf ("{ \"type\" : \"Feature\", \"properties\" : { \"id\" : %s },", json_encode($callsign . "_path"));
             printf ("\"geometry\" : { \"type\" : \"LineString\", \"coordinates\" : %s }  }\n", json_encode($linestring));
             unset ($linestring);
-        }
+        } */
     }
 
 /* This is for the ending of a FeatureCollection */
