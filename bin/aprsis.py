@@ -655,10 +655,10 @@ class APRSIS(object):
              
 
         except (ValueError, UnicodeEncodeError) as error:
-            ts = datetime.datetime.now()
-            thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Skipping DB insert for packet(", x, "):  ", error
-            sys.stdout.flush()
+            #ts = datetime.datetime.now()
+            #thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+            #print thetime, "Skipping DB insert for packet(", x, "):  ", error
+            #sys.stdout.flush()
             pass
 
         except pg.DatabaseError as error:
