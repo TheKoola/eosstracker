@@ -2616,13 +2616,72 @@ function getTrackers() {
                         if (flight.flightid == fid) {
                             var total_length = 0;
 
+                            // Landing predictions...
                             if (landingJSON.features.length > 0) {
-                                removeBalloonMarkers(flight.landinglayer);
+                                var x;
+                                var f = flight.landinglayer;
+                                var group = f.options.container;
+
+                                // Loop through each feature within the existing landing layer looking for the breadcrumbs
+                                group.eachLayer(function(l) {
+                                    var id = l.feature.properties.id;
+
+                                    // is this a breadcrumb?
+                                    if (l.feature.properties.id.indexOf("_predictionpoint_") !== -1) {
+                                        var y; 
+                                        var incoming = landingJSON.features;
+
+                                        // determine if this breadcrumb also appears within the incoming JSON
+                                        var foundit = false;
+                                        for (y in incoming) {
+                                            if (incoming[y].properties.id == id) {
+                                                foundit = true;
+                                                break;
+                                            }
+                                        }
+
+                                        // if the existing breadcrumb is not within the incoming JSON, then remove it from the map
+                                        if (!foundit && f.getFeature(id)) {
+                                            f.remove({"features": [{"properties": {"id": id}}]});
+                                        }
+                                    }
+                                });
+
+                                // Now add in all the incoming JSON
                                 flight.landinglayer.update(landingJSON);
                             }
 
+                            // The pre-flight predict file...
                             if (predictJSON.features.length > 0) {
-                                removeBalloonMarkers(flight.predictlayer);
+                                var x;
+                                var f = flight.predictlayer;
+                                var group = f.options.container;
+
+                                // Loop through each feature within the existing landing layer looking for the breadcrumbs
+                                group.eachLayer(function(l) {
+                                    var id = l.feature.properties.id;
+
+                                    // is this a breadcrumb?
+                                    if (l.feature.properties.id.indexOf("_predictionpoint_") !== -1) {
+                                        var y; 
+                                        var incoming = predictJSON.features;
+
+                                        // determine if this breadcrumb also appears within the incoming JSON
+                                        var foundit = false;
+                                        for (y in incoming) {
+                                            if (incoming[y].properties.id == id) {
+                                                foundit = true;
+                                                break;
+                                            }
+                                        }
+
+                                        // if the existing breadcrumb is not within the incoming JSON, then remove it from the map
+                                        if (!foundit && f.getFeature(id)) {
+                                            f.remove({"features": [{"properties": {"id": id}}]});
+                                        }
+                                    }
+                                });
+
                                 flight.predictlayer.update(predictJSON);
                             }
                             else {

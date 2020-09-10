@@ -1191,6 +1191,7 @@
                     //     -  the altitude span is ~4k feet, then the mod should be about 2.
                     $mod_value = floor((16 * $altitude_span / 100000.0) + 2);
 
+                    $breadcrumb_num = 0;
                     foreach ($thepath[$callsign] as $idx => $tuple) {
 
                         if ($i < $len - 1 && $i > 0 && $i % $mod_value == 0) {
@@ -1200,7 +1201,7 @@
                             $landingfeatures[] = array(
                                 "type" => "Feature",
                                 "properties" => array(
-                                    "id" => $callsign . "_predictionpoint_" . $i,
+                                    "id" => $callsign . "_predictionpoint_" . $breadcrumb_num,
                                     "callsign" => $callsign,
                                     "symbol" => "/J",
                                     "altitude" => $tuple[3],
@@ -1216,6 +1217,8 @@
                                     "coordinates" => array($tuple[1], $tuple[0])
                                 )
                             );
+
+                            $breadcrumb_num += 1;
                         }
                         $i += 1;
                     }
