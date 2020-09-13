@@ -31,11 +31,12 @@
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
-    var packetdata;
+    var packetdata = { "packets": []};
     var updatePacketsEvent;
-    var flightlist;
+    var flightList;
     var currentflight;
     var packetcount;
+    var lastUpdateTime = 0;
 
     // Initial chart size
     var chartwidth = getChartWidth();
@@ -590,11 +591,7 @@
     ***********/
     function displaypackets () {
         
-        // This is the list of packets
-        var packets = JSON.parse(packetdata);
-        var html = "";
-        var keys = Object.keys(packets);
-        var key;
+        var packets = packetdata.packets;
         var i = 0;
 
         // grab the search strings from the HTML fields...if the user has entered anything
@@ -604,6 +601,23 @@
         // The value of the AND, OR, NOT combiner on the HTML page
         var operation = document.getElementById("operation").value;
 
+        // which radio button is selected?
+        var r = selectedflight();
+
+        if (r != "allpackets") {
+            var a;
+
+            a = flightList.filter(obj => {return obj.flightid == r})[0];
+            if (a.beacons) {
+                packets = packets.filter(obj => {return a.beacons.includes(obj.callsign)});
+            }
+        }
+
+
+        // This is the list of packets
+        var html = "";
+        var keys = Object.keys(packets);
+        var key;
  
         // Loop through the packets applying the search filters
         for (key in keys) {
@@ -664,9 +678,13 @@
     function selectedflight() {
         var radios = document.getElementsByName("flight");
         var selectedValue;
+        var i;
 
-        for(var i = 0; i < radios.length; i++) {
-            if(radios[i].checked) selectedValue = radios[i].value;   
+        for(i = 0; i < radios.length; i++) {
+            if(radios[i].checked) {
+                selectedValue = radios[i].value;   
+                break;
+            }
         }
         return selectedValue;
     }
@@ -682,13 +700,14 @@
             var keys = Object.keys(jsondata);
             var key;
             var flight;
-            var allHtml = "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked> All packets (< 3hrs) &nbsp; &nbsp;</div>";
+            var allHtml = "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked> All packets &nbsp; &nbsp;</div>";
             var html = "<form>" + allHtml;
             var i = 0;
 
             for (key in keys) {
                 flight = jsondata[key].flightid;
-                html = html + "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\"> " + flight + "&nbsp; &nbsp;</div>";
+                html = html + "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\"> " 
+                    + flight + "&nbsp; &nbsp;</div>";
                 i += 1;
                 
             }
@@ -698,11 +717,9 @@
  
             currentflight = "allpackets";
             $('input[type="radio"]').on('click change', function(e) {
-                currentflight = selectedflight();
-                getrecentdata();
+                updatepackets();
             });
 
-            getrecentdata();
         });
   
 
@@ -744,22 +761,30 @@
     * and finally updates the HTML page with those packets
     ***********/
     function getrecentdata() {
-      var url;
- 
-      // Has the user selected All Flights or a specific active flight...this changes which list of packets we query for
-      if (currentflight == "allpackets")
-          url = "getallpackets.php";
-      else
-          url = "getpackets.php?flightid=" + currentflight;
+      var url = "getallpackets.php";
         
-      // set the packetdata variable to nothing...so we can update it with new data from the backend
-      packetdata = {};
+      // Check when the last time we got an update and append the URL to account for that.
+      if (lastUpdateTime > 0)
+          url = url + "?starttime=" + lastUpdateTime;
+
+      // Update the last update time just before getting the data update
+      lastUpdateTime = Math.floor(Date.now() / 1000.0);
 
       // Call the URL to get the latest list of raw APRS packets and assign that to the packetdata global variable. 
       $.get(url, function(data) { 
 
           // Update the global packetdata variable with the list of packets we get back
-          packetdata = data;
+          var existing = packetdata.packets;
+          var incoming = data.packets;
+
+          if (incoming.length > 0) {
+              var consolidated = incoming.concat(existing);
+              packetdata.packets = consolidated;
+          }
+
+          // Update the global flight to beacon mapping list
+          if (data.flights.length > 0)
+              flightList = data.flights;
 
           // Update the packet display so the user sees new packets
           updatepackets(); 
@@ -910,18 +935,16 @@
         // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
         //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter"
         //     itself thus improving the user map experience.
-        setTimeout (function () {
-            $.get("getposition.php", function(data) {
-                var lastposition = JSON.parse(data);
-                var lat = lastposition.geometry.coordinates[1];
-                var lon = lastposition.geometry.coordinates[0];
-                var zoom = 10;
+        $.get("getposition.php", function(data) {
+            var lastposition = JSON.parse(data);
+            var lat = lastposition.geometry.coordinates[1];
+            var lon = lastposition.geometry.coordinates[0];
+            var zoom = 10;
 
-                var maplink = document.getElementById("maplink");
-                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
-                maplink.setAttribute("href", url);
-            });
-        }, 10);
+            var maplink = document.getElementById("maplink");
+            var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+            maplink.setAttribute("href", url);
+        });
     }
 
 
@@ -953,22 +976,32 @@
         // Call the initialize function to get the page setup
         initialize();
 
+        setTimeout(function() {
+            getrecentdata();
+        }, 10);
+
         // populate initial values
     	initializeDataSelection();
 
         // populate the charts with data
-        getchartdata(createchart, "getpacketperformance.php");
-        getchartdata(createchart2, "getairdensity.php");
-        getchartdata(createchart3, "getdirewolfperformance.php");
-        getchartdata2(createchart4, "gettemppressure.php");
-        //getdigidata();
-        //gettrackerdata();
+        setTimeout(function() {
+            getchartdata(createchart, "getpacketperformance.php");
+            getchartdata(createchart2, "getairdensity.php");
+            getchartdata(createchart3, "getdirewolfperformance.php");
+            getchartdata2(createchart4, "gettemppressure.php");
+            //getdigidata();
+            //gettrackerdata();
+            
+            // add ascent/descent selector buttons to the temp and pressure chart
+            addButtons();
+        }, 10);
 
-        // add ascent/descent selector buttons to the temp and pressure chart
-        addButtons();
-
+        
         // Update the Map link in the menubar
-        updateMapLink();
+        setTimeout(function() {
+            updateMapLink();
+        }, 10);
+
 
         // Listen for screen resize changes and adjust the chart sizes accordingly
         window.addEventListener("resize", function() {
