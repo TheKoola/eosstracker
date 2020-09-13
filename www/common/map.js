@@ -2152,7 +2152,7 @@ function getTrackers() {
                 bindto: vertElement,
                 size: { width: getChartWidth(), height: getChartHeight() },
                 padding: {right: 10 },
-                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%H:%M:%S'  },
+                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%Y-%m-%d %H:%M:%S'  },
                 axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
                     type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                     y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, tick: { format: d3.format(",d") }  } },
@@ -2431,6 +2431,10 @@ function getTrackers() {
             var p = positionpackets[i];
             var time_string = p.time.split(" ")[1];
 
+            if (time_string.indexOf(".") !== -1)
+                time_string = time_string.split(".")[0];
+
+
             $("#" + p.flightid + "_lasttime_" + i).text(time_string);
             $("#" + p.flightid + "_lastcallsign_" + i).html(
                 "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + p.latitude + "', '" + p.longitude + "');\">" +  p.callsign + "</a>"
@@ -2460,6 +2464,9 @@ function getTrackers() {
         for (i = 0; i < max; i++) {
             var p = statuspackets[i];
             var time_string = p.time.split(" ")[1];
+
+            if (time_string.indexOf(".") !== -1)
+                time_string = time_string.split(".")[0];
 
             $("#" + p.flightid + "_statustime_" + i).text(time_string);
             $("#" + p.flightid + "_statuscallsign_" + i).text(p.callsign);

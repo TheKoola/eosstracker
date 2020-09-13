@@ -367,15 +367,56 @@
 
     $callsign_rows = sql_fetch_all($callsign_result);
 
+    $lastfewpackets = [];
     $beaconfeatures = [];
+    $beacons = [];
     $elapsed_secs = 999999;
     foreach ($callsign_rows as $beacon) {
         $cs = $beacon['callsign'];
 
+        # Execute this query first to determine if there are any recent packets.  This is a much lower cost query for repeatedly checking if a flight
+        # has any recent packets to process.
+        $check_query = "
+            select
+            coalesce(extract (epoch from now() - max(a.tm)), 999999) / 60.0 as elapsed_mins
+
+            from 
+            packets a
+
+            where 
+            a.callsign = $1
+            and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+            and a.location2d != ''
+            ;
+        ";
+
+        $check_result = pg_query_params($link, $check_query, array(
+            sql_escape_string($cs),
+            sql_escape_string($config["lookbackperiod"])
+        ));
+
+        if (!$check_result) {
+            db_error(sql_last_error());
+            sql_close($link);
+            return 0;
+        }
+     
+        $checkrows = sql_fetch_all($check_result);
+        $numcheckrows = sql_num_rows($check_result);
+
+        $recent_packets = false;
+        if ($numcheckrows > 0) {
+            if (end($checkrows)["elapsed_mins"] < $config["lookbackperiod"]) {
+                # do nothing...too much time has elapsed.
+                $recent_packets = true;                
+            }
+        }
+
+
         ## query the last packets from stations...
         $query = "
             select
-                date_trunc('second', y.thetime)::timestamp as thetime,
+                y.thetime,
                 y.packet_time,
                 y.callsign,
                 y.flightid,
@@ -409,10 +450,11 @@
                 y.channel,
                 y.heardfrom,
                 y.source,
-                round(cast(ST_DistanceSphere(y.location2d, st_geomfromtext($13, 4326))*.621371/1000 as numeric), 2) as distance,
-                round(cast(degrees(atan((y.altitude  - $14) / (cast(ST_DistanceSphere(y.location2d, st_geomfromtext($15, 4326)) as numeric) * 3.28084))) as numeric)) as angle,
-                round(cast(degrees(ST_Azimuth(st_geomfromtext($16, 4326), y.location2d)) as numeric)) as relative_bearing,
-                round($17) as mybearing,
+                y.hash,
+                round(cast(ST_DistanceSphere(y.location2d, st_geomfromtext($1, 4326))*.621371/1000 as numeric), 2) as distance,
+                round(cast(degrees(atan((y.altitude  - $2) / (cast(ST_DistanceSphere(y.location2d, st_geomfromtext($3, 4326)) as numeric) * 3.28084))) as numeric)) as angle,
+                round(cast(degrees(ST_Azimuth(st_geomfromtext($4, 4326), y.location2d)) as numeric)) as relative_bearing,
+                round($5) as mybearing,
                 floor(lp.ttl / 60.0) as ttl,
                 y.elapsed_secs
 
@@ -447,160 +489,29 @@
                         c.channel,
                         c.source
 
-                        -- This is the union below here...
-                        from 
-                        (
-                            -- This is the internet-only side of the union
-                            select distinct
-                            date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-                            case
-                                when a.raw similar to '%[0-9]{6}h%' then
-                                    date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
-                                else
-                                    date_trunc('milliseconds', a.tm)::time without time zone
-                            end as packet_time,
-                            a.callsign, 
-                            f.flightid,
-                            a.altitude,
-                            a.comment, 
-                            a.symbol, 
-                            a.speed_mph,
-                            a.bearing,
-                            a.location2d,
-                            cast(ST_Y(a.location2d) as numeric) as lat,
-                            cast(ST_X(a.location2d) as numeric) as lon,
-                            NULL as sourcename,
-                            NULL as heardfrom,
-                            -1 as freq,
-                            -1 as channel,
-
-                            -- The temperature (if available) from any KC0D packets
-                            case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                            else
-                                NULL
-                            end as temperature_k,
-
-                            -- The pressure (if available) from any KC0D packets
-                            case
-                                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                    round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                                else
-                                    NULL
-                            end as pressure_pa,
-                            a.ptype,
-                            a.hash,
-                            a.raw,
-                            a.source
-
-                            from packets a 
-                            left outer join (
-                                select distinct on (z.hash)
-                                z.hash,
-                                z.callsign,
-                                max(z.tm) as thetime
-
-                                from
-                                packets z
-
-                                where
-                                z.location2d != '' 
-                                and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-                                and z.tm > (to_timestamp($9)::timestamp)
-                                and z.source = 'direwolf'
-
-                                group by
-                                z.hash,
-                                z.callsign
-
-                                order by
-                                z.hash
-                            ) as dw on dw.callsign = a.callsign and dw.hash = a.hash and dw.thetime >= (a.tm - interval '00:00:08') and dw.thetime < (a.tm + interval '00:00:08'),
-                            flights f,
-                            flightmap fm
-
-                            where 
-                            a.location2d != '' 
-                            and dw.hash is null
-                            and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
-                            and a.tm > (to_timestamp($10)::timestamp)
-                            and a.source = 'other'
-                            and fm.flightid = f.flightid
-                            and f.active = 'y'
-                            and a.callsign = fm.callsign
-
-                        union
-                        
-
-                        -- This is the RF-only side of the union
-                        select 
-                            z.thetime,
-                            z.packet_time,
-                            z.callsign,
-                            z.flightid,
-                            z.altitude,
-                            z.comment,
-                            z.symbol,
-                            z.speed_mph,
-                            z.bearing,
-                            z.location2d,
-                            z.lat,
-                            z.lon,
-                            z.sourcename,
-                            case when array_length(z.path, 1) > 0 then
-                                z.path[array_length(z.path, 1)]
-                            else
-                                z.sourcename
-                            end as heardfrom,
-                            z.freq,
-                            z.channel,
-                            z.temperature_k,
-                            z.pressure_pa,
-                            z.ptype,
-                            z.hash,
-                            z.raw,
-                            z.source
-                            
-                            from
-                                (
-                                select distinct
+                        from (
+                                select 
                                 date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                                 case
                                     when a.raw similar to '%[0-9]{6}h%' then
-                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $4)::time)::time without time zone
+                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $6)::time)::time without time zone
                                     else
                                         date_trunc('milliseconds', a.tm)::time without time zone
                                 end as packet_time,
                                 a.callsign, 
                                 f.flightid,
                                 a.altitude,
-                                a.location2d,
                                 a.comment, 
                                 a.symbol, 
                                 a.speed_mph,
                                 a.bearing,
+                                a.location2d,
                                 cast(ST_Y(a.location2d) as numeric) as lat,
                                 cast(ST_X(a.location2d) as numeric) as lon,
-
-                                -- This is the source name.  Basically the name of the RF station that we heard this packet from
-                                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
-                                    split_part(a.raw, '>', 1)
-                                else
-                                    NULL
-                                end as sourcename,
-
-                                -- The frequency this packet was heard on
-                                round(a.frequency / 1000000.0,3) as freq, 
-
-                                -- The Dire Wolf channel
+                                NULL as sourcename,
+                                NULL as heardfrom,
+                                a.frequency as freq,
                                 a.channel,
-
-                                -- The ranking of whether this was heard directly or via a digipeater
-                                dense_rank () over (partition by a.hash order by cast(
-                                    cardinality((string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]) as int) asc, 
-                                    a.channel asc,
-                                    date_trunc('millisecond', a.tm) asc
-                                ), 
 
                                 -- The temperature (if available) from any KC0D packets
                                 case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
@@ -616,67 +527,34 @@
                                     else
                                         NULL
                                 end as pressure_pa,
-
                                 a.ptype,
                                 a.hash,
                                 a.raw,
-                                case when a.raw similar to '%>%:%' then
-                                    (string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]
-                                else
-                                    NULL
-                                end as path,
-                                a.source
+                                a.source,
+                                dense_rank () over (partition by 
+                                    a.hash,
+                                    date_trunc('minute', a.tm)
 
-                                from packets a 
-                                left outer join (
-                                    select distinct on (z.hash)
-                                    z.hash,
-                                    z.callsign,
-                                    max(z.tm) as thetime
+                                    order by 
+                                    a.tm asc
+                                )
 
-                                    from
-                                    packets z
-
-                                    where
-                                    z.location2d != '' 
-                                    and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
-                                    and z.tm > (to_timestamp($11)::timestamp)
-                                    and z.source = 'other'
-
-                                    group by
-                                    z.hash,
-                                    z.callsign
-
-                                    order by
-                                    z.hash
-                                ) as dw on dw.callsign = a.callsign and dw.hash = a.hash and dw.thetime >= (a.tm + interval '00:00:08') and dw.thetime < (a.tm + interval '00:00:16'),
+                                from 
+                                packets a,
                                 flights f,
                                 flightmap fm
 
                                 where 
-                                dw.hash is null
-                                and a.location2d != '' 
-                                and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
-                                and a.tm > (to_timestamp($12)::timestamp)
+                                a.location2d != '' 
+                                and a.tm > (now() - (to_char(($7)::interval, 'HH24:MI:SS'))::time) 
+                                and a.tm > (to_timestamp($8)::timestamp)
                                 and fm.flightid = f.flightid
                                 and f.active = 'y'
                                 and a.callsign = fm.callsign
-                                and a.source = 'direwolf'
 
-                                order by 
-                                a.hash,
-                                thetime,
-                                a.callsign) as z
-
-                            where 
-                            z.dense_rank = 1
-
-                            order by
-                            thetime,
-                            callsign
+                                order by a.tm asc
 
                         ) as c
-                        -- c is the union
 
                     ) as y
                     left outer join
@@ -720,77 +598,100 @@
                     on lp.flightid = y.flightid and lp.callsign = y.callsign
 
                 where 
-                    y.callsign = $7
-                    and y.flightid = $8
+                    y.callsign = $9
+                    and y.flightid = $10
 
                 order by
                     y.callsign,
                     y.packet_time asc
             ;
+
         ";
 
 
-        $result = pg_query_params($link, $query, array(
-            sql_escape_string($config["timezone"]), 
-            sql_escape_string($config["lookbackperiod"] . " minute"), 
-            sql_escape_string($config["lookbackperiod"] . " minute"), 
-            sql_escape_string($config["timezone"]), 
-            sql_escape_string($config["lookbackperiod"] . " minute"), 
-            sql_escape_string($config["lookbackperiod"] . " minute"), 
-            sql_escape_string($cs),
-            sql_escape_string($get_flightid),
-            $get_starttime,
-            $get_starttime,
-            $get_starttime,
-            $get_starttime,
-            $gps_location2d,
-            $gps_altitude, 
-            $gps_location2d,
-            $gps_location2d,
-            $gps_bearing
-            )
-        );
-
-        if (!$result) {
-            db_error(sql_last_error());
-            sql_close($link);
-            return 0;
-        }
-     
-        $rows = sql_fetch_all($result);
-        $numrows = sql_num_rows($result);
-
-        if ($numrows > 0) {
-            $last_packet = end($rows);
-            $beaconfeatures[] = createFeatureJSON($last_packet);
-            $beaconfeatures = array_merge($beaconfeatures, createOtherJSON($rows));
-            $beacons[] = array(
-                "callsign" => $cs, 
-                "json" => array(
-                    "type" => "FeatureCollection",
-                    "properties" => array("name" => "Beacon " . $cs),
-                    "features" => $beaconfeatures
+        if ($recent_packets) {
+            $result = pg_query_params($link, $query, array(
+                $gps_location2d,
+                $gps_altitude, 
+                $gps_location2d,
+                $gps_location2d,
+                $gps_bearing,
+                sql_escape_string($config["timezone"]), 
+                sql_escape_string($config["lookbackperiod"] . " minute"), 
+                $get_starttime,
+                sql_escape_string($cs),
+                sql_escape_string($get_flightid)
                 )
             );
 
-            if ($last_packet["elapsed_secs"] < $elapsed_secs) {
-                $elapsed_secs = $last_packet["elapsed_secs"];
+            if (!$result) {
+                db_error(sql_last_error());
+                sql_close($link);
+                return 0;
             }
-        }
-        else {
-            $beacons[] = array(
-                "callsign" => $cs, 
-                "json" => array(
-                    "type" => "FeatureCollection",
-                    "properties" => array("name" => "Beacon " . $cs),
-                    "features" => []
-                )
-            );
+         
+            $rows = sql_fetch_all($result);
+            $numrows = sql_num_rows($result);
 
+            if ($numrows > 0) {
+                $last_packet = end($rows);
+                $beaconfeatures[] = createFeatureJSON($last_packet);
+                $beaconfeatures = array_merge($beaconfeatures, createOtherJSON($rows));
+                $beacons[] = array(
+                    "callsign" => $cs, 
+                    "json" => array(
+                        "type" => "FeatureCollection",
+                        "properties" => array("name" => "Beacon " . $cs),
+                        "features" => $beaconfeatures
+                    )
+                );
+
+                if ($last_packet["elapsed_secs"] < $elapsed_secs) {
+                    $elapsed_secs = $last_packet["elapsed_secs"];
+                }
+
+                for ($i = $numrows - 1; $i > $numrows - 6 && $i >= 0; $i--) {
+                    $r = $rows[$i];
+                    $lastfewpackets[] = array(
+                        "time" => $r["thetime"],
+                        "flightid" => $r["flightid"],
+                        "callsign" => $r["callsign"],
+                        "speed" => $r["speed_mph"],
+                        "verticalrate" => $r["vert_rate"],
+                        "altitude" => $r["altitude"],
+                        "latitude" => $r["latitude"],
+                        "longitude" => $r["longitude"],
+                        "bearing" => $r["bearing"],
+                        "source" => $r["source"],
+                        "comment" => $r["comment"],
+                        "symbol" => $r["symbol"]
+                    );
+                }
+            }
+            else {
+                $beacons[] = array(
+                    "callsign" => $cs, 
+                    "json" => array(
+                        "type" => "FeatureCollection",
+                        "properties" => array("name" => "Beacon " . $cs),
+                        "features" => []
+                    )
+                );
+
+            }
         }
 
     }
 
+    function cmp($a, $b) {
+        if ($a["time"] == $b["time"])
+            return 0;
+
+        return ($a["time"] > $b["time"] ? -1 : 1);
+    }
+
+    // Now sort through the last several packets to get to a consolidated, sorted list.
+    usort($lastfewpackets, "cmp");
 
     $beaconJSON = array(
         "type" => "FeatureCollection", 
@@ -1157,16 +1058,18 @@
             // This is the linestring for the predicted flight path
             // This is the flight path from the last location of the flight to the predicted landing spot (the "X" marks the spot).
             if (array_key_exists($callsign, $flightpath)) {
-                if (array_key_exists("coordinates", $flightpath[$callsign])) {
-                    $landingfeatures[] = array(
-                        "type" => "Feature",
-                        "properties" => array(
-                            "id" => $callsign . "_flightpath_landing",
-                            "objecttype" => "landingpredictionflightpath",
-                            "time" => $timevalue
-                        ),
-                        "geometry" => $flightpath[$callsign]
-                    );
+                if ($flightpath[$callsign]) {
+                    if (array_key_exists("coordinates", $flightpath[$callsign])) {
+                        $landingfeatures[] = array(
+                            "type" => "Feature",
+                            "properties" => array(
+                                "id" => $callsign . "_flightpath_landing",
+                                "objecttype" => "landingpredictionflightpath",
+                                "time" => $timevalue
+                            ),
+                            "geometry" => $flightpath[$callsign]
+                        );
+                    }
                 }
             }
 
@@ -1489,435 +1392,62 @@
     $packetlistJSON["statuspackets"] = [];
     $packetlistJSON["lastpacketpath"] = [];
 
-    $query = "
-        select
-            y.thetime,
-            y.packet_time,
-            y.callsign,
-            y.flightid,
-            y.comment,
-            y.symbol,
-            round(y.altitude) as altitude,
-            round(y.speed_mph) as speed_mph,
-            round(y.bearing) as bearing,
-            round(y.lat, 6) as latitude,
-            round(y.lon, 6) as longitude,
-            y.ptype,
-            y.hash, 
-            y.raw,
-            case when y.delta_secs > 0 then
-                round((60 * (y.altitude - y.previous_altitude) / y.delta_secs)::numeric)
-            else
-                0
-            end as vert_rate,
-            case when y.delta_secs > 0 then
-                (y.lat - y.previous_lat) / y.delta_secs
-            else
-                0
-            end as lat_rate,
-            case when y.delta_secs > 0 then
-                (y.lon - y.previous_lon) / y.delta_secs
-            else
-                0
-            end as lon_rate,
-            round(y.elapsed_secs / 60.0) as elapsed_mins,
-            round((y.temperature_k - 273.15) * 9 / 5 + 32, 2) as temperature_f,
-            round(y.pressure_pa / 101325, 4) as pressure_atm,
-            y.sourcename,
-            y.freq,
-            y.channel,
-            y.heardfrom,
-            y.source
+    $status_query = "
+        select 
+        date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+        f.flightid,
+        a.callsign, 
+        a.raw
 
+        from 
+        packets a,
+        flights f,
+        flightmap fm
 
-            from 
-            (
-                select
-                    c.thetime,
-                    c.packet_time,
-                    c.callsign,
-                    c.flightid,
-                    c.altitude,
-                    c.comment,
-                    c.symbol,
-                    c.speed_mph,
-                    c.bearing,
-                    c.lat,
-                    c.lon,
-                    c.temperature_k,
-                    c.pressure_pa,
-                    c.ptype, 
-                    c.hash,
-                    c.raw,
-                    lag(c.altitude, 1) over(order by c.packet_time)  as previous_altitude,
-                    lag(c.lat, 1) over (order by c.packet_time) as previous_lat,
-                    lag(c.lon, 1) over (order by c.packet_time) as previous_lon,
-                    extract ('epoch' from (c.packet_time - lag(c.packet_time, 1) over (order by c.packet_time))) as delta_secs,
-                    extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
-                    c.sourcename,
-                    c.heardfrom,
-                    c.freq,
-                    c.channel,
-                    c.source
+        where 
+        a.ptype = '>'
+        and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
+        and a.tm > (to_timestamp($2)::timestamp)
+        and fm.flightid = f.flightid
+        and f.active = 'y'
+        and a.callsign = fm.callsign
+        and f.flightid = $3
 
-                    -- This is the union below here...
-                    from 
-                    (
-                        -- This is the internet-only side of the union
-                        select distinct
-                        date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-                        case
-                            when a.raw similar to '%[0-9]{6}h%' then
-                                date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::timestamp)::timestamp without time zone
-                            else
-                                date_trunc('milliseconds', a.tm)::timestamp without time zone
-                        end as packet_time,
-                        a.callsign, 
-                        f.flightid,
-                        a.altitude,
-                        a.comment, 
-                        a.symbol, 
-                        a.speed_mph,
-                        a.bearing,
-                        cast(ST_Y(a.location2d) as numeric) as lat,
-                        cast(ST_X(a.location2d) as numeric) as lon,
-                        NULL as sourcename,
-                        NULL as heardfrom,
-                        -1 as freq,
-                        -1 as channel,
+        order by
+        a.tm desc,
+        a.callsign
 
-                        -- The temperature (if available) from any KC0D packets
-                        case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                        else
-                            NULL
-                        end as temperature_k,
-
-                        -- The pressure (if available) from any KC0D packets
-                        case
-                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                            else
-                                NULL
-                        end as pressure_pa,
-                        a.ptype,
-                        a.hash,
-                        a.raw,
-                        a.source
-
-                        from packets a 
-                        left outer join (
-                            select distinct on (z.hash)
-                            z.hash,
-                            z.callsign,
-                            max(z.tm) as thetime
-
-                            from
-                            packets z
-
-                            where
-                            z.location2d != '' 
-                            and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-                            and z.tm > to_timestamp(cast($8 as bigint))
-                            and z.source = 'direwolf'
-
-                            group by
-                            z.hash,
-                            z.callsign
-
-                            order by
-                            z.hash
-                        ) as dw on dw.callsign = a.callsign and dw.hash = a.hash and dw.thetime >= (a.tm - interval '00:00:08') and dw.thetime < (a.tm + interval '00:00:08'),
-                        flights f,
-                        flightmap fm
-
-                        where 
-                        a.location2d != '' 
-                        and dw.hash is null
-                        and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
-                        and a.tm > to_timestamp(cast($9 as bigint))
-                        and a.source = 'other'
-                        and fm.flightid = f.flightid
-                        and f.active = 'y'
-                        and a.callsign = fm.callsign
-
-                    union
-                    
-
-                    -- This is the RF-only side of the union
-                    select 
-                        z.thetime,
-                        z.packet_time,
-                        z.callsign,
-                        z.flightid,
-                        z.altitude,
-                        z.comment,
-                        z.symbol,
-                        z.speed_mph,
-                        z.bearing,
-                        z.lat,
-                        z.lon,
-                        z.sourcename,
-                        case when array_length(z.path, 1) > 0 then
-                            z.path[array_length(z.path, 1)]
-                        else
-                            z.sourcename
-                        end as heardfrom,
-                        z.freq,
-                        z.channel,
-                        z.temperature_k,
-                        z.pressure_pa,
-                        z.ptype,
-                        z.hash,
-                        z.raw,
-                        z.source
-                        
-                        from
-                            (
-                            select distinct
-                            date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-                            case
-                                when a.raw similar to '%[0-9]{6}h%' then
-                                    date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $4)::timestamp)::timestamp without time zone
-                                else
-                                    date_trunc('milliseconds', a.tm)::timestamp without time zone
-                            end as packet_time,
-                            a.callsign, 
-                            f.flightid,
-                            a.altitude,
-                            a.comment, 
-                            a.symbol, 
-                            a.speed_mph,
-                            a.bearing,
-                            cast(ST_Y(a.location2d) as numeric) as lat,
-                            cast(ST_X(a.location2d) as numeric) as lon,
-
-                            -- This is the source name.  Basically the name of the RF station that we heard this packet from
-                            case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
-                                split_part(a.raw, '>', 1)
-                            else
-                                NULL
-                            end as sourcename,
-
-                            -- The frequency this packet was heard on
-                            round(a.frequency / 1000000.0,3) as freq, 
-
-                            -- The Dire Wolf channel
-                            a.channel,
-
-                            -- The ranking of whether this was heard directly or via a digipeater
-                            dense_rank () over (partition by a.hash order by cast(
-                                cardinality((string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]) as int) asc, 
-                                a.channel asc,
-                                date_trunc('millisecond', a.tm) asc
-                            ), 
-
-                            -- The temperature (if available) from any KC0D packets
-                            case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                            else
-                                NULL
-                            end as temperature_k,
-
-                            -- The pressure (if available) from any KC0D packets
-                            case
-                                when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                    round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                                else
-                                    NULL
-                            end as pressure_pa,
-
-                            a.ptype,
-                            a.hash,
-                            a.raw,
-                            case when a.raw similar to '%>%:%' then
-                                (string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]
-                            else
-                                NULL
-                            end as path,
-                            a.source
-
-                            from packets a 
-                            left outer join (
-                                select distinct on (z.hash)
-                                z.hash,
-                                z.callsign,
-                                max(z.tm) as thetime
-
-                                from
-                                packets z
-
-                                where
-                                z.location2d != '' 
-                                and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
-                                and z.tm > to_timestamp(cast($10 as bigint))
-                                and z.source = 'other'
-
-                                group by
-                                z.hash,
-                                z.callsign
-
-                                order by
-                                z.hash
-                            ) as dw on dw.callsign = a.callsign and dw.hash = a.hash and dw.thetime >= (a.tm + interval '00:00:08') and dw.thetime < (a.tm + interval '00:00:16'),
-                            flights f,
-                            flightmap fm
-
-                            where 
-                            dw.hash is null
-                            and a.location2d != '' 
-                            and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
-                            and a.tm > to_timestamp(cast($11 as bigint))
-                            and fm.flightid = f.flightid
-                            and f.active = 'y'
-                            and a.callsign = fm.callsign
-                            and a.source = 'direwolf'
-
-                            order by 
-                            a.hash,
-                            thetime,
-                            a.callsign) as z
-
-                        where 
-                        z.dense_rank = 1
-
-                        order by
-                        thetime,
-                        callsign
-
-                    ) as c
-                    -- c is the union
-
-                ) as y
-                -- y uses the window functions (i.e. lag) to calculate vert, lat, and lon rates.
-
-            where 
-                y.flightid = $7
-
-            order by
-                y.thetime asc,
-                y.callsign
-        ;
+        limit 5;
     ";
 
-
-    $result = pg_query_params($link, $query, array(
-        sql_escape_string($config["timezone"]), 
+    $status_result = pg_query_params($link, $status_query, array(
         sql_escape_string($config["lookbackperiod"] . " minute"), 
-        sql_escape_string($config["lookbackperiod"] . " minute"), 
-        sql_escape_string($config["timezone"]), 
-        sql_escape_string($config["lookbackperiod"] . " minute"), 
-        sql_escape_string($config["lookbackperiod"] . " minute"), 
-        sql_escape_string($get_flightid),
         $get_starttime,
-        $get_starttime,
-        $get_starttime,
-        $get_starttime
-        )
-    );
+        sql_escape_string($get_flightid)
+    ));
 
-
-    if (!$result) {
+    if (!$status_result) {
         db_error(sql_last_error());
         sql_close($link);
         return 0;
     }
- 
-    // Get the last 5 packets
-    $get_num = 5;
 
-    $firsttime = 1; 
-    $numrows = sql_num_rows($result);
-    $allpackets = array();
-    $packets = array();
-    $statuspackets = array();
-    $peak_altitude = 0;
 
-    $time_prev = [];
-    $altitude_prev = [];
-    $hash_prev = [];
-    $verticalrate = [];
-    $i = 0;
-    while ($row = sql_fetch_array($result)) {
-
-        // all the data from this return row...
-        $thetime = $row['thetime'];
-        $packettime = $row['packet_time'];
-        $callsign = $row['callsign'];
-        $comment = $row['comment'];
-        $symbol = $row['symbol'];
-        $latitude = $row['latitude'];
-        $longitude = $row['longitude'];
-        $altitude = $row['altitude'];
-        $bearing = $row['bearing'];
-        $speed_mph = $row['speed_mph'];
-        $vert_rate = $row['vert_rate'];
-        $hash = $row['hash'];
-        $raw = $row['raw'];
-        $ptype = $row['ptype'];
-        $source = $row['source'];
-
-        if (strpos($thetime, ".") === false) {
-            $time_trunc = $thetime;
-            $microseconds = 0;
+    $num_status_rows = sql_num_rows($status_result);
+    if ($num_status_rows > 0) {
+        while ($status_row = sql_fetch_array($status_result)) {
+            $packetlistJSON["statuspackets"][] = array(
+                "time" => $status_row["thetime"],
+                "flightid" => $status_row["flightid"],
+                "callsign" => $status_row["callsign"],
+                "packet" => $status_row["raw"]
+            );
         }
-        else
-            list($time_trunc, $microseconds) = explode(".", $thetime);
-
-        $allpackets[$callsign][] = array($time_trunc, $get_flightid, $callsign, $raw, $source);
-
-        if ($latitude != '' && $longitude !='' && $altitude != '') {
-            // this is a position packet
-            $packets[] = array($time_trunc, $callsign, $get_flightid, $symbol, $latitude, $longitude, $altitude, $comment, $speed_mph, $bearing, $vert_rate, $source);
-        }
-        else if ($ptype == ">") {
-            // this is a status packet
-            $r = preg_split('/:>/', $raw);
-            $statuspackets[] = array($time_trunc, $get_flightid, $callsign, $r[1]);
-        }
-    }    
-
-
-    $i = 0;
-    $positioninfo = array_reverse($packets);
-    foreach ($positioninfo as $row) {
-        if ($i >= $get_num)
-            break;
-
-        $packetlistJSON["positionpackets"][] = array(
-            "time" => $row[0],
-            "callsign" => $row[1],
-            "flightid" => $row[2],
-            "symbol" => $row[3],
-            "latitude" => $row[4],
-            "longitude" => $row[5],
-            "altitude" => $row[6],
-            "comment" => $row[7],
-            "speed" => $row[8],
-            "bearing" => $row[9],
-            "verticalrate" => $row[10],
-            "source" => $row[11]
-        );
-
-        $i++;
     }
 
-    $i = 0;
-    $statuspackets_rev = array_reverse($statuspackets);
-    foreach ($statuspackets_rev as $row) {
-        if ($i >= $get_num)
-            break;
+    $packetlistJSON["positionpackets"] = $lastfewpackets;
 
-        $packetlistJSON["statuspackets"][] = array(
-            "time" => $row[0],
-            "flightid" => $row[1],
-            "callsign" => $row[2],
-            "packet" => $row[3]
-        );
-
-        $i++;
-    }
-
+    /*
     $firsttime = 1;
     ksort($allpackets);
     foreach ($allpackets as $c => $ray) {
@@ -1927,8 +1457,6 @@
         foreach ($c_rev as $row) {
             if ($i >= 10)
                 break;
-            //$pattern = '/qAO,' . $status["direwolfcallsign"] . '*:.*/i';
-            //$rf = preg_match($pattern, $row[3]);
             if ($row[4] == 'direwolf')
                 $lastpath = $lastpath . "R";
             else
@@ -1945,6 +1473,8 @@
         }
         $firsttime = 0;
     }
+     */
+
     $packetlistJSON["flightid"] = $get_flightid;
 
 
@@ -2063,7 +1593,7 @@
         select distinct on (f.flightid, a.callsign, thetime) 
         a.callsign, 
         f.flightid, 
-        date_trunc('milliseconds', a.tm)::time without time zone as thetime, 
+        date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime, 
         case
             when a.raw similar to '%[0-9]{6}h%' then 
                 date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
