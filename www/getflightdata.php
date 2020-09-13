@@ -392,7 +392,7 @@
 
         $check_result = pg_query_params($link, $check_query, array(
             sql_escape_string($cs),
-            sql_escape_string($config["lookbackperiod"])
+            sql_escape_string($config["lookbackperiod"] . " minute")
         ));
 
         if (!$check_result) {
@@ -407,7 +407,6 @@
         $recent_packets = false;
         if ($numcheckrows > 0) {
             if (end($checkrows)["elapsed_mins"] < $config["lookbackperiod"]) {
-                # do nothing...too much time has elapsed.
                 $recent_packets = true;                
             }
         }
