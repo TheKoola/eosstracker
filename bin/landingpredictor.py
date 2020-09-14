@@ -1100,6 +1100,8 @@ class LandingPredictor(PredictorBase):
                                 and fm.flightid = f.flightid
                                 and f.active = 'y'
                                 and a.callsign = fm.callsign
+                                and a.altitude > 0
+                                and a.callsign = %s
 
                                 order by a.tm asc
 
@@ -1145,9 +1147,6 @@ class LandingPredictor(PredictorBase):
                         r.tm
                     ) as lp
                     on lp.flightid = y.flightid and lp.callsign = y.callsign
-
-                where 
-                    y.callsign = %s
 
                 order by
                     y.callsign,
