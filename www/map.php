@@ -491,6 +491,7 @@
             <span style="font-family: monospace; font-size: 1.4em;"><mark style="background-color: yellow;">I</mark></span>
              - packet received over the Internet
          </p>
+         <p>Note: receive path is for position packets only.</p>
     </div>
 
 
