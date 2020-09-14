@@ -459,7 +459,7 @@
             printf ("        <div class=\"table-row\">");
             printf ("            <div class=\"table-cell\"><span id=\"%s_statustime_%d\"></span></div>", $row['flightid'], $i);
             printf ("            <div class=\"table-cell\"><span id=\"%s_statuscallsign_%d\"></span></div>", $row['flightid'], $i);
-            printf ("            <div class=\"table-cell\"><span id=\"%s_statuspacket_%d\"></span></div>", $row['flightid'], $i);
+            printf ("            <div class=\"table-cell\" style=\"word-break: break-all;\"><span id=\"%s_statuspacket_%d\"></span></div>", $row['flightid'], $i);
             printf ("        </div>");
         }
         printf ("    </div>");
