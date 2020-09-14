@@ -557,6 +557,9 @@
 
                         ) as c
 
+                        where
+                        c.dense_rank = 1
+
                     ) as y
                     left outer join
                     (
