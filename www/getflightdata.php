@@ -550,6 +550,8 @@
                                 and fm.flightid = f.flightid
                                 and f.active = 'y'
                                 and a.callsign = fm.callsign
+                                and a.altitude > 0
+                                and a.callsign = $9
 
                                 order by a.tm asc
 
@@ -596,10 +598,6 @@
                     ) as lp
                     on lp.flightid = y.flightid and lp.callsign = y.callsign
 
-                where 
-                    y.callsign = $9
-                    and y.flightid = $10
-
                 order by
                     y.callsign,
                     y.packet_time asc
@@ -618,8 +616,7 @@
                 sql_escape_string($config["timezone"]), 
                 sql_escape_string($config["lookbackperiod"] . " minute"), 
                 $get_starttime,
-                sql_escape_string($cs),
-                sql_escape_string($get_flightid)
+                sql_escape_string($cs)
                 )
             );
 
