@@ -453,7 +453,7 @@
         printf ("        <div class=\"table-row\">");
         printf ("            <div class=\"table-cell header toprow\">Time</div>");
         printf ("            <div class=\"table-cell header toprow\">Callsign</div>");
-        printf ("            <div class=\"table-cell header toprow\">Packet</div>");
+        printf ("            <div class=\"table-cell header toprow\" style=\"text-align: center;\">Packet</div>");
         printf ("        </div>");
         for ($i = 0; $i < 5; $i++) {
             printf ("        <div class=\"table-row\">");
