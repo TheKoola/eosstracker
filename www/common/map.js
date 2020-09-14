@@ -2959,6 +2959,9 @@ function getTrackers() {
                 var packetcell = document.createElement("DIV");
                 var time_string = lastPacketPath[i].time.split(" ")[1];
 
+                if (time_string.indexOf(".") !== -1)
+                    time_string = time_string.split(".")[0];
+
                 beaconcell.setAttribute("class", "table-cell");
                 timecell.setAttribute("class", "table-cell");
                 packetcell.setAttribute("class", "table-cell");
