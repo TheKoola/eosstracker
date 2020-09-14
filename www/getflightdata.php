@@ -122,7 +122,9 @@
         $json["properties"]["rel_bearing"] = $packet_array["relative_bearing"];
         $json["properties"]["rel_angle"] = $packet_array["angle"];
         $json["properties"]["rel_distance"] = $packet_array["distance"];
-        $json["properties"]["source"] = $packet_array["source"];
+        $json["properties"]["source"] = ($packet_array["source"] == null ? "" : $packet_array["source"]);
+        $json["properties"]["heardfrom"] = ($packet_array["heardfrom"] == null ? "" : $packet_array["heardfrom"]);
+        $json["properties"]["frequency"] = ($packet_array["freq"] == null ? "" : $packet_array["freq"]);
         $json["properties"]["ttl"] = ($packet_array["ttl"] == null ? "" : $packet_array["ttl"]);
         $json["geometry"]["type"] = "Point";
         $json["geometry"]["coordinates"][]= $packet_array["longitude"];
@@ -207,6 +209,8 @@
             $tmpJson["properties"]["temperature"] = ($row["temperature_f"] == null ? "" : $row["temperature_f"]);
             $tmpJson["properties"]["pressure"] = ($row["pressure_atm"] == null ? "" : $row["pressure_atm"]);
             $tmpJson["properties"]["source"] = ($row["source"] == null ? "" : $row["source"]);
+            $tmpJson["properties"]["heardfrom"] = ($row["heardfrom"] == null ? "" : $row["heardfrom"]);
+            $tmpJson["properties"]["frequency"] = ($row["freq"] == null ? "" : $row["freq"]);
             $tmpJson["properties"]["ttl"] = ($row["ttl"] == null ? "" : $row["ttl"]);
             $tmpJson["geometry"]["type"] = "Point";
             $tmpJson["geometry"]["coordinates"][]= $row["longitude"];
@@ -367,6 +371,8 @@
 
     $callsign_rows = sql_fetch_all($callsign_result);
 
+    $packetlistJSON = [];
+    $packetlistJSON["lastpacketpath"] = [];
     $lastfewpackets = [];
     $beaconfeatures = [];
     $beacons = [];
@@ -483,7 +489,11 @@
                         extract ('epoch' from (c.packet_time - lag(c.packet_time, 1) over (order by c.packet_time))) as delta_secs,
                         extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
                         c.sourcename,
-                        c.heardfrom,
+                        case when array_length(c.path, 1) > 0 then
+                            c.path[array_length(c.path, 1)]
+                        else
+                            c.sourcename
+                        end as heardfrom,
                         c.freq,
                         c.channel,
                         c.source
@@ -507,8 +517,11 @@
                                 a.location2d,
                                 cast(ST_Y(a.location2d) as numeric) as lat,
                                 cast(ST_X(a.location2d) as numeric) as lon,
-                                NULL as sourcename,
-                                NULL as heardfrom,
+                                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%%' then
+                                    split_part(a.raw, '>', 1)
+                                else
+                                    NULL
+                                end as sourcename,
                                 a.frequency as freq,
                                 a.channel,
 
@@ -535,8 +548,41 @@
                                     date_trunc('minute', a.tm)
 
                                     order by 
-                                    a.tm asc
-                                )
+                                    a.tm asc,
+                                    --date_trunc('second', a.tm) asc,
+                                    cast(
+                                        cardinality(
+                                            (
+                                                array_remove(
+                                                string_to_array(
+                                                    regexp_replace(
+                                                        split_part(
+                                                            split_part(a.raw, ':', 1),
+                                                            '>',
+                                                            2),
+                                                        ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                                        '',
+                                                        'g'),
+                                                    ',',''),
+                                                NULL)
+                                            )[2:]
+                                    ) as int) asc,
+                                    a.source asc,
+                                    a.channel asc
+                                ),
+                                case when a.raw similar to '%>%:%' then
+                                    (array_remove(string_to_array(regexp_replace(
+                                                    split_part(
+                                                        split_part(a.raw, ':', 1),
+                                                        '>',
+                                                        2),
+                                                    ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                                    '',
+                                                    'g'),
+                                                ',',''), NULL))[2:]
+                                else
+                                    NULL
+                                end as path
 
                                 from 
                                 packets a,
@@ -649,7 +695,9 @@
                     $elapsed_secs = $last_packet["elapsed_secs"];
                 }
 
-                for ($i = $numrows - 1; $i > $numrows - 6 && $i >= 0; $i--) {
+                $lastpath = "";
+
+                for ($i = $numrows - 1; $i > $numrows - 11 && $i >= 0; $i--) {
                     $r = $rows[$i];
                     $lastfewpackets[] = array(
                         "time" => $r["thetime"],
@@ -665,7 +713,17 @@
                         "comment" => $r["comment"],
                         "symbol" => $r["symbol"]
                     );
+                    if ($r["source"] == 'direwolf')
+                        $lastpath = $lastpath . "R";
+                    else
+                        $lastpath = $lastpath . "I";
                 }
+                $packetlistJSON["lastpacketpath"][] = array(
+                    "time" => end($rows)["thetime"],
+                    "flightid" => $get_flightid,
+                    "callsign" => $cs,
+                    "lastpath" => $lastpath
+                );
             }
             else {
                 $beacons[] = array(
@@ -676,7 +734,6 @@
                         "features" => []
                     )
                 );
-
             }
         }
 
@@ -1386,10 +1443,8 @@
 
     /*=================== get recent packet lists ============ */
 
-    $packetlistJSON = [];
     $packetlistJSON["positionpackets"] = [];
     $packetlistJSON["statuspackets"] = [];
-    $packetlistJSON["lastpacketpath"] = [];
 
     $status_query = "
         select 
@@ -1444,33 +1499,32 @@
         }
     }
 
-    $packetlistJSON["positionpackets"] = $lastfewpackets;
+    $packetlistJSON["positionpackets"] = array_slice($lastfewpackets, 0, 5);
+
+        //$c_rev = array_reverse($ray);
 
     /*
-    $firsttime = 1;
-    ksort($allpackets);
-    foreach ($allpackets as $c => $ray) {
-        $c_rev = array_reverse($ray);
+    foreach ($beacons as $c => $ray) {
         $i = 0;
         $lastpath = "";
-        foreach ($c_rev as $row) {
+        foreach ($ray as $row) {
+            //print_r($row);
             if ($i >= 10)
                 break;
-            if ($row[4] == 'direwolf')
+            if ($row["source"] == 'direwolf')
                 $lastpath = $lastpath . "R";
             else
                 $lastpath = $lastpath . "I";
             $i++;
         }
-        if (sizeof($c_rev) > 0) {
+        if (sizeof($ray) > 0) {
             $packetlistJSON["lastpacketpath"][] = array(
-                "time" => $c_rev[0][0],
+                "time" => end($ray)["thetime"],
                 "flightid" => $get_flightid,
                 "callsign" => $c,
                 "lastpath" => $lastpath
             );
         }
-        $firsttime = 0;
     }
      */
 
