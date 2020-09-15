@@ -2230,6 +2230,19 @@ def runLandingPredictor(schedule, e, config):
                     dbcur.execute(alter_table_sql)
                     dbconn.commit()
 
+            # SQL to add an index on the time column of the packets table
+            sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
+            dbcur.execute(sql_exists)
+            rows = dbcur.fetchall()
+            if len(rows) > 0:
+                if rows[0][0] == False:
+                    # Add the index since it didn't seem to exist.
+                    sql_add = "create index packets_tm on packets(tm);"
+                    print "Adding packets_tm index to the packets table"
+                    debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
+                    dbcur.execute(sql_add)
+                    dbconn.commit()
+
             # Close DB connection
             dbcur.close()
             dbconn.close()
