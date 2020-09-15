@@ -1447,7 +1447,45 @@ class LandingPredictor(PredictorBase):
                         ) as station_rank
 
                     from
-                        packets a,
+                        (
+                            select
+                                c.tm,
+                                c.callsign,
+                                c.location2d,
+                                c.altitude,
+                                c.symbol
+
+                                from (
+                                        select 
+                                        t.tm,
+                                        t.callsign, 
+                                        t.altitude,
+                                        t.location2d,
+                                        t.symbol,
+                                        dense_rank () over (partition by 
+                                            t.callsign
+
+                                            order by 
+                                            t.tm desc
+                                        )
+
+                                        from 
+                                        packets t
+
+                                        where 
+                                        t.location2d != ''
+                                        and t.altitude > 0
+                                        and t.tm > (now() - interval '06:00:00')
+                                        and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
+
+                                        order by 
+                                        t.tm asc
+
+                                ) as c
+
+                                where
+                                c.dense_rank = 1
+                        ) as a,
                         flights f,
                         flightmap fm
                         left outer join
@@ -1480,11 +1518,7 @@ class LandingPredictor(PredictorBase):
                         and f.active = 'y'
                         and a.callsign != fm.callsign
                         and fm.callsign = %s
-                        and a.altitude > 0
-                        and a.location2d != ''
-                        and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
-                        and a.source = 'other'
 
                     order by
                         lp.callsign,
