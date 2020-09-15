@@ -419,11 +419,11 @@
                         limit 1
                     ) as gps
 
-                order by
-                    y.callsign,
-                    y.packet_time asc
+            order by 
+            y.thetime desc
+            
+            limit 20
             ;
-
         ";
         $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
     }
