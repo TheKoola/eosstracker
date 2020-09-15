@@ -308,42 +308,6 @@
         return $json;
     }
 
-    # Get the latest GPS location
-    $gps_query = "
-        select 
-        g.tm, 
-        g.altitude_ft, 
-        st_astext(g.location2d) as location2d,
-        g.bearing 
-
-        from 
-        gpsposition g 
-
-        where
-        g.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
-
-        order by 
-        g.tm desc
-
-        limit 1;
-    ";
-
-    $gpsresult = pg_query_params($link, $gps_query, array(
-        sql_escape_string($config["lookbackperiod"] . " minute")
-    ));
-
-    if (!$gpsresult) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-
-    $gpsrows = sql_fetch_all($gpsresult);
-    $gps_location2d = $gpsrows[0]["location2d"];
-    $gps_altitude = $gpsrows[0]["altitude_ft"];
-    $gps_bearing = $gpsrows[0]["bearing"];
-
-
     $callsign_query = "
         select distinct 
         fm.callsign
@@ -456,10 +420,10 @@
                 y.heardfrom,
                 y.source,
                 y.hash,
-                round(cast(ST_DistanceSphere(y.location2d, st_geomfromtext($1, 4326))*.621371/1000 as numeric), 2) as distance,
-                round(cast(degrees(atan((y.altitude  - $2) / (cast(ST_DistanceSphere(y.location2d, st_geomfromtext($3, 4326)) as numeric) * 3.28084))) as numeric)) as angle,
-                round(cast(degrees(ST_Azimuth(st_geomfromtext($4, 4326), y.location2d)) as numeric)) as relative_bearing,
-                round($5) as mybearing,
+                round(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric), 2) as distance,
+                round(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric)) as angle,
+                round(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric)) as relative_bearing,
+                round(gps.bearing) as mybearing,
                 floor(lp.ttl / 60.0) as ttl,
                 y.elapsed_secs
 
@@ -503,7 +467,7 @@
                                 date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
                                 case
                                     when a.raw similar to '%[0-9]{6}h%' then
-                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $6)::time)::time without time zone
+                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
                                     else
                                         date_trunc('milliseconds', a.tm)::time without time zone
                                 end as packet_time,
@@ -591,13 +555,13 @@
 
                                 where 
                                 a.location2d != '' 
-                                and a.tm > (now() - (to_char(($7)::interval, 'HH24:MI:SS'))::time) 
-                                and a.tm > (to_timestamp($8)::timestamp)
+                                and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+                                and a.tm > (to_timestamp($3)::timestamp)
                                 and fm.flightid = f.flightid
                                 and f.active = 'y'
                                 and a.callsign = fm.callsign
                                 and a.altitude > 0
-                                and a.callsign = $9
+                                and a.callsign = $4
 
                                 order by a.tm asc
 
@@ -645,7 +609,25 @@
                         r.callsign,
                         r.tm
                     ) as lp
-                    on lp.flightid = y.flightid and lp.callsign = y.callsign
+                    on lp.flightid = y.flightid and lp.callsign = y.callsign,
+                    (
+                        select 
+                        g.tm, 
+                        g.altitude_ft, 
+                        g.location2d,
+                        g.bearing 
+
+                        from 
+                        gpsposition g 
+
+                        where
+                        g.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time)
+
+                        order by 
+                        g.tm desc
+
+                        limit 1
+                    ) as gps
 
                 order by
                     y.callsign,
@@ -657,15 +639,11 @@
 
         if ($recent_packets) {
             $result = pg_query_params($link, $query, array(
-                $gps_location2d,
-                $gps_altitude, 
-                $gps_location2d,
-                $gps_location2d,
-                $gps_bearing,
                 sql_escape_string($config["timezone"]), 
                 sql_escape_string($config["lookbackperiod"] . " minute"), 
                 $get_starttime,
-                sql_escape_string($cs)
+                sql_escape_string($cs),
+                sql_escape_string($config["lookbackperiod"] . " minute"), 
                 )
             );
 
