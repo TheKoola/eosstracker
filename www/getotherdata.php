@@ -277,79 +277,129 @@
     /*********************** get weather station data *******************/
 
     ## query the last packets with positions from weather stations...
-    $query = '
+    $query = "
         select distinct 
-        date_trunc(\'second\', a.tm)::timestamp without time zone as thetime,
-        a.callsign, 
-        a.comment, 
-        a.symbol, 
-        a.bearing,
-        round(a.altitude) as altitude, 
-        round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-        round(cast(ST_X(a.location2d) as numeric), 6) as longitude, 
-        a.ptype,
-  
+        date_trunc('millisecond', z.tm)::timestamp without time zone as thetime,
+        z.callsign, 
+        z.comment, 
+        z.symbol, 
+        z.bearing,
+        round(z.altitude) as altitude, 
+        round(z.latitude, 6) as latitude, 
+        round(z.longitude, 6) as longitude, 
+        z.ptype,
+        z.source,
+        z.freq,
+        z.channel,
+        case when array_length(z.path, 1) > 0 then
+            z.path[array_length(z.path, 1)]
+        else
+            z.sourcename
+        end as heardfrom,
         case
-            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
-                case when to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') <= 180 then
-                    to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') + 180
+            when z.raw similar to '%_[0-9]{3}/[0-9]{3}g%' then
+                case when to_number(substring(z.raw from position('_' in z.raw) + 1 for 3), '999') <= 180 then
+                    to_number(substring(z.raw from position('_' in z.raw) + 1 for 3), '999') + 180
                 else
-                    to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\') - 180
+                    to_number(substring(z.raw from position('_' in z.raw) + 1 for 3), '999') - 180
                 end
             else
                 NULL
         end as wind_angle_bearing,
 
         case    
-            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
-                to_number(substring(a.raw from position(\'_\' in a.raw) + 1 for 3), \'999\')
+            when z.raw similar to '%_[0-9]{3}/[0-9]{3}g%' then
+                to_number(substring(z.raw from position('_' in z.raw) + 1 for 3), '999')
             else
                 NULL
         end as wind_angle_heading,
 
         case
-            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g%\' then
-                to_number(substring(a.raw from position(\'_\' in a.raw) + 5 for 3), \'999\')
+            when z.raw similar to '%_[0-9]{3}/[0-9]{3}g%' then
+                to_number(substring(z.raw from position('_' in z.raw) + 5 for 3), '999')
             else
                 NULL
         end as wind_magnitude_mph,
 
         case
-            when a.raw similar to \'%_[0-9]{3}/[0-9]{3}g[0-9]{3}%\' then
-                to_number(substring(a.raw from position(\'_\' in a.raw) + 9 for 3), \'999\')
+            when z.raw similar to '%_[0-9]{3}/[0-9]{3}g[0-9]{3}%' then
+                to_number(substring(z.raw from position('_' in z.raw) + 9 for 3), '999')
             else
                 NULL
         end as windgust_magnitude_mph,
         case
-            when a.raw similar to \'%_%t[\-0-9]{3}%\' then
-                to_number(substring(a.raw from position(\'_\' in a.raw) + 13 for 3), \'999\')
+            when z.raw similar to '%_%t[-0-9]{3}%' then
+                to_number(substring(z.raw from position('_' in z.raw) + 13 for 3), '999')
             else
                 NULL
         end as temperature
 
 
         from 
-        packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = \'t\') as b on a.callsign = b.callsign
-        left outer join (select t.callsign from trackers t order by t.callsign) as c 
-        on case
-           when c.callsign similar to \'[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}\' then
-               a.callsign  = c.callsign
-           else 
-               a.callsign like c.callsign || \'-%\'
-        end
+        (
+            select 
+            a.tm, 
+            a.callsign, 
+            a.comment, 
+            a.symbol,
+            a.bearing, 
+            a.altitude,
+            cast(st_y(a.location2d) as numeric) as latitude,
+            cast(st_x(a.location2d) as numeric) as longitude,
+            a.ptype,
+            a.raw,
+            case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%%' then
+                split_part(a.raw, '>', 1)
+            else
+                NULL
+            end as sourcename,
+            a.source,
+            a.frequency as freq,
+            a.channel,
+            dense_rank () over (partition by
+                a.hash,
+                date_trunc('minute', a.tm)
 
-        where 
-        b.callsign is null
-        and c.callsign is null
-        and a.location2d != \'\' 
-        and a.tm > (now() - (to_char(($1)::interval, \'HH24:MI:SS\'))::time) 
-        and a.tm > (to_timestamp($2)::timestamp)
-        and a.symbol = \'/_\'
-        and a.source = \'other\'
+                order by
+                a.tm asc
+            ),
+            case when a.raw similar to '%>%:%' then
+                (array_remove(string_to_array(regexp_replace(
+                                split_part(
+                                    split_part(a.raw, ':', 1),
+                                    '>',
+                                    2),
+                                ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                '',
+                                'g'),
+                            ',',''), NULL))[2:]
+            else
+                NULL
+            end as path
 
-        order by 
-        thetime asc, 
-        a.callsign ;'; 
+            from 
+            packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign
+
+            where 
+            b.callsign is null
+            and a.location2d != '' 
+            and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
+            and a.tm > (to_timestamp($2)::timestamp)
+            and a.symbol = '/_'
+
+            order by 
+            a.tm asc, 
+            a.callsign 
+        ) as z
+
+        where
+        z.dense_rank = 1
+
+        order by
+        thetime,
+        z.callsign
+        ;
+    ";
 
     $result = pg_query_params($link, $query, array(
         sql_escape_string($config["lookbackperiod"] . " minute"),
