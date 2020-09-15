@@ -1345,7 +1345,7 @@ class LandingPredictor(PredictorBase):
                                             packets a
 
                                         where 
-                                            a.tm > now()::date
+                                            a.tm > (now() - interval '02:00:00')
                                             and a.ptype = '@'
                                             and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' 
 
@@ -1358,10 +1358,9 @@ class LandingPredictor(PredictorBase):
                                         on a.tm = a1.thetime and a.callsign = a1.callsign
 
                                 where 
-                                    a.tm > now()::date
-                                    and a1.callsign is not null
+                                    a1.callsign is not null
                                     and a.ptype = '@'
-                                    and a.source = 'other'
+                                    and a.tm > (now() - interval '02:00:00')
 
                                 order by
                                     a.tm asc
@@ -1371,7 +1370,6 @@ class LandingPredictor(PredictorBase):
                                 b.wind_angle_bearing is not null
                                 and b.wind_magnitude_mph is not null
                                 and b.distance < 75 
-                                and b.thetime > (now() - interval '02:00:00')::time
 
                             order by 
                                 distance_miles asc
