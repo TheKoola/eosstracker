@@ -208,7 +208,9 @@
     $burst_detected = false;
     if ($num_burstrows > 0) {
         $burst_altitude = $burst_rows[0]["burst_altitude"];
-        if (($burst_elapsed_secs = $burst_rows[0]["elapsed_secs"]) < 5000)
+
+        # if it's been < 3 mins since burst happened then we want to announce that.
+        if (($burst_elapsed_secs = $burst_rows[0]["elapsed_secs"]) < (60*3))
             $burst_detected = true;
     }
 
