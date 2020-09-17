@@ -42,8 +42,6 @@
     if (isset($_GET["flightid"])) {
         if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
             $get_flightid = "";
-        else
-            $get_flightid = " and fl.flightid = '" . $get_flightid . "' ";
     }
     else
         $get_flightid = "";
@@ -97,216 +95,248 @@
         return 0;
     }
 
-    ## get the latest position from the gpsposition table
-    $gpsquery = 'select 
-        tm::timestamp without time zone as time, 
-        round(speed_mph) as speed_mph, 
-        bearing, 
-        round(altitude_ft) as altitude_ft, 
-        round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
-        round(cast(ST_X(location2d) as numeric), 6) as longitude 
-
-        from gpsposition 
-
-        where 
-        tm > (now() -  interval \'01:30:00\')
-      
-        order by 
-        tm desc limit 1;';
-
-    $gpsresult = sql_query($gpsquery);
-    if (!$gpsresult) {
-        db_error(sql_last_error());
-        sql_close($link);
-        printf ("[]");
-        return 0;
-    }
-
-    $gpsrow = sql_fetch_array($gpsresult);
-    $numgpsrows = sql_num_rows($gpsresult);
-    $GPS_STRING = "";
-    if ($numgpsrows > 0) {
-        $mylat = $gpsrow["latitude"];
-        $mylon = $gpsrow["longitude"];
-        $GPS_STRING =  "round(cast(ST_DistanceSphere (ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), a.location2d)*.621371/1000 as numeric),1)";
-        $GPS_STRING2 = "round(cast(ST_DistanceSphere (ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), l.location2d)*.621371/1000 as numeric),1)";
-        $GPS_STRING3 = "round(cast(degrees(ST_Azimuth(ST_GeomFromText('POINT(" . $mylon . " " . $mylat . ")',4326), a.location2d)) as numeric))";
-    }
-    else {
-        $GPS_STRING = "-1";
-        $GPS_STRING2 = "-1";
-        $GPS_STRING3 = "-999";
-    }
-
-
     ## query the last packets from stations...
     $query = "
-        select distinct 
-            dt.thetime,
-            dt.packet_time,
-            lp.ttl,
-            lp.landingdistance_miles,
-            extract(epoch from now() - dt.thetime) as lastsecs,
-            dt.flightid,
-            dt.callsign, 
-            dt.symbol, 
-            dt.speed_mph,
-            dt.bearing,
-            dt.azimuth,
-            trunc(dt.altitude) as altitude,
-            dt.comment, 
-            dt.latitude,
-            dt.longitude, 
-            round(dt.distance_miles) as distance_miles,
-            dt.raw
- 
-        from (
             select
-                fl.flightid,
-                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-                case
-                    when a.raw similar to '%[0-9]{6}h%' then 
-                        date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
-                    else
-                        date_trunc('second', a.tm)::time without time zone
-                end as packet_time,
-                a.callsign, 
-                a.symbol, 
-                round(a.speed_mph) as speed_mph,
-                round(a.bearing) as bearing,
-                round(a.altitude / 1000, 1) as altitude, 
-                a.comment, 
-                round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
-                round(cast(ST_X(a.location2d) as numeric), 6) as longitude,
-                case
-                    when a.location2d != '' and m.location2d != '' then
-                        round(cast (ST_DistanceSphere(m.location2d, a.location2d)*.621371/1000 as numeric))
-                    else
-                        -99
+                y.thetime,
+                y.packet_time,
+                y.callsign,
+                y.flightid,
+                y.comment,
+                y.symbol,
+                round(y.altitude / 1000.0) as altitude,
+                round(y.speed_mph) as speed_mph,
+                round(y.bearing) as bearing,
+                round(y.lat, 6) as latitude,
+                round(y.lon, 6) as longitude,
+                round(y.elapsed_secs / 60.0) as elapsed_mins,
+                round((y.temperature_k - 273.15) * 9 / 5 + 32, 2) as temperature_f,
+                round(y.pressure_pa / 101325, 4) as pressure_atm,
+                y.sourcename,
+                y.freq,
+                y.channel,
+                y.heardfrom,
+                y.source,
+                y.hash,
+                case 
+                when y.location2d != '' and gps.location2d != '' then
+                    round(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric))
+                else
+                    -99
                 end as distance_miles,
-                case
-                    when a.location2d != '' and m.location2d != '' and a.altitude > 0 and m.altitude > 0 then
-                        round(cast(degrees(atan((a.altitude - m.altitude) / (cast(ST_DistanceSphere(m.location2d, a.location2d) as numeric) * 3.28084))) as numeric), 2)
-                    else
-                        -99
+                case 
+                when y.location2d != '' and gps.location2d != '' then
+                    round(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric), 2)
+                else
+                    -99
                 end as angle,
-                case
-                    when a.location2d != '' and m.location2d != '' then
-                        round(cast(degrees(ST_Azimuth(m.location2d, a.location2d)) as numeric))
-                    else
-                        -99
+                case 
+                when y.location2d != '' and gps.location2d != '' then
+                    round(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric))
+                else
+                    -99
                 end as azimuth,
-                case
-                    when m.bearing is not null  then
-                        round(cast(m.bearing as numeric), 2)
-                    else
-                        -99
+                case 
+                when gps.bearing is not null then
+                    round(cast(gps.bearing as numeric), 2)
+                else
+                    -99
                 end as myheading,
-                a.raw,
-                rank () over (
-                    partition by fl.flightid order by 
-                        case
-                            when a.raw similar to '%[0-9]{6}h%' then 
-                                date_trunc('second', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $2)::time)::time without time zone
-                            else
-                                date_trunc('second', a.tm)::time without time zone
-                        end desc
-                    ) as rank
-        
-            from 
-                packets a,
-                flightmap fm,
-                flights fl,
-                (
-                    select
-                    date_trunc('second', g.tm)::timestamp without time zone as thetime,
-                    g.location2d,
-                    g.bearing,
-                    g.altitude_ft as altitude
-
-                    from
-                    gpsposition g
-
-                    where
-                    g.location2d is not null
-
-                    order by
-                    1 desc
-                    limit 1
-                ) as m
-        
-            where 
-                a.tm > (now() -  time '00:20:00')
-                and a.location2d != ''
-                and a.altitude > 0
-                and fm.flightid = fl.flightid
-                and a.callsign = fm.callsign 
-                and a.source = 'other'
-                and fl.active = 't' 
-                and fl.flightid = 'RSONDE-000'
-        ) as dt
-        left outer join
-        (   
-            select
-                max(l.tm) as thetime,
-                l.flightid,
-                l.callsign,
-                l.ttl,
                 case
-                    when l.location2d != '' and m.location2d != '' then
-                        round(cast (ST_DistanceSphere(m.location2d, l.location2d)*.621371/1000 as numeric))
+                    when lp.location2d != '' and gps.location2d != '' then
+                        round(cast (ST_DistanceSphere(gps.location2d, lp.location2d)*.621371/1000 as numeric))
                     else
                         -99
-                end as landingdistance_miles
-                
-            from
-                landingpredictions l,
+                end as landingdistance_miles,
+                floor(lp.ttl / 60.0) as ttl_mins,
+                lp.ttl,
+                y.elapsed_secs as lastsecs,
+                y.raw  
+
+                from 
                 (
                     select
-                    date_trunc('second', g.tm)::timestamp without time zone as thetime,
-                    g.location2d,
-                    g.bearing,
-                    g.altitude_ft as altitude
+                        c.thetime,
+                        c.packet_time,
+                        c.callsign,
+                        c.flightid,
+                        c.altitude,
+                        c.comment,
+                        c.symbol,
+                        c.speed_mph,
+                        c.bearing,
+                        c.location2d,
+                        c.lat,
+                        c.lon,
+                        c.temperature_k,
+                        c.pressure_pa,
+                        c.ptype, 
+                        c.hash,
+                        c.raw,
+                        extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
+                        c.sourcename,
+                        case when array_length(c.path, 1) > 0 then
+                            c.path[array_length(c.path, 1)]
+                        else
+                            c.sourcename
+                        end as heardfrom,
+                        c.freq,
+                        c.channel,
+                        c.source
 
-                    from
-                    gpsposition g
+                        from (
+                                select 
+                                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                                case
+                                    when a.raw similar to '%[0-9]{6}h%' then
+                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone $1)::time)::time without time zone
+                                    else
+                                        date_trunc('milliseconds', a.tm)::time without time zone
+                                end as packet_time,
+                                a.callsign, 
+                                f.flightid,
+                                a.altitude,
+                                a.comment, 
+                                a.symbol, 
+                                a.speed_mph,
+                                a.bearing,
+                                a.location2d,
+                                cast(ST_Y(a.location2d) as numeric) as lat,
+                                cast(ST_X(a.location2d) as numeric) as lon,
+                                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%%' then
+                                    split_part(a.raw, '>', 1)
+                                else
+                                    NULL
+                                end as sourcename,
+                                a.frequency as freq,
+                                a.channel,
 
-                    where
-                    g.location2d is not null
+                                -- The temperature (if available) from any KC0D packets
+                                case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                                    round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                                else
+                                    NULL
+                                end as temperature_k,
 
-                    order by
-                    1 desc
-                    limit 1
-                ) as m
-            
-            where
-                l.tm > now() - time '00:05:00'
-                and l.ttl is not null
-            
-            group by
-                l.flightid,
-                l.callsign,
-                l.ttl,
-                l.location2d,
-                m.location2d
-            
-            order by
-                thetime,
-                l.flightid,
-                l.callsign
-        
-        ) as lp
-        on dt.flightid = lp.flightid and dt.callsign = lp.callsign
+                                -- The pressure (if available) from any KC0D packets
+                                case
+                                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                                        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                                    else
+                                        NULL
+                                end as pressure_pa,
+                                a.ptype,
+                                a.hash,
+                                a.raw,
+                                a.source,
+                                dense_rank () over (partition by 
+                                    f.flightid
 
-        where rank < 4
+                                    order by 
+                                    a.tm desc
+                                ),
+                                case when a.raw similar to '%>%:%' then
+                                    (array_remove(string_to_array(regexp_replace(
+                                                    split_part(
+                                                        split_part(a.raw, ':', 1),
+                                                        '>',
+                                                        2),
+                                                    ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                                    '',
+                                                    'g'),
+                                                ',',''), NULL))[2:]
+                                else
+                                    NULL
+                                end as path
 
-        order by
-            dt.flightid,
-            dt.thetime desc
+                                from 
+                                packets a,
+                                flights f,
+                                flightmap fm
+
+                                where 
+                                a.location2d != '' 
+                                and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
+                                and fm.flightid = f.flightid
+                                and f.active = 'y'
+                                and a.callsign = fm.callsign
+                                and a.altitude > 0
+                                and f.flightid = $3
+
+                                order by a.tm asc
+
+                        ) as c
+
+                        where
+                        c.dense_rank = 1
+
+                    ) as y
+                    left outer join
+                    (
+                        select
+                        r.tm, 
+                        r.flightid,
+                        r.callsign, 
+                        r.ttl,
+                        r.location2d
+
+                        from 
+                        (
+                            select
+                            l.tm,
+                            l.flightid,
+                            l.callsign,
+                            l.ttl,
+                            l.location2d,
+                            dense_rank() over (partition by l.flightid, l.callsign order by l.tm desc)
+
+                            from
+                            landingpredictions l
+
+                            where
+                            l.tm > now() - interval '00:10:00'
+                            and l.ttl is not null
+
+                            order by
+
+                            l.flightid,
+                            l.callsign
+                        ) as r
+
+                        where 
+                        r.dense_rank = 1
+
+                        order by
+                        r.flightid, 
+                        r.callsign,
+                        r.tm
+                    ) as lp
+                    on lp.flightid = y.flightid and lp.callsign = y.callsign,
+                    (
+                        select 
+                        g.tm, 
+                        g.altitude_ft, 
+                        g.location2d,
+                        g.bearing 
+
+                        from 
+                        gpsposition g 
+
+                        order by 
+                        g.tm desc
+
+                        limit 1
+                    ) as gps
+
+                order by
+                    y.callsign,
+                    y.packet_time asc
+            ;
     ;";
     $result = pg_query_params($link, $query, array(
         sql_escape_string($config["timezone"]),
-        sql_escape_string($config["timezone"])
+        sql_escape_string($config["lookbackperiod"]),
+        sql_escape_string($get_flightid)
     ));
 
     if (!$result) {
@@ -316,28 +346,26 @@
         return 0;
     }
 
-    # Loop through the rows returned from the SQL query, stuffing values into arrays for later analysis
-    $flights = [];
-    $numrows = sql_num_rows($result);
-    while ($row = sql_fetch_array($result)) {
-
-        # Get the last callsign, altitude, and range figures
-        $flights[$row["flightid"]]["altitude"][] = $row["altitude"];
-        $flights[$row["flightid"]]["callsign"][] = $row["callsign"];
-        $flights[$row["flightid"]]["distance_miles"][] = $row["distance_miles"];
-        $flights[$row["flightid"]]["packet_time"][] = $row["packet_time"];
-        $flights[$row["flightid"]]["lastsecs"][] = $row["lastsecs"];
-        $flights[$row["flightid"]]["ttl"][] = $row["ttl"];
-        $flights[$row["flightid"]]["landingdistance_miles"][] = $row["landingdistance_miles"];
-        $flights[$row["flightid"]]["azimuth"][] = $row["azimuth"];
-    }
-
     # this array is used to collect the JSON for each flight and is ultimately what is printed out at the end..
     $jsonarray = [];
 
-    # Loop through each flight returned from the query above, creating words, and audio files.
     $updateFile = false;
-    foreach ($flights as $flightid => $ray) {
+
+    $numrows = sql_num_rows($result);
+    $row = sql_fetch_all($result);   
+    if ($numrows > 0) {
+        $flightid = $row[0]["flightid"];
+        $altitude = $row[0]["altitude"];
+        $callsign = $row[0]["callsign"];
+        $distance_miles = $row[0]["distance_miles"];
+        $packet_time = $row[0]["packet_time"];
+        $lastsecs = $row[0]["lastsecs"];
+        $elapsed_mins = $row[0]["elapsed_mins"];
+        $ttl = $row[0]["ttl"];
+        $ttl_mins = $row[0]["ttl_mins"];
+        $landingdistance_miles = $row[0]["landingdistance_miles"];
+        $azimuth = $row[0]["azimuth"];
+
         #printf ("<br>== %s ==<br>", $flightid);
         #print_r($ray);
 
@@ -349,43 +377,47 @@
 
         # did a burst just happen?
         $burst = "";
-        if (sizeof($ray["altitude"]) > 2) {
+        //if (sizeof($ray["altitude"]) > 2) {
             # if the latest altitude figure is < the prior one
             # ...AND...  the prior altitude figures are all increasing (aka the flight is ascending)
             # ...THEN... the balloon must have just burst or was cut down
-            if ($ray["altitude"][0] < $ray["altitude"][1] && $ray["altitude"][1] > $ray["altitude"][2] && $ray["altitude"][0] > 15)
-                $burst = ", burst, burst, burst, burst detected on flight " . $flightnum;
-            else
-                $burst = "";
-        }
+        //    if ($ray["altitude"][0] < $ray["altitude"][1] && $ray["altitude"][1] > $ray["altitude"][2] && $ray["altitude"][0] > 15)
+        //        $burst = ", burst, burst, burst, burst detected on flight " . $flightnum;
+        //    else
+        //        $burst = "";
+        //}
 
 
-        # Split out the altitude.  These should be in the form ofi 54.6, etc., but we need to split them up 
-        # to be into words like:  "54.6 thousand feet".  
-        if ($ray["altitude"][0] > 0) {
-            $alt_words = ", " . $ray["altitude"][0] . " thousand feet";
+        # Split out the altitude.  These should be in the form of 54, etc., but we need to split them up 
+        # to be into words like:  "54 thousand feet".  
+        if ($altitude > 0) {
+            $alt_words = ", " . $altitude . " thousand feet";
         }
         else
             $alt_words = "";
 
         # Split out the range.  These should be in the form of 23, etc.. 
-        if ($ray["distance_miles"][0] > 0) {
-            $range_words = ", " . $ray["distance_miles"][0] . " miles";
+        if ($distance_miles > 0) {
+            $range_words = ", " . $distance_miles . " miles";
         }
         else
             $range_words = "";
 
         # If the relative bearing is > 0 (in degrees), then add in a "bearing" statement only if we're not declaring a burst condition.
-        if ($ray["azimuth"][0] > 0 && $burst == "") {
+        if ($azimuth > 0 && $burst == "") {
             # convert the numeric value of the bearing to a string with the numerals seperated by spaces.  For example, "163" becomes "1 6 3".
-            $azimuth  = implode(' ',str_split(strval($ray["azimuth"][0]))); 
+            $azimuth_str  = implode(' ',str_split(strval($azimuth))); 
 
             # If the bearing angle is < 10, then prepend a zero to the phrase
-            if (strlen($azimuth) == 1)
-                $azimuth = "0 " . $azimuth;
+            #if (strlen($azimuth) == 1)
+            if ($azimuth < 10)
+                $azimuth_str = "0 0 " . $azimuth_str;
+
+            if ($azimuth < 100 && $azimuth > 9)
+                $azimuth_str = "0 " . $azimuth_str;
 
             # The phrase used for the bearing to the flight.
-            $azimuth_words = ", bearing " . $azimuth . " degrees";
+            $azimuth_words = ", bearing " . $azimuth_str . " degrees";
         }
         else
             $azimuth_words = "";
@@ -394,28 +426,29 @@
         $words = "Flight " . $flightnum . $burst .  $alt_words .  $range_words . $azimuth_words . ".";
 
         # No packets alert.  If we havn't heard something from the flight for > 120 seconds, then we override the normal message.
-        $secs_last_packet = $ray["lastsecs"][0];
-        $nummins = ceil($secs_last_packet / 60.0);
+        $secs_last_packet = $lastsecs;
+        $nummins = ceil($elapsed_mins);
         if ($secs_last_packet > 120) {
             $words = "Warning, flight " . $flightnum . ". No packets for " . $nummins . " minutes.  Last update" . $alt_words . $range_words . $azimuth_words . ".";  
         }
 
         # If there is a landing prediction availble, then we use a different sentance
-        if ($ray["ttl"][0] != "" && $ray["landingdistance_miles"][0] != "") {
-            $ttl = floor($ray["ttl"][0] / 60.0);
+        if ($ttl != "" && $landingdistance_miles != "") {
+            $ttl_words = $ttl_mins;
 
             # If we haven't seen a packet from this flight for > 120 secs, then we subtract that delta from the last calculated time-to-live figure.
             # This provides a more accurate estimate of WHEN the flight might land in the event we lose contact with it.
             if ($secs_last_packet > 120) {
-                $ttl = floor(($ray["ttl"][0] - $secs_last_packet) / 60.0);
+                $ttl_words = floor(($ttl - $secs_last_packet) / 60.0);
                 if ($ttl < 0)
-                    $ttl = 0;
+                    $ttl_words = 0;
+
             }
 
-            $words = $words . " Time to live, " . $ttl . " minutes";
+            $words = $words . " Time to live, " . $ttl_words . " minutes";
 
             # The distance to the landing location from our own position (i.e. from GPS).
-            $landingdistance = ceil($ray["landingdistance_miles"][0]);
+            $landingdistance = ceil($landingdistance_miles);
 
             # if the landing distance is greater than zero, then add that phrase to the end of our statement.  If the distance value is < 0, then most likely the system doesn't
             # have a valid GPS position recorded yet so it doesn't make sense to add a phrase about "distance".
