@@ -39,12 +39,18 @@
 
     # Check the flightid HTML GET variable
     $get_flightid = "";
+    $formerror = true;
     if (isset($_GET["flightid"])) {
         if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
-            $get_flightid = "";
+            $formerror = true;
+        else
+            $formerror = false;
     }
-    else
-        $get_flightid = "";
+
+    if ($formerror) {
+        printf("[]");
+        return;
+    }
 
     # Get the session variable from the caller
     $get_callerid = "";
@@ -94,6 +100,118 @@
         db_error(sql_last_error());
         return 0;
     }
+
+
+    # This query will check if this flight has already "burst" and is descending.
+    $burst_query = "
+        select
+        z.burst_time,
+        z.flightid,
+        z.callsign,
+        z.burst_altitude,
+        floor(extract('epoch' from (now()::timestamp - z.burst_time))) as elapsed_secs
+
+        from
+        (
+                select
+                    date_trunc('millisecond', y.tm)::timestamp without time zone as thetime,
+                    y.callsign,
+                    y.flightid,
+                    y.altitude,
+                    y.elapsed_secs,
+                    case when
+                        y.altitude < y.previous_altitude1 and y.altitude > 14999 and previous_altitude2 < y.previous_altitude1 then
+                        y.previous_altitude1
+                    else
+                        NULL
+                    end as burst_altitude,
+                    case when
+                        y.altitude < y.previous_altitude1 and y.altitude > 14999 and previous_altitude2 < y.previous_altitude1 then
+                        y.previous_time::timestamp without time zone
+                    else
+                        NULL
+                    end as burst_time
+
+                    from 
+                    (
+                        select
+                            c.tm,
+                            c.callsign,
+                            c.flightid,
+                            c.altitude,
+                            lag(c.altitude, 1) over (order by c.tm)  as previous_altitude1, 
+                            lag(c.altitude, 2) over (order by c.tm)  as previous_altitude2, 
+                            lag(c.tm, 1) over (order by c.tm)  as previous_time, 
+                            extract ('epoch' from (now()::timestamp - c.tm)) as elapsed_secs
+
+                            from (
+                                    select 
+                                    a.tm,
+                                    a.callsign, 
+                                    f.flightid,
+                                    a.altitude
+
+                                    from 
+                                    packets a,
+                                    flights f,
+                                    flightmap fm
+
+                                    where 
+                                    a.location2d != '' 
+                                    and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
+                                    and fm.flightid = f.flightid
+                                    and f.active = 'y'
+                                    and a.callsign = fm.callsign
+                                    and a.altitude > 0
+                                    and f.flightid = $2
+
+                                    order by 
+                                    f.flightid,
+                                    a.callsign,
+                                    a.tm asc
+
+                            ) as c
+
+                        ) as y
+
+                    order by
+                        y.flightid,
+                        y.callsign,
+                        y.tm asc
+            ) as z
+
+            where 
+            z.burst_altitude is not NULL
+
+            order by 
+            z.flightid,
+            z.callsign,
+            z.burst_time
+        ;
+    "; 
+
+
+    $burst_result = pg_query_params($link, $burst_query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute"),
+        sql_escape_string($get_flightid)
+    ));
+
+    if (!$burst_result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        printf ("[]");
+        return 0;
+    }
+
+    $num_burstrows = sql_num_rows($burst_result);
+    $burst_rows = sql_fetch_all($burst_result);   
+    $burst_detected = false;
+    if ($num_burstrows > 0) {
+        $burst_altitude = $burst_rows[0]["burst_altitude"];
+        if (($burst_elapsed_secs = $burst_rows[0]["elapsed_secs"]) < 5000)
+            $burst_detected = true;
+    }
+
 
     ## query the last packets from stations...
     $query = "
@@ -376,16 +494,12 @@
         $flightnum = $flightray[0] . " " . $flightray[1] . $flightray[2];
 
         # did a burst just happen?
-        $burst = "";
-        //if (sizeof($ray["altitude"]) > 2) {
-            # if the latest altitude figure is < the prior one
-            # ...AND...  the prior altitude figures are all increasing (aka the flight is ascending)
-            # ...THEN... the balloon must have just burst or was cut down
-        //    if ($ray["altitude"][0] < $ray["altitude"][1] && $ray["altitude"][1] > $ray["altitude"][2] && $ray["altitude"][0] > 15)
-        //        $burst = ", burst, burst, burst, burst detected on flight " . $flightnum;
-        //    else
-        //        $burst = "";
-        //}
+        if ($burst_detected) {
+            $burst_altitude = floor($burst_altitude / 1000.0);
+            $burst = ", burst, burst, burst, burst detected at " . $burst_altitude . " thousand feet for flight " . $flightnum;
+        }
+        else
+            $burst = "";
 
 
         # Split out the altitude.  These should be in the form of 54, etc., but we need to split them up 
