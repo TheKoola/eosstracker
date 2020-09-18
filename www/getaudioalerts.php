@@ -498,7 +498,7 @@
         # did a burst just happen?
         if ($burst_detected) {
             $burst_altitude = floor($burst_altitude / 1000.0);
-            $burst = ", burst, burst, burst, burst detected at " . $burst_altitude . " thousand feet for flight " . $flightnum;
+            $burst = ", burst, burst, burst, burst detected at " . $burst_altitude . " thousand feet, now at ";
         }
         else
             $burst = "";
