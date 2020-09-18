@@ -49,6 +49,23 @@ import searchrtlsdr
 import aprsreceiver
 import aprsc
 import direwolf
+from inspect import getframeinfo, stack
+
+
+#####################################
+## Set this to "True" to have debugging text output when running
+debug = False
+#####################################
+
+
+#####################################
+# Function for printing out debug info
+def debugmsg(message):
+    if debug:
+        caller = getframeinfo(stack()[1][0])
+        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        sys.stdout.flush()
+
 
 class GracefulExit(Exception):
     pass
@@ -155,7 +172,7 @@ def isRunning(myprocname):
     listOfProcesses = []
 
     # This is the list of process names we should look for (we ignore gpsd since it should always be running)
-    procs = ["direwolf", "aprsc", myprocname]
+    procs = ["direwolf", myprocname]
 
     # Iterate over all running processes
     for proc in psutil.process_iter():
@@ -549,6 +566,18 @@ def main():
         cwoptap.daemon = True
         cwoptap.name = "CWOP Tap"
         processes.append(cwoptap)
+
+
+        ###################
+        # This is the debug connection tap to a locally running aprsc instance...for debug use only.
+        if debug:
+            debugmsg("Starting test aprsc tap");
+            testtap = mp.Process(name="Testing Tap", target=aprsis.tapProcess, args=(configuration, "127.0.0.1", "testing", 500, stopevent))
+            testtap.daemon = True
+            testtap.name = "Testing Tap"
+            processes.append(testtap)
+        ###################
+
 
         # This is the GPS position tracker process
         gpsprocess = mp.Process(target=gpspoller.GpsPoller, args=(stopevent,))
