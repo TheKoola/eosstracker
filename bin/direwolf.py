@@ -113,27 +113,6 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                     f.write("IBEACON sendto=" + str(channel) + str(viapath) + " delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
                 f.write("###########################################\n\n")
 
-            # If this station is beaconing directly to APRS-IS...
-            if configdata["ibeacon"] == "true":
-                f.write("########## for internet beaconing #########\n");
-
-                # If this is a mobile station, then we want to turn on "smart" beaconing.
-                if configdata["mobilestation"] == "true":
-                    f.write("# This is for a mobile station\n")
-                    f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-
-                # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
-                else:
-                    # Only beacon our position if there is a valid GPS location
-                    if gpsposition["isvalid"]:
-                        f.write("# This is for a fixed station\n")
-                        f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
-
-                if configdata["igating"] == "true":
-                    f.write("IBEACON sendto=IG  delay=0:50 every=" + str(configdata["ibeaconrate"]) + "\n")
-
-                f.write("###########################################\n\n")
-
 
             #### Only if we're igating... 
             if configdata["igating"] == "true":
@@ -142,6 +121,28 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                 f.write("IGSERVER noam.aprs2.net\n")
                 f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
                 #password = aprslib.passcode(str(callsign))
+
+                # If this station is beaconing directly to APRS-IS...then that can only happen if we have a IGSERVER defined (just above).
+                if configdata["ibeacon"] == "true":
+                    f.write("########## for internet beaconing #########\n");
+
+                    # If this is a mobile station, then we want to turn on "smart" beaconing.
+                    if configdata["mobilestation"] == "true":
+                        f.write("# This is for a mobile station\n")
+                        f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+
+                    # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
+                    else:
+                        # Only beacon our position if there is a valid GPS location
+                        if gpsposition["isvalid"]:
+                            f.write("# This is for a fixed station\n")
+                            f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
+
+                    if configdata["igating"] == "true":
+                        f.write("IBEACON sendto=IG  delay=0:50 every=" + str(configdata["ibeaconrate"]) + "\n")
+
+                    f.write("###########################################\n\n")
+
 
             # The rest of the direwolf configuration
             f.write("AGWPORT 8000\n")
