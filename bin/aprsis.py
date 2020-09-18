@@ -1109,10 +1109,8 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
     try:
         if typeoftap == "cwop":
             tap = cwopTap(server = str(aprsserver), callsign = str(configuration['callsign']), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
-        elif typeoftap == "aprs":
-            tap = aprsTap(server = str(aprsserver), callsign = str(configuration['callsign']), ssid = str(configuration["ssid"]), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
         else:
-            return
+            tap = aprsTap(server = str(aprsserver), callsign = str(configuration['callsign']), ssid = str(configuration["ssid"]), timezone = str(configuration["timezone"]), aprsRadius = radius, stopevent = e)
 
         tap.run()
 
