@@ -1484,27 +1484,44 @@ class LandingPredictor(PredictorBase):
                                 where
                                 c.dense_rank = 1
                         ) as a,
-                        flights f,
+                        flights f left outer join ( select s.launchsite, s.alt from launchsites s) as lh on lh.launchsite = f.launchsite,
                         flightmap fm
                         left outer join
                         (
                             select
-                                l.tm as thetime,
-                                l.flightid,
-                                l.callsign,
-                                l.location2d,
-                                rank () over (partition by l.flightid, l.callsign order by l.tm desc)
+                                r.tm as thetime,
+                                r.flightid,
+                                r.callsign,
+                                r.location2d,
+                                r.rank
+                            
+                            from 
+                            ( 
+                                select
+                                    l.tm,
+                                    l.flightid,
+                                    l.callsign,
+                                    l.location2d,
+                                    rank () over (partition by l.flightid, l.callsign order by l.tm desc)
 
-                            from
-                                landingpredictions l
+                                from
+                                    landingpredictions l
 
-                            where
-                                l.tm > (now() - interval '06:00:00')
+                                where
+                                    l.tm > (now() - interval '06:00:00')
+
+                                order by
+                                    l.tm desc,
+                                    l.flightid,
+                                    l.callsign
+                            ) as r
+
+                            where 
+                            r.rank = 1
 
                             order by
-                                thetime desc,
-                                l.flightid,
-                                l.callsign
+                            r.tm desc
+
                         ) as lp
                         on lp.flightid = fm.flightid and lp.callsign = fm.callsign
 
@@ -1517,6 +1534,8 @@ class LandingPredictor(PredictorBase):
                         and a.callsign != fm.callsign
                         and fm.callsign = %s
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
+                        and a.altitude > .1 * lh.alt
+                        and lh.alt is not null
 
                     order by
                         lp.callsign,
@@ -1549,9 +1568,9 @@ class LandingPredictor(PredictorBase):
 
             # if there were rows returned then proceed to return the estimated elevation near the landing location
             if len(rows) > 0:
-                elevation = rows[0][1]
+                elevation = float(rows[0][1])
             else:
-                elevation = 0
+                elevation = 0.0
 
             # Close the database cursor
             elev_cur.close()
