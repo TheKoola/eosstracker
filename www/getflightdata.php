@@ -259,33 +259,38 @@
             $descentJson["geometry"]["type"] = "LineString";
             $descentJson["geometry"]["coordinates"] = $descent_portion;
 
+
             // The burst object JSON
-            $burstJson = array();
-            $burstJson["type"] = "Feature";
-            $burstJson["properties"]["id"] = $callsign . "_burst";
-            $burstJson["properties"]["time"] = $packet_array[$max_altitude_idx]["thetime"];
-            $burstJson["properties"]["packet_time"] = $packet_array[$max_altitude_idx]["packet_time"];
-            $burstJson["properties"]["callsign"] = $callsign . " Approximate Burst";
-            $burstJson["properties"]["flightid"] = $flightid;
-            $burstJson["properties"]["symbol"] = "/n";
-            $burstJson["properties"]["altitude"] = $packet_array[$max_altitude_idx]["altitude"];
-            $burstJson["properties"]["comment"] = $flightid . " balloon burst";
-            $burstJson["properties"]["tooltip"] = number_format($max_altitude) . "ft"; 
-            $burstJson["properties"]["objecttype"] = "burstlocation"; 
-            $burstJson["properties"]["speed"] = ($packet_array[$max_altitude_idx]["speed_mph"] == null ? "" : $packet_array[$max_altitude_idx]["speed_mph"]); 
-            $burstJson["properties"]["bearing"] = ($packet_array[$max_altitude_idx]["bearing"] == null ? "" : $packet_array[$max_altitude_idx]["bearing"]);
-            $burstJson["properties"]["verticalrate"] = ($packet_array[$max_altitude_idx]["vert_rate"] == null ? "" : $packet_array[$max_altitude_idx]["vert_rate"]); 
-            $burstJson["properties"]["label"] = number_format($max_altitude) . "ft";
-            $burstJson["properties"]["iconsize"] = $config["iconsize"];
-            $burstJson["properties"]["temperature"] = ($packet_array[$max_altitude_idx]["temperature_f"] == null ? "" : $packet_array[$max_altitude_idx]["temperature_f"]);
-            $burstJson["properties"]["pressure"] = ($packet_array[$max_altitude_idx]["pressure_atm"] == null ? "" : $packet_array[$max_altitude_idx]["pressure_atm"]);
-            $burstJson["geometry"]["type"] = "Point";
-            $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["longitude"];
-            $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["latitude"];
+            // Only want to add a burst object on the map when the flight is > 15k.  This prevents a burst object being plotted on the map while the beacon
+            // is being walked around the launch site.  In addition, the landing predictor algo won't run for flights that are < 15k.
+            if ($packet_array[$max_altitude_idx]["altitude"] > 14999) {
+                $burstJson = array();
+                $burstJson["type"] = "Feature";
+                $burstJson["properties"]["id"] = $callsign . "_burst";
+                $burstJson["properties"]["time"] = $packet_array[$max_altitude_idx]["thetime"];
+                $burstJson["properties"]["packet_time"] = $packet_array[$max_altitude_idx]["packet_time"];
+                $burstJson["properties"]["callsign"] = $callsign . " Approximate Burst";
+                $burstJson["properties"]["flightid"] = $flightid;
+                $burstJson["properties"]["symbol"] = "/n";
+                $burstJson["properties"]["altitude"] = $packet_array[$max_altitude_idx]["altitude"];
+                $burstJson["properties"]["comment"] = $flightid . " balloon burst";
+                $burstJson["properties"]["tooltip"] = number_format($max_altitude) . "ft"; 
+                $burstJson["properties"]["objecttype"] = "burstlocation"; 
+                $burstJson["properties"]["speed"] = ($packet_array[$max_altitude_idx]["speed_mph"] == null ? "" : $packet_array[$max_altitude_idx]["speed_mph"]); 
+                $burstJson["properties"]["bearing"] = ($packet_array[$max_altitude_idx]["bearing"] == null ? "" : $packet_array[$max_altitude_idx]["bearing"]);
+                $burstJson["properties"]["verticalrate"] = ($packet_array[$max_altitude_idx]["vert_rate"] == null ? "" : $packet_array[$max_altitude_idx]["vert_rate"]); 
+                $burstJson["properties"]["label"] = number_format($max_altitude) . "ft";
+                $burstJson["properties"]["iconsize"] = $config["iconsize"];
+                $burstJson["properties"]["temperature"] = ($packet_array[$max_altitude_idx]["temperature_f"] == null ? "" : $packet_array[$max_altitude_idx]["temperature_f"]);
+                $burstJson["properties"]["pressure"] = ($packet_array[$max_altitude_idx]["pressure_atm"] == null ? "" : $packet_array[$max_altitude_idx]["pressure_atm"]);
+                $burstJson["geometry"]["type"] = "Point";
+                $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["longitude"];
+                $burstJson["geometry"]["coordinates"][]= $packet_array[$max_altitude_idx]["latitude"];
+                $json[] = $burstJson;
+            }
 
             $json[] = $ascentJson;
             $json[] = $descentJson;
-            $json[] = $burstJson;
             $json = array_merge($json, $breadcrumbsJson);
         }
         else { // the flight is still ascending...
