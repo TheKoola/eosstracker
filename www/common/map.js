@@ -2350,6 +2350,30 @@ function getTrackers() {
 
 
     /************
+     * clearRealtimeLayer
+     *
+     * This function will remove all features from a realtime layer
+     *
+    *************/
+    function clearRealtimeLayer(rl) {
+
+        // This is the LeafletJS layer group 
+        var group = rl.options.container;
+        var features = [];
+
+        // for each feature/item within that layer group, execute this function...
+        group.eachLayer(function(l) {
+            features.push({ "properties": { "id": l.feature.properties.id}});
+        });
+
+        if (features.length > 0) {
+            rl.remove({"features": features});
+        }
+    }
+
+
+
+    /************
      * pruneRealtimeLayer
      *
      * This function will remove those features from a realtime layer that are older than the cutoff timestamp
@@ -2657,6 +2681,8 @@ function getTrackers() {
                                 // Now add in all the incoming JSON
                                 flight.landinglayer.update(landingJSON);
                             }
+                            else
+                                clearRealtimeLayer(flight.landinglayer);
 
                             // The pre-flight predict file...
                             if (predictJSON.features.length > 0) {
@@ -2756,18 +2782,51 @@ function getTrackers() {
                                     var h = 0;
                                     for (h = 0; h < fl_beacon_keys.length; h++) {
                                         if (flight.beacons[h].callsign == incoming_callsign) {
+                                            var f = flight.beacons[h].layer;
+                                            var group = f.options.container;
 
-                                            // replace packets wholesale...
+                                            // Loop through each feature within the existing landing layer looking for those features that are not present within the incoming json
+                                            group.eachLayer(function(l) {
+                                                var id = l.feature.properties.id;
+                                                var foundit = false;
+                                                var incoming = beacon_json.features;
+                                                var y;
+
+                                                // Loop through the incoming beacon's json, looking for a match with the existing features.
+                                                for (y in incoming) {
+                                                    if (incoming[y].properties.id == id) {
+                                                        foundit = true;
+                                                        break;
+                                                    }
+                                                }
+
+                                                // if the feature is not within the incoming JSON, then remove it from the map
+                                                if (!foundit && f.getFeature(id)) {
+                                                    f.remove({"features": [{"properties": {"id": id}}]});
+                                                }
+                                            });
+
+                                            // replace the existing JSON for this beacon
                                             flight.beacons[h].json = beacon_json;
-                                            flight.beacons[h].layer.update(beacon_json);
-                                            pruneRealtimeLayer(flight.beacons[h].layer, cutoff);
+
+                                            // now update the realtime layer with this incoming json
+                                            f.update(beacon_json);
+                                            
+                                            // prune off any layers that are older than the cutoff.
+                                            pruneRealtimeLayer(f, cutoff);
                                         }
                                     }
                                 }
                             }
 
-                            if (total_length == 0)
+                            if (total_length == 0) {
                                 resetSideBar(flight.flightid);
+                                var u;
+
+                                for (u in flight.beacons) {
+                                    clearRealtimeLayer(flight.beacons[u].layer)
+                                }
+                            }
 
                             pruneRealtimeLayer(flight.landinglayer, cutoff);
                             pruneRealtimeLayer(flight.predictlayer, cutoff);
