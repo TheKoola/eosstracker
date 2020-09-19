@@ -139,9 +139,10 @@
                             c.callsign,
                             c.flightid,
                             c.altitude,
-                            lag(c.altitude, 1) over (order by c.tm)  as previous_altitude1, 
-                            lag(c.altitude, 2) over (order by c.tm)  as previous_altitude2, 
-                            lag(c.tm, 1) over (order by c.tm)  as previous_time, 
+                            lag(c.altitude, 1) over (partition by c.flightid, c.callsign order by c.tm)  as previous_altitude1, 
+                            lag(c.altitude, 2) over (partition by c.flightid, c.callsign order by c.tm)  as previous_altitude2, 
+                            lag(c.tm, 1) over (partition by c.flightid, c.callsign order by c.tm)  as previous_time, 
+                            lag(c.callsign, 1) over (partition by c.flightid, c.callsign order by c.tm)  as previous_callsign,
                             extract ('epoch' from (now()::timestamp - c.tm)) as elapsed_secs
 
                             from (
@@ -210,7 +211,7 @@
         $burst_altitude = $burst_rows[0]["burst_altitude"];
 
         # if it's been < 3 mins since burst happened then we want to announce that.
-        if (($burst_elapsed_secs = $burst_rows[0]["elapsed_secs"]) < (60*3))
+        if (($burst_elapsed_secs = $burst_rows[0]["elapsed_secs"]) < (60*1.5))
             $burst_detected = true;
     }
 
@@ -525,7 +526,6 @@
             $azimuth_str  = implode(' ',str_split(strval($azimuth))); 
 
             # If the bearing angle is < 10, then prepend a zero to the phrase
-            #if (strlen($azimuth) == 1)
             if ($azimuth < 10)
                 $azimuth_str = "0 0 " . $azimuth_str;
 
@@ -578,11 +578,10 @@
         # Unique filename
         $filename = "audio/" .  uniqid();
 
-        # Check the timestamp vs. the time right now.  If it's been longer than 25 seconds, then create an audio report.  Or, if a
-        # burst condition was detected, then we want that right now.
+        # Check the timestamp vs. the time right now.  If it's been longer than 25 seconds, then create an audio report.
         $delta_secs = time() - $audioJSON["timestamp"];
 
-        if ($delta_secs > 27|| $burst != "") {
+        if ($delta_secs > 27) {
 
             # Run the pico2wave command to generate a wave audio file
             $cmdstring = "pico2wave -w " . $filename . ".wav '" . $words . "'";
