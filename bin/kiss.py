@@ -163,6 +163,7 @@ class KISS(object):
                     ready = select.select([self.sock], [], [], 10.0)
 
                     if ready[0]:
+                        countdowntimer = 4
                         debugmsg("Reading from socket")
                         raw = self.sock.recv(256)
                         
@@ -233,6 +234,13 @@ class KISS(object):
                             kiss_frames = []
                         else:
                             debugmsg ("Connection failed")
+                            raise ConnectionFailed
+                    else:
+                        countdowntimer -= 1
+                        debugmsg("Socket was not ready");
+                        if countdowntimer <= 0:
+                            debugmsg("Failing connection and reconnecting.")
+                            print "No packets seen from direwolf, attempting to reconnect."
                             raise ConnectionFailed
 
                 except (socket.error, ConnectionFailed) as e:
