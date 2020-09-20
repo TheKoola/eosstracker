@@ -91,31 +91,14 @@ $config = readconfiguration();
 </p>
 
 <!-- Packet count charts -->
-<p class="subheader"><a href="#c1" class="subheader" id="c1-link">(<span style="color: red;" id="c1-sign">+</span>) Packet Counts</a></p>
-<div id="c1-elem" style="display: none; margin: 5px; margin-bottom: 15px;">
-    <p class="normal-italic">
-       <strong> APRS-IS Packet Source: </strong>
-       These packet counts show from what source a given packet was discovered (Internet vs. RF).  For example, 
-       the RF packet count shows the number of packets that were heard over RF that were <strong>not</strong> already known 
-       through an APRS-IS connection - it's a subtle distinction not to be confused with absolute packet counts 
-       <strong>heard</strong> over an RF channel.
-    </p>
-    <br>
-    <p class="normal-italic">
-       <strong>RF Packet Counts: </strong>
-       This chart shows total RF packet count (every packet decoded by Dire Wolf) for each frequency being listened too.
-    </p>
-</div>
-<div class="inverted" id="chart1" style="float: left;"></div>
-<div class="inverted" id="chart3" style="margin-bottom: 15px; float: left;"></div>
+<div class="inverted" id="chart3" style="margin-bottom: 15px;"></div>
+<div class="inverted" id="chart1" style="margin-bottom: 15px;"></div>
 
 <!-- KC0D Payload Environmentals Data -->
-<p class="subheader"><a href="#c2" class="subheader" id="c2-link">(<span style="color: red;" id="c2-sign">+</span>) KC0D Payload Environmentals</a></p>
-<div id="c2-elem" style="display: none; margin: 5px;">
-    <p class="normal-italic">
+<p class="subheader">KC0D Payload Environmentals</p>
+    <p class="normal-italic" style="margin-bottom: 15px;">
        These charts show the air density (kg/m<sup>3</sup>), temperature (F), and pressure (atm) as measured by KC0D payloads on the flight string.
     </p>
-</div>
 <!-- KC0D Payload air density Chart -->
 <div class="inverted" style="float:left;">
     <div class="inverted" style="float:left;" id="chart2"></div>

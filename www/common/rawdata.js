@@ -119,15 +119,17 @@
         chart = c3.generate({
             bindto: '#chart1',
             padding: { right: 10 },
-            size: { width: chartwidth/2, height: chartheight },
+            size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+                type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+                //y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
+                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },
             grid: { x: { show: true }, y: { show: true } },
+            line: { connectNull: true },
             point: { show: true },
             color: { pattern: chartcolors },
-            title: { text: "APRS-IS Packet Source", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+            title: { text: "Flight Altitude", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
 
@@ -217,7 +219,7 @@
         chart3 = c3.generate({
             bindto: '#chart3',
             padding: { right: 10 },
-            size: { width: chartwidth/2, height: chartheight },
+            size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'spline', 
                 json: jsondata, 
@@ -724,15 +726,18 @@
   
 
         // setup the toggle for hiding/displaying help text for the charts
-        var c1_a = "#c1-link";
+        /*var c1_a = "#c1-link";
         var c1_l = "#c1-sign";
         var c1_e = "#c1-elem";
         $(c1_a).click({element: c1_e, link: c1_l }, toggle);
+        */
+
         
-        var c2_a = "#c2-link";
+        /*var c2_a = "#c2-link";
         var c2_l = "#c2-sign";
         var c2_e = "#c2-elem";
         $(c2_a).click({element: c2_e, link: c2_l }, toggle);
+        */
 
         /*var c5_a = "#c5-link";
         var c5_l = "#c5-sign";
@@ -985,7 +990,7 @@
 
         // populate the charts with data
         setTimeout(function() {
-            getchartdata(createchart, "getpacketperformance.php");
+            getchartdata(createchart, "getaltitudechartdata.php");
             getchartdata(createchart2, "getairdensity.php");
             getchartdata(createchart3, "getdirewolfperformance.php");
             getchartdata2(createchart4, "gettemppressure.php");
@@ -1012,7 +1017,7 @@
 
             chart.resize({
                 height: h,
-                width: w/2
+                width: w
             });
 
             chart2.resize({
@@ -1027,7 +1032,7 @@
 
             chart3.resize({
                 height: h,
-                width: w/2
+                width: w
             });
 
         }, false);
@@ -1036,7 +1041,7 @@
         setInterval(function() { 
             updateMapLink();
             getrecentdata(); 
-            getchartdata(updatechart, "getpacketperformance.php"); 
+            getchartdata(updatechart, "getaltitudechartdata.php"); 
             getchartdata(updatechart2, "getairdensity.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
             getchartdata2(updatechart4, "gettemppressure.php"); 

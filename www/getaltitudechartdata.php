@@ -53,7 +53,6 @@
     }
 
 
-
     ## Connect to the database
     $link = connect_to_database();
     if (!$link) {
@@ -64,26 +63,27 @@
 
     ## query the last n packets heard from the database
     $query = "select distinct on (f.flightid, a.callsign, thetime) 
-a.callsign, 
-f.flightid, 
-date_trunc('second', a.tm)::timestamp without time zone as thetime, 
-round(a.altitude, 0) as altitude
+        a.callsign, 
+        f.flightid, 
+        date_trunc('second', a.tm)::timestamp without time zone as thetime, 
+        round(a.altitude, 0) as altitude
 
-from 
-packets a, 
-flights f, 
-flightmap fm 
+        from 
+        packets a, 
+        flights f, 
+        flightmap fm 
 
-where 
-fm.flightid = f.flightid 
-and a.callsign = fm.callsign 
-and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
-and a.altitude > 0 and active = 't'  " . $flightstring . " 
+        where 
+        fm.flightid = f.flightid 
+        and a.callsign = fm.callsign 
+        and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
+        and a.altitude > 0 and active = 't'  " . $flightstring . " 
 
-order by 
-f.flightid, 
-a.callsign, 
-thetime asc; ";
+        order by 
+        f.flightid, 
+        a.callsign, 
+        thetime asc; 
+    ";
 
     $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute")));
     if (!$result) {
@@ -108,14 +108,14 @@ thetime asc; ";
     }    
 
 
-    printf ("[");
+    printf ("{");
     $superfirsttime = 1;
     foreach ($callsigns as $flightid => $ray) {
         if (! $superfirsttime)
             printf (", ");
         $superfirsttime = 0;
-        printf ("{ \"flightid\" : \"%s\", ", $flightid);
-        printf ("\"chartdata\" : {");
+        //printf ("{ \"flightid\" : \"%s\", ", $flightid);
+        //printf ("\"chartdata\" : {");
 
         $outerfirsttime = 1;
         foreach ($ray as $cs) {
@@ -142,9 +142,9 @@ thetime asc; ";
              }
              printf ("] ");
         }
-        printf ("} }");
+        //printf ("} }");
     }
-    printf ("]");
+    printf ("}");
 
     sql_close($link);
 

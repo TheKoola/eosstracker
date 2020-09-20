@@ -154,7 +154,6 @@
     }
 
 
-
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);
@@ -166,8 +165,11 @@
     $channels = [];
 
     while ($row = sql_fetch_array($result)) {
-        $tdata["channel" . $row['channel'] . "_" . round($row['frequency'] / 1000000, 3) . "MHz" ][] = $row['thedate'] . " " . $row['theminute'];
-        $rfdata["channel" . $row['channel'] . "_" . round($row['frequency'] / 1000000, 3) . "MHz" ][] = $row['count'];
+        $freq_text = round($row["frequency"] / 1000000, 3) . "MHz";
+        if ($row["frequency"] <= 0)
+            $freq_text = "ext-radio";
+        $tdata["ch" . $row['channel'] . "_" . $freq_text ][] = $row['thedate'] . " " . $row['theminute'];
+        $rfdata["ch" . $row['channel'] . "_" . $freq_text ][] = $row['count'];
     }    
 
     if (sql_num_rows($result) > 0) {
