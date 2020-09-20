@@ -1434,7 +1434,11 @@
         date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
         f.flightid,
         a.callsign, 
-        a.raw
+        case when a.raw is not null then
+            split_part(a.raw, ':>', 2)
+        else
+            NULL
+        end as raw
 
         from 
         packets a,
@@ -1483,34 +1487,6 @@
     }
 
     $packetlistJSON["positionpackets"] = array_slice($lastfewpackets, 0, 5);
-
-        //$c_rev = array_reverse($ray);
-
-    /*
-    foreach ($beacons as $c => $ray) {
-        $i = 0;
-        $lastpath = "";
-        foreach ($ray as $row) {
-            //print_r($row);
-            if ($i >= 10)
-                break;
-            if ($row["source"] == 'direwolf')
-                $lastpath = $lastpath . "R";
-            else
-                $lastpath = $lastpath . "I";
-            $i++;
-        }
-        if (sizeof($ray) > 0) {
-            $packetlistJSON["lastpacketpath"][] = array(
-                "time" => end($ray)["thetime"],
-                "flightid" => $get_flightid,
-                "callsign" => $c,
-                "lastpath" => $lastpath
-            );
-        }
-    }
-     */
-
     $packetlistJSON["flightid"] = $get_flightid;
 
 
