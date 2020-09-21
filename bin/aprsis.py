@@ -790,7 +790,7 @@ class APRSIS(object):
 
                     # If that time difference is greater than the packet_timeout, then close the APRS-IS connection.  The "run" loop (above) should attempt a reconnect...
                     if diff.total_seconds() > self.packet_timeout:
-                        print "Watchdog:  No packets from, %s for %.1f seconds, resetting connection." % (self.server, diff.total_seconds())
+                        debugmsg("Watchdog:  No packets from, %s for %.1f seconds, resetting connection." % (self.server, diff.total_seconds()))
                         self.ais.shutdownSocket()
 
                 # Sleep for delta seconds
