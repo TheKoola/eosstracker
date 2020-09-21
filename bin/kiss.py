@@ -263,9 +263,9 @@ class KISS(object):
                     reconnect_count += 1
 
                     # if the consecutive reconnect counter is too high, then we try to kill the direwolf process (it should restart itself)
-                    if reconnect_count > 2:
-                        debugmsg("Reconnect counter too high, calling terminate direwolf function")
-                        self.terminateDirewolf()
+                    #if reconnect_count > 2:
+                    #    debugmsg("Reconnect counter too high, calling terminate direwolf function")
+                    #    self.terminateDirewolf()
 
                     self.close()
                     self.connect()
