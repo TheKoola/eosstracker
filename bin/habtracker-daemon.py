@@ -468,10 +468,10 @@ def main():
 
        
         # This is the aprsc process
-        #aprscprocess = mp.Process(target=aprsc.aprsc, args=(configuration, stopevent))
-        #aprscprocess.daemon = True
-        #aprscprocess.name = "aprc"
-        #processes.append(aprscprocess) 
+        aprscprocess = mp.Process(target=aprsc.aprsc, args=(configuration, stopevent))
+        aprscprocess.daemon = True
+        aprscprocess.name = "aprc"
+        processes.append(aprscprocess) 
 
         status = {}
         antennas = []
@@ -556,7 +556,8 @@ def main():
         status["timezone"] = str(configuration["timezone"])
 
         # This is the APRS-IS connection tap.  This is the process that is responsible for inserting APRS packets into the database
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsis.tapProcess, args=(configuration, "noam.aprs2.net", "aprs", options.aprsisRadius, stopevent))
+        #aprstap = mp.Process(name="APRS-IS Tap", target=aprsis.tapProcess, args=(configuration, "noam.aprs2.net", "aprs", options.aprsisRadius, stopevent))
+        aprstap = mp.Process(name="APRS-IS Tap", target=aprsis.tapProcess, args=(configuration, "127.0.0.1", "aprs", options.aprsisRadius, stopevent))
         aprstap.daemon = True
         aprstap.name = "APRS-IS Tap"
         processes.append(aprstap)

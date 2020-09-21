@@ -204,6 +204,10 @@
                         <div class="table-cell"><span id="direwolf-status"></span></div>
                     </div>
                     <div class="table-row">
+                        <div class="table-cell">aprsc</div>
+                        <div class="table-cell"><span id="aprsc-status"></span></div>
+                    </div>
+                    <div class="table-row">
                         <div class="table-cell">gpsd</div>
                         <div class="table-cell"><span id="gpsd-status"></span></div>
                     </div>

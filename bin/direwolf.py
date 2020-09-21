@@ -121,7 +121,8 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
             if configdata["igating"] == "true":
                 password = configdata["passcode"]
                 f.write("# APRS-IS Info\n")
-                f.write("IGSERVER noam.aprs2.net\n")
+                #f.write("IGSERVER noam.aprs2.net\n")
+                f.write("IGSERVER 127.0.0.1\n")
                 f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
                 #password = aprslib.passcode(str(callsign))
 
