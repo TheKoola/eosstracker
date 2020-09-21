@@ -26,6 +26,9 @@ import threading as th
 import multiprocessing as mp
 import time
 import select
+import psutil
+import os
+import signal
 
 KISS_FEND = 0xC0    # Frame start/end marker
 KISS_FESC = 0xDB    # Escape character
@@ -154,6 +157,10 @@ class KISS(object):
 
         try:
 
+            # How many times have we tried to reconnect to direwolf consecutively
+            reconnect_count = 0
+            socketnotready_count = 0
+
             while not self.stopevent.is_set():
                 try:
                     self.sock.settimeout(10.0)
@@ -162,13 +169,18 @@ class KISS(object):
                     # Check socket readiness
                     ready = select.select([self.sock], [], [], 10.0)
 
+
                     if ready[0]:
-                        countdowntimer = 4
+                        socketnotready_count = 0
+                        reconnect_count = 0
+
                         debugmsg("Reading from socket")
                         raw = self.sock.recv(256)
                         
                         # If the socket returned some data, then process it...
                         if raw:
+
+                            # split out the pieces of the data returned
                             fend_pieces = raw.split(chr(KISS_FEND))
                             num_fends = len(fend_pieces)
 
@@ -236,15 +248,25 @@ class KISS(object):
                             debugmsg ("Connection failed")
                             raise ConnectionFailed
                     else:
-                        countdowntimer -= 1
+                        socketnotready_count += 1
                         debugmsg("Socket was not ready");
-                        if countdowntimer <= 0:
+                        if socketnotready_count > 4:
                             debugmsg("Failing connection and reconnecting.")
                             print "No packets seen from direwolf, attempting to reconnect."
+                            sys.stdout.flush()
                             raise ConnectionFailed
 
                 except (socket.error, ConnectionFailed) as e:
                     debugmsg("Error: {}".format(e))
+
+                    # Increment the consecutive reconnect counter
+                    reconnect_count += 1
+
+                    # if the consecutive reconnect counter is too high, then we try to kill the direwolf process (it should restart itself)
+                    if reconnect_count > 2:
+                        debugmsg("Reconnect counter too high, calling terminate direwolf function")
+                        self.terminateDirewolf()
+
                     self.close()
                     self.connect()
 
@@ -368,6 +390,29 @@ class KISS(object):
 
             return None
 
+
+    def terminateDirewolf(self):
+        """
+        Used to find and terminate the direwolf process (if it's running)
+        """
+
+        pid = -1
+        for proc in psutil.process_iter():
+           # Get process detail as dictionary
+           try:
+               pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+           except (psutil.NoSuchProcess, psutil.AccessDenied):
+               pass
+           else:
+               if "direwolf" in pInfoDict["name"].lower() or "direwolf" in pInfoDict["cmdline"]:
+                   pid = pInfoDict["pid"]
+        if pid > 0:
+            debugmsg ("Sending direwolf process, {}, the SIGTERM signal.".format(pid))
+            print "Stopping direwolf process: ", pid, ", and attempting to restart."
+            sys.stdout.flush()
+
+            # kill this pid
+            os.kill(pid, signal.SIGTERM)
 
 
 class txKISS(KISS):
@@ -564,4 +609,6 @@ class txKISS(KISS):
 
         except (KeyboardInterrupt, SystemExit):
             pass
+
+
 

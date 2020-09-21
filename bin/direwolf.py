@@ -24,6 +24,9 @@ import subprocess as sb
 import threading as th
 import signal
 import aprslib
+import psutil
+import os
+import sys
 
 ##################################################
 # This creates the configuration file for Direwolf
@@ -176,37 +179,72 @@ def direwolf(e, callsign, freqlist, config, position):
     # The command string and arguments for running direwolf.
     df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
 
+    # The direwolf process
+    p = None
+
     # Now run direwolf...
-    try:
-        # We open the logfile first, for writing
-        l = open(logfile, "w")
+    # This is a loop because we want to restart direwolf if it is killed or fails.
+    while not e.is_set():
+        try:
 
-        # Run the direwolf command
-        p = sb.Popen(df_command, stdout=l, stderr=l)
+            # We open the logfile first, for writing
+            l = open(logfile, "w")
 
-        # Wait for it to finish
-        e.wait()
+            # Run the direwolf command
+            print "Starting direwolf."
+            sys.stdout.flush()
+            p = sb.Popen(df_command, stdout=l, stderr=l)
 
-        # Direwolf should not be running, but if it is, we need to kill it
-        if p.poll() is None:
-            print "Terminating direwolf..."
-            p.terminate()
-            print "Waiting for direwolf to end.."
-            p.wait()
-            print "Direwolf ended"
+            # Wait for it to finish
+            while p.poll() is None and not e.is_set():
+                #print "Waiting for direwolf to end..."
+                e.wait(1)
 
-        # Close the log file
-        l.close()
+            # Direwolf should not be running, but if it is, we need to kill it
+            if p.poll() is None:
+                print "Terminating direwolf..."
+                p.terminate()
+                print "Waiting for direwolf to end.."
+                p.wait()
+                print "Direwolf ended"
 
-    except (KeyboardInterrupt, SystemExit):
-        if p.poll() is None:
-            print "Terminating direwolf..."
-            p.terminate()
-            print "Waiting for direwolf to end.."
-            p.wait()
-            print "Direwolf ended"
+            # Close the log file
+            l.close()
 
-        # Close the log file
-        l.close()
+        except (KeyboardInterrupt, SystemExit):
+            if p.poll() is None:
+                print "Terminating direwolf..."
+                p.terminate()
+                print "Waiting for direwolf to end.."
+                p.wait()
+                print "Direwolf ended"
 
 
+            # Close the log file
+            l.close()
+            
+            # exit out of this loop
+            break
+
+    print "Direwolf process has finished."
+
+
+
+##################################################
+# check if the direwolf process is running
+##################################################
+def isDirewolfRunning():
+
+    # Iterate over all running processes
+    pid = -1
+    for proc in psutil.process_iter():
+       # Get process detail as dictionary
+       try:
+           pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+       except (psutil.NoSuchProcess, psutil.AccessDenied):
+           pass
+       else:
+           if "direwolf" in pInfoDict["name"].lower() or "direwolf" in pInfoDict["cmdline"]:
+               pid = pInfoDict["pid"]
+
+    return pid
