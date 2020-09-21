@@ -225,7 +225,7 @@
                 y.flightid,
                 y.comment,
                 y.symbol,
-                round(y.altitude / 1000.0) as altitude,
+                floor(y.altitude / 1000.0) as altitude,
                 round(y.speed_mph) as speed_mph,
                 round(y.bearing) as bearing,
                 round(y.lat, 6) as latitude,
