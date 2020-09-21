@@ -252,7 +252,7 @@ class KISS(object):
                         debugmsg("Socket was not ready");
                         if socketnotready_count > 4:
                             debugmsg("Failing connection and reconnecting.")
-                            print "No packets seen from direwolf, attempting to reconnect."
+                            #print "No packets seen from direwolf, attempting to reconnect."
                             sys.stdout.flush()
                             raise ConnectionFailed
 
