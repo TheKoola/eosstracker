@@ -2350,30 +2350,6 @@ function getTrackers() {
 
 
     /************
-     * clearRealtimeLayer
-     *
-     * This function will remove all features from a realtime layer
-     *
-    *************/
-    function clearRealtimeLayer(rl) {
-
-        // This is the LeafletJS layer group 
-        var group = rl.options.container;
-        var features = [];
-
-        // for each feature/item within that layer group, execute this function...
-        group.eachLayer(function(l) {
-            features.push({ "properties": { "id": l.feature.properties.id}});
-        });
-
-        if (features.length > 0) {
-            rl.remove({"features": features});
-        }
-    }
-
-
-
-    /************
      * pruneRealtimeLayer
      *
      * This function will remove those features from a realtime layer that are older than the cutoff timestamp
