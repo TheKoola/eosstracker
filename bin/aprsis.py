@@ -33,11 +33,13 @@ import random
 from inspect import getframeinfo, stack
 import string
 import select
+import logging
 
 #import local configuration items
 import habconfig 
 
 #logging.basicConfig(level=0)
+logging.getLogger("aprslib").addHandler(logging.NullHandler())
 
 
 #####################################
