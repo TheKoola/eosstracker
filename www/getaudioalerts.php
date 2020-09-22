@@ -241,7 +241,7 @@
                 y.hash,
                 case 
                 when y.location2d != '' and gps.location2d != '' then
-                    round(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric))
+                    floor(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric))
                 else
                     -99
                 end as distance_miles,
@@ -253,7 +253,7 @@
                 end as angle,
                 case 
                 when y.location2d != '' and gps.location2d != '' then
-                    round(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric))
+                    floor(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric))
                 else
                     -99
                 end as azimuth,
@@ -265,7 +265,7 @@
                 end as myheading,
                 case
                     when lp.location2d != '' and gps.location2d != '' then
-                        round(cast (ST_DistanceSphere(gps.location2d, lp.location2d)*.621371/1000 as numeric))
+                        floor(cast (ST_DistanceSphere(gps.location2d, lp.location2d)*.621371/1000 as numeric))
                     else
                         -99
                 end as landingdistance_miles,
@@ -564,7 +564,7 @@
             $words = $words . " Time to live, " . $ttl_words . " minutes";
 
             # The distance to the landing location from our own position (i.e. from GPS).
-            $landingdistance = ceil($landingdistance_miles);
+            $landingdistance = $landingdistance_miles;
 
             # if the landing distance is greater than zero, then add that phrase to the end of our statement.  If the distance value is < 0, then most likely the system doesn't
             # have a valid GPS position recorded yet so it doesn't make sense to add a phrase about "distance".
