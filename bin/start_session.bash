@@ -65,14 +65,7 @@ echo "###################" >> ${LOGFILE}
 date >> ${LOGFILE}
 echo "###################" >> ${LOGFILE}
 
-# Start Pulseaudio daemon if it's not already running
-#echo "Starting pulseaudio..." >>${LOGFILE}
-#pulseaudio -k >>${LOGFILE}
-#pulseaudio --start >>${LOGFILE}
-#aplay -l >> ${LOGFILE}
-
-#echo "###################" >> ${LOGFILE}
-#echo "###################" >> ${LOGFILE}
+rm -f ${LOGDIR}/direwolf.out
 
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
 nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &
