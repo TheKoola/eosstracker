@@ -82,6 +82,9 @@
             $configuration[$key] = $defaults[$key];
     }
 
+    // Workaround to make sure this is never on until the plottracks feature is fully disposed of.  ;)
+    $configuration["plottracks"] = "off";
+
     printf ("%s", json_encode($configuration));
 
 ?>
