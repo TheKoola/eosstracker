@@ -426,9 +426,9 @@
                 y.source,
                 y.hash,
                 round(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric), 2) as distance,
-                round(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric)) as angle,
-                round(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric)) as relative_bearing,
-                round(gps.bearing) as mybearing,
+                floor(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric)) as angle,
+                floor(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric)) as relative_bearing,
+                floor(gps.bearing) as mybearing,
                 floor(lp.ttl / 60.0) as ttl,
                 y.elapsed_secs
 
