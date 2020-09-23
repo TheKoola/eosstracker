@@ -107,86 +107,6 @@ class kissTap(object):
 
     ################################
     # 
-    # This function will make sure the packets table has the correct columns
-    def _checkDBTable(self):
-
-        try:
-
-            if not self.connectToDatabase():
-                return False
-
-            # Create a database cursor
-            dbcur = self.kissconn.cursor()
-        
-            # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-            check_columns = [ ("source", "text"), ("channel", "numeric"), ("frequency", "numeric") ]
-
-            made_changes = False
-            for column, coltype in check_columns:
-                # SQL to check if the column exists or not
-                check_column_sql = "select column_name from information_schema.columns where table_name='packets' and column_name=%s;"
-                dbcur.execute(check_column_sql, [ column ])
-                rows = dbcur.fetchall()
-
-                # If the number of rows returned is zero, then we need to create the column
-                if len(rows) == 0:
-                    print "Column, %s, does not exist within the 'packets' table.  Adding now." % column
-
-                    # SQL to alter the "landingpredictions" table and add the "flightpath" column
-                    alter_table_sql = "alter table packets add column " + column + " " + coltype + ";";
-                    dbcur.execute(alter_table_sql)
-                    self.kissconn.commit()
-                    made_changes = True
-
-
-            if made_changes:
-                # SQL to truncate rows older than one month.
-                sql_source = "truncate table packets;"
-                debugmsg("Deleting all rows from packets table: %s" % sql_source);
-                dbcur.execute(sql_source)
-                self.kissconn.commit()
-
-                # SQL to update the source column to "other" in those cases were it's empty
-                #sql_source = "update packets set source='other' where source is null;"
-                #debugmsg("Updating source column: %s" % sql_source);
-                #dbcur.execute(sql_source)
-                #self.kissconn.commit()
-
-                # SQL to update the channel column to "-1" in those cases were it's empty
-                #sql_channel = "update packets set channel=-1 where channel is null;"
-                #debugmsg("Updating channel column: %s" % sql_channel);
-                #dbcur.execute(sql_channel)
-                #self.kissconn.commit()
-
-                # SQL to drop the primary index if it exists
-                sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_pkey');"
-                dbcur.execute(sql_exists)
-                rows = dbcur.fetchall()
-                if len(rows) > 0:
-                    if rows[0][0] == True:
-                        sql_drop = "alter table packets drop constraint packets_pkey;"
-                        debugmsg("Dropping existing primary key: %s" % sql_drop);
-                        dbcur.execute(sql_drop)
-                        self.kissconn.commit()
-
-                # Now add back an updated primary index
-                sql_add = "alter table packets add primary key (tm, source, channel, callsign, hash);"
-                debugmsg("Adding new primary key: %s" % sql_add);
-                dbcur.execute(sql_add)
-                self.kissconn.commit()
-
-
-            # Close DB connection
-            dbcur.close()
-        except pg.DatabaseError as error:
-            dbcur.close()
-            self.kissconn.close()
-            print error
-
-
-
-    ################################
-    # 
     # This function will save the channel to frequency map
     def setFreqMap(self, fmap):
         self.freqmap = fmap
@@ -305,9 +225,6 @@ class kissTap(object):
 
                 # Set autocommit to on
                 self.kissconn.set_session(autocommit=True)
-
-                # Check tables for approprate columns, etc..
-                self._checkDBTable()
 
             return True
 

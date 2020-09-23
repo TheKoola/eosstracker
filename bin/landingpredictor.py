@@ -2254,54 +2254,6 @@ class LandingPredictor(PredictorBase):
 ##################################################
 def runLandingPredictor(schedule, e, config):
     try:
-        # we need to see if the existing landing predictions table has the flightpath column and add it if not.
-        try:
-            # Database connection 
-            dbconn = None
-            dbconn = pg.connect (habconfig.dbConnectionString)
-            dbconn.set_session(autocommit=True)
-            dbcur = dbconn.cursor()
-
-            # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-            check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric"), ("patharray", "numeric[][]"), ("winds", "numeric[]") ]
-
-            for column, coltype in check_columns:
-                # SQL to check if the column exists or not
-                check_column_sql = "select column_name from information_schema.columns where table_name='landingpredictions' and column_name=%s;"
-                dbcur.execute(check_column_sql, [ column ])
-                rows = dbcur.fetchall()
-
-                # If the number of rows returned is zero, then we need to create the column
-                if len(rows) == 0:
-                    print "Column, %s, does not exist within the 'landingpredictions' table.  Adding now." % column
-                    
-                    # SQL to alter the "landingpredictions" table and add the "flightpath" column
-                    alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype + ";";
-                    dbcur.execute(alter_table_sql)
-                    dbconn.commit()
-
-            # SQL to add an index on the time column of the packets table
-            sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
-            dbcur.execute(sql_exists)
-            rows = dbcur.fetchall()
-            if len(rows) > 0:
-                if rows[0][0] == False:
-                    # Add the index since it didn't seem to exist.
-                    sql_add = "create index packets_tm on packets(tm);"
-                    print "Adding packets_tm index to the packets table"
-                    debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
-                    dbcur.execute(sql_add)
-                    dbconn.commit()
-
-            # Close DB connection
-            dbcur.close()
-            dbconn.close()
-        except pg.DatabaseError as error:
-            dbcur.close()
-            dbconn.close()
-            print error
-
-
         # Create a new LandingPredictor object
         lp = LandingPredictor(habconfig.dbConnectionString, timezone=config['timezone'], timeout = 20)
 

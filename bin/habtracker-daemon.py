@@ -189,16 +189,42 @@ def isRunning(myprocname):
 
 
 ##################################################
-# add row to tracker teams table
+# Single function for processing the collection of database/table updates
 ##################################################
-def checkBenchTeam():
-    # we need to see if the existing landing predictions table has the flightpath column and add it if not.
+def databaseUpdates():
+    """
+    This function contains a collection of checks and upates to database tables.  As the version of this code advances, 
+    place updates to tables here.
+    """
+
     try:
         # Database connection 
         dbconn = None
         dbconn = pg.connect (habconfig.dbConnectionString)
+        dbconn.set_session(autocommit=True)
         dbcur = dbconn.cursor()
 
+
+        ts = datetime.datetime.now()
+        time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
+        print "/******* Starting database checks:  ", time_string, " ********/"
+
+        # SQL to check how many rows are in the packets and landingpredictions tables
+        packets_sql = "select count(*) from packets;"
+        lp_sql = "select count(*) from landingpredictions;"
+
+        dbcur.execute(packets_sql)
+        rows = dbcur.fetchall()
+        packets_count = rows[0][0]
+
+        dbcur.execute(lp_sql)
+        rows = dbcur.fetchall()
+        lp_count = rows[0][0]
+
+        print "Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)
+
+
+        #------------------- tracker stuff ------------------#
         # SQL to check if the column exists or not
         check_row_sql = "select * from teams where tactical='ZZ-Not Active';"
         dbcur.execute(check_row_sql)
@@ -207,15 +233,157 @@ def checkBenchTeam():
         # If the number of rows returned is zero, then we need to add the row
         if len(rows) == 0:
             print "Adding the 'ZZ-Not Active' team to the tracker team list."
+            sys.stdout.flush()
             
             # SQL to add the row
             insert_sql = "insert into teams (tactical, flightid) values ('ZZ-Not Active', NULL);"
             dbcur.execute(insert_sql)
             dbconn.commit()
+        #------------------- tracker stuff ------------------#
+
+
+        #------------------- landingpredictions table ------------------#
+        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
+        check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric"), ("patharray", "numeric[][]"), ("winds", "numeric[]") ]
+
+        for column, coltype in check_columns:
+            # SQL to check if the column exists or not
+            check_column_sql = "select column_name from information_schema.columns where table_name='landingpredictions' and column_name=%s;"
+            dbcur.execute(check_column_sql, [ column ])
+            rows = dbcur.fetchall()
+
+            # If the number of rows returned is zero, then we need to create the column
+            if len(rows) == 0:
+                print "Adding landingpredictions::%s column." % column
+                sys.stdout.flush()
+                
+                # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype + ";";
+                dbcur.execute(alter_table_sql)
+                dbconn.commit()
+
+        # SQL to add an index on the time column of the landingpredictions table
+        lp_tm_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'landingpredictions' and indexname = 'landingpredictions_tm');"
+        dbcur.execute(lp_tm_exists)
+        rows = dbcur.fetchall()
+        if len(rows) > 0:
+            if rows[0][0] == False:
+                # Add the index since it didn't seem to exist.
+                sql_add = "create index landingpredictions_tm on landingpredictions(tm);"
+                print "Adding landingpredictions_tm index."
+                sys.stdout.flush()
+                debugmsg("Adding landingpredictions_tm index to the landingpredictions table: %s" % sql_add)
+                dbcur.execute(sql_add)
+                dbconn.commit()
+
+        #------------------- landingpredictions table ------------------#
+
+
+
+        #------------------- packets table ------------------#
+        # SQL to add an index on the time column of the packets table
+        sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
+        dbcur.execute(sql_exists)
+        rows = dbcur.fetchall()
+        if len(rows) > 0:
+            if rows[0][0] == False:
+                # Add the index since it didn't seem to exist.
+                sql_add = "create index packets_tm on packets(tm);"
+                print "Adding packets_tm index."
+                sys.stdout.flush()
+                debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
+                dbcur.execute(sql_add)
+                dbconn.commit()
+
+
+        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
+        check_columns = [ ("source", "text"), ("channel", "numeric"), ("frequency", "numeric") ]
+
+        made_changes = False
+        for column, coltype in check_columns:
+            # SQL to check if the column exists or not
+            check_column_sql = "select column_name from information_schema.columns where table_name='packets' and column_name=%s;"
+            dbcur.execute(check_column_sql, [ column ])
+            rows = dbcur.fetchall()
+
+            # If the number of rows returned is zero, then we need to create the column
+            if len(rows) == 0:
+                print "Adding packets::%s column." % column
+                sys.stdout.flush()
+
+                # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                alter_table_sql = "alter table packets add column " + column + " " + coltype + ";";
+                dbcur.execute(alter_table_sql)
+                dbconn.commit()
+                made_changes = True
+
+
+        if made_changes:
+
+            # SQL to update the source column to "other" in those cases were it's empty
+            sql_source = "update packets set source='other' where source is null;"
+            print "Updating packets::source column."
+            sys.stdout.flush()
+            debugmsg("Updating source column: %s" % sql_source);
+            dbcur.execute(sql_source)
+            dbconn.commit()
+
+            # SQL to update the channel column to "-1" in those cases were it's empty
+            sql_channel = "update packets set channel=-1 where channel is null;"
+            print "Updating packets::channel column."
+            sys.stdout.flush()
+            debugmsg("Updating channel column: %s" % sql_channel);
+            dbcur.execute(sql_channel)
+            dbconn.commit()
+
+            # SQL to drop the primary index if it exists
+            sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_pkey');"
+            dbcur.execute(sql_exists)
+            rows = dbcur.fetchall()
+            if len(rows) > 0:
+                if rows[0][0] == True:
+                    sql_drop = "alter table packets drop constraint packets_pkey;"
+                    debugmsg("Dropping existing primary key: %s" % sql_drop);
+                    print "Dropping primary key from packets table."
+                    dbcur.execute(sql_drop)
+                    dbconn.commit()
+
+            # Now add back an updated primary index
+            sql_add = "alter table packets add primary key (tm, source, channel, callsign, hash);"
+            print "Adding primary key to packets table."
+            sys.stdout.flush()
+            debugmsg("Adding new primary key: %s" % sql_add);
+            try:
+                dbcur.execute(sql_add)
+                dbconn.commit()
+            except pg.DatabaseError as e:
+                # We were unable to add this key back to the existing table.  The only path forward from here is to delete all rows...
+                print "Error updating primary key:  ", e
+
+                # SQL to truncate rows older than one month.
+                sql_source = "truncate table packets;"
+                print "Unable to create index on packets table, deleteing all rows...sorry, only way.  :("
+                sys.stdout.flush()
+                debugmsg("Deleting all rows from packets table: %s" % sql_source);
+                dbcur.execute(sql_source)
+                dbconn.commit()
+
+                print "Adding primary key on packets table."
+                dbcur.execute(sql_add)
+                dbconn.commit()
+
+        #------------------- packets table ------------------#
+
+        ts = datetime.datetime.now()
+        time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
+        print "/******* Completed database checks:  ", time_string, "********/"
+        sys.stdout.flush()
 
         # Close DB connection
         dbcur.close()
         dbconn.close()
+
+
     except pg.DatabaseError as error:
         dbcur.close()
         dbconn.close()
@@ -392,7 +560,7 @@ def main():
 
 
     # --------- Add any Database things ----------
-    checkBenchTeam();
+    databaseUpdates()
 
     # --------- End of database additions----------
 
