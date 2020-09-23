@@ -615,7 +615,7 @@
                 $(hvelement).data("relativebearing").setRelativeHeading(myheading, rel_bearing);
                 $(evelement).data("relativeangle").setElevationAngle(angle);
                 $(delement).html(distance.toFixed(2) + " mi" + " @ " + rel_bearing.toFixed(0) + "&#176;");
-                $(celement).text(lat.toFixed(3) + ", " + lon.toFixed(3));
+                $(celement).text(lat.toFixed(4) + ", " + lon.toFixed(4));
                 $(evelement).text(angle.toFixed(0));
                 $(hvelement).text(relativeBearing.toFixed(0));
                 $(mhvelement).text(myheading.toFixed(0));
