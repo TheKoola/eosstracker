@@ -27,14 +27,16 @@
     var chart2;
     var chart3;
     var chart4;
+    var chart5;
 
     // These are global variables used to maintain state for the raw packet display
     var selectedFlight;
-    var packetdata;
+    var packetdata = { "packets": []};
     var updatePacketsEvent;
-    var flightlist;
+    var flightList;
     var currentflight;
     var packetcount;
+    var lastUpdateTime = 0;
 
     // Initial chart size
     var chartwidth = getChartWidth();
@@ -86,6 +88,29 @@
     
 
     /***********
+    * coord_distance
+    *
+    * This function return the distance in miles between two lat/lon points
+    ***********/
+    function coord_distance(lat1, lon1, lat2, lon2) {
+        // This is pi (i.e. 3.14159) divided by 180.  Pre-calcualted and entered here as static 
+        // variable so we don't have to calcuate that on every call.
+        var p = 0.017453292519943295;    
+        
+        // The cosine function
+        var c = Math.cos;
+
+        // partial calculation...
+        var a = 0.5 - c((lat2 - lat1) * p)/2 + 
+                c(lat1 * p) * c(lat2 * p) * 
+                (1 - c((lon2 - lon1) * p))/2;
+
+        // Finish the calcs and return the distance in miles
+        return Math.round((12742 * Math.asin(Math.sqrt(a)))*.6213712 * 100)/100; // 2 * R; R = 6371 km
+    }
+
+
+    /***********
     * createchart
     *
     * This is the APRS-IS packet counts chart.
@@ -93,76 +118,168 @@
     function createchart (jsondata, columns) {
         chart = c3.generate({
             bindto: '#chart1',
-            padding: { right: 20 },
+            padding: { right: 10 },
             size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+                type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
+                //y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
+                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },
             grid: { x: { show: true }, y: { show: true } },
+            line: { connectNull: true },
             point: { show: true },
-            color: { pattern: chartcolors }
+            color: { pattern: chartcolors },
+            title: { text: "Flight Altitude", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
 
     /***********
     * createchart2
     *
-    * This is the KC0D payload Temperature chart
+    * This is the KC0D payload air density chart
     ***********/
     function createchart2 (jsondata, columns) {
         chart2 = c3.generate({
             bindto: '#chart2',
-            /*padding: { right: 20 },*/
-            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            padding: { right: 10 },
+            size: { width: Math.floor(chartwidth/2), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
-            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Temperature (F)', position: 'outer-middle' } } },
+                type: 'spline', json: jsondata, xs: columns },
+            axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format: function (x) { return x.toFixed(1) + "k"; } }  }, 
+                y: { label: { text: 'Air Density (kg/m3)', position: 'outer-middle' } } },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
             color: { pattern: chartcolors },
-            title: { text: "Temperature (F)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
-        }); }
+            title: { text: "Air Density", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+        }); 
+        document.getElementById("chart2-ascent").checked = true;
+        document.getElementById("chart2-descent").checked = true;
+    }
 
     /***********
     * createchart4
     *
-    * This is the KC0D payload Pressure chart
+    * This is the KC0D payload Temperature and Pressure chart
     ***********/
-    function createchart4 (jsondata, columns) {
+    function createchart4 (jsondata, columns, axes) {
         chart4 = c3.generate({
             bindto: '#chart4',
-            /*padding: { right: 20 },*/
-            size: { width: Math.floor(chartwidth/2.1), height: chartheight },
+            //padding: { right: 20 },
+            size: { width: Math.floor(chartwidth/2), height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
-            axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                y: { label: { text: 'Pressure (atm)', position: 'outer-middle' } } },
+                type: 'spline', json: jsondata, xs: columns, axes: axes },
+            axis: { x: { label: { text: 'Altitude (1000\'s ft)', position: 'outer-center' }, tick: { count: 6, format:  function (x) { return x.toFixed(1) + "k";} }  }, 
+                y: { label: { text: 'Temperature (F)', position: 'outer-middle' } },
+                y2: { show: true, label: { text: 'Pressure (atm)', position: 'outer-middle' } } 
+            },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
             color: { pattern: chartcolors },
-            title: { text: "Pressure (atm)", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
+            title: { text: "Temperature/Pressure", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } } 
         });
+        document.getElementById("chart4-ascent").checked = true;
+        document.getElementById("chart4-descent").checked = true;
+    }
+
+    /***********
+    * getSeries
+    *
+    * This is returns a list of data series current loaded in the chart4 object
+    ***********/
+    function getSeries(chart, search) {
+        var series = chart.data();
+        var series_list = [];
+        var a;
+
+        for (s in series) {
+            if (series[s].id.indexOf(search) != -1)
+                series_list.push(series[s].id);
+        }
+
+        //document.getElementById("chart4-output").innerHTML = JSON.stringify(series_list);
+
+        return series_list;
+    }
+
+    /***********
+    * addButtons
+    *
+    * This is will add the ascent/descent selector buttons for chart4
+    ***********/
+    function addButtons() {
+        var element = document.getElementById("chart4-buttons");
     }
 
     /***********
     * createchart3
     *
     * This is the Direwolf RF Packets chart.
-    ***********/
+    **********/
     function createchart3 (jsondata, columns) {
         chart3 = c3.generate({
             bindto: '#chart3',
-            padding: { right: 20 },
+            padding: { right: 10 },
             size: { width: chartwidth, height: chartheight },
             data: { empty : { label: { text: "No Data Available" } }, 
-                type: 'spline', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
+                type: 'spline', 
+                json: jsondata, 
+                xs: columns, 
+                xFormat: '%Y-%m-%d %H:%M:%S',
+            },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
                 y: { label: { text: 'Packets / Min', position: 'outer-middle' } } },
             point: { show: true },
             grid: { x: { show: true }, y: { show: true } },
-            color: { pattern: chartcolors }
+            color: { pattern: chartcolors },
+            title: { text: "RF Packet Counts", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+        });
+    }
+
+
+    /***********
+    * createchart5
+    *
+    * This is the flight beacon telemetry chart
+    **********/
+    function createchart5 (jsondata, columns) {
+        chart5 = c3.generate({
+            bindto: '#chart5',
+            padding: { right: 10 },
+            size: { width: chartwidth, height: chartheight },
+            onrendered: function() {
+                d3.select("#chart5")
+                 .selectAll(".c3-texts .c3-text")
+                 .style("transform", "translate(30px, 13px)")
+                 .style("font-size", "1.8em")
+                 .style("text-align", "left")
+                ;
+
+            },
+            data: { empty : { label: { text: "No Data Available" } }, 
+                type: 'spline', 
+                json: jsondata, 
+                xs: columns, 
+                xFormat: '%Y-%m-%d %H:%M:%S',
+                labels: {
+                    format: function(v, id, i, j) {
+                        if (typeof(j) != "undefined") {
+                            var k = j.length;
+                            if (k-1 == i) {
+                                var a = Math.round(v/100) / 10;
+                                return a + "k";
+                            }
+                        }
+                        else
+                            return "";
+                    }
+                }
+            },
+            axis: { x: { max: new Date(Date.now() + 1200 * 1000),  label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
+                y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
+            point: { show: true },
+            grid: { x: { show: true }, y: { show: true } },
+            color: { pattern: chartcolors },
+            title: { text: "Altitude vs Time", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
         });
     }
 
@@ -176,21 +293,21 @@
     }
     
     /***********
-    * updatechart2  
+    * updatechart2
     *
-    * This updates KC0D environmentals chart
+    * This updates KC0D air density chart
     ***********/
-/*
-    function updatechart2 (jsondata, columns, axes) {
-         chart2.load ({ json:  jsondata, xs: columns, axes: axes });
-    }
-    */
     function updatechart2 (jsondata, columns) {
          chart2.load ({ json:  jsondata, xs: columns });
     }
 
-    function updatechart4 (jsondata, columns) {
-         chart4.load ({ json:  jsondata, xs: columns });
+    /***********
+    * updatechart4
+    *
+    * This updates the temp and pressure chart
+    ***********/
+    function updatechart4 (jsondata, columns, axes) {
+         chart4.load ({ json:  jsondata, xs: columns, axes: axes });
     }
 
     /***********
@@ -199,8 +316,34 @@
     * This updates the Direwolf RF Packets chart.
     ***********/
     function updatechart3 (jsondata, columns) {
-         chart3.load ({ json:  jsondata, xs : columns});
+
+        // Get last timestamp from each series from the chart 
+        var chartdata = chart3.data();
+        var keys = Object.keys(chartdata);
+        var i;
+        var maxdate = new Date('January 1, 1970 00:00:01');
+
+        for (i = 0; i < keys.length; i++) {
+            var lastdate = chartdata[i].values[chartdata[i].values.length - 1].x;
+            if (lastdate > maxdate)
+                maxdate = lastdate;
+        }
+        chart3.load ({ json:  jsondata, xs : columns});
+        //chart3.axis.max({ x: new Date(maxdate.getTime() + 1200 * 1000) });
     }
+
+
+
+    /***********
+    * updatechart5
+    *
+    * This updates the flight beacons telemetry chart
+    ***********/
+    function updatechart5 (data, columns) {
+        chart5.load ({ json:  data, xs : columns});
+    }
+
+
 
     /***********
     * getchartdata2
@@ -220,9 +363,9 @@
             for (i = 0; i < thekeys.length; i++) {
                 if (! thekeys[i].startsWith("tm-")) {
                     mycolumns[thekeys[i]] = "tm-" + thekeys[i];
-                    if (thekeys[i].indexOf("emperature") != -1) 
+                    if (thekeys[i].indexOf("_T") != -1) 
                         axes[thekeys[i]] = "y";
-                    if (thekeys[i].indexOf("essure") != -1) 
+                    if (thekeys[i].indexOf("_P") != -1) 
                         axes[thekeys[i]] = "y2";
                 }
             }
@@ -241,6 +384,8 @@
     * It accepts a function and a URL.
     ***********/
     function getchartdata(chartupdatefunction, url) {
+
+        
         /* Call the URL provided */
         $.get(url, function(data) {
             var jsonOutput = JSON.parse(data);
@@ -258,6 +403,43 @@
             chartupdatefunction(jsonOutput, mycolumns);
         });
     }
+
+    /***********
+    * getchartdata5
+    *
+    * This function serves as a front-end for the updatechart functions.  
+    * It accepts a function and a URL.
+    ***********/
+    function getchartdata5(chartupdatefunction, url) {
+        
+        /* Call the URL provided */
+        $.get(url, function(data) {
+            var jsonOutput = JSON.parse(data);
+            var mycolumns = {};
+            var i = 0;
+            var j = 0;
+            var thekeys = Object.keys(jsonOutput);
+            var series = {};
+
+            for (i = 0; i < thekeys.length; i++) {
+                var flight = jsonOutput[i];
+                var jsondata = flight.chartdata;
+                var chartkeys = Object.keys(jsondata);
+
+                for (j = 0; j < chartkeys.length; j++) {
+                    series[chartkeys[j]] = jsondata[chartkeys[j]];
+                    if (! chartkeys[j].startsWith("tm-")) {
+                        mycolumns[chartkeys[j]] = "tm-" + chartkeys[j];
+                    }
+                }
+            }
+            //document.getElementById("error").innerHTML = JSON.stringify(mycolumns) + "<br>" + JSON.stringify(series);
+
+            /* call the provided update function with the JSON returned from the URL */
+            chartupdatefunction(series, mycolumns);
+        });
+    }
+
 
     /***********
     * gettrackerdata
@@ -411,11 +593,7 @@
     ***********/
     function displaypackets () {
         
-        // This is the list of packets
-        var packets = JSON.parse(packetdata);
-        var html = "";
-        var keys = Object.keys(packets);
-        var key;
+        var packets = packetdata.packets;
         var i = 0;
 
         // grab the search strings from the HTML fields...if the user has entered anything
@@ -425,6 +603,23 @@
         // The value of the AND, OR, NOT combiner on the HTML page
         var operation = document.getElementById("operation").value;
 
+        // which radio button is selected?
+        var r = selectedflight();
+
+        if (r != "allpackets") {
+            var a;
+
+            a = flightList.filter(obj => {return obj.flightid == r})[0];
+            if (a.beacons) {
+                packets = packets.filter(obj => {return a.beacons.includes(obj.callsign)});
+            }
+        }
+
+
+        // This is the list of packets
+        var html = "";
+        var keys = Object.keys(packets);
+        var key;
  
         // Loop through the packets applying the search filters
         for (key in keys) {
@@ -485,9 +680,13 @@
     function selectedflight() {
         var radios = document.getElementsByName("flight");
         var selectedValue;
+        var i;
 
-        for(var i = 0; i < radios.length; i++) {
-            if(radios[i].checked) selectedValue = radios[i].value;   
+        for(i = 0; i < radios.length; i++) {
+            if(radios[i].checked) {
+                selectedValue = radios[i].value;   
+                break;
+            }
         }
         return selectedValue;
     }
@@ -503,13 +702,14 @@
             var keys = Object.keys(jsondata);
             var key;
             var flight;
-            var allHtml = "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked> All packets (< 3hrs) &nbsp; &nbsp;</div>";
+            var allHtml = "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"allpackets\" name=\"flight\" value=\"allpackets\" checked> All packets &nbsp; &nbsp;</div>";
             var html = "<form>" + allHtml;
             var i = 0;
 
             for (key in keys) {
                 flight = jsondata[key].flightid;
-                html = html + "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\"> " + flight + "&nbsp; &nbsp;</div>";
+                html = html + "<div style=\"float: left; padding: 5px; white-space: nowrap;\"><input type=\"radio\" id=\"" + flight + "\" name=\"flight\" value=\"" + flight + "\"> " 
+                    + flight + "&nbsp; &nbsp;</div>";
                 i += 1;
                 
             }
@@ -519,29 +719,30 @@
  
             currentflight = "allpackets";
             $('input[type="radio"]').on('click change', function(e) {
-                currentflight = selectedflight();
-                getrecentdata();
+                updatepackets();
             });
 
-            getrecentdata();
         });
   
 
         // setup the toggle for hiding/displaying help text for the charts
-        var c1_a = "#c1-link";
+        /*var c1_a = "#c1-link";
         var c1_l = "#c1-sign";
         var c1_e = "#c1-elem";
         $(c1_a).click({element: c1_e, link: c1_l }, toggle);
+        */
+
         
-        var c2_a = "#c2-link";
+        /*var c2_a = "#c2-link";
         var c2_l = "#c2-sign";
         var c2_e = "#c2-elem";
         $(c2_a).click({element: c2_e, link: c2_l }, toggle);
+        */
 
-        var c3_a = "#c3-link";
-        var c3_l = "#c3-sign";
-        var c3_e = "#c3-elem";
-        $(c3_a).click({element: c3_e, link: c3_l }, toggle);
+        /*var c5_a = "#c5-link";
+        var c5_l = "#c5-sign";
+        var c5_e = "#c5-elem";
+        $(c5_a).click({element: c5_e, link: c5_l }, toggle);
 
         var t1_a = "#t1-link";
         var t1_l = "#t1-sign";
@@ -552,6 +753,8 @@
         var t2_l = "#t2-sign";
         var t2_e = "#t2-elem";
         $(t2_a).click({element: t2_e, link: t2_l }, toggle);
+        */
+
     }
 
 
@@ -563,22 +766,30 @@
     * and finally updates the HTML page with those packets
     ***********/
     function getrecentdata() {
-      var url;
- 
-      // Has the user selected All Flights or a specific active flight...this changes which list of packets we query for
-      if (currentflight == "allpackets")
-          url = "getallpackets.php";
-      else
-          url = "getpackets.php?flightid=" + currentflight;
+      var url = "getallpackets.php";
         
-      // set the packetdata variable to nothing...so we can update it with new data from the backend
-      packetdata = {};
+      // Check when the last time we got an update and append the URL to account for that.
+      if (lastUpdateTime > 0)
+          url = url + "?starttime=" + lastUpdateTime;
+
+      // Update the last update time just before getting the data update
+      lastUpdateTime = Math.floor(Date.now() / 1000.0);
 
       // Call the URL to get the latest list of raw APRS packets and assign that to the packetdata global variable. 
       $.get(url, function(data) { 
 
           // Update the global packetdata variable with the list of packets we get back
-          packetdata = data;
+          var existing = packetdata.packets;
+          var incoming = data.packets;
+
+          if (incoming.length > 0) {
+              var consolidated = incoming.concat(existing);
+              packetdata.packets = consolidated;
+          }
+
+          // Update the global flight to beacon mapping list
+          if (data.flights.length > 0)
+              flightList = data.flights;
 
           // Update the packet display so the user sees new packets
           updatepackets(); 
@@ -729,18 +940,16 @@
         // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
         //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter"
         //     itself thus improving the user map experience.
-        setTimeout (function () {
-            $.get("getposition.php", function(data) {
-                var lastposition = JSON.parse(data);
-                var lat = lastposition.geometry.coordinates[1];
-                var lon = lastposition.geometry.coordinates[0];
-                var zoom = 10;
+        $.get("getposition.php", function(data) {
+            var lastposition = JSON.parse(data);
+            var lat = lastposition.geometry.coordinates[1];
+            var lon = lastposition.geometry.coordinates[0];
+            var zoom = 10;
 
-                var maplink = document.getElementById("maplink");
-                var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
-                maplink.setAttribute("href", url);
-            });
-        }, 10);
+            var maplink = document.getElementById("maplink");
+            var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+            maplink.setAttribute("href", url);
+        });
     }
 
 
@@ -755,7 +964,6 @@
 
         // Add a listener for that event to the page
         document.body.addEventListener("updatepackets", displaypackets, false);
-
         
         // have the search fields and operation dropdown call the updatepackets function when their value/state changes
         var e = document.getElementById('searchfield');
@@ -773,26 +981,39 @@
         // Call the initialize function to get the page setup
         initialize();
 
+        setTimeout(function() {
+            getrecentdata();
+        }, 10);
+
         // populate initial values
     	initializeDataSelection();
 
         // populate the charts with data
-        getchartdata(createchart, "getpacketperformance.php");
-        getchartdata(createchart2, "gettemp.php");
-        getchartdata(createchart3, "getdirewolfperformance.php");
-        getchartdata(createchart4, "getpressure.php");
-        getdigidata();
-        gettrackerdata();
+        setTimeout(function() {
+            getchartdata(createchart, "getaltitudechartdata.php");
+            getchartdata(createchart2, "getairdensity.php");
+            getchartdata(createchart3, "getdirewolfperformance.php");
+            getchartdata2(createchart4, "gettemppressure.php");
+            //getdigidata();
+            //gettrackerdata();
+            
+            // add ascent/descent selector buttons to the temp and pressure chart
+            addButtons();
+        }, 10);
 
+        
         // Update the Map link in the menubar
-        updateMapLink();
+        setTimeout(function() {
+            updateMapLink();
+        }, 10);
+
 
         // Listen for screen resize changes and adjust the chart sizes accordingly
         window.addEventListener("resize", function() {
             var w = getChartWidth();
             var h = getChartHeight();
 
-            var small_w = Math.floor(w / 2.1);
+            var small_w = Math.floor(w / 2);
 
             chart.resize({
                 height: h,
@@ -801,12 +1022,12 @@
 
             chart2.resize({
                 height: h,
-                width: small_w 
+                width: w/2
             });
 
             chart4.resize({
                 height: h,
-                width: small_w
+                width: w/2
             });
 
             chart3.resize({
@@ -820,12 +1041,12 @@
         setInterval(function() { 
             updateMapLink();
             getrecentdata(); 
-            getchartdata(updatechart, "getpacketperformance.php"); 
-            getchartdata(updatechart2, "gettemp.php"); 
+            getchartdata(updatechart, "getaltitudechartdata.php"); 
+            getchartdata(updatechart2, "getairdensity.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
-            getchartdata(updatechart4, "getpressure.php"); 
-            getdigidata();
-            gettrackerdata();
+            getchartdata2(updatechart4, "gettemppressure.php"); 
+            //getdigidata();
+            //gettrackerdata();
         }, 5000);
     }
 

@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,10 @@
 <meta name="keywords" content="HAB Tracker">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <?php
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include_once $documentroot . "/common/version.php";
 ?>
 <link rel="shortcut icon" href="/images/graphics/favicon.ico">
@@ -61,7 +64,7 @@ else
 <script src="/common/c3.min.js"></script>
 <script src="/leaflet/leaflet.js"></script>
 <script src="/common/jquery-3.4.1.min.js"></script>
-<script src="/common/leaflet-geolayer.js"></script>
+<script src="/common/leaflet-realtime.js"></script>
 <script src="/common/symbols-map.js"></script>
 <script src="/common/leaflet.groupedlayercontrol.min.js"></script>
 <script src="/common/leaflet-sidebar.js"></script>

@@ -1,9 +1,7 @@
-
-
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -32,18 +30,11 @@ from scipy.integrate import *
 from scipy.interpolate import *
 from scipy.optimize import *
 from inspect import getframeinfo, stack
+import json
 
 #import local configuration items
 import habconfig 
 
-
-
-class GracefulExit(Exception):
-    pass
-
-def signal_handler(signum, frame):
-    print "Caught SIGTERM..."
-    raise GracefulExit()
 
 
 #####################################
@@ -167,6 +158,9 @@ class PredictorBase(object):
     #    launch_lon:  (float) the longitude (in decimal degrees) of the launch location
     #    launch_elev:  (float) the elevation (in feet) of the launch location
     #    algo_floor:  (float) the altitude below which the prediction algorithm will no longer compute predictions.  Should be ground level near the landing area.
+    #    surface_winds:  (boolean) This controls if allowances for surface winds are used as a flight descends from upper wind levels to surface wind levels
+    #    wind_rates:  (list) of the surface wind components
+    #    airdensity_function:  (callable) this is a callback function that accepts an altitude as input and returned the air density at that altitude.
     #
     # Returns:
     #    flightpath:  (list) list of points (lat, lon, altitude) of the predicted flight path
@@ -175,13 +169,23 @@ class PredictorBase(object):
     #    ttl:  (float) the time remaining before touchdown (in minutes)
     #    err:  (boolean) if true, then an error occured and the variables values are invalid
     #
-    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False, wind_rates = None):
+    def predictionAlgo(self, latestpackets, launch_lat, launch_lon, launch_elev, algo_floor, surface_winds = False, wind_rates = None, airdensity_function = None):
         debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, algo_floor))
         debugmsg("latestpackets size: %d" % latestpackets.shape[0])
 
         # if invalid arguments then return
         if not launch_lat or not launch_lon or not launch_elev or not algo_floor:
             return None
+
+        # Check the airdensity function
+        if airdensity_function is not None:
+            if callable(airdensity_function):
+                debugmsg("PredictionAlgo:  using supplied air density function.")
+                ad = airdensity_function
+            else:
+                ad = self.airdensity
+        else:
+            ad = self.airdensity
 
         # if no packets are provided then return
         if latestpackets.shape[0] <= 0:
@@ -394,13 +398,13 @@ class PredictorBase(object):
 
             # Here we want to compute the k-value for this parachute, weight, drag combo
             # parachute_coef - this is the constant that represents 2m/CdA for this parachute, flight-string combo
-            parachute_coef = np.mean(((balloon_velocities **2) * self.airdensity(balloon_altitudes)) / self.g(balloon_altitudes))
+            parachute_coef = np.mean(((balloon_velocities **2) * ad(balloon_altitudes)) / self.g(balloon_altitudes))
             debugmsg("parachute_coef: %f" % parachute_coef)
 
             # This is a list of points with the predicted velocity for various altitudes beyond the last altitude we've seen (aka the future)
             alts = np.arange(self.prediction_floor / 2, balloon_altitudes[-1] + 10000, 500)
             debugmsg("alts length: %f" % alts.shape[0])
-            pred_v = np.sqrt(parachute_coef * self.g(alts) / self.airdensity(alts))
+            pred_v = np.sqrt(parachute_coef * self.g(alts) / ad(alts))
             pred_v_curve = interpolate.interp1d(alts, pred_v, kind='cubic')
 
             # Perform curve fitting for predictions when in the early stages of the descent.
@@ -821,7 +825,7 @@ class LandingPredictor(PredictorBase):
                 debugmsg("LandingPredictor destructor:  closing database connection.")
                 self.landingconn.close()
         except pg.DatabaseError as error:
-            print(error)
+            print error
 
 
     ################################
@@ -862,7 +866,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.landingconn.close()
-            print(error)
+            print error
             return False
 
 
@@ -919,7 +923,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return np.array([])
         
 
@@ -932,122 +936,226 @@ class LandingPredictor(PredictorBase):
         # if a callsign wasn't provided, then return a empty numpy array
         if not callsign:
             return []
+    
+        # Check latest packets query.  We want to run this query first as it is much lower cost to be repeatedly running.  The 
+        # idea being that we quickly check if there are any recent (< 20mins ago) packets for this callsign, if there are then continue
+        # on.  Otherwise, return an empty list.  Doing this saves a lot of load on the backend database as the "get flight packets" query
+        # below is much more expensive.
+        check_sql = """
+            select
+            coalesce(extract (epoch from now() - max(a.tm)), 999999) as elapsed_secs
+
+            from 
+            packets a
+
+            where 
+            a.callsign = %s
+            and a.tm > (now() - interval '06:00:00')
+            and a.location2d != ''
+            ;
+        """
+
+        # Execute the SQL statment and get all rows returned
+        checkcur = self.landingconn.cursor()
+        checkcur.execute(check_sql, [ callsign.upper() ])
+        checkrows = checkcur.fetchall()
+        checkcur.close()
+
+        if len(checkrows) > 0:
+            elapsed_mins = checkrows[-1][0] / 60.0
+            # If the last heard packet is > 20mins old, return zero rows.  We don't want to process a landing prediction for a flight that is over/stale/lost/etc.
+            if elapsed_mins > 20:
+                debugmsg("Last packet for %s is > 20mins old: %dmins." % (callsign, elapsed_mins))
+                return []
+        else:
+            return []
+
 
         # The SQL statement to get the latest packets for this callsign
         # columns:  timestamp, altitude, latitude, longitude
         # Note:  only those packetst that might have occured within the last 6hrs are queried.
-        latestpackets_sql = """select
-                y.thetime,
+        latestpackets_sql = """
+            select
+                y.packet_time,
                 round(y.altitude) as altitude,
                 round(y.lat, 6) as latitude,
                 round(y.lon, 6) as longitude,
                 case when y.delta_secs > 0 then
                     (y.altitude - y.previous_altitude) / y.delta_secs
-                else 
+                else
                     0
                 end as vert_rate,
                 case when y.delta_secs > 0 then
                     (y.lat - y.previous_lat) / y.delta_secs
-                else 
+                else
                     0
                 end as lat_rate,
                 case when y.delta_secs > 0 then
                     (y.lon - y.previous_lon) / y.delta_secs
-                else 
+                else
                     0
                 end as lon_rate,
                 round(y.elapsed_secs / 60.0) as elapsed_mins,
                 round(y.temperature_k, 6) as temperature_k,
-                round(y.pressure_pa, 6) as pressure_pa
+                round(y.pressure_pa, 6) as pressure_pa,
 
-            from
-                (
-                select
-                    z.thetime,
-                    z.callsign,
-                    z.altitude,
-                    z.comment,
-                    z.symbol,
-                    z.speed_mph,
-                    z.bearing,
-                    z.lat,
-                    z.lon,
-                    z.temperature_k,
-                    z.pressure_pa,
-                    z.ptype, 
-                    z.hash,
-                    z.raw,
-                    lag(z.altitude, 1) over(order by z.thetime)  as previous_altitude,
-                    lag(z.lat, 1) over (order by z.thetime) as previous_lat,
-                    lag(z.lon, 1) over (order by z.thetime) as previous_lon,
-                    extract ('epoch' from (z.thetime - lag(z.thetime, 1) over (order by z.thetime))) as delta_secs,
-                    extract ('epoch' from (now() - z.tm)) as elapsed_secs
+                -- Air density (for our purposes needs to be in English units...i.e. slugs/ft^3)
+                case when y.temperature_k > 0 then
+                    round((y.pressure_pa / (287.05 * y.temperature_k)) / 515.2381961366, 8)
+                else
+                    NULL
+                end as air_density_slugs_per_ft3
 
                 from 
-                    (
+                (
                     select
-                        a.tm,
-                        case
-                            when a.raw similar to '%%[0-9]{6}h%%' then
-                                date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::time)::time without time zone
-                            else
-                                date_trunc('milliseconds', a.tm)::time without time zone
-                        end as thetime,
-                        a.callsign,
-                        a.altitude,
-                        a.comment,
-                        a.symbol,
-                        a.speed_mph,
-                        a.bearing,
-                        cast(st_y(a.location2d) as numeric) as lat,
-                        cast(st_x(a.location2d) as numeric) as lon,
-                        case
-                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                            round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                        else
-                            NULL
-                        end as temperature_k,
-                        case
-                            when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%' then
-                                round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                            else
-                                NULL
-                        end as pressure_pa,
-                        a.ptype, 
-                        a.hash,
-                        a.raw
+                        c.thetime,
+                        c.packet_time,
+                        c.callsign,
+                        c.flightid,
+                        c.altitude,
+                        c.comment,
+                        c.symbol,
+                        c.speed_mph,
+                        c.bearing,
+                        c.location2d,
+                        c.lat,
+                        c.lon,
+                        c.temperature_k,
+                        c.pressure_pa,
+                        c.ptype, 
+                        c.hash,
+                        c.raw,
+                        lag(c.altitude, 1) over(order by c.packet_time)  as previous_altitude,
+                        lag(c.lat, 1) over (order by c.packet_time) as previous_lat,
+                        lag(c.lon, 1) over (order by c.packet_time) as previous_lon,
+                        extract ('epoch' from (c.packet_time - lag(c.packet_time, 1) over (order by c.packet_time))) as delta_secs,
+                        extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
+                        c.sourcename,
+                        c.heardfrom,
+                        c.freq,
+                        c.channel,
+                        c.source
 
-                    from
-                        packets a,
-                        flights f,
-                        flightmap fm
+                        from (
+                                select 
+                                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                                case
+                                    when a.raw similar to '%%[0-9]{6}h%%' then
+                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone %s)::time)::time without time zone
+                                    else
+                                        date_trunc('milliseconds', a.tm)::time without time zone
+                                end as packet_time,
+                                a.callsign, 
+                                f.flightid,
+                                a.altitude,
+                                a.comment, 
+                                a.symbol, 
+                                a.speed_mph,
+                                a.bearing,
+                                a.location2d,
+                                cast(ST_Y(a.location2d) as numeric) as lat,
+                                cast(ST_X(a.location2d) as numeric) as lon,
+                                NULL as sourcename,
+                                NULL as heardfrom,
+                                a.frequency as freq,
+                                a.channel,
 
-                    where 
-                        a.callsign = fm.callsign
-                        and fm.flightid = f.flightid
-                        and f.active = 'y'
-                        and a.tm > (now() - interval '06:00:00')
-                        and a.location2d != ''
-                        and a.altitude > 0
-                        and a.callsign = %s
+                                -- The temperature (if available) from any KC0D packets
+                                case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                                    round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                                else
+                                    NULL
+                                end as temperature_k,
 
-                    order by
-                        thetime,
-                        a.callsign
+                                -- The pressure (if available) from any KC0D packets
+                                case
+                                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                                        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                                    else
+                                        NULL
+                                end as pressure_pa,
+                                a.ptype,
+                                a.hash,
+                                a.raw,
+                                a.source,
+                                dense_rank () over (partition by 
+                                    a.hash,
+                                    date_trunc('minute', a.tm)
+                                    --floor(extract(epoch from a.tm) / 30) * 30
 
-                    ) as z
+                                    order by 
+                                    a.tm asc
+                                )
 
+                                from 
+                                packets a,
+                                flights f,
+                                flightmap fm
+
+                                where 
+                                a.location2d != '' 
+                                and a.tm > (now() - interval '06:00:00')
+                                and fm.flightid = f.flightid
+                                and f.active = 'y'
+                                and a.callsign = fm.callsign
+                                and a.altitude > 0
+                                and a.callsign = %s
+
+                                order by a.tm asc
+
+                        ) as c
+                        
+                        where 
+                        c.dense_rank = 1
+
+                    ) as y
+                    left outer join
+                    (
+                        select
+                        r.tm, 
+                        r.flightid,
+                        r.callsign, 
+                        r.ttl
+
+                        from 
+                        (
+                            select
+                            l.tm,
+                            l.flightid,
+                            l.callsign,
+                            l.ttl,
+                            dense_rank() over (partition by l.flightid, l.callsign order by l.tm desc)
+
+                            from
+                            landingpredictions l
+
+                            where
+                            l.tm > now() - interval '00:10:00'
+                            and l.ttl is not null
+
+                            order by
+
+                            l.flightid,
+                            l.callsign
+                        ) as r
+
+                        where 
+                        r.dense_rank = 1
+
+                        order by
+                        r.flightid, 
+                        r.callsign,
+                        r.tm
+                    ) as lp
+                    on lp.flightid = y.flightid and lp.callsign = y.callsign
 
                 order by
-                    z.thetime asc,
-                    z.callsign
-                ) as y
-
-
-            order by
-                y.thetime asc
-            ; """
-                      
+                    y.callsign,
+                    y.packet_time asc
+            ;
+        """
+                          
         try:
             # Check if we're connected to the database or not.
             if not self.connectToDatabase():
@@ -1058,13 +1166,20 @@ class LandingPredictor(PredictorBase):
             landingcur.execute(latestpackets_sql, [ self.timezone, callsign.upper() ])
             rows = landingcur.fetchall()
             landingcur.close()
+
+            if len(rows) > 0:
+                # If the last heard packet is > 20mins old, return zero rows....because we don't want to process a landing prediction for a flight that is over/stale/lost/etc.
+                if rows[-1][7] > 20:
+                    debugmsg("Last packet for %s is > 20mins old: %dmins." % (callsign, rows[-1][7]))
+                    return []
+
             return rows
 
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return []
 
 
@@ -1229,7 +1344,7 @@ class LandingPredictor(PredictorBase):
                                             packets a
 
                                         where 
-                                            a.tm > now()::date
+                                            a.tm > (now() - interval '02:00:00')
                                             and a.ptype = '@'
                                             and a.raw similar to '%%_[0-9]{3}/[0-9]{3}g%%' 
 
@@ -1242,9 +1357,9 @@ class LandingPredictor(PredictorBase):
                                         on a.tm = a1.thetime and a.callsign = a1.callsign
 
                                 where 
-                                    a.tm > now()::date
-                                    and a1.callsign is not null
+                                    a1.callsign is not null
                                     and a.ptype = '@'
+                                    and a.tm > (now() - interval '02:00:00')
 
                                 order by
                                     a.tm asc
@@ -1254,7 +1369,6 @@ class LandingPredictor(PredictorBase):
                                 b.wind_angle_bearing is not null
                                 and b.wind_magnitude_mph is not null
                                 and b.distance < 75 
-                                and b.thetime > (now() - interval '02:00:00')::time
 
                             order by 
                                 distance_miles asc
@@ -1281,7 +1395,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             wxcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return ([], False)
 
 
@@ -1330,28 +1444,83 @@ class LandingPredictor(PredictorBase):
                         ) as station_rank
 
                     from
-                        packets a,
-                        flights f,
+                        (
+                            select
+                                c.tm,
+                                c.callsign,
+                                c.location2d,
+                                c.altitude,
+                                c.symbol
+
+                                from (
+                                        select 
+                                        t.tm,
+                                        t.callsign, 
+                                        t.altitude,
+                                        t.location2d,
+                                        t.symbol,
+                                        dense_rank () over (partition by 
+                                            t.callsign
+
+                                            order by 
+                                            t.tm desc
+                                        )
+
+                                        from 
+                                        packets t
+
+                                        where 
+                                        t.location2d != ''
+                                        and t.altitude > 0
+                                        and t.tm > (now() - interval '06:00:00')
+                                        and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
+
+                                        order by 
+                                        t.tm asc
+
+                                ) as c
+
+                                where
+                                c.dense_rank = 1
+                        ) as a,
+                        flights f left outer join ( select s.launchsite, s.alt from launchsites s) as lh on lh.launchsite = f.launchsite,
                         flightmap fm
                         left outer join
                         (
                             select
-                                l.tm as thetime,
-                                l.flightid,
-                                l.callsign,
-                                l.location2d,
-                                rank () over (partition by l.flightid, l.callsign order by l.tm desc)
+                                r.tm as thetime,
+                                r.flightid,
+                                r.callsign,
+                                r.location2d,
+                                r.rank
+                            
+                            from 
+                            ( 
+                                select
+                                    l.tm,
+                                    l.flightid,
+                                    l.callsign,
+                                    l.location2d,
+                                    rank () over (partition by l.flightid, l.callsign order by l.tm desc)
 
-                            from
-                                landingpredictions l
+                                from
+                                    landingpredictions l
 
-                            where
-                                l.tm > (now() - interval '06:00:00')
+                                where
+                                    l.tm > (now() - interval '06:00:00')
+
+                                order by
+                                    l.tm desc,
+                                    l.flightid,
+                                    l.callsign
+                            ) as r
+
+                            where 
+                            r.rank = 1
 
                             order by
-                                thetime desc,
-                                l.flightid,
-                                l.callsign
+                            r.tm desc
+
                         ) as lp
                         on lp.flightid = fm.flightid and lp.callsign = fm.callsign
 
@@ -1363,10 +1532,9 @@ class LandingPredictor(PredictorBase):
                         and f.active = 'y'
                         and a.callsign != fm.callsign
                         and fm.callsign = %s
-                        and a.altitude > 0
-                        and a.location2d != ''
-                        and a.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
                         and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
+                        and a.altitude > .1 * lh.alt
+                        and lh.alt is not null
 
                     order by
                         lp.callsign,
@@ -1399,9 +1567,9 @@ class LandingPredictor(PredictorBase):
 
             # if there were rows returned then proceed to return the estimated elevation near the landing location
             if len(rows) > 0:
-                elevation = rows[0][1]
+                elevation = float(rows[0][1])
             else:
-                elevation = 0
+                elevation = 0.0
 
             # Close the database cursor
             elev_cur.close()
@@ -1413,7 +1581,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             elev_cur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return 0.0
 
 
@@ -1478,7 +1646,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return gpsposition
 
 
@@ -1556,7 +1724,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print(error)
+            print error
             return np.array([])
 
 
@@ -1579,6 +1747,19 @@ class LandingPredictor(PredictorBase):
         flightids = self.db_getFlights()
 
         try:
+
+            # Grab the configuration and check if "Use payload air density" key has been enabled
+            try:
+                with open('/eosstracker/www/configuration/config.txt') as json_data:
+                    config = json.load(json_data)
+            except:
+                # Otherwise, we don't use the air density from the KC0D payloads
+                config = { "airdensity" : "off" }
+
+            # Make sure the airdensity key is present, otherwise set it to "off"
+            if "airdensity" not in config:
+                config["airdensity"] = "off"
+
 
             # Loop through each record creating a prediction
             for rec in flightids:
@@ -1665,8 +1846,8 @@ class LandingPredictor(PredictorBase):
                 debugmsg("processPredictions: Max altitude heard thus far: %d" % max_altitude)
 
                 # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
-                ascent_portion = np.array(latestpackets[0:(idx+1), 1:7], dtype='f')
-                descent_portion = np.array(latestpackets[idx:, 1:7], dtype='f')
+                ascent_portion = np.array(latestpackets[0:(idx+1), 1:], dtype='f')
+                descent_portion = np.array(latestpackets[idx:, 1:], dtype='f')
                 debugmsg("processPredictions: ascent_portion.shape: %s" % str(ascent_portion.shape))
                 debugmsg("processPredictions: descent_portion.shape: %s" % str(descent_portion.shape))
      
@@ -1738,6 +1919,97 @@ class LandingPredictor(PredictorBase):
 
 
                     ####################################
+                    # START:  Check if there were KC0D airdensity values
+                    ####################################
+
+                    # Only use the air density from the kc0d payloads if the option is explictly set to true
+                    if config["airdensity"] == "on":
+
+                        debugmsg("Airdensity option was set to ON.")
+
+                        # slice (aka list) off just the altitude and air_density columns
+                        ad = np.array(ascent_portion[0:, [0,9]], dtype='float64')
+
+                        # Check that the values aren't just a bunch of NULL's
+                        num = 0
+                        for alt, d in ad:
+                            if np.isnan(d):
+                                num += 1
+
+                        debugmsg("Percentage of NULL data points from payload measured air density: %.2f%%." % (100 * num / ad.shape[0]))
+
+                        # Check that the number of NULLs is minimal (ex. < 5%)
+                        if num / ad.shape[0] < .05 and ad.shape[0] > 3:
+
+                            debugmsg("Using payload measured air density.")
+
+                            # Beginning and ending altitudes for flight air densities
+                            beginning_alt = ad[0,0]
+                            ending_alt = ad[-1, 0]
+
+                            # now find the splice points for inserting the air densities from the flight in to the standard engineering defined ones.
+                            # starting splice point
+                            start_splice_idx = 0
+                            for alt, d in self.airdensities:
+                                if alt > beginning_alt:
+                                    break
+                                start_splice_idx += 1
+
+                            # ending splice point
+                            end_splice_idx = self.airdensities.shape[0]
+                            for alt, d in self.airdensities[::-1]:
+                                if alt < ending_alt:
+                                    break
+                                end_splice_idx -= 1
+
+                            # Adjust for the fact that self.airdensities is in 10^-4 values.
+                            temp_ad = np.copy(self.airdensities)
+                            temp_ad[:,1] *= 10**-4
+
+                            # splice together the various pieces to build the array of air densities 
+                            temp1 = temp_ad[0:start_splice_idx, 0:]
+                            temp2 = np.concatenate((temp1, ad), axis=0)
+                            if end_splice_idx < self.airdensities.shape[0] - 1:
+                                temp3 = np.concatenate((temp2, temp_ad[end_splice_idx:, 0:]), axis=0)
+
+                            # Remove duplicate values from the array
+                            temp4 = []
+                            prev_alt = -99
+                            for alt,den in temp3:
+                                if alt != prev_alt:
+                                    temp4.append([alt, den])
+                                prev_alt = alt
+
+                            # Finally convert the resulting list to a numpy array
+                            final_air_densities = np.array(temp4)
+
+                            # Catch any values errors that occur and fallback to using the pre-calculated air desnsity values.
+                            try:
+                                # Create a curve that represents the air density
+                                airdensity_curve = interpolate.interp1d(final_air_densities[0:,0], final_air_densities[0:,1], kind='cubic')
+
+                            except ValueError as e:
+                                debugmsg("ValueError in creating interpolated curve for air density: {}".format(e))
+                                debugmsg("Falling back to using pre-calculated air density instead of payload measured values.")
+                                airdensity_curve = self.airdensity
+
+
+                        # Otherwise, we just use the standard engineering air densities
+                        else:
+                            debugmsg("Using pre-calculated air density instead of payload measured values.")
+                            airdensity_curve = self.airdensity
+                    else:
+                        debugmsg("kc0dairdensity configuration setting set not true, skipping airdensity calcs.")
+                        airdensity_curve = self.airdensity
+
+
+                    ####################################
+                    # END:  airdensity section
+                    ####################################
+
+
+
+                    ####################################
                     # START:  compute the landing prediction
                     ####################################
                     # If we're unable to estimate the surface winds, then just run a "regular" prediction without winds
@@ -1751,14 +2023,14 @@ class LandingPredictor(PredictorBase):
 
                         # Call the prediction algo
                         debugmsg("Running prediction regular prediction")
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True)
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, airdensity_function = airdensity_curve)
                     else:
                         wind_text = "ARRAY[" + str(round(winds[2])) + ", " + str(round(winds[3])) + ", " + str(round(winds[4])) + "]"
                         predictiontype = "wind_adjusted"
 
                         # Call the prediction algo
                         debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, True, winds)
+                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, wind_rates = winds, airdensity_function = airdensity_curve)
 
                     ####################################
                     # END:  compute the landing prediction
@@ -1960,8 +2232,8 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             landingcur.close()
             self.landingconn.close()
-            print(error)
-        except (GracefulExit, KeyboardInterrupt, SystemExit):
+            print error
+        except (KeyboardInterrupt, SystemExit):
             landingcur.close()
             self.landingconn.close()
 
@@ -2008,17 +2280,30 @@ def runLandingPredictor(schedule, e, config):
                     dbcur.execute(alter_table_sql)
                     dbconn.commit()
 
+            # SQL to add an index on the time column of the packets table
+            sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
+            dbcur.execute(sql_exists)
+            rows = dbcur.fetchall()
+            if len(rows) > 0:
+                if rows[0][0] == False:
+                    # Add the index since it didn't seem to exist.
+                    sql_add = "create index packets_tm on packets(tm);"
+                    print "Adding packets_tm index to the packets table"
+                    debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
+                    dbcur.execute(sql_add)
+                    dbconn.commit()
+
             # Close DB connection
             dbcur.close()
             dbconn.close()
         except pg.DatabaseError as error:
             dbcur.close()
             dbconn.close()
-            print(error)
+            print error
 
 
         # Create a new LandingPredictor object
-        lp = LandingPredictor(habconfig.dbConnectionString, timezone=config['timezone'], timeout = 60)
+        lp = LandingPredictor(habconfig.dbConnectionString, timezone=config['timezone'], timeout = 20)
 
         # run the landing predictor function continuously, every "schedule" seconds.
         while not e.is_set():
@@ -2027,7 +2312,7 @@ def runLandingPredictor(schedule, e, config):
 
         print "Prediction scheduler ended"
 
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
+    except (KeyboardInterrupt, SystemExit): 
         print "Prediction scheduler ended"
         pass
 

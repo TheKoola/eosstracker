@@ -33,7 +33,10 @@
 <meta name="keywords" content="HAB Tracker">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include_once $documentroot . "/common/version.php";
     include_once $documentroot . '/common/logo.php';
 ?>

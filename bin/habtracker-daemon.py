@@ -116,7 +116,7 @@ def isRunning(myprocname):
     listOfProcesses = []
 
     # This is the list of process names we should look for (we ignore gpsd since it should always be running)
-    procs = ["direwolf", "aprsc", myprocname]
+    procs = ["direwolf", myprocname]
 
     # Iterate over all running processes
     for proc in psutil.process_iter():

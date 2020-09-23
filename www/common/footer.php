@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,10 @@
 *
  */
 
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include_once $documentroot . '/common/functions.php';
     include_once $documentroot . '/common/version.php';
 ?>
@@ -33,7 +36,7 @@
         The EOSS Tracker application is licensed under version 3 of the GNU General Public License (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
      </p>
      <p class="copyright">
-        Copyright (C) 2019,2020 Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
+        Copyright (C) 2019,2020, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
      </p>
      <p class="copyright" style="margin-bottom: 10px;">
          System Version: <?php if (isset($version)) printf("%s", $version); ?> 

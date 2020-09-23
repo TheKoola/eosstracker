@@ -1,57 +1,35 @@
-/*
-## ISC License
-
-Copyright (c) 2014, Per Liedman (per@liedman.net)
-
-Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
-
-
-
-##################################################
-#    This file is part of the HABTracker project for tracking high altitude balloons.
-#
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
-#
-#    HABTracker is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    HABTracker is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
-#
-##################################################
-    
-*/
-
-
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.L || (g.L = {})).Geolayer = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.L || (g.L = {})).Realtime = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 
-L.Geolayer = L.Layer.extend({
+L.Realtime = L.Layer.extend({
     options: {
         start: true,
-        name: "none",
         interval: 60 * 1000,
         getFeatureId: function(f) {
             return f.properties.id;
         },
-        updateFeature: function(f, oldLayer) {
+        updateFeature: function(feature, oldLayer) {
             if (!oldLayer) { return; }
 
-            if (f.geometry.type === 'Point') {
-                var c = f.geometry.coordinates;
-                oldLayer.setLatLng([c[1], c[0]]);
-                return oldLayer;
+            var type = feature.geometry && feature.geometry.type
+            var coordinates = feature.geometry && feature.geometry.coordinates
+            switch (type) {
+                case 'Point':
+                    oldLayer.setLatLng(L.GeoJSON.coordsToLatLng(coordinates));
+                    break;
+                case 'LineString':
+                case 'MultiLineString':
+                    oldLayer.setLatLngs(L.GeoJSON.coordsToLatLngs(coordinates, type === 'LineString' ? 0 : 1));
+                    break;
+                case 'Polygon':
+                case 'MultiPolygon':
+                    oldLayer.setLatLngs(L.GeoJSON.coordsToLatLngs(coordinates, type === 'Polygon' ? 1 : 2));
+                    break;
+                default:
+                    return null;
             }
-        },
+            return oldLayer;
+          },
         logErrors: true,
         cache: false,
         removeMissing: true,
@@ -79,16 +57,26 @@ L.Geolayer = L.Layer.extend({
     },
 
     start: function() {
-        this.update();
+        if (!this._timer) {
+            this._timer = setInterval(L.bind(this.update, this),
+                this.options.interval);
+            this.update();
+        }
+
         return this;
     },
 
     stop: function() {
+        if (this._timer) {
+            clearTimeout(this._timer);
+            delete this._timer;
+        }
+
         return this;
     },
 
     isRunning: function() {
-        return null;
+        return this._timer;
     },
     
     setUrl: function (url) {
@@ -312,11 +300,11 @@ L.Geolayer = L.Layer.extend({
     }
 });
 
-L.geolayer = function(src, options) {
-    return new L.Geolayer(src, options);
+L.realtime = function(src, options) {
+    return new L.Realtime(src, options);
 };
 
-module.exports = L.Geolayer;
+module.exports = L.Realtime;
 
 },{}]},{},[1])(1)
 });
