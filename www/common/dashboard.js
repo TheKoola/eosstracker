@@ -411,7 +411,7 @@
                     timecell1.setAttribute("style", "vertical-align: top; text-align: left; white-space: nowrap;");
                     timecell2.setAttribute("style", "vertical-align: top; text-align: left;");
                     timecell1.innerHTML = "<font style=\"font-weight: bold;\">Date/Time: </font>";
-                    timecell2.innerHTML = (typeof(station.thetime) == "undefined" ? "n/a" : station.thetime);
+                    timecell2.innerHTML = (typeof(station.thetime) == "undefined" ? "n/a" : station.thetime.split(' ')[1].split('.')[0]);
 
                     var packetrow = detailstable.insertRow(-1); 
                     var packetcell1 = packetrow.insertCell(-1);
