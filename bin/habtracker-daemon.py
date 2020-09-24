@@ -210,23 +210,6 @@ def databaseUpdates():
         print "/******* Starting database checks:  ", time_string, " ********/"
         sys.stdout.flush()
 
-        # SQL to check how many rows are in the packets and landingpredictions tables
-        packets_sql = "select count(*) from packets;"
-        lp_sql = "select count(*) from landingpredictions;"
-
-        print "Checking number of rows in tables..."
-        sys.stdout.flush()
-
-        dbcur.execute(packets_sql)
-        rows = dbcur.fetchall()
-        packets_count = rows[0][0]
-
-        dbcur.execute(lp_sql)
-        rows = dbcur.fetchall()
-        lp_count = rows[0][0]
-
-        print "Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)
-        sys.stdout.flush()
 
 
         #------------------- tracker stuff ------------------#
@@ -324,6 +307,25 @@ def databaseUpdates():
 
 
         if made_changes:
+
+            # SQL to check how many rows are in the packets and landingpredictions tables
+            packets_sql = "select count(*) from packets;"
+            lp_sql = "select count(*) from landingpredictions;"
+
+            print "Checking number of rows in tables..."
+            sys.stdout.flush()
+
+            dbcur.execute(packets_sql)
+            rows = dbcur.fetchall()
+            packets_count = rows[0][0]
+
+            dbcur.execute(lp_sql)
+            rows = dbcur.fetchall()
+            lp_count = rows[0][0]
+
+            print "Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)
+            sys.stdout.flush()
+
 
             # SQL to update the source column to "other" in those cases were it's empty
             sql_source = "update packets set source='other' where source is null;"
