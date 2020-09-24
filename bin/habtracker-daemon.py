@@ -208,10 +208,14 @@ def databaseUpdates():
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
         print "/******* Starting database checks:  ", time_string, " ********/"
+        sys.stdout.flush()
 
         # SQL to check how many rows are in the packets and landingpredictions tables
         packets_sql = "select count(*) from packets;"
         lp_sql = "select count(*) from landingpredictions;"
+
+        print "Checking number of rows in tables..."
+        sys.stdout.flush()
 
         dbcur.execute(packets_sql)
         rows = dbcur.fetchall()
@@ -222,6 +226,7 @@ def databaseUpdates():
         lp_count = rows[0][0]
 
         print "Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)
+        sys.stdout.flush()
 
 
         #------------------- tracker stuff ------------------#
