@@ -254,7 +254,12 @@ class KISS(object):
                             debugmsg("Failing connection and reconnecting.")
                             #print "No packets seen from direwolf, attempting to reconnect."
                             sys.stdout.flush()
+
+                            # Reset the not ready count
+                            socketnotready_count = 0
+
                             raise ConnectionFailed
+
 
                 except (socket.error, ConnectionFailed) as e:
                     debugmsg("Error: {}".format(e))
