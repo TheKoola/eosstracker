@@ -210,7 +210,6 @@
                 colorIndex += i;
                 if (colorIndex > (ascending_colorsets.length - 1))
                     colorIndex = 0;
-                console.log("feature:  " + feature.properties.id + ", " + JSON.stringify(localstyle));
             }
             else
                 localstyle = {};
