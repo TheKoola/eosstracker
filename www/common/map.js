@@ -2730,6 +2730,7 @@ function getTrackers() {
                             }
                             
                             if (packetlist.statuspackets.length > 0) {
+                                total_length += packetlist.statuspackets.length;
                                 updateStatusPackets(packetlist.statuspackets);
                             }
 
