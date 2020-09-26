@@ -196,12 +196,14 @@
                 else {
                     i = 1;
                     ascendingColorMap.push({ flightid : fid, coloridx : ascending_color});
+                    ascending_color = ascending_colorsets[ascending_color].color;
                 }
                 if (descendingColorIndex > -1)
                     descending_color = descending_colorsets[descendingColorMap[descendingColorIndex].coloridx].color;
                 else  {
                     i = 1;
                     descendingColorMap.push({ flightid : fid, coloridx : descending_color });
+                    descending_color = descending_colorsets[descending_color].color;
                 }
 
 
