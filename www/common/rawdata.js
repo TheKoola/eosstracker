@@ -123,13 +123,13 @@
             data: { empty : { label: { text: "No Data Available" } }, 
                 type: 'area', json: jsondata, xs: columns, xFormat: '%Y-%m-%d %H:%M:%S'  },
             axis: { x: { label: { text: 'Time', position: 'outer-center' }, type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                //y: { label: { text: 'Altitude (ft)', position: 'outer-middle' } } },
-                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },
+                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return ((Math.round(d / 500)*500)/1000).toFixed(1) + "k"; } } } },
             grid: { x: { show: true }, y: { show: true } },
             line: { connectNull: true },
             point: { show: true },
             color: { pattern: chartcolors },
-            title: { text: "Flight Altitude", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } }
+            title: { text: "Flight Altitude", position: 'left', padding: { left: 55, right: 0, bottom: 5, top: 0 } },
+            tooltip: { format: { value: function(v, r, i, id) { return d3.format(",d")(v); } } }
         });
     }
 
