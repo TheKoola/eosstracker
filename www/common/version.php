@@ -26,7 +26,7 @@
 
 
 
-$version = "1.4 beta";
+$version = "1.3";
 ?>
 
 
