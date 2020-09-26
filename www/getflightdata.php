@@ -339,11 +339,12 @@
     $packetlistJSON = [];
     $packetlistJSON["lastpacketpath"] = [];
     $lastfewpackets = [];
-    $beaconfeatures = [];
     $beacons = [];
     $elapsed_secs = 999999;
     foreach ($callsign_rows as $beacon) {
         $cs = $beacon['callsign'];
+
+        $beaconfeatures = [];
 
         # Execute this query first to determine if there are any recent packets.  This is a much lower cost query for repeatedly checking if a flight
         # has any recent packets to process.
@@ -706,13 +707,6 @@
 
     // Now sort through the last several packets to get to a consolidated, sorted list.
     usort($lastfewpackets, "cmp");
-
-    $beaconJSON = array(
-        "type" => "FeatureCollection", 
-        "properties" => array("name" => "Flight Data"),
-        "features" => $beaconfeatures
-    );
-
 
     /*=================== get tracker stations assigned to this flight ============ */
 
