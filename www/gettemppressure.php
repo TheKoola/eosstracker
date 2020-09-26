@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,10 @@
     ###  This will query the database for the n most recent packets.  
 
     session_start();
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
     $config = readconfiguration();
@@ -58,10 +61,10 @@
         
     # if the habtracker-daemon is not running then don't return any rows...technically we could return rows, but we dont know 
     # when to start looking at packets as we don't know the prior habtracker-daemon start time.
-    if ($status["active"] == 0) {
-        printf ("[]");
-        return;
-    }
+    #if ($status["active"] == 0) {
+    #    printf ("[]");
+    #    return;
+    #}
 
 
     function generateJSON($timeseries, $dataseries, $seriesname) {
@@ -105,8 +108,8 @@
         a.callsign,
         a.tm,
         round(a.altitude / 1000, 1) as altitude,
-        round(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2) as temperature_f,
-        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0, 4) as pressure_atm
+        round(32 + 1.8 * cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as numeric) / 10.0, 2) as temperature_f,
+        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as numeric) * 10.0 / 101325.0, 8) as pressure_atm
 
         from 
         packets a,
@@ -118,13 +121,18 @@
         and a.callsign = fm.callsign
         and fm.flightid = f.flightid
         and f.active = 'y'
-        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%%'
-        and a.tm > $2
+        and a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%'
+        and a.tm > now()::date
 
-        order by 1,2
+        order by
+        a.callsign,
+        a.tm
+        
         ;";
 
-    $result = pg_query_params($link, $query, array(sql_escape_string($config["lookbackperiod"] . " minute"), sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute")
+    ));
     if (!$result) {
         db_error(sql_last_error());
         sql_close($link);

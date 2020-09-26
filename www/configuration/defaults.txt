@@ -16,6 +16,7 @@
     "igating": "false",
     "includeeoss": "true",
     "lookbackperiod": "180",
+    "objectbeaconing": "false",
     "overlay": "",
     "passcode": "",
     "plottracks": "off",

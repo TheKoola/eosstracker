@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,10 @@
 
     if(session_status() === PHP_SESSION_NONE) session_start();
 
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
 
     $ray = array();
     $ray["timezone"] = "America/Denver";
@@ -36,6 +39,7 @@
     $ray["ssid"] = "9";
     $ray["igating"] =  "false";
     $ray["beaconing"] = "false";
+    $ray["objectbeaconing"] = "false";
     $ray["passcode"] = "";
     $ray["fastspeed"] = "45";
     $ray["fastrate"] = "01:00";
@@ -77,7 +81,6 @@
             $configuration[$key] = $defaults[$key];
     }
 
-    //header("Content-Type:  application/json;");
     printf ("%s", json_encode($configuration));
 
 ?>

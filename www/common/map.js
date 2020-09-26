@@ -251,7 +251,8 @@
                         (typeof(feature.properties.temperature) == "undefined" ? "" : (feature.properties.temperature != "" ? "<br><font class=\"commentstyle\">Temperature:  " + (Math.round(feature.properties.temperature * 100) / 100).toFixed(2) + "&deg; F</font>" : "")) + 
                         (typeof(feature.properties.pressure) == "undefined" ? "" : (feature.properties.pressure != "" ? "<br><font class=\"commentstyle\">Pressure:  " + (Math.round(feature.properties.pressure * 10000) / 10000).toFixed(4) + " atm</font>" : "")) + 
 		                (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
+		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + 
+                            (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                         "<br>Coords: <span id=\"" + id + "-coords\">"
                         + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -398,7 +399,8 @@
                 (typeof(item.properties.temperature) == "undefined" ? "" : (item.properties.temperature != "" ? "<br><font class=\"commentstyle\">Temperature:  " + (Math.round(item.properties.temperature * 100) / 100).toFixed(2) + "&deg; F</font>" : "")) + 
                 (typeof(item.properties.pressure) == "undefined" ? "" : (item.properties.pressure != "" ? "<br><font class=\"commentstyle\">Pressure:  " + (Math.round(item.properties.pressure * 10000) / 10000).toFixed(4) + " atm</font>" : "")) + 
                 (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-                (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
+                (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency +
+                            (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -506,7 +508,8 @@
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
 	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
+		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + 
+                            (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -591,7 +594,8 @@
             html = "<strong>" + item.properties.callsign + "</strong>";
 	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
+		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + 
+                            (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -687,7 +691,8 @@
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
 	  		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + "MHz" : "" )) +
+			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency +
+                            (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -786,7 +791,8 @@
             html = "<strong>" + item.properties.callsign + "</strong>";
 	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + "MHz" : "" )) +
+		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + 
+                            (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
                   + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
@@ -862,7 +868,8 @@
                         "<strong>" + feature.properties.callsign + "</strong></a>";
                         html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
                         (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency + "MHz" + 
+                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency  +
+                            (feature.properties.frequency == "ext radio" ? "" : "MHz") +
                         (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? ", via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                         "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -980,7 +987,8 @@
 
 	        html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		          (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + "MHz" +  
+		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + 
+                            (item.properties.frequency == "ext radio" ? "" : "MHz") +
                       (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? ", via: " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -1565,13 +1573,14 @@ function getTrackers() {
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
 
+        // Add the raster map as the default base layer
+        tilelayer.addTo(map);
 
-        // Prefer to use a vector map as the base layer if one of them is available.
+        // Add vector maps as base layers if available.
         $.get(basic.options.style, function(data, textStatus, xhr) {
 
             // Add the basic vector layer to the map as the default base map layer
             layerControl.addBaseLayer(basic, "Basic (vector)");
-            basic.addTo(map);
 
             // Also add the osmbright vector map...if it exists.
             $.get(osmbright.options.style, function(data, textStatus, xhr) {
@@ -1583,15 +1592,8 @@ function getTrackers() {
 
                 // Add the osmbright vector layer to the map as the default base map layer
                 layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
-                osmbright.addTo(map);
-
-            }).fail(function(data, textSttaus, xhr) {;
-
-                // If no vector maps exist, then fallback to the raster maps being the "base map" layer.
-                tilelayer.addTo(map);
             });
         });
-
 
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
@@ -1643,8 +1645,8 @@ function getTrackers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
         var allstations = L.markerClusterGroup();
         //var allstations = L.layerGroup();
-        //var allrfstations = L.layerGroup();
-        var allrfstations = L.markerClusterGroup();
+        var allrfstations = L.layerGroup();
+        //var allrfstations = L.markerClusterGroup();
         var mystation = L.layerGroup();
         //var wxstations = L.layerGroup();
         var wxstations = L.markerClusterGroup();

@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,10 @@
 
 
 session_start();
-$documentroot = $_SERVER["DOCUMENT_ROOT"];
+if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
 
 
@@ -134,13 +137,13 @@ include_once $documentroot . '/common/functions.php';
                           ST_Y(p.location2d) as lat,
                           ST_X(p.location2d) as lon,
                           case
-                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
-                                  round(32 + 1.8 * cast(substring(substring(substring(p.raw from ' [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%' then
+                                  round(32 + 1.8 * cast(substring(substring(substring(p.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                               else
                                   NULL
                           end as temperature_f,
                           case
-                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[0-9]{1,6}P%' then
+                              when p.raw similar to '% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%' then
                                   cast(substring(substring(p.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0 / 101325.0
                               else
                                   NULL

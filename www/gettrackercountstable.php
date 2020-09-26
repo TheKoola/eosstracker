@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,7 +24,10 @@
  */
 
     session_start();
-    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+    else
+        $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
     $config = readconfiguration();
@@ -68,6 +71,35 @@
         db_error(sql_last_error());
         return 0;
     }
+
+    # SQL to determine if the dw_packets table exists
+    $dw_packets_sql = "select exists(select * from information_schema.tables where table_name='dw_packets');";
+
+    # We assume that the dw_packets table does not exist by default
+    $dw_packets = false;
+
+    # Execute the SQL statement and make sure there wasn't an error
+    $result = pg_query($link, $dw_packets_sql);
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    # Get the number of rows return...there should be just one.
+    $num_rows = pg_num_rows($result);
+
+    # If the number of rows was > 0 then grab them, and check the result
+    if ($num_rows > 0) {
+        $rows = sql_fetch_all($result);
+
+        # Check of the dw_packets table exists
+        if ($rows[0]['exists'] == 't')
+            $dw_packets = 1;
+        else
+            $dw_packets = 0;
+    }
+
 
     # Check if the callsign that direwolf is using has been set (presumably to the user's personal call).
     if ($status["direwolfcallsign"] == "")
@@ -127,22 +159,26 @@
             4 desc
                 ;";
 
-    # Execute the query
-    $result = pg_query_params($link, $query, array(sql_escape_string($status["starttime"] . " " . $status["timezone"])));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-   
-    # Collect the rows into an array
-    $rows = [];
-    if (sql_num_rows($result) > 0) {
-        $rows = sql_fetch_all($result);
-    }
+    if ($dw_packets) {
+        # Execute the query
+        $result = pg_query_params($link, $query, array(sql_escape_string($status["starttime"] . " " . $status["timezone"])));
+        if (!$result) {
+            db_error(sql_last_error());
+            sql_close($link);
+            return 0;
+        }
+       
+        # Collect the rows into an array
+        $rows = [];
+        if (sql_num_rows($result) > 0) {
+            $rows = sql_fetch_all($result);
+        }
 
-    # print out the results as JSON
-    printf ("%s", json_encode($rows));
+        # print out the results as JSON
+        printf ("%s", json_encode($rows));
+    }
+    else 
+        printf ("[]");
 
     sql_close($link);
 ?>

@@ -1071,6 +1071,7 @@
         document.getElementById("serialproto").disabled = true;
         document.getElementById("includeeoss").disabled = true;
         document.getElementById("eoss_string").disabled = true;
+        document.getElementById("objectbeaconing").disabled = true;
         
         var igating = document.getElementById("igating").checked;
         if (!igating) {
@@ -1105,6 +1106,8 @@
         document.getElementById("beaconingtext7b").className = "disabled";
         document.getElementById("beaconingtext9a").className = "disabled";
         document.getElementById("beaconingtext9b").className = "disabled";
+        document.getElementById("objectbeacona").className = "disabled";
+        document.getElementById("objectbeaconb").className = "disabled";
     }
 
         
@@ -1348,53 +1351,56 @@
     function checkBeaconing() {
         var beaconing = document.getElementById("beaconing");
 	
-	if (beaconing.checked) {
-	    document.getElementById("fastspeed").disabled = false;
-	    document.getElementById("fastrate").disabled = false;
-	    document.getElementById("slowspeed").disabled = false;
-	    document.getElementById("slowrate").disabled = false;
-	    document.getElementById("beaconlimit").disabled = false;
-	    document.getElementById("fastturn").disabled = false;
-	    document.getElementById("slowturn").disabled = false;
-	    document.getElementById("audiodev").disabled = false;
-	    document.getElementById("serialport").disabled = false;
-	    document.getElementById("serialproto").disabled = false;
-	    document.getElementById("comment").disabled = false;
-        document.getElementById("includeeoss").disabled = false;
-        checkEOSS();
-	    document.getElementById("symbol").disabled = false;
-	    if (checkOverlay()) {
-	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").className = "normal-noborders";
-	    }
-            else {
-	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").className = "disabled-noborders";
-	    }
-	    document.getElementById("beaconingtext1a").className = "normal";
-	    document.getElementById("beaconingtext1b").className = "normal";
-	    document.getElementById("beaconingtext2a").className = "normal";
-	    document.getElementById("beaconingtext2b").className = "normal";
-	    document.getElementById("beaconingtext3a").className = "normal";
-        document.getElementById("beaconingtext3b").className = "normal";
-	    document.getElementById("beaconingtext4a").className = "normal";
-	    document.getElementById("beaconingtext4b").className = "normal";
-	    document.getElementById("beaconingtext5a").className = "normal";
-	    document.getElementById("beaconingtext5b").className = "normal";
-	    document.getElementById("beaconingtext6a").className = "normal";
-	    document.getElementById("beaconingtext6b").className = "normal";
-	    document.getElementById("beaconingtext7a").className = "normal";
-	    document.getElementById("beaconingtext7b").className = "normal";
-	    document.getElementById("beaconingtext81").className = "normal";
-	    document.getElementById("beaconingtext82").className = "normal";
-	    document.getElementById("beaconingtext9a").className = "normal";
-	    document.getElementById("beaconingtext9b").className = "normal";
-	    document.getElementById("beaconingtext101").className = "normal";
-	    document.getElementById("beaconingtext102").className = "normal";
-	}
-	else {
-	    disableBeaconing();
-	}
+        if (beaconing.checked) {
+            document.getElementById("fastspeed").disabled = false;
+            document.getElementById("fastrate").disabled = false;
+            document.getElementById("slowspeed").disabled = false;
+            document.getElementById("slowrate").disabled = false;
+            document.getElementById("beaconlimit").disabled = false;
+            document.getElementById("fastturn").disabled = false;
+            document.getElementById("slowturn").disabled = false;
+            document.getElementById("audiodev").disabled = false;
+            document.getElementById("serialport").disabled = false;
+            document.getElementById("serialproto").disabled = false;
+            document.getElementById("comment").disabled = false;
+            document.getElementById("includeeoss").disabled = false;
+            document.getElementById("objectbeaconing").disabled = false;
+            checkEOSS();
+            document.getElementById("symbol").disabled = false;
+            if (checkOverlay()) {
+                document.getElementById("overlay").disabled = false;
+                document.getElementById("overlaytext").className = "normal-noborders";
+            }
+                else {
+                document.getElementById("overlay").disabled = true;
+                document.getElementById("overlaytext").className = "disabled-noborders";
+            }
+            document.getElementById("beaconingtext1a").className = "normal";
+            document.getElementById("beaconingtext1b").className = "normal";
+            document.getElementById("beaconingtext2a").className = "normal";
+            document.getElementById("beaconingtext2b").className = "normal";
+            document.getElementById("beaconingtext3a").className = "normal";
+            document.getElementById("beaconingtext3b").className = "normal";
+            document.getElementById("beaconingtext4a").className = "normal";
+            document.getElementById("beaconingtext4b").className = "normal";
+            document.getElementById("beaconingtext5a").className = "normal";
+            document.getElementById("beaconingtext5b").className = "normal";
+            document.getElementById("beaconingtext6a").className = "normal";
+            document.getElementById("beaconingtext6b").className = "normal";
+            document.getElementById("beaconingtext7a").className = "normal";
+            document.getElementById("beaconingtext7b").className = "normal";
+            document.getElementById("beaconingtext81").className = "normal";
+            document.getElementById("beaconingtext82").className = "normal";
+            document.getElementById("beaconingtext9a").className = "normal";
+            document.getElementById("beaconingtext9b").className = "normal";
+            document.getElementById("beaconingtext101").className = "normal";
+            document.getElementById("beaconingtext102").className = "normal";
+            document.getElementById("objectbeacona").className = "normal";
+            document.getElementById("objectbeaconb").className = "normal";
+        }
+        else {
+            disableBeaconing();
+        }
     }
 
     /***********
@@ -1555,9 +1561,11 @@
             });
             var beaconing = (typeof(jsonData.beaconing) == "undefined" ? false : (jsonData.beaconing == "true" ? true : false));
             var igating = (typeof(jsonData.igating) == "undefined" ? false : (jsonData.igating == "true" ? true : false));
+            var objectbeaconing = (typeof(jsonData.objectbeaconing) == "undefined" ? false : (jsonData.objectbeaconing == "true" ? true : false));
                     
             document.getElementById("igating").checked = igating;
             document.getElementById("beaconing").checked = beaconing;
+            document.getElementById("objectbeaconing").checked = objectbeaconing;
             checkIgating();
             checkBeaconing();
             validateCallsign();
@@ -1587,6 +1595,7 @@
 	    var slowturn = document.getElementById("slowturn");
 	    var igating = document.getElementById("igating");
 	    var beaconing = document.getElementById("beaconing");
+	    var objectbeaconing = document.getElementById("objectbeaconing");
 	    var audiodev = document.getElementById("audiodev");
 	    var ssid = document.getElementById("ssid");
 	    var serialport = document.getElementById("serialport");
@@ -1653,7 +1662,6 @@
 		    form_data.append("igating", "false");
 		    form_data.append("passcode", "");
         }
-	        
 
 
 	    if (beaconing.checked) {
@@ -1663,8 +1671,8 @@
 			        return false;
 		        }
 	        }
-
             form_data.append("beaconing", beaconing.checked.toString());
+            form_data.append("objectbeaconing", objectbeaconing.checked.toString());
             form_data.append("includeeoss", includeeoss.checked.toString());
             form_data.append("eoss_string", eoss.value);
             form_data.append("fastspeed", fastspeed.value);
@@ -1674,53 +1682,52 @@
             form_data.append("beaconlimit", beaconlimit.value);
             form_data.append("fastturn", fastturn.value);
             form_data.append("slowturn", slowturn.value);
-            }
-            else 
+        }
+        else {
             form_data.append("beaconing", "false");
+            form_data.append("objectbeaconing", "false");
+        }
 
-
-
-            if (beaconing.checked || igating.checked)  {
+        if (beaconing.checked || igating.checked)  {
             form_data.append("comment", comment.value);
-                form_data.append("symbol", symbol.value);
+            form_data.append("symbol", symbol.value);
             if (!overlay.disabled) {
-                        form_data.append("overlay", overlay.value.toUpperCase());
+                form_data.append("overlay", overlay.value.toUpperCase());
             }
             else {
                 form_data.append("overlay", "");
             }
-            }
-            else {
+        }
+        else {
             form_data.append("overlay", "");
-            }
+        }
 
-            form_data.append("callsign", callsign.value.toUpperCase());
-            form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
-            form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
-            form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
-            form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
-                $.ajax({
-                    url: "setconfiguration.php",
-                    dataType: 'json',
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    data: form_data,
-                    type: 'post',
+        form_data.append("callsign", callsign.value.toUpperCase());
+        form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
+        form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+        form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
+        form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
+        $.ajax({
+            url: "setconfiguration.php",
+            dataType: 'json',
+            cache: false,
+            contentType: false,
+            processData: false,
+            data: form_data,
+            type: 'post',
             success: function(jsonData, textStatus, jqXHR) {
-                    document.getElementById("configurationsettings_error").innerHTML = "<mark>Settings saved.</mark>";
-                    document.getElementById("configurationsettings_error2").innerHTML = "<mark>Settings saved.</mark>";
+                document.getElementById("configurationsettings_error").innerHTML = "<mark>Settings saved.</mark>";
+                document.getElementById("configurationsettings_error2").innerHTML = "<mark>Settings saved.</mark>";
                 setTimeout(function() {
                     document.getElementById("configurationsettings_error").innerHTML = "";
                     document.getElementById("configurationsettings_error2").innerHTML = "";
                 }, 3000);
                 getConfiguration();
             },
-                    error: function (jqXHR, textStatus, errorThrown) {
+            error: function (jqXHR, textStatus, errorThrown) {
             }
-            });
-
-            return false;
+        });
+        return false;
     }
 
 
