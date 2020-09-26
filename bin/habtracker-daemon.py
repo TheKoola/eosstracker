@@ -40,11 +40,27 @@ import signal
 import psutil
 import json
 import random
+from inspect import getframeinfo, stack
 
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
 import aprsis
+
+
+#####################################
+## Set this to "True" to have debugging text output when running
+debug = False
+#####################################
+
+
+#####################################
+# Function for printing out debug info
+def debugmsg(message):
+    if debug:
+        caller = getframeinfo(stack()[1][0])
+        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        sys.stdout.flush()
 
 
 class GracefulExit(Exception):
