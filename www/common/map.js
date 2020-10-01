@@ -59,6 +59,7 @@
     var basic;
     var lookbackPeriod = 180;
     var updateType = "regular";
+    var gpsStatusBox;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -1794,6 +1795,12 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
+        // Add the GPS status box to the top right
+        gpsStatusBox = L.control.gpsbox().addTo(map);
+        setTimeout( function() {
+            getgps();
+        }, 20);
+
         baselayer = { "Base Map (raster)" : tilelayer };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
@@ -2097,6 +2104,37 @@ function getTrackers() {
 
     }
 
+    /***********
+    * getgps
+    *
+    * This function will get the current status of the GPS that's connected to the system and populate the web page with its status/state
+    ***********/
+    function getgps() {
+        $.get("getgps.php", function(data) {
+            var jsonData = JSON.parse(data);
+            var gpsfix;
+            var gpsMode;
+
+            gpsMode = jsonData.mode * 10 / 10;
+
+            if (jsonData.status == "no device") {
+                gpsStatusBox.show("GPS: <mark class=\"notokay\">[ NO DEVICE ]</mark>");
+            }
+            else {
+                if (gpsMode == 0)
+                    gpsfix = "GPS: <mark class=\"notokay\">[ NO DATA ]</mark>";
+                else if (gpsMode == 1)
+                    gpsfix = "GPS: <mark class=\"notokay\">[ NO FIX ]</mark>";
+                else if (gpsMode == 2)
+                    gpsfix = "GPS: <mark class=\"marginal\">[ 2D ]</mark>";
+                else if (gpsMode == 3) 
+                    gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
+                else
+                    gpsfix = "Unable to get GPS status";
+                gpsStatusBox.show(gpsfix);
+            }
+        });
+    }
 
     /************
      * toggle
@@ -3105,6 +3143,8 @@ function getTrackers() {
         setTimeout (function() {
             getTrackers();
         }, 10);
+
+        getgps();
 
         // ...the idea being that ever so often, we should try a special update
         if (globalUpdateCounter > 20) {

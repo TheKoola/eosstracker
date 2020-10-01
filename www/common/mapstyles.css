@@ -526,3 +526,20 @@ input {
         font-size: 1.4em;
     }
 }
+
+mark.okay {
+    font-variant: small-caps;
+    color: black;
+    background-color: #99ff99;
+}
+
+mark.notokay {
+    font-variant: small-caps;
+    color: black;
+    background-color: #e26969;
+}
+
+mark.marginal {
+    color: black;
+    background-color: #ffff80;
+}
