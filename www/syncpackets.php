@@ -86,7 +86,8 @@
         ## Connect to the database
         $link = connect_to_database();
         if (!$link) {
-            db_error(sql_last_error());
+            //db_error(sql_last_error());
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
             return 0;
         }
 
@@ -95,14 +96,16 @@
 
         $drop_result = pg_query($link, $droptable);
         if (!$drop_result) {
-            db_error(sql_last_error());
+            //db_error(sql_last_error());
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
         }
 
         $create_result = pg_query($link, $createtable);
         if (!$create_result) {
-            db_error(sql_last_error());
+            //db_error(sql_last_error());
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
         }
@@ -132,29 +135,26 @@
                  $5, 
                  $6, 
                  nullif($7, ''),
-                 st_geomfromtext($8, 4326), 
-                 st_geomfromtext($9, 4326), 
-                 nullif($10, ''),
-                 nullif($11, ''),
+                 case when $8 = '' then
+                     null
+                 else
+                     st_geomfromtext($9, 4326)
+                 end,
+                 case when $10 = ''  then
+                     null
+                 else
+                     st_geomfromtext($11, 4326)
+                 end,
                  nullif($12, ''),
                  nullif($13, ''),
+                 nullif($14, ''),
+                 nullif($15, ''),
                  -1,
                  NULL
             )
         ;";
  
         foreach ($jsondata as $datarow) {
-            //print_r($datarow);
-            /*$datarow->location2d->crs = new stdClass();
-            $datarow->location2d->crs->type = "name";
-            $datarow->location2d->crs->properties = new stdClass();
-            $datarow->location2d->crs->properties->name = "EPSG:4326";
-            $datarow->location3d->crs = new stdClass();
-            $datarow->location3d->crs->type = "name";
-            $datarow->location3d->crs->properties = new stdClass();
-            $datarow->location3d->crs->properties->name = "EPSG:4326";
-             */
-
             $insert_result = pg_query_params($link, $insert, array(
                 pg_escape_string($datarow["tm"]),
                 pg_escape_string($datarow["callsign"]),
@@ -164,6 +164,8 @@
                 $datarow["altitude"],
                 pg_escape_string($datarow["comment"]),
                 pg_escape_string($datarow["location2d"]),
+                pg_escape_string($datarow["location2d"]),
+                pg_escape_string($datarow["location3d"]),
                 pg_escape_string($datarow["location3d"]),
                 pg_escape_string($datarow["raw"]),
                 pg_escape_string($datarow["ptype"]),
@@ -172,7 +174,8 @@
             ));
 
             if (!$insert_result) {
-                db_error(sql_last_error());
+                //db_error(sql_last_error());
+                printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
                 sql_close($link);
                 return 0;
             }
@@ -200,7 +203,8 @@
 
         $update_result = pg_query($link, $update_query);
         if (!$update_result) {
-            db_error(sql_last_error());
+            //db_error(sql_last_error());
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
         }
