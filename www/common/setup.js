@@ -2006,7 +2006,7 @@
 
             setTimeout(function() {
                 document.getElementById("syncpackets-status").innerHTML = "";
-            }, 3000);
+            }, 5000);
 
         });
     }
