@@ -24,6 +24,7 @@
  */
 
 
+    header("Content-Type:  application/json;");
     session_start();
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
@@ -31,112 +32,77 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
+    $config = readconfiguration();
 
     $formerror = false;
     
-    // Check the flightid HTML GET variable
-    if (isset($_GET["flightid"])) {
-        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) == "")
-            $formerror = true;
-    }
-    else
-        $formerror = true;
-
-    // If flightid wasn't given then exit.
-    if ($formerror == true) {
-        printf ("[]");
-        return 0;
-    }
-    
-    // Check the callsign HTML GET variable.
-    $get_callsign = "";
-    if (isset($_GET["callsign"])) 
-        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
-
-
     ## Connect to the database
     $link = connect_to_database();
     if (!$link) {
-        db_error(sql_last_error());
+        printf ("[]");
+        //db_error(sql_last_error());
         return 0;
     }
-
-    ## query the list of callsigns for those flights that are active
-    $query = 'select f.flightid, fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.flightid = $1;';
-    //$result = sql_query($query);
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-
-    if (sql_num_rows($result) <= 0) {
-        printf ("[ ]");
-        //printf ("[{ \"packet\" : \"no data\" }]");
-        sql_close($link);
-        return 0;
-    }
-
-
-    $callsigns = [];
-   
-    // If no callsign was given, then just grab all the callsigns for this flightid
-    if ($get_callsign == "") {
-        $get_callsign = " and a.callsign in (";
-   
-        $firsttime = 1;
-        while ($row = sql_fetch_array($result)) {
-            $callsigns[$row['callsign']] = $row['flightid'];
-            if ($firsttime == 0)
-                $get_callsign = $get_callsign . ", ";
-            $firsttime = 0;
-            $get_callsign = $get_callsign . "'" . $row['callsign'] . "'";
-        }    
-        $get_callsign = $get_callsign . ")";
-    }
-    else
-        $get_callsign = " and a.callsign = '" . $get_callsign . "' ";
-
-    //printf ("%s", json_encode($callsigns));
-    //print_r($get_callsign);
-
-
-    //return 0;
-
-
-/* ============================ */
-
 
     ## query the last packets from stations...
-    $query = '
-select distinct 
-date_trunc(\'second\', a.tm)::timestamp without time zone as timestamp, 
-date_trunc(\'second\', a.tm)::time without time zone || \', \' || a.raw as packet
+    $query = "
+        select 
+        array_to_json(array_agg(r)) as output
 
-from 
-packets a 
+        from 
+        (
+            select
+            a.tm,
+            a.callsign,
+            a.symbol,
+            a.speed_mph,
+            a.bearing,
+            a.altitude,
+            a.comment,
+            st_astext(a.location2d) as location2d,
+            st_astext(a.location3d) as location3d,
+            a.raw,
+            a.ptype,
+            a.hash,
+            a.source,
+            -1 as channel,
+            NULL as frequency
 
-where 
-a.tm > now()::date
---a.tm > \'07-21-2018\' 
-and a.raw != \'\' '
- . $get_callsign . ' order by 1 desc;';
+            from 
+            packets a,
+            flights f,
+            flightmap fm
 
-#printf ("<br><br>%s<br><br>", $query);
+            where 
+            a.tm > now()::date
+            and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
+            and a.raw != ''
+            and fm.flightid = f.flightid
+            and a.callsign = fm.callsign
+            and f.active = 'y'
+   
+            order by
+            a.tm,
+            a.callsign
+        ) as r
+   ;"; 
 
+    $result = pg_query_params($link, $query, array(
+        sql_escape_string($config["lookbackperiod"] . " minute")
+    ));
 
-    $result = sql_query($query);
     if (!$result) {
-        db_error(sql_last_error());
+        printf("[]");
+        //db_error(sql_last_error());
         sql_close($link);
         return 0;
     }
-    if (sql_num_rows($result) > 0)
-        printf ("%s", json_encode(sql_fetch_all($result)));
+
+    if (sql_num_rows($result) > 0) 
+        printf ("%s", sql_fetch_all($result)[0]["output"]);
     else
-        //printf ("[{ \"packet\" : \"no data\" }]");
         printf ("[]");
+
     sql_close($link);
 
 ?>

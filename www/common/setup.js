@@ -1961,7 +1961,7 @@
     }
 
     /***********
-    * displayKioskData function
+    * syncData function
     *
     * This function queries the track.eoss.org system for the flight, tracker, launchsite, and frequency configuration.
     * It will use that information to populate an HTML table along with cancel or accept buttons for the user. 
@@ -1983,6 +1983,29 @@
 
             setTimeout(function() {
                 document.getElementById("syncup-status").innerHTML = "";
+            }, 3000);
+
+        });
+    }
+
+    /***********
+    * syncPackets function
+    *
+    * This function queries the track.eoss.org system for the APRS packets from active flights.
+    ***********/
+    function syncPackets() {
+
+        $.get("syncpackets.php", function(data) {
+
+            var color = (data.result > 0 ? "lightgreen" : "yellow");
+            var statushtml = "<mark style=\"background-color: " + color + ";\">" + 
+                (data.result > 0 ? (data.packets > 0 ? "Packets added to local system: &nbsp; [ <strong> " + data.packets + " </strong> ]" : "No packets needed.") : data.error) + 
+                "</mark>";
+
+            document.getElementById("syncpackets-status").innerHTML = statushtml;
+
+            setTimeout(function() {
+                document.getElementById("syncpackets-status").innerHTML = "";
             }, 3000);
 
         });

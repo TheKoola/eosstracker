@@ -101,6 +101,11 @@ include $documentroot . '/common/header.php';
         var sync_e = "#syncup";
         $(sync_a).click({element: sync_e, link: sync_l }, toggle);
 
+        var syncpackets_a = "#syncpacketsLink";
+        var syncpackets_l = "#syncpacketsSign";
+        var syncpackets_e = "#syncpackets";
+        $(syncpackets_a).click({element: syncpackets_e, link: syncpackets_l }, toggle);
+
         // Update the Map link in the menu bar
         setTimeout(function() {
             updateMapLink();
@@ -462,10 +467,32 @@ include $documentroot . '/common/header.php';
                     <span id="syncup-status"></span>
             </form>  
             <div id="syncup-div" style="margin-top: 10px;"></div>
-            </form>
         </p>
         <p class="normal-italic">
             Please restart the System Processes from the <a href="/" class="normal-link-black">Home</a> page for changes to take effect.
+        </p>
+    </div>
+
+    <!-- ###################################### -->
+    <!-- Get missing packets section -->
+    <!-- ###################################### -->
+    <p class="header">
+        <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
+        <a href="#syncpackets" class="header" id="syncpacketsLink">(<span style="color: red;" id="syncpacketsSign">+</span>) Check For Missing Flight Packets</a>
+    </p>
+    <div id="syncpackets" style="display: none;">
+        <p class="normal-italic" style="margin-top: 20px;">
+            Click the "Get Missing Packets..." button to download any APRS packets from active flights from the system running on <a href="https://track.eoss.org/" class="normal-link-black">track.eoss.org</a> that are NOT present on this local system.  
+        </p>
+        <p class="subheader">
+            Check for missing APRS packets from active flights:
+        </p>
+        <p>
+            <form name="packets-sync" id="packets-sync">
+                    <input class="submitbutton" style="margin: 5px; margin-left: 30px;" type="submit" value="Get Missing Packets..." form="packets-sync" onclick="syncPackets(); return false;">
+                    <span id="syncpackets-status"></span>
+            </form>  
+            <div id="syncpackets-div" style="margin-top: 10px;"></div>
         </p>
     </div>
 
