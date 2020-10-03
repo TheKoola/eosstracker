@@ -59,7 +59,7 @@
             a.bearing,
             a.altitude,
             a.comment,
-            st_astext(a.location2d as location2d,
+            st_astext(a.location2d) as location2d,
             st_astext(a.location3d) as location3d,
             a.raw,
             a.ptype,
