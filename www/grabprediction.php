@@ -269,6 +269,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
         "Genoa" => "grvco",
         "Wiggins" => "iggco",
         "Limon" => "licco",
+        "NWS" => "nwsco",
         "Windsor" => "wsrco"
     ];
 
