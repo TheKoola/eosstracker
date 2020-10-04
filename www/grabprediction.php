@@ -260,6 +260,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
 
     // Get the list of RAW predict files from the prediciton page
     $hrefs = getHrefs("https://www.eoss.org/predict");
+    $hrefskiosk = getHrefs("https://track.eoss.org/predictiondata");
 
     // An array for translating the launchs site location names to the abbreviations used with the RAW predict filename
     $sites = [
@@ -300,6 +301,9 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
                 
             // Expression to match a filename
             $p = "/e" . preg_quote($flight_suffix) . "_.*_" . preg_quote($sites[$launchsite]) . "_raw\.txt/";
+            if ($launchsite == "NWS") {
+                    $p = "/r" . preg_quote($flight_suffix) . "_.*_" . preg_quote($sites[$launchsite]) . "_raw\.txt/";
+            }
 
             // Find the correct predict file for our launch site in the list of predict files
             foreach ($hrefs as $filename) {
