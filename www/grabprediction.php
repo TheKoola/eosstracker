@@ -316,6 +316,16 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
                     break;
                 }
             }
+            
+            // If the launch site is NWS, find correct predict file at alternate web site
+            if ($predict_url == "") {
+                foreach ($hrefskiosk as $filename) {
+                    if (preg_match($p, $filename)) {
+                         $predict_url = "https://track.eoss.org/predictiondata/" . $filename;
+                         break;
+                    }
+                }
+            }
 
             // If the predict_url contains a filename, then we found a match in the "foreach..." loop above.
             if ($predict_url != "") {
