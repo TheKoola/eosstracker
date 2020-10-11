@@ -254,7 +254,7 @@
  
                     // If this is a balloon object then we want a hyperlink in the popup and update the gauges.
 		            if (objecttype == "balloon") {
-        			    html = "<a target=\"_blank\" href=\"map.php" + 
+        			    html = "<a target=\"_blank\" href=\"index.php" + 
                             "?followfeatureid=" + feature.properties.id + 
 	        		        "&latitude=" + feature.geometry.coordinates[1] + 
 		        	        "&longitude=" + feature.geometry.coordinates[0] + 
@@ -406,7 +406,7 @@
 
             // if this is a balloon object, then update it's html properties with a hyperlink...
             if (item.properties.objecttype == "balloon") {
-                html = "<a target=\"_blank\" href=\"map.php" +
+                html = "<a target=\"_blank\" href=\"index.php" +
                       "?followfeatureid=" + item.properties.id + 
                       "&latitude=" + item.geometry.coordinates[1] + 
                       "&longitude=" + item.geometry.coordinates[0] + 
@@ -1058,7 +1058,7 @@
                     var mapcenter = map.getCenter();
                     var mapzoom = map.getZoom(); 
                     var id = feature.properties.id;
-    		        html = "<a target=\"_blank\" href=\"map.php" + 
+    		        html = "<a target=\"_blank\" href=\"index.php" + 
                         "?followfeatureid=" + feature.properties.id + 
                         "&latitude=" + feature.geometry.coordinates[1] + 
                         "&longitude=" + feature.geometry.coordinates[0] + 
@@ -1176,7 +1176,7 @@
             var layer = realtimelayer.getLayer(id);
             var html = "";
 
-            html = "<a target=\"_blank\" href=\"map.php" +
+            html = "<a target=\"_blank\" href=\"index.php" +
                       "?followfeatureid=" + item.properties.id + 
                       "&latitude=" + item.geometry.coordinates[1] + 
                       "&longitude=" + item.geometry.coordinates[0] + 
