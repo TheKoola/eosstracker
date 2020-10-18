@@ -413,7 +413,7 @@ class PredictorBase(object):
             debugmsg("parachute_coef: %f" % parachute_coef)
 
             # This is a list of points with the predicted velocity for various altitudes beyond the last altitude we've seen (aka the future)
-            alts = np.arange(self.prediction_floor / 2, balloon_altitudes[-1] + 10000, 500)
+            alts = np.arange(0, balloon_altitudes[-1] + 10000, 500)
             debugmsg("alts length: %f" % alts.shape[0])
             pred_v = np.sqrt(parachute_coef * self.g(alts) / ad(alts))
             pred_v_curve = interpolate.interp1d(alts, pred_v, kind='cubic')
