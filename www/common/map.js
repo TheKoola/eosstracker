@@ -553,6 +553,7 @@
             typeof(feature.properties.time)        != "undefined" &&
             typeof(feature.properties.source)      != "undefined" &&
             typeof(feature.geometry.coordinates)   != "undefined" &&
+            typeof(feature.properties.myheading)   != "undefined" &&
             typeof(feature.properties.rel_angle)   != "undefined" &&
             typeof(feature.properties.rel_bearing) != "undefined" &&
             typeof(feature.properties.rel_distance)!= "undefined") {
@@ -615,13 +616,26 @@
                 if (relativeBearing < 0)
                     relativeBearing = 360 + relativeBearing;
 
-                $(hvelement).data("relativebearing").setRelativeHeading(myheading, rel_bearing);
-                $(evelement).data("relativeangle").setElevationAngle(angle);
-                $(delement).html(distance.toFixed(2) + " mi" + " @ " + rel_bearing.toFixed(0) + "&#176;");
-                $(celement).text(lat.toFixed(4) + ", " + lon.toFixed(4));
-                $(evelement).text(angle.toFixed(0));
-                $(hvelement).text(relativeBearing.toFixed(0));
-                $(mhvelement).text(myheading.toFixed(0));
+		if (feature.properties.myheading == null
+			|| feature.properties.rel_bearing == null
+			|| feature.properties.rel_angle == null
+			|| feature.properties.rel_distance == null) {
+	            $(delement).html("n/a");    
+		    $(evelement).text("n/a");
+		    $(hvelement).text("n/a");
+		    $(mhvelement).text("n/a");
+                }
+		else {
+		    $(hvelement).data("relativebearing").setRelativeHeading(myheading, rel_bearing);
+		    $(evelement).data("relativeangle").setElevationAngle(angle);
+		    $(delement).html(distance.toFixed(2) + " mi" + " @ " + rel_bearing.toFixed(0) + "&#176;");
+		    $(evelement).text(angle.toFixed(0));
+		    $(hvelement).text(relativeBearing.toFixed(0));
+		    $(mhvelement).text(myheading.toFixed(0));
+		}
+	
+		$(celement).text(lat.toFixed(4) + ", " + lon.toFixed(4));
+
                 //******** end: Update the relative position dials for this flight *******
 
 

@@ -615,7 +615,8 @@
                         r.callsign,
                         r.tm
                     ) as lp
-                    on lp.flightid = y.flightid and lp.callsign = y.callsign,
+		    on lp.flightid = y.flightid and lp.callsign = y.callsign
+                    left outer join
                     (
                         select 
                         g.tm, 
@@ -634,6 +635,7 @@
 
                         limit 1
                     ) as gps
+                    on gps.tm::date = y.thetime::date
 
                 order by
                     y.callsign,
