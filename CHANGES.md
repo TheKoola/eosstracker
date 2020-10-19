@@ -7,7 +7,17 @@
 ### Issues Fixed: ###
 
 
-## Version 1.3 - June 2020 ##
+
+## Version 1.3.1 - Oct 2020 ##
+
+### Issues Fixed: ###
+
+- Issue with landing predictions that would case that sub-process to fail under certain conditions resulting in no further landing predictions being computed.  
+- Updated LeafletJS library to v1.7.0.  This fixes issues with finger gestures on Microsoft Windows 10 tablets.
+
+
+
+## Version 1.3 - Sept 2020 ##
 
 ### New Features: ###
 
