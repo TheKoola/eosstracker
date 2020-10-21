@@ -761,11 +761,11 @@ class PredictorBase(object):
                 prev_x = pos_x
                 prev_y = pos_y
 
-            return flightpath_points
+            return flightpath_points, parachute_coef
 
         else:
             debugmsg("Not processing a prediction, sanity checks failed")
-            return None
+            return None, 0.0
 
 
 
@@ -2016,6 +2016,7 @@ class LandingPredictor(PredictorBase):
                     # However, in either case (surface winds or not) we only want to process a single landing prediction so the javascript/map display
                     # will only display a single 'X' on the map.
 
+                    coef = 0.0
                     if not validity:
                         winds = None
                         wind_text = None
@@ -2023,14 +2024,14 @@ class LandingPredictor(PredictorBase):
 
                         # Call the prediction algo
                         debugmsg("Running prediction regular prediction")
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, airdensity_function = airdensity_curve)
+                        flightpath, coef = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, airdensity_function = airdensity_curve)
                     else:
                         wind_text = "ARRAY[" + str(round(winds[2])) + ", " + str(round(winds[3])) + ", " + str(round(winds[4])) + "]"
                         predictiontype = "wind_adjusted"
 
                         # Call the prediction algo
                         debugmsg("Running prediction that indludes calcualted surface winds.  winds[0]: %f, winds[1]: %f" % (winds[0], winds[1]))
-                        flightpath = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, wind_rates = winds, airdensity_function = airdensity_curve)
+                        flightpath, coef = self.predictionAlgo(latestpackets, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor, surface_winds = True, wind_rates = winds, airdensity_function = airdensity_curve)
 
                     ####################################
                     # END:  compute the landing prediction
@@ -2076,7 +2077,7 @@ class LandingPredictor(PredictorBase):
                         debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
                         # execute the SQL insert statement
-                        landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, 0.00, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
+                        landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, coef, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
                         self.landingconn.commit()
 
 
