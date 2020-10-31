@@ -66,6 +66,9 @@ def GpsPoller(e):
     gpsconn = None
     try:
 
+        # Current system datetime                
+        datetime_record = datetime.datetime.utcnow().isoformat() + 'Z'
+
         # Primary loop for handling GPS polling.
         while not e.is_set():
 
@@ -94,6 +97,21 @@ def GpsPoller(e):
                     # Set this to false so the inner loop will end
                     gpsDeviceFound = False
 
+                # Current system datetime                
+                utc_datetime = datetime.datetime.utcnow()
+
+                # If a date was returned from the GPS, compare that to the system UTC date
+                if gpsd.utc:
+                    try:
+                        gpsdatetime = datetime.datetime.strptime(gpsd.utc, '%Y-%m-%dT%H:%M:%S.%fZ')
+                    except ValueError:
+                        gpsdatetime = datetime.datetime.utcnow()
+
+                    if gpsdatetime.year == utc_datetime.year:
+                        datetime_record = gpsdatetime.isoformat() + 'Z'
+                    else:
+                        datetime_record = utc_datetime.isoformat() + 'Z'
+
                 # If GPSD is reporting a DEVICE or DEVICES event then look at that to see if a GPS device was actually "activated"
                 if report['class'] == "DEVICE":
                     if "path" in report and "activated" in report:
@@ -112,7 +130,7 @@ def GpsPoller(e):
                                 if "path" in gpsdev:
                                     gpspath = gpspath + gpsdev["path"] + " "
                 if gpsDeviceFound == False:
-                    gpsstats = { "utc_time" : str(gpsd.utc if gpsd.utc else datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+                    gpsstats = { "utc_time" : str(datetime_record),
                                  "mode" : str(report["mode"] if "mode" in report else "0"),
                                  "status" : "no device",
                                  "devicepath" : "n/a",
@@ -130,7 +148,7 @@ def GpsPoller(e):
 
 
             # A GPS device has been activated...update the GPS JSON status file
-            gpsstats = { "utc_time" : str(gpsd.utc if gpsd.utc else datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+            gpsstats = { "utc_time" : str(datetime_record),
                          "mode" : str(report["mode"] if "mode" in report else "0"),
                          "status" : "waiting on device",
                          "devicepath" : str(gpspath),
@@ -168,7 +186,20 @@ def GpsPoller(e):
                 else:
                     gpspath = "n/a"
 
+                # Current system datetime                
+                utc_datetime = datetime.datetime.utcnow()
 
+                # If a date was returned from the GPS, compare that to the system UTC date
+                if gpsd.utc:
+                    try:
+                        gpsdatetime = datetime.datetime.strptime(gpsd.utc, '%Y-%m-%dT%H:%M:%S.%fZ')
+                    except ValueError:
+                        gpsdatetime = datetime.datetime.utcnow()
+
+                    if gpsdatetime.year == utc_datetime.year:
+                        datetime_record = gpsdatetime.isoformat() + 'Z'
+                    else:
+                        datetime_record = utc_datetime.isoformat() + 'Z'
 
                 # If GPSD provided a Time-Position-Velocity report we process that...
                 if report['class'] == 'TPV':
@@ -192,7 +223,7 @@ def GpsPoller(e):
                                 );"""
 
                             # The time of the last GPS position fix
-                            thetime = gpsd.utc
+                            thetime = datetime_record
 
                             # If our position is non-zero and altitude is > 0 then proceed with the database insert
                             if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
@@ -246,7 +277,7 @@ def GpsPoller(e):
                             mysats_sorted = sorted(mysats, key=lambda k: k['used'], reverse=True)
 
                         # Our GPS stats object
-                        gpsstats = { "utc_time" : str(gpsd.utc),
+                        gpsstats = { "utc_time" : str(datetime_record),
                                      "mode" : str(gpsd.fix.mode),
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
@@ -279,7 +310,7 @@ def GpsPoller(e):
 
 
                         # Our GPS stats object
-                        gpsstats = { "utc_time" : str(gpsd.utc),
+                        gpsstats = { "utc_time" : str(datetime_record),
                                      "mode" : str(gpsd.fix.mode),
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
@@ -296,7 +327,7 @@ def GpsPoller(e):
                     # for all other Fix status (ex. no data and No Fix)
                     else:
                         # Our GPS stats object
-                        gpsstats = { "utc_time" : str(gpsd.utc if gpsd.utc else datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
+                        gpsstats = { "utc_time" : str(datetime_record),
                                  "mode" : str(gpsd.fix.mode if gpsd.fix.mode else "0"),
                                  "status" : "acquiring fix",
                                  "devicepath" : str(gpspath),
