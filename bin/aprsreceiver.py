@@ -35,7 +35,7 @@ import signal
 #    This is the process that listens on various frequencies
 ##################################################
 class aprs_receiver(gr.top_block):
-    def __init__(self, freqlist=[(144390000, 12000)], rtl=0):
+    def __init__(self, freqlist=[(144390000, 12000)], rtl=0, prefix="rtl"):
         gr.top_block.__init__(self, "APRS Receiver for Multiple Frequencies")
 
         ##################################################
@@ -43,7 +43,7 @@ class aprs_receiver(gr.top_block):
         ##################################################
         self.Frequencies = freqlist
         self.direwolf_audio_rate = 48000
-        self.rtl_id = "rtl=" + str(rtl)
+        self.rtl_id = prefix + "=" + str(rtl)
 
         ##################################################
         # Variables
@@ -101,13 +101,13 @@ class aprs_receiver(gr.top_block):
 # GRProcess:
 #    - Then starts up an instance of the aprs_receiver class
 ##################################################
-def GRProcess(flist=[(144390000, 12000)], rtl=0, e = None):
+def GRProcess(flist=[(144390000, 12000)], rtl=0, prefix="rtl", e = None):
     try:
 
         #print "GR [%d], listening on: " % rtl, flist
 
         # create an instance of the aprs receiver class
-        tb = aprs_receiver(freqlist=flist, rtl=rtl)
+        tb = aprs_receiver(freqlist=flist, rtl=rtl, prefix=prefix)
 
         # call its "run" method...this blocks until done
         tb.start()

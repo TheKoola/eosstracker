@@ -682,7 +682,7 @@ def main():
                 direwolfFreqList.append(freqlist)
 
                 # This is the GnuRadio process
-                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), stopevent))
+                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], stopevent))
                 grprocess.daemon = True
                 grprocess.name = "GnuRadio_" + str(k["rtl"])
                 processes.append(grprocess)
