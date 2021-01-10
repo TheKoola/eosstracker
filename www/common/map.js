@@ -86,7 +86,7 @@
     * getChartWidth
     *
     * This function return calculated width of the chart
-    ***********/
+    * **********/
     function getChartWidth() {
         var w = window.innerWidth;
 
@@ -136,6 +136,28 @@
                 return i;
         }
         return -1;
+    }
+
+    /*********
+    * This function will construct the HTML (in text form), that when clicked on, will hot-jump the user to their platform's mapping application
+    **********/
+    function mapLink (lat, lon) {
+        var latitude = (lat * 10.0 / 10.0).toFixed(4);
+        var longitude = (lon * 10.0 / 10.0).toFixed(4);
+        var platform = navigator.platform;
+        var url;
+
+
+        if (platform.indexOf("iPhone") != -1 || platform.indexOf("iPod") != -1 || platform.indexOf("iPad") != -1 || platform.indexOf("MacIntel") != -1) {
+            url ="http://maps.apple.com/?saddr=here&daddr=" + latitude + "," + longitude + "&dirflg=d&z=12";
+        }
+        else {
+            url ="https://www.google.com/maps/dir/?api=1&destination=" + latitude + "," + longitude + "&travelmode=driving";
+        }
+        
+        var anchorHTML = "<a target=\"_blank\" class=\"normal-link\" href=\"" + url + "\">" + latitude + ", " + longitude + "</a>";
+
+        return anchorHTML;
     }
 
 
@@ -273,7 +295,7 @@
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                         "<br>Coords: <span id=\"" + id + "-coords\">"
-                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                        + mapLink((feature.geometry.coordinates[1] * 10 / 10).toFixed(4), (feature.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                         + "</span>"
                         + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
 		                (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
@@ -424,7 +446,7 @@
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((item.geometry.coordinates[1] * 10 / 10).toFixed(4), (item.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                   + "</span>"
                   + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
                 (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
@@ -739,7 +761,7 @@
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((feature.geometry.coordinates[1] * 10 / 10).toFixed(4), (feature.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                   + "</span>"
                   + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
         			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
@@ -825,7 +847,7 @@
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((item.geometry.coordinates[1] * 10 / 10).toFixed(4), (item.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                   + "</span>"
                   + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
@@ -925,10 +947,10 @@
 
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((feature.geometry.coordinates[1] * 10 / 10).toFixed(4), (feature.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                   + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">") +
-			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
+                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">") 
+                  + (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
 
 
                     // Popup for the landing prediction point
@@ -1024,10 +1046,11 @@
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((item.geometry.coordinates[1] * 10 / 10).toFixed(4), (item.geometry.coordinates[0] * 10 / 10).toFixed(4))
                   + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
-		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
+                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) 
+		          + (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
+
 
             // Update the popup content
             layer.setPopupContent(html, { className: 'myPopupStyle' });
@@ -1104,7 +1127,7 @@
                         (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? " via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                         "<br>Coords: <span id=\"" + id + "-coords\">"
-                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                        + mapLink((feature.geometry.coordinates[1] * 10 / 10).toFixed(4), (feature.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                         + "</span>"
                         + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
                         (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
@@ -1223,7 +1246,7 @@
                       (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? " via " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
+                  + mapLink((item.geometry.coordinates[1] * 10 / 10).toFixed(4), (item.geometry.coordinates[0] * 10 / 10).toFixed(4)) 
                   + "</span>"
                   + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
