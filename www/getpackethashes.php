@@ -88,14 +88,10 @@
 
     if (sql_num_rows($result) > 0) {
         $data = sql_fetch_all($result)[0]["output"];
-        if ($data) {
-            if (count($data) > 0)
-                printf ("%s", sql_fetch_all($result)[0]["output"]);
-            else
-                printf("[]");
-        }
+        if ($data) 
+            printf ("%s", $data);
         else
-            printf ("[]");
+            printf("[]");
     }
     else
         printf ("[]");
