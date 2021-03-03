@@ -33,36 +33,27 @@
     include $documentroot . '/common/functions.php';
 
     $config = readconfiguration();
-    
-    # This section determines if the track.eoss.org is accessible.
-    # Specify that we don't care about self-signed SSL certs
+
+    # This is the context...set this to "false" for using self signed certs.
     $context = stream_context_create( [
         'ssl' => [
-        'verify_peer' => true,
-        'verify_peer_name' => true,
+        'verify_peer' => true,   # Set to false for testing with self-signed certs
+        'verify_peer_name' => true,   # Set to false for testing with self-signed certs
         ],
     ]);
+    
 
-    # The URL
-    $packets_url = "https://track.eoss.org/getpackets.php";
-    //$packets_url = "https://jeffnuc.local/getpackets.php";
+/*********************
+ *
+ * Function to download full packet data.
+ *
+ *********************/
+function getPacketData($packets_url) {
 
-    # Get HTML headers by trying to load the URL 
-    $file_headers = get_headers($packets_url, 0, $context);
-
-    # Check if successful
-    if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
-        $exists = false;
-    else 
-        $exists = true;
-
-    if (!$exists) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Unable to contact track.eoss.org\"}");
-        return 0;
-    }
+    global $context;
 
     # Get the URL
-    $url_data = file_get_contents($packets_url);
+    $url_data = file_get_contents($packets_url, false, $context);
 
     # Check the returned value
     if ($url_data === False) {
@@ -82,11 +73,9 @@
 
     if (count($jsondata) > 0) {
 
-        # Reset the execution time limit
         ## Connect to the database
         $link = connect_to_database();
         if (!$link) {
-            //db_error(sql_last_error());
             printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
             return 0;
         }
@@ -96,7 +85,7 @@
 
         $drop_result = pg_query($link, $droptable);
         if (!$drop_result) {
-            //db_error(sql_last_error());
+            #db_error(sql_last_error());
             printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
@@ -104,7 +93,7 @@
 
         $create_result = pg_query($link, $createtable);
         if (!$create_result) {
-            //db_error(sql_last_error());
+            #db_error(sql_last_error());
             printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
@@ -174,7 +163,7 @@
             ));
 
             if (!$insert_result) {
-                //db_error(sql_last_error());
+                db_error(sql_last_error());
                 printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
                 sql_close($link);
                 return 0;
@@ -203,7 +192,7 @@
 
         $update_result = pg_query($link, $update_query);
         if (!$update_result) {
-            //db_error(sql_last_error());
+            #db_error(sql_last_error());
             printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
             return 0;
@@ -213,11 +202,165 @@
         $affected_rows = pg_affected_rows($update_result);
 
         // success
-        printf ("{ \"result\" : 1, \"packets\" : %s, \"error\": \"\" }", json_encode($affected_rows));
+        printf ("{ \"result\" : 1, \"packets\" : %s, \"error\": \"Database updated with %d packets.\" }", json_encode($affected_rows), json_encode($affected_rows));
         sql_close($link);
     }
     else
         printf ("{ \"result\" : 0, \"packets\" : 0, \"error\": \"no data returned from track.eoss.org\" }");
+}
 
+# This will download only packet hashes and then compare with the existing packet data to determine if there are gaps.
+# Returns:  true if there are packets missing
+#           false if all packets are present in the database or some other error occured
+function checkPacketData($hashurl) {
+
+    global $context;
+
+    # Get the URL
+    $url_data = file_get_contents($hashurl, false, $context);
+    #printf ("\nGetting contents from, %s:  %s\n", $hashurl, $url_data);
+
+    # Check the returned value
+    if ($url_data === False) {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"No data returned from track.eoss.org\"}");
+        return 0;
+    }
+
+    # decode the JSON
+    $jsondata = json_decode($url_data, True);
+
+    # Check the JSON validity
+    if (json_last_error() != JSON_ERROR_NONE) {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
+        return 0;
+    }
+
+
+    if (count($jsondata) > 0) {
+
+        ## Connect to the database
+        $link = connect_to_database();
+        if (!$link) {
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
+            sql_close($link);
+            return 0;
+        }
+
+        $droptable = "drop table if exists incoming;";
+        $createtable = "create table incoming (tm timestamp with time zone, callsign text, hash text); alter table incoming add primary key (tm, callsign, hash);";
+
+        $drop_result = pg_query($link, $droptable);
+        if (!$drop_result) {
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
+            sql_close($link);
+            return 0;
+        }
+
+        $create_result = pg_query($link, $createtable);
+        if (!$create_result) {
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
+            sql_close($link);
+            return 0;
+        }
+
+        $insert = "insert into incoming(
+            tm,
+            callsign,
+            hash
+            )
+           
+            values(
+                 $1, 
+                 $2, 
+                 nullif($3, '')
+            )
+        ;";
+ 
+        foreach ($jsondata as $datarow) {
+            $insert_result = pg_query_params($link, $insert, array(
+                pg_escape_string($datarow["tm"]),
+                pg_escape_string($datarow["callsign"]),
+                pg_escape_string($datarow["hash"])
+            ));
+
+            if (!$insert_result) {
+                printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
+                sql_close($link);
+                return 0;
+            }
+
+        }
+
+        // Now run the query to check rows from "incoming" compared packets
+        $check_query = "
+            select 
+            i.* 
+
+            from
+            incoming i left outer join packets a on i.callsign = a.callsign and i.hash = a.hash and i.tm::date = a.tm::date
+
+            where
+            a.callsign is null
+
+            order by
+            i.tm asc
+            ;
+        ";
+
+        $check_result = pg_query($link, $check_query);
+        if (!$check_result) {
+            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
+            sql_close($link);
+            return 0;
+        }
+
+        return sql_num_rows($check_result);
+
+    }
+    else {
+        printf ("{ \"result\" : 0, \"packets\" : 0, \"error\": \"no data returned from track.eoss.org\" }");
+        return 0;
+    }
+}
+
+
+    # The URL
+    $hashes_url = "https://track.eoss.org/getpackethashes.php";
+    $fullpackets_url = "https://track.eoss.org/getpackets.php";
+
+    # Get HTML headers by trying to load the URL 
+    $file_headers = get_headers($hashes_url, 0, $context);
+
+    # Check if successful
+    if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
+        $exists = false;
+    else 
+        $exists = true;
+
+    if (!$exists) {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Unable to contact track.eoss.org\"}");
+        return 0;
+    }
+
+    # Determine if there are packets missing
+    #printf ("Checking packets\n");
+    $ret = checkPacketData($hashes_url);
+    #printf ("return code:  %d\n", $ret);
+
+
+    # if there are packets missing then download the full data and update this database
+    if ($ret)  {
+        #printf ("calling getPacketData\n");
+        $r = getPacketData($fullpackets_url);
+        #printf ("getPacketData returned: %d\n", $r);
+    }
+    else {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"No packets found or database is already up to date.\"}");
+    }
+
+    # close the database connection
+    sql_close($link);
 
 ?>
+
+
