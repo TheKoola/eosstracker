@@ -70,6 +70,12 @@ function getPacketData($packets_url) {
         return 0;
     }
 
+    # Make sure the returned data is an array...we're expecting an array of packets to be returned.
+    if (!is_array($jsondata)) {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
+        return 0;
+    }
+
 
     if (count($jsondata) > 0) {
 
@@ -235,6 +241,11 @@ function checkPacketData($hashurl) {
         return 0;
     }
 
+    # Make sure the returned data is an array...we're expecting an array of packets to be returned.
+    if (!is_array($jsondata)) {
+        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
+        return 0;
+    }
 
     if (count($jsondata) > 0) {
 
@@ -242,7 +253,6 @@ function checkPacketData($hashurl) {
         $link = connect_to_database();
         if (!$link) {
             printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
-            sql_close($link);
             return 0;
         }
 
@@ -314,6 +324,9 @@ function checkPacketData($hashurl) {
             return 0;
         }
 
+        # Close the database connection
+        sql_close($link);
+
         return sql_num_rows($check_result);
 
     }
@@ -343,23 +356,12 @@ function checkPacketData($hashurl) {
     }
 
     # Determine if there are packets missing
-    #printf ("Checking packets\n");
     $ret = checkPacketData($hashes_url);
-    #printf ("return code:  %d\n", $ret);
-
 
     # if there are packets missing then download the full data and update this database
     if ($ret)  {
-        #printf ("calling getPacketData\n");
         $r = getPacketData($fullpackets_url);
-        #printf ("getPacketData returned: %d\n", $r);
     }
-    else {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"No packets found or database is already up to date.\"}");
-    }
-
-    # close the database connection
-    sql_close($link);
 
 ?>
 

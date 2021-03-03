@@ -100,10 +100,14 @@
 
     if (sql_num_rows($result) > 0) {
         $data = sql_fetch_all($result)[0]["output"];
-        if (count($data) > 0)
-            printf ("%s", sql_fetch_all($result)[0]["output"]);
+        if (is_array($data)) {
+            if (count($data) > 0)
+                printf ("%s", sql_fetch_all($result)[0]["output"]);
+            else
+                printf("[]");
+        }
         else
-            printf("[]");
+            printf ("[]");
     }
     else
         printf ("[]");
