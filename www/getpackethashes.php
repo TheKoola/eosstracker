@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -54,19 +54,7 @@
             select
             a.tm,
             a.callsign,
-            a.symbol,
-            a.speed_mph,
-            a.bearing,
-            a.altitude,
-            a.comment,
-            st_astext(a.location2d) as location2d,
-            st_astext(a.location3d) as location3d,
-            a.raw,
-            a.ptype,
-            a.hash,
-            a.source,
-            -1 as channel,
-            NULL as frequency
+            a.hash
 
             from 
             packets a,
