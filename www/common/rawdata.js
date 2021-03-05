@@ -38,6 +38,9 @@
     var packetcount;
     var lastUpdateTime = 0;
 
+    // The interval timer
+    var interval;
+
     // Initial chart size
     var chartwidth = getChartWidth();
     var chartheight = getChartHeight();
@@ -1037,17 +1040,58 @@
 
         }, false);
 
+        window.onfocus = gainFocus;
+        window.onblur = lostFocus;
+
         // Create a timer that is called every 5secs for updating all of our items on the page
-        setInterval(function() { 
+        interval = setInterval(function() { 
             updateMapLink();
             getrecentdata(); 
             getchartdata(updatechart, "getaltitudechartdata.php"); 
             getchartdata(updatechart2, "getairdensity.php"); 
             getchartdata(updatechart3, "getdirewolfperformance.php"); 
             getchartdata2(updatechart4, "gettemppressure.php"); 
-            //getdigidata();
-            //gettrackerdata();
         }, 5000);
     }
 
+
+/***********
+* lostFocus
+*
+* This function is called when the browser tab loses focus
+***********/
+function lostFocus() {
+    var isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
+    var isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
+
+    // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
+    if ((isiPad || isMobile) && interval) {
+        clearInterval(interval);
+    }
+
+    return 0;
+}
+
+
+/***********
+* gainFocus
+*
+* This function is called when the browser tab regains focus
+***********/
+function gainFocus() {
+
+    // if we're regaining focus, then restart periodic page updates.
+    if (interval) {
+        clearInterval(interval);
+        interval = setInterval(function() { 
+            updateMapLink();
+            getrecentdata(); 
+            getchartdata(updatechart, "getaltitudechartdata.php"); 
+            getchartdata(updatechart2, "getairdensity.php"); 
+            getchartdata(updatechart3, "getdirewolfperformance.php"); 
+            getchartdata2(updatechart4, "gettemppressure.php"); 
+        }, 5000);
+    }
+    return 0;
+}
 

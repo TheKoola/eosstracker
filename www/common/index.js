@@ -24,6 +24,7 @@
 
 var numProcessesRunning = 0;
 var processInTransition = 0;
+var interval;
 
 /***********
 * escapeHtml
@@ -316,17 +317,58 @@ function updateMapLink() {
 
 
 /***********
+* lostFocus
+*
+* This function is called when the browser tab loses focus
+***********/
+function lostFocus() {
+    var isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
+    var isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
+
+    // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
+    if ((isiPad || isMobile) && interval) {
+        clearInterval(interval);
+    }
+
+    return 0;
+}
+
+
+/***********
+* gainFocus
+*
+* This function is called when the browser tab regains focus
+***********/
+function gainFocus() {
+    // if we're regaining focus, then restart periodic page updates.
+    if (interval) {
+        clearInterval(interval);
+        interval = setInterval(function() {
+            updateMapLink();
+            getrecentdata();
+            getgps();
+            getConfiguration();
+        }, 5000);
+    }
+    return 0;
+}
+
+
+/***********
 * ready
 *
 * This function is only called once the web page is fully loaded.
 ***********/
 $(document).ready(function () {
 
+    window.onfocus = gainFocus;
+    window.onblur = lostFocus;
+
     updateMapLink();
     getrecentdata();
     getConfiguration();
     getgps();
-    setInterval(function() {
+    interval = setInterval(function() {
         updateMapLink();
         getrecentdata();
         getgps();
