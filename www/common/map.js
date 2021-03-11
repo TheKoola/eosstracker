@@ -3425,7 +3425,6 @@ function gainFocus() {
 
     // if we're regaining focus, then restart periodic page updates.
     if (updateTimeout) {
-        var priorTimeout = updateTimeout;
         clearTimeout(updateTimeout);
         updateTimeout = setTimeout(updateAllItems, 5000);
     }
