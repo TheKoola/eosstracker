@@ -1178,18 +1178,9 @@
     $cutdownlandings = [];
     $cutdownlandingfeatures = [];
 
-    # If this flights last couple of packets show a positive vertical rate, then we assume the flight is still assending.  In that case, we
-    # want to return data for an early cutdown prediction (assuming the backend has calculated one...obviously).  Otherwise, if the vertical rate
-    # for the flight is is < 0, then the flight is descending and we don't care about any sort of early cutdown landing predictions.
-    
-    $latest_vrate = 0;
-    if (sizeof($lastfewpackets) > 1)
-        # Just average the vertical rate from the last two packets  
-        $latest_vrate = ($lastfewpackets[0]["verticalrate"] + $lastfewpackets[1]["verticalrate"]) / 2.0;
-
-    # If the last packet from the flight is older than the lookback period, then we just return - we don't want to display landing predictions for older stuff.
-    # In addition, if the last packet from the flight is showing a negative vertical rate, then we skip this as the flight is already descending.
-    if ($seconds_since_last_packet < $config["lookbackperiod"] * 60 && $latest_vrate > 0) {
+    # If the last packet from the flight is older than the lookback period, then we just return.  
+    # We don't want to display landing predictions for older stuff.
+    if ($seconds_since_last_packet < $config["lookbackperiod"] * 60) {
 
         ## get the landing predictions...
         $query = "select 
@@ -1212,7 +1203,7 @@
             where 
             f.flightid = l.flightid 
             and f.active = 't' 
-            and l.thetype in ('cutdown')
+            and l.thetype in ('premature')
             and l.flightid = $1 
             and l.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
 
@@ -1272,7 +1263,7 @@
                     "altitude" => "",
                     "time" => $timevalue,
                     "objecttype" => "landingprediction",
-                    "label" => $callsign . " Landing<br>(early cutdown)",
+                    "label" => $callsign . " Landing (early cutdown)",
                     "iconsize" => $config["iconsize"],
                     "ttl" => $ttl[$callsign]),
                 "geometry" => array(
