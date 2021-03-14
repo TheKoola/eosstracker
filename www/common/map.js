@@ -51,6 +51,7 @@
     var lastposition;
     var activeflights = [];
     var globalUpdateCounter = 0;
+    var syncPacketsCounter = 0;
     var updateTimeout;
     var sidebar;
     var layerControl;
@@ -3133,6 +3134,22 @@ function getTrackers() {
         
 
     /************
+     * syncPackets
+     *
+     * This function will call the "syncpackets.php" file on the local system in an attempt
+     * to download any missing packets.
+    *************/
+    function syncPackets() {
+
+        // The URL for synchronizing packets with track.eoss.org.
+        var url = "syncpackets.php";
+
+        $.get(url, function(data) {
+        });
+    }
+
+
+    /************
      * UpdateAllItems
      *
      * This function updates other parts of the instrumentation, charts, and tables.
@@ -3163,6 +3180,9 @@ function getTrackers() {
                 clearTimeout(updateTimeout);
             updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
             globalUpdateCounter = 0;
+
+            // Update the packet syncup counter
+            syncPacketsCounter += 1;
         }
         else {
             // Set updateAllItems to run again in 5 seconds.
@@ -3171,6 +3191,14 @@ function getTrackers() {
             updateTimeout = setTimeout(updateAllItems, 5000);
         }
         globalUpdateCounter += 1;
+
+
+        // if it's been longer than ~5mins, then try to syncup packets with track.eoss.org
+        if (syncPacketsCounter > 2) {
+            // sync up packets and reset counter back to zero
+            syncPackets();
+            syncPacketsCounter = 0;
+        }
 
     }
 
