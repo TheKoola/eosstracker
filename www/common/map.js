@@ -2083,17 +2083,13 @@ function getTrackers() {
         setTimeout(function() { getTrackers(); }, 40);
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
-        // We delay a couple of seconds before updating the full map/gauges/tables if the number of flights/beacons we're tracking is > 8 in an attempt
-        // to not swamp the user's browser with updates upon first load.
-        //if (realtimeflightlayers.length > 8)
-        //    setTimeout(function() {updateAllItems("full")}, 5000);
-        //else
-        setTimeout(function() {updateAllItems("notfull");}, 5000); 
+        if (updateTimeout)
+            clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(function() {updateAllItems("notfull");}, 5000); 
 
-        // When this map screen loses focus and then the user returns...when we regain focus, we want to update all items on the map.
-        //$(window).on('focus', function() { 
-        //    updateAllItems("full", true);
-        //});
+        // When this map screen loses focus and then the user returns...
+        window.onfocus = gainFocus;
+        window.onblur = lostFocus;
 
         // Get the latest position from GPS
         $.get("getposition.php", function(data) { 
@@ -3142,7 +3138,7 @@ function getTrackers() {
      * This function updates other parts of the instrumentation, charts, and tables.
      * This will update every chart/graph/table globally.
     *************/
-    function updateAllItems(fullupdate, fromFocus) {
+    function updateAllItems(fullupdate) {
 
         // Update process status
         setTimeout(function() { getProcessStatus(); }, 20);
@@ -3163,14 +3159,51 @@ function getTrackers() {
         // ...the idea being that ever so often, we should try a special update
         if (globalUpdateCounter > 20) {
             // Set updateAllItems to run again in 5 seconds, but as a full.
+            if (updateTimeout)
+                clearTimeout(updateTimeout);
             updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
             globalUpdateCounter = 0;
         }
         else {
             // Set updateAllItems to run again in 5 seconds.
+            if (updateTimeout)
+                clearTimeout(updateTimeout);
             updateTimeout = setTimeout(updateAllItems, 5000);
         }
         globalUpdateCounter += 1;
 
     }
 
+/***********
+* lostFocus
+*
+* This function is called when the browser tab loses focus
+***********/
+function lostFocus() {
+    var isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
+    var isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
+
+    // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
+    if ((isiPad || isMobile) && updateTimeout) {
+        clearTimeout(updateTimeout);
+    }
+
+    return 0;
+}
+
+
+/***********
+* gainFocus
+*
+* This function is called when the browser tab regains focus
+***********/
+function gainFocus() {
+
+    // if we're regaining focus, then restart periodic page updates.
+    if (updateTimeout) {
+        var priorTimeout = updateTimeout;
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(updateAllItems, 5000);
+    }
+    return 0;
+}

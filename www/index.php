@@ -36,6 +36,7 @@ include $documentroot . '/common/header.php';
 ?>
 <script src="/common/index.js"></script>
 <div>
+    <div id="error" style="margin-left: 10px; color: white;"></div>
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         System Status

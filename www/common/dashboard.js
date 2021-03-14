@@ -26,6 +26,7 @@
     var lastStation = "";
     var lastStationTime = new Date(1970, 1, 1, 0, 0, 0, 0);
     var currentflight = "";
+    var interval;
 
     // The audio device
     var audio;
@@ -203,13 +204,15 @@
 
         // Get initial data
         getFlights();
-       //getrecentdata();
+        
+        // Stop processing on mobile devices when this browser tab loses focus.
+        window.onfocus = gainFocus;
+        window.onblur = lostFocus;
 
         // Set a timer so that we refresh data every 5 secs
-        setInterval(function() {
+        interval = setInterval(function() {
           getrecentdata(); 
           getAudioAlerts();
-          //processSoundQueue();
         }, 5000);
     });
 
@@ -532,5 +535,40 @@
 
 
 
+    /***********
+    * lostFocus
+    *
+    * This function is called when the browser tab loses focus
+    ***********/
+    function lostFocus() {
+        var isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
+        var isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
+
+        // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
+        if ((isiPad || isMobile) && interval) {
+            clearInterval(interval);
+        }
+
+        return 0;
+    }
+
+
+    /***********
+    * gainFocus
+    *
+    * This function is called when the browser tab regains focus
+    ***********/
+    function gainFocus() {
+
+        // if we're regaining focus, then restart periodic page updates.
+        if (interval) {
+            clearInterval(interval);
+            interval = setInterval(function() {
+              getrecentdata(); 
+              getAudioAlerts();
+            }, 5000);
+        }
+        return 0;
+    }
 
 
