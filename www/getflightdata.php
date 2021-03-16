@@ -1266,7 +1266,7 @@
                     "id" => $callsign . "_cutdownlanding",
                     "callsign" => $callsign . " Cutdown Predicted Landing",
                     "tooltip" => $callsign . " Cutdown Landing",
-                    "symbol" => "/J",
+                    "symbol" => "/.",
                     "comment" => "Landing prediction (early cutdown)",
                     "frequency" => "",
                     "altitude" => "",

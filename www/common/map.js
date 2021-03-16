@@ -871,6 +871,30 @@
     }
 
     /*********
+    * this function is for styling the landing prediction paths/tracks for the pre-cutdown predictions
+    **********/
+
+    function landingPredictionStyleCutdown (feature) {
+        var localstyle;
+        var id = feature.properties.id;
+
+        if (feature.properties) {
+
+            // what sort of object is this?  
+            if ( ! feature.properties.objecttype)
+                return {};
+
+            var objecttype = feature.properties.objecttype;                    
+            if (objecttype == "landingpredictionpath") 
+                localstyle = { dashArray: "2 4", weight: 1, color : 'magenta', pane: 'pathsPane' };
+            else if (objecttype == "landingpredictionflightpath") 
+                localstyle = { dashArray: "3 6", weight: 2, color : 'red', pane: 'pathsPane' };
+            else
+                localstyle = {};
+        }
+        return localstyle;
+    }
+    /*********
     * this function is for styling the landing prediction paths/tracks 
     **********/
 
@@ -901,7 +925,7 @@
     *
     * This function is for creating a new realtime layer object.
     *********/
-    function createLandingPredictionsLayer(url, container, interval, fid) {
+    function createLandingPredictionsLayer(url, container, interval, fid, styleFunction) {
         return L.realtime(url, {
             interval: interval,
             container: container,
@@ -911,7 +935,7 @@
             weight: 2,
             opacity: 0.7,
             name: fid,
-            style:  landingPredictionStyle,
+            style:  (typeof(styleFunction) == "undefined" ? landingPredictionStyle : styleFunction),
             onEachFeature: function (feature, layer) {
                 var html = "";
                 var objecttype = feature.properties.objecttype;
@@ -1976,7 +2000,8 @@ function getTrackers() {
             /* prediction layer for early cutdown */
             var g = createLandingPredictionsLayer("", cutdownpredictionlayer, 
                 5 * 1000,
-                flightids[key].flightid
+                flightids[key].flightid,
+                landingPredictionStyleCutdown
             );
             d.addTo(map);
             f.addTo(map);
