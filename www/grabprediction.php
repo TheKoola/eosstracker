@@ -289,7 +289,17 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
         $launchsite = $row["launchsite"];
 
         // The flight suffix.  For example:  283, 299, etc.
-        $flight_suffix = explode("-", $flightid)[1];
+        $flightname_parts = explode("-", $flightid);
+
+        // If this is an alternative flight then change the flight number to have a '7' in the hundreds digit.  
+        $lastchar = strtoupper(substr($flightname_parts[0], -1));
+        if ($lastchar == "L") {
+            $last_two_digits = substr($flightname_parts[1], -2);
+            $flight_suffix = "7" . $last_two_digits;
+        }
+        else
+            $flight_suffix = $flightname_parts[1];
+
 
         // Defaults for some state variables
         $predict_url = "";
