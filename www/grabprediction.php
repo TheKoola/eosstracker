@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -288,16 +288,19 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
         $flightid = $row["flightid"];
         $launchsite = $row["launchsite"];
 
-        // The flight suffix.  For example:  283, 299, etc.
+        // The flight name exploded at the "-" and the last character of the flight prefix.
         $flightname_parts = explode("-", $flightid);
+        $lastchar = strtoupper(substr($flightname_parts[0], -1));
 
         // If this is an alternative flight then change the flight number to have a '7' in the hundreds digit.  
-        $lastchar = strtoupper(substr($flightname_parts[0], -1));
         if ($lastchar == "L") {
             $last_two_digits = substr($flightname_parts[1], -2);
+
+            // The flight suffix, but with a leading '7' because this is an alternate (or lite) flight.  For example:  783, 799, etc.
             $flight_suffix = "7" . $last_two_digits;
         }
         else
+            // The flight suffix unaltered, because this is NOT an alternate/lite flight.  For example:  283, 299, etc.
             $flight_suffix = $flightname_parts[1];
 
 
