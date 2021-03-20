@@ -124,7 +124,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
             foreach($content as $line) {
 
                 // if this line starts with 12 columns, then continue...sanity check...
-                $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,4}[ \t]*[0-9A-Z]{1,6}[ \t]*[0-9]{1,6}[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\.\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
+                $p = preg_match("/^[0-9]{8}[ \t]*[0-9]{4}[ \t]*[A-Z]{1}[ \t]*[0-9]{1,4}[ \t]*[0-9A-Z]{1,6}[ \t]*[0-9]{1,6}\**[ \t]*[0-9]{1,4}[ \t]*[0-9]{1,6}[ \t]*[0-9\.]{1,10}[ \t]*[0-9\.\-]{1,10}[ \t]*[0-9]{1,15}[ \t]*[0-9\.]{1,8}[ \t]/", $line);
                 if ($p) {
 
                     // Split the line into an array using whitespace as the delimiter
@@ -134,12 +134,12 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
                     $thetime = substr($line_data[1], 0, 2) . ":" . substr($line_data[1], 2, 2);
 
                     // grab the altitude, lat, and lon
-                    $altitude = $line_data[5];
+                    $altitude = preg_replace("/[^0-9]/", "", $line_data[5]);
                     $latitude = $line_data[8];
                     $longitude = $line_data[9];
                       
                     // calculate change rates for lat, lon, and vertical
-                    $altrate = ($line_data[5] - $altitude_prev) / 60;
+                    $altrate = ($altitude - $altitude_prev) / 60;
                     $latrate = ($line_data[8] - $latitude_prev) / 60;
                     $longrate = ($line_data[9] - $longitude_prev) / 60;
 
@@ -147,7 +147,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
                     if ($i == 0) {
                         // This is the first line of text, so we add the first row, but using the original launchsite location for calculating rates...
                         // calculate rates
-                        $altrate = ($line_data[5] - $thelaunchsite["alt"]) / 60;
+                        $altrate = ($altitude - $thelaunchsite["alt"]) / 60;
                         $latrate = ($line_data[8] - $thelaunchsite["lat"]) / 60;
                         $longrate = ($line_data[9] - $thelaunchsite["lon"]) / 60;
 
