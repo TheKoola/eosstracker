@@ -784,11 +784,40 @@
         });
     }
 
+    /***********
+    * deletePredictFiles function
+    *
+    * This function will delete all predict files that are older than two weeks.
+    ***********/
+    function deletePredictFiles() {
+        var retVal = confirm("This will delete all prediction data older than two weeks.   Are you sure you want to delete this data?");
+        if (retVal == true)
+            $.get("deleteoldpredicts.php", function(data) {
+                var html;
+                var datetime = new Date();
+                var r;
+
+                html = "<p class=\"normal-italic\">Last attempt: " + datetime.toLocaleString() + "</p>";
+                for(r in data) {
+                    if (data[r].result != 0) 
+                        html = html + "<p class=\"normal-italic\"><mark class=\"notokay\">An error occured:  " + data[r].error + "</mark></p>";
+                    else
+                        html = html + "<p class=\"normal-italic\"><mark class=\"okay\">Success</mark></p>";
+                }
+
+                document.getElementById("deletepredictions-status").innerHTML = html;
+                setTimeout(function() {
+                    document.getElementById("deletepredictions-status").innerHTML = "";
+                }, 10000);
+                getPredictions();
+            });
+    }
+
 
     /***********
     * deletePrediction function
     *
-    * This function will delete the specified flight.
+    * This function will delete the specified flight predict file.
     ***********/
     function deletePrediction(flightid, thedate, launchsite) {
         var retVal = confirm("This will delete prediction data for " + flightid + " from " + thedate + " at the " + launchsite + " launch site.   Are you sure you want to delete this data?");

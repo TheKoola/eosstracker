@@ -339,8 +339,8 @@ include $documentroot . '/common/header.php';
             </p>
             <p class="normal-italic" style="margin-top: 10px;">
                 Clicking the "Download Predict Files..." button will attempt to download the RAW predict files from 
-                <a class="normal-link-black" href="https://www.eoss.org/predict">https://www.eoss.org/predict</a> automatically for each flight the system 
-                is actively tracking.  This requires an Internet connection.
+                <a class="normal-link-black" href="https://www.eoss.org/predict">https://www.eoss.org/predict</a> for each flight that was recently added (< 2 weeks) 
+                to the system.  This requires an Internet connection.
             </p>
             <p class="subheader">
                 Add a Prediction Manually
@@ -365,6 +365,21 @@ include $documentroot . '/common/header.php';
             </p>
             <p >
                 <span id="predictiondata"></span>
+            </p>
+            <p>
+                <form name="deletepredictions" id="deletepredictions">
+                    <table cellpadding=0 cellspacing=0 border=0 style="margin-top: 10px;">
+                    <tr><td>
+                        <input class="submitbutton" style="margin: 5px; margin-left: 30px;" type="submit" value="Delete Old Predict Files" form="deletepredictions" onclick="deletePredictFiles(); return false;">
+                    </td>
+                    <td>
+                        <span style="margin: 5px; text-align: left;" id="deletepredictions-status"></span>
+                    </td>
+                    </table>
+                </form>  
+            </p> 
+            <p class="normal-italic" style="margin-top: 10px;">
+                Clicking the "Delete Old Predict Files" button will delete all predict files that are older than two weeks.
             </p>
             </div>
 
