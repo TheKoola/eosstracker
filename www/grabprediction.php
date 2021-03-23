@@ -238,7 +238,8 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
     }
 
     // Get the list of active flights
-    $query = "select distinct flightid, launchsite from flights where active = 'y'";
+    //$query = "select distinct flightid, launchsite from flights where active = 'y'";
+    $query = "select distinct flightid, launchsite from flights where thedate > now() - interval '14 day' or active = 'y' order by flightid;";
     $result = pg_query($link, $query);
 
     // If this failed, then we have to exit.
