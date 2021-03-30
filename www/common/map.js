@@ -871,6 +871,30 @@
     }
 
     /*********
+    * this function is for styling the landing prediction paths/tracks for the pre-cutdown predictions
+    **********/
+
+    function landingPredictionStyleCutdown (feature) {
+        var localstyle;
+        var id = feature.properties.id;
+
+        if (feature.properties) {
+
+            // what sort of object is this?  
+            if ( ! feature.properties.objecttype)
+                return {};
+
+            var objecttype = feature.properties.objecttype;                    
+            if (objecttype == "landingpredictionpath") 
+                localstyle = { dashArray: "2 4", weight: 1, color : 'magenta', pane: 'pathsPane' };
+            else if (objecttype == "landingpredictionflightpath") 
+                localstyle = { dashArray: "3 6", weight: 2, color : 'red', pane: 'pathsPane' };
+            else
+                localstyle = {};
+        }
+        return localstyle;
+    }
+    /*********
     * this function is for styling the landing prediction paths/tracks 
     **********/
 
@@ -901,7 +925,7 @@
     *
     * This function is for creating a new realtime layer object.
     *********/
-    function createLandingPredictionsLayer(url, container, interval, fid) {
+    function createLandingPredictionsLayer(url, container, interval, fid, styleFunction) {
         return L.realtime(url, {
             interval: interval,
             container: container,
@@ -911,7 +935,7 @@
             weight: 2,
             opacity: 0.7,
             name: fid,
-            style:  landingPredictionStyle,
+            style:  (typeof(styleFunction) == "undefined" ? landingPredictionStyle : styleFunction),
             onEachFeature: function (feature, layer) {
                 var html = "";
                 var objecttype = feature.properties.objecttype;
@@ -1939,6 +1963,7 @@ function getTrackers() {
         for (key in flightids) {
             var predictedpathlayer = L.layerGroup();
             var landingpredictionlayer = L.layerGroup();
+            var cutdownpredictionlayer = L.layerGroup();
             var trackerstationslayer = L.layerGroup();
             var beacons = [];
 
@@ -1946,7 +1971,6 @@ function getTrackers() {
                 var activeflightlayer = L.featureGroup();
 
                 /* The active flight layer */
-                //var r = createActiveFlightsLayer("getactiveflights.php?flightid=" + flightids[key].flightid + "&callsign=" + flightids[key].callsigns[key2],
                 var r = createActiveFlightsLayer("",
                     activeflightlayer, 
                     5 * 1000, 
@@ -1964,30 +1988,37 @@ function getTrackers() {
             }
 
             /* The Trackers and Predict File layers */
-            //var d = createRealtimeLayer("gettrackerstations.php?flightid=" + flightids[key].flightid, true, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
-            //var e = createFlightPredictionLayer("getpredictionpaths.php?flightid=" + flightids[key].flightid, predictedpathlayer, 5 * 1000);
             var d = createRealtimeLayer("", false, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
             var e = createFlightPredictionLayer("", predictedpathlayer, 5 * 1000);
 
             /* The landing prediction layer */
-            //var f = createLandingPredictionsLayer("getlandingpredictions.php?flightid=" + flightids[key].flightid, landingpredictionlayer, 
             var f = createLandingPredictionsLayer("", landingpredictionlayer, 
                 5 * 1000,
                 flightids[key].flightid
             );
+
+            /* prediction layer for early cutdown */
+            var g = createLandingPredictionsLayer("", cutdownpredictionlayer, 
+                5 * 1000,
+                flightids[key].flightid,
+                landingPredictionStyleCutdown
+            );
             d.addTo(map);
             f.addTo(map);
+            g.addTo(map);
 
             /* Add these layers to the map's layer control */
             layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Pre-Flight Predicted Path", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
+            layerControl.addOverlay(cutdownpredictionlayer, "Cutdown Predictions", "Flight:  " + flightids[key].flightid);
 
             flightList.push({
                 "flightid": flightids[key].flightid,
                 "trackerlayer": d,
                 "predictlayer": e,
                 "landinglayer": f,
+                "cutdownlayer": g,
                 "lastupdate": Date.now() / 1000,
                 "beacons": beacons
             });
@@ -2653,6 +2684,7 @@ function getTrackers() {
                     // The incoming JSON elements
                     var fid = x.flightid;
                     var landingJSON = x.landing;
+                    var cutdownJSON = x.cutdownlanding;
                     var predictJSON = x.predict;
                     var trackersJSON = x.trackers;
                     var packetlist = x.packetlist;
@@ -2710,6 +2742,45 @@ function getTrackers() {
                             }
                             else
                                 clearRealtimeLayer(flight.landinglayer);
+
+
+                            // Early Cutdown Landing predictions...
+                            if (cutdownJSON.features.length > 0) {
+                                var x;
+                                var f = flight.cutdownlayer;
+                                var group = f.options.container;
+
+                                // Loop through each feature within the existing landing layer looking for the breadcrumbs
+                                group.eachLayer(function(l) {
+                                    var id = l.feature.properties.id;
+
+                                    // is this a breadcrumb?
+                                    if (l.feature.properties.id.indexOf("_cutdownpredictionpoint_") !== -1) {
+                                        var y; 
+                                        var incoming = landingJSON.features;
+
+                                        // determine if this breadcrumb also appears within the incoming JSON
+                                        var foundit = false;
+                                        for (y in incoming) {
+                                            if (incoming[y].properties.id == id) {
+                                                foundit = true;
+                                                break;
+                                            }
+                                        }
+
+                                        // if the existing breadcrumb is not within the incoming JSON, then remove it from the map
+                                        if (!foundit && f.getFeature(id)) {
+                                            f.remove({"features": [{"properties": {"id": id}}]});
+                                        }
+                                    }
+                                });
+
+                                // Now add in all the incoming JSON
+                                flight.cutdownlayer.update(cutdownJSON);
+                            }
+                            else
+                                clearRealtimeLayer(flight.cutdownlayer);
+
 
                             // The pre-flight predict file...
                             if (predictJSON.features.length > 0) {

@@ -388,7 +388,7 @@
         }
 
 
-        ## query the last packets from stations...
+        ## query the last packets from the flight...
         $query = "
             select
                 y.thetime,
@@ -992,6 +992,7 @@
             where 
             f.flightid = l.flightid 
             and f.active = 't' 
+            and l.thetype in ('predicted', 'wind_adjusted', 'translated')
             and l.flightid = $1 
             and l.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
 
@@ -1043,6 +1044,7 @@
             // Timestamp of the latest landing prediction record
             $timevalue = end($ray)[3];
 
+            // This is the point for the landing prediction itself
             $landingfeatures[] = array(
                 "type" => "Feature",
                 "properties" => array(
@@ -1065,7 +1067,6 @@
             );
 
 
-            // This is the point for the landing prediction itself
             // This is the linestring for the path the landing prediction point has taken as the landing prediction coords have changed.
             // We only want to plot the historical track the landing prediction has taken for "predicted" or "wind_adjusted" prediction types.  
             if (count($ray) > 1 && ($thetype[$callsign] == "predicted" || $thetype[$callsign] == "wind_adjusted")) {
@@ -1171,6 +1172,195 @@
         "features" => $landingfeatures
     );
 
+
+    /*=================== get cutdown/early-burst landing predictions for this flight ============ */
+
+    $cutdownlandings = [];
+    $cutdownlandingfeatures = [];
+
+    # If this flights last couple of packets show a positive vertical rate, then we assume the flight is still assending.  In that case, we
+    # want to return data for an early cutdown prediction (assuming the backend has calculated one...obviously).  Otherwise, if the vertical rate
+    # for the flight is is < 0, then the flight is descending and we don't care about any sort of early cutdown landing predictions.
+    
+    $latest_vrate = 0;
+    if (sizeof($lastfewpackets) > 1)
+        # Just average the vertical rate from the last two packets  
+        $latest_vrate = ($lastfewpackets[0]["verticalrate"] + $lastfewpackets[1]["verticalrate"]) / 2.0;
+
+    # If the last packet from the flight is older than the lookback period, then we just return - we don't want to display landing predictions for older stuff.
+    # In addition, if the last packet from the flight is showing a negative vertical rate, then we skip this as the flight is already descending.
+    if ($seconds_since_last_packet < $config["lookbackperiod"] * 60 && $latest_vrate > 0) {
+
+        ## get the landing predictions...
+        $query = "select 
+            date_trunc('millisecond', l.tm)::timestamp without time zone as thetime,
+            l.flightid, 
+            l.callsign, 
+            l.thetype, 
+            ST_Y(l.location2d) as lat, 
+            ST_X(l.location2d) as long,
+            ST_AsGeoJSON(l.flightpath) as flightpath,
+            --ST_astext(l.flightpath) as flightpath,
+            l.ttl,
+            array_to_json(l.patharray) as thepath,
+            array_to_json(l.winds) as thewind
+
+            from 
+            landingpredictions l, 
+            flights f 
+
+            where 
+            f.flightid = l.flightid 
+            and f.active = 't' 
+            and l.thetype in ('cutdown')
+            and l.flightid = $1 
+            and l.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)  
+
+            order by 
+            l.tm asc, 
+            l.flightid, 
+            l.callsign;";
+
+        $result = pg_query_params($link, $query, array(
+            sql_escape_string($get_flightid),
+            sql_escape_string($config["lookbackperiod"] . " minute")
+        ));
+
+        if (!$result) {
+            db_error(sql_last_error());
+            sql_close($link);
+            return 0;
+        }
+        $features = array();
+        $flightpath = array();
+        $thepath = array();
+        while ($row = sql_fetch_array($result)) {
+            $thetime = $row['thetime'];
+            $callsign = $row['callsign'];
+            $thepath[$callsign] = json_decode($row['thepath']);
+            $thewind[$callsign] = json_decode($row['thewind']);
+            $flightid = $row['flightid'];
+            $thetype[$callsign] = $row['thetype'];
+            $latitude = $row['lat'];
+            $longitude = $row['long'];
+            $flightpath[$callsign] = json_decode($row['flightpath']);
+            $ttl[$callsign] = $row['ttl'];
+            $features[$callsign][$thetime. $latitude . $longitude] = array($latitude, $longitude, $row['thetype'], $thetime);
+        }
+
+
+        $numrows = sql_num_rows($result);
+
+
+        $firsttimeinloop = 1;
+        foreach ($features as $callsign => $ray) {
+            $firsttimeinloop = 0;
+
+            // Timestamp of the latest landing prediction record
+            $timevalue = end($ray)[3];
+
+            // This is the point for the landing prediction itself
+            $cutdownlandingfeatures[] = array(
+                "type" => "Feature",
+                "properties" => array(
+                    "id" => $callsign . "_cutdownlanding",
+                    "callsign" => $callsign . " Cutdown Predicted Landing",
+                    "tooltip" => $callsign . " Cutdown Landing",
+                    "symbol" => "/.",
+                    "comment" => "Landing prediction (early cutdown)",
+                    "frequency" => "",
+                    "altitude" => "",
+                    "time" => $timevalue,
+                    "objecttype" => "landingprediction",
+                    "label" => $callsign . " Landing<br>(early cutdown)",
+                    "iconsize" => $config["iconsize"],
+                    "ttl" => $ttl[$callsign]),
+                "geometry" => array(
+                    "type" => "Point",
+                    "coordinates" => array(end($features[$callsign])[1], end($features[$callsign])[0])
+                )
+            );
+
+            // This is the linestring for the predicted flight path
+            // This is the flight path from the last location of the flight to the predicted landing spot (the "X" marks the spot).
+            if (array_key_exists($callsign, $flightpath)) {
+                if ($flightpath[$callsign]) {
+                    if (array_key_exists("coordinates", $flightpath[$callsign])) {
+                        $cutdownlandingfeatures[] = array(
+                            "type" => "Feature",
+                            "properties" => array(
+                                "id" => $callsign . "_cutdownflightpath_landing",
+                                "objecttype" => "landingpredictionflightpath",
+                                "time" => $timevalue
+                            ),
+                            "geometry" => $flightpath[$callsign]
+                        );
+                    }
+                }
+            }
+
+            // These are the breadcrumbs
+            if (array_key_exists($callsign, $thepath)) {
+                $i = 0;
+                $outerfirsttime = 1;
+                $firsttime = 1;
+                if (!empty($thepath[$callsign])) {
+                    $len = sizeof($thepath[$callsign]);
+
+                    // Get the first and last element of the $thepath array
+                    $first_tuple = reset($thepath[$callsign]);
+                    $last_tuple = end($thepath[$callsign]);
+
+                    // Now compute the span in altitude from the first element to the last
+                    $altitude_span = $first_tuple[3] - $last_tuple[3];
+
+                    // Now create a mod value for use below based on how large the altitude_span was.  
+                    // Bascially when:
+                    //     -  the altitude span is ~100k feet, then the mod should be about 20.
+                    //     -  the altitude span is ~4k feet, then the mod should be about 2.
+                    $mod_value = floor((16 * $altitude_span / 100000.0) + 2);
+
+                    $breadcrumb_num = 0;
+                    foreach ($thepath[$callsign] as $idx => $tuple) {
+
+                        if ($i < $len - 1 && $i > 0 && $i % $mod_value == 0) {
+                            //This is the GeoJSON object for the breadcrumb within the predicted flight path 
+
+
+                            $cutdownlandingfeatures[] = array(
+                                "type" => "Feature",
+                                "properties" => array(
+                                    "id" => $callsign . "_cutdownpredictionpoint_" . $breadcrumb_num,
+                                    "callsign" => $callsign,
+                                    "symbol" => "/J",
+                                    "altitude" => $tuple[3],
+                                    "time" => $timevalue,
+                                    "comment" => "Flight prediction (early cutdown)",
+                                    "objecttype" => "balloonmarker",
+                                    "tooltip" => round(floatval($tuple[3]) / 1000.0) . "k ft", 
+                                    "label" => round(floatval($tuple[3]) / 1000.0) . "k ft", 
+                                    "iconsize" => $config["iconsize"]
+                                ),
+                                "geometry" => array(
+                                    "type" => "Point",
+                                    "coordinates" => array($tuple[1], $tuple[0])
+                                )
+                            );
+
+                            $breadcrumb_num += 1;
+                        }
+                        $i += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    $cutdownlandings = array(
+        "type" => "FeatureCollection", 
+        "properties" => array("name" => "Predicted Landings (early cutdown)"),
+        "features" => $cutdownlandingfeatures
+    );
 
 
     /*=================== get pre-flight prediction (i.e. the "predict file") for this flight ============ */
@@ -1760,6 +1950,7 @@
     $outputJSON["trackers"] = $trackers;
     $outputJSON["beacons"] = $beacons;
     $outputJSON["landing"] = $landings;
+    $outputJSON["cutdownlanding"] = $cutdownlandings;
     $outputJSON["predict"] = $predicts;
     $outputJSON["packetlist"] = $packetlistJSON;
     $outputJSON["altitudechart"] = $altitudechart;

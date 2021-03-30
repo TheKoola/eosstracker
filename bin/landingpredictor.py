@@ -768,6 +768,368 @@ class PredictorBase(object):
             return None, 0.0
 
 
+    ##########################################################
+    # The landing prediction algorithm for early cutdown/burst...
+    #
+    # Arguments:
+    #    latestpackets:  (list) a list of points (lat, lon, altitude) of the flight path observed thus far
+    #    launch_lat:  (float) the latitude (in decimal degrees) of the launch location
+    #    launch_lon:  (float) the longitude (in decimal degrees) of the launch location
+    #    launch_elev:  (float) the elevation (in feet) of the launch location
+    #    algo_floor:  (float) the altitude below which the prediction algorithm will no longer compute predictions.  Should be ground level near the landing area.
+    #    surface_winds:  (boolean) This controls if allowances for surface winds are used as a flight descends from upper wind levels to surface wind levels
+    #    wind_rates:  (list) of the surface wind components
+    #    airdensity_function:  (callable) this is a callback function that accepts an altitude as input and returned the air density at that altitude.
+    #
+    # Returns:
+    #    flightpath:  (list) list of points (lat, lon, altitude) of the predicted flight path
+    #    lat:  (float) latitude of the predicted landing 
+    #    lon:  (float) longitude of the predicted landing 
+    #    ttl:  (float) the time remaining before touchdown (in minutes)
+    #    err:  (boolean) if true, then an error occured and the variables values are invalid
+    #
+    def predictionAlgoCutdown(self, latestpackets, descent_rates, launch_lat, launch_lon, launch_elev, algo_floor):
+        debugmsg("Launch params: %.3f, %.3f, %.3f, %.3f" % (launch_lat, launch_lon, launch_elev, algo_floor))
+        debugmsg("latestpackets size: %d" % latestpackets.shape[0])
+
+        # if invalid arguments then return
+        if not launch_lat or not launch_lon or not launch_elev or not algo_floor:
+            return None
+
+        # airdensity function
+        ad = self.airdensity
+
+        # if no packets are provided then return
+        if latestpackets.shape[0] <= 0:
+            return None
+
+        # Set the prediction floor
+        self.prediction_floor = algo_floor
+
+        # slice (aka list) of just the altitude columns
+        altitudes = latestpackets[0:, 1]
+
+        # find the maximum altitude and note the index position of that value
+        idx = np.argmax(altitudes)
+        max_altitude = altitudes[idx]
+        debugmsg("Max altitude heard thus far: %d" % max_altitude)
+       
+        # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
+        ascent_portion = np.array(latestpackets[0:(idx+1), 1:7], dtype='f')
+        descent_portion = np.array(latestpackets[idx:, 1:7], dtype='f')
+        debugmsg("ascent_portion.shape: %s" % str(ascent_portion.shape))
+        debugmsg("descent_portion.shape: %s" % str(descent_portion.shape))
+
+        # Loop through the ascent rates heard thus far until we find a value where the ascent rate (ft/s) is > 5ft/s.  This eliminates
+        # those early packets from the beacons prior to actual launch...we don't want those.
+        loop_limit = ascent_portion.shape[0] - 1
+        loop_counter = 0
+        if ascent_portion.shape[0] > 0:
+            while ascent_portion[loop_counter, 3] < 5 and loop_counter < loop_limit:
+                loop_counter += 1
+        
+        if loop_counter > 0:
+            # We trim off those packets from the beginning of the flight that don't matter.  Only want to keep those packets from just before
+            # the balloon is launched (aka the altitude starts to rise).  If this flight has yet to start ascending, then this array will only have 
+            # one two packets.
+            ascent_portion = ascent_portion[(loop_counter-1):,0:]
+
+            # This sets the first packet for our ascent_rates array to have the same altitude, latitude, and longitude change rates.
+            # reference:  columns:  altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
+            ascent_portion[0,3] = ascent_portion[1,3]
+            ascent_portion[0,4] = ascent_portion[1,4]
+            ascent_portion[0,5] = ascent_portion[1,5]
+
+        if ascent_portion.shape[0] > 0:
+            debugmsg("ascent_portion[0]:  %f, %f, %f, %f, %f, %f" % (ascent_portion[0,0], 
+                ascent_portion[0,1],
+                ascent_portion[0,2],
+                ascent_portion[0,3],
+                ascent_portion[0,4],
+                ascent_portion[0,5]
+                ))
+        if ascent_portion.shape[0] > 1:
+            debugmsg("ascent_portion[1]:  %f, %f, %f, %f, %f, %f" % (ascent_portion[1,0], 
+                ascent_portion[1,1],
+                ascent_portion[1,2],
+                ascent_portion[1,3],
+                ascent_portion[1,4],
+                ascent_portion[1,5]
+                ))
+
+        if ascent_portion.shape[0] > 0:
+            debugmsg("ascent_portion[last]:  %f, %f, %f, %f, %f, %f" % (ascent_portion[-1,0], 
+                ascent_portion[-1,1],
+                ascent_portion[-1,2],
+                ascent_portion[-1,3],
+                ascent_portion[-1,4],
+                ascent_portion[-1,5]
+                ))
+
+        if descent_portion.shape[0] > 0:
+            debugmsg("descent_portion[0]:  %f, %f, %f, %f, %f, %f" % (descent_portion[0,0], 
+                descent_portion[0,1],
+                descent_portion[0,2],
+                descent_portion[0,3],
+                descent_portion[0,4],
+                descent_portion[0,5]
+                ))
+        if descent_portion.shape[0] > 1:
+            debugmsg("descent_portion[1]:  %f, %f, %f, %f, %f, %f" % (descent_portion[1,0], 
+                descent_portion[1,1],
+                descent_portion[1,2],
+                descent_portion[1,3],
+                descent_portion[1,4],
+                descent_portion[1,5]
+                ))
+
+        if descent_portion.shape[0] > 0:
+            debugmsg("descent_portion[last]:  %f, %f, %f, %f, %f, %f" % (descent_portion[-1,0], 
+                descent_portion[-1,1],
+                descent_portion[-1,2],
+                descent_portion[-1,3],
+                descent_portion[-1,4],
+                descent_portion[-1,5]
+                ))
+
+        # To determine if this flight is descending yet...
+        # 1.  find max altitude
+        # 2.  split array into ascending and descending portions
+        # 3.  measure length of the two arrays (i.e. ascending and descending)  
+        # 4.  if the descending portion is less than 1 in length, then nope, balloon is not descending yet.
+
+        # If the index of max altitude is less than the length of the of the flight...implies we've seen an alitude "hump" and are now descending
+        # ...AND the max altitude is > 14,999 feet (sanity check)...
+        # ...AND we've got at least three packets from the ascent portion (without hearing packets on the way up we can't really predict anything)...
+        # ...THEN continue on and try to predict a landing location for this flight
+        alt_sanity_threshold = 14999
+        if altitudes[idx] > alt_sanity_threshold and ascent_portion.shape[0] > 2:
+
+            # The last altitude we've heard
+            last_heard_altitude = float(descent_portion[-1, 0])
+
+            debugmsg("last_heard_altitude: %f" % last_heard_altitude)
+
+
+            ####################################
+            # START:  initialize loop variables
+            ####################################
+            # Last heard location of the flight
+            x = float(ascent_portion[-1, 1])
+            y = float(ascent_portion[-1, 2])
+            debugmsg("last heard location (x,y): %f, %f" % (x, y))
+
+            # This is basically the starting altitude for the prediction.  It's the last altitude value we received from the flight.
+            backstop = float(ascent_portion[-1, 0])
+            debugmsg("backstop: %f" % backstop)
+
+            # Size of the altitude chunks (in feet) that we loop through in calculating predictions for the future.  
+            # Smaller = more acccurate, but longer compute times.  30 seems to be a good compromise.
+            step_size = 30
+            debugmsg("stepsize: %d" % step_size)
+
+            # Length of the ascent portion of the flight
+            length = ascent_portion.shape[0]
+
+            # The weight assigned to the two different functions used for predictions.  Essentially a precentage value based on 
+            # "where" in the descent a flight is at it varies from 0 to 1.  With 1 being at the max altitude, and 0 being at the prediction_floor.
+            #     Shortly after burst?  ...then apply more weight to the curve fitting function
+            #     Well into the descent?  ...then apply more weight to the drag caluclation function
+            function_weight = (float(last_heard_altitude) - self.prediction_floor) / (float(descent_portion[0, 0]) - self.prediction_floor)
+
+            # Adjust the weight so that it more aggressively favors the drag calculation function instead of the curve fitting model.
+            function_weight = function_weight**2
+            debugmsg("function_weight: %f" % function_weight)
+
+            # Loop params
+            k_idx = 0
+            first_time = True
+
+            # this is the list of points that comprise the flight path, setting to empty values prior to entering the loop
+            flightpath_deltas = []
+            flightpath_altitudes = []
+
+            # This is the time to live until landing, in seconds
+            ttl = 0
+
+            ####################################
+            # END:  initialize loop variables
+            ####################################
+
+
+            ####################################
+            # START:  primary prediction calculation loop
+            ####################################
+            # We're here because:  conditions are such that we want to calculate a prediction.
+
+            if ascent_portion[0,0] < descent_rates[0,0]:
+                lower_array = np.array([[round(ascent_portion[0,0] * .98) , descent_rates[0,1]]])
+                descent_rates = np.insert(descent_rates, 0, lower_array, axis=0)
+
+            if ascent_portion[-1,0] > descent_rates[-1,0]:
+                upper_array = np.array([[round(ascent_portion[-1,0] * 1.02) , descent_rates[-1,1]]])
+                descent_rates = np.append(descent_rates, upper_array, axis=0)
+                
+            # create a curve that will serve as the predicted descent velocity at a given altitude
+            pred_v_curve = interpolate.interp1d(descent_rates[0:, 0], descent_rates[0:, 1], kind='cubic')
+
+            # Lambda function that represents our velocity prediction curve
+            v = lambda altitude : pred_v_curve(altitude)
+
+            # Loop through all of the heard altitudes (from the ascent portion of the flight), from lowest to highest (aka burst) 
+            #for k in ascent_portion[np.where(ascent_portion[:,0] <= last_heard_altitude)]:
+            #for k in ascent_portion:
+            k_len = ascent_portion.shape[0]
+            while k_idx < k_len and first_time:
+
+                # The row
+                k = ascent_portion[k_idx,]
+
+                # We want to skip this section the first time through the loop.  That is for the first value of "k[0]" which should be the
+                # prediction_floor, we don't want to run any calculations.  The "backstop" is therefore set to the last_heard_altitude (up above)
+                # to ensure this happens.
+                if k[0] >= self.prediction_floor and k_idx > 0 and k[0] > backstop:
+
+                   # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight then continue 
+                   # with calcuations from one ascent waypoint to the next higher one.
+                   if k[0] < last_heard_altitude:
+
+                       upper_idx = k_idx + 5
+                       lower_idx = k_idx - 5
+
+                       if upper_idx > length:
+                           upper_idx = length
+                       if lower_idx < 0:
+                           lower_idx = 0
+
+                       avg_asc_rate = np.mean(ascent_portion[lower_idx:upper_idx, 3])
+                       delta = avg_asc_rate - k[3] 
+
+                       t = 0
+                       h_range = []
+                       if k[0] - backstop <= step_size:
+                           v_0 =  v(backstop)
+                           v_1 =  v(k[0])
+                           v_avg = (v_0 + v_1) / 2.0
+                           t = abs((k[0] - backstop) / v_avg)
+
+                       else:
+                           h_range = np.arange(backstop + step_size, k[0], step_size)
+                           for h in h_range:
+                               v_0 =  v(h - step_size)
+                               v_1 =  v(h)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t += abs(step_size / v_avg)
+
+                           v_0 =  v(h_range[-1])
+                           v_1 =  v(k[0])
+                           v_avg = (v_0 + v_1) / 2.0
+                           t += abs((k[0] - h_range[-1]) / v_avg)
+
+
+                       dx = t * k[4]
+                       dy = t * k[5]
+
+                       x += dx
+                       y += dy
+                       ttl += t
+                       debugmsg("TOP:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
+                       if k_idx == 0:
+                           a = self.prediction_floor
+                       else:
+                           a = ascent_portion[k_idx - 1,0]
+                       flightpath_deltas.append((dx, dy, ttl, a))
+
+                   
+                   else:
+                       if first_time and last_heard_altitude > backstop:
+                           first_time = False
+
+                           upper_idx = k_idx + 5
+                           lower_idx = k_idx - 5
+
+                           if upper_idx > length:
+                               upper_idx = length
+                           if lower_idx < 0:
+                               lower_idx = 0
+
+                           avg_asc_rate = np.mean(ascent_portion[lower_idx:upper_idx, 3])
+                           delta = avg_asc_rate - k[3]
+
+                           t = 0
+                           h_range = []
+                           if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
+                               v_0 =  v(backstop)
+                               v_1 =  v(last_heard_altitude)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t = abs((last_heard_altitude - backstop) / v_avg)
+                           else:
+                               h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
+                               for h in h_range:
+                                   v_0 =  v(h - step_size)
+                                   v_1 =  v(h)
+                                   v_avg = (v_0 + v_1) / 2.0
+                                   t += abs(step_size / v_avg)
+
+                               v_0 =  v(h_range[-1])
+                               v_1 =  v(last_heard_altitude)
+                               v_avg = (v_0 + v_1) / 2.0
+                               t += abs((last_heard_altitude - h_range[-1]) / v_avg)
+
+                           dx = t * k[4]
+                           dy = t * k[5]
+
+                           x += dx
+                           y += dy
+                           ttl += t
+                           debugmsg("BOTTOM:  backstop: %f, time: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, t, k[0], k[1], k[2], k[3], k[4], k[5]))
+                           if k_idx == 0:
+                               a = self.prediction_floor
+                           else:
+                               a = ascent_portion[k_idx - 1,0]
+                           flightpath_deltas.append((dx, dy, ttl, a))
+
+                   # END:  if k[0] < last_heard_altitude:
+
+
+                else:
+                   debugmsg("NO RUN:  backstop: %f, k: %f, %f, %f, %f, %f, %f" %(backstop, k[0], k[1], k[2], k[3], k[4], k[5]))
+
+                # END:  if k[0] >= prediction_floor and k_idx > 0 and k[0] > backstop:
+
+
+                backstop = k[0]
+                k_idx += 1
+
+            # END:  for k in ascent_portion:
+                
+            ####################################
+            # END:  primary prediction calculation loop
+            ####################################
+
+            # The first point in the predicted flight path is the latest position of the flight
+            flightpath_points = [(descent_portion[-1,1], descent_portion[-1,2], ttl, last_heard_altitude)]
+
+            # Set the previous lat/lon points to the last value of the flightpath_points array, which should be 
+            # the last position of the flight.
+            prev_x = flightpath_points[-1][0] 
+            prev_y = flightpath_points[-1][1]
+
+            # Collect the points determined along the way
+            # This is reversed because the prediction loop (above) runs from the prediction_floor up to the last_heard_altitude, basically calculating
+            # the delta points in reverse.
+            for u,v,t,a in flightpath_deltas[::-1]:
+                pos_x = prev_x + u 
+                pos_y = prev_y + v 
+                flightpath_points.append((pos_x, pos_y, t, a))
+                prev_x = pos_x
+                prev_y = pos_y
+
+            return flightpath_points, 0.0
+
+        else:
+            debugmsg("Not processing a prediction, sanity checks failed")
+            return None, 0.0
 
 
 #####################################
@@ -1660,47 +2022,70 @@ class LandingPredictor(PredictorBase):
 
         # SQL to query flight prediction records for the flightid
         prediction_sql = """
-            select 
-            d.altitude, 
-            d.latitude, 
-            d.longitude 
+            select
+            p.altitude,
+            p.latitude,
+            p.longitude,
+            case when p.delta_secs > 0 then
+                round((60 * (p.altitude - p.previous_altitude) / p.delta_secs)::numeric)
+            else
+                0
+            end as vert_rate,
+            p.delta_secs
 
-            from 
-            predictiondata d,
-                (select 
-                f.flightid, 
-                p.launchsite, 
-                max(p.thedate) as thedate 
-            
+
+            from
+            (
+                select 
+                d.thedate,
+                d.thetime,
+                d.altitude, 
+                d.latitude, 
+                d.longitude,
+                lag(d.altitude, 1) over(order by d.thedate, d.thetime)  as previous_altitude,
+                extract ('epoch' from (d.thetime - lag(d.thetime, 1) over (order by d.thedate, d.thetime))) as delta_secs
+
                 from 
-                flights f, 
-                predictiondata p 
-            
-                where 
-                p.flightid = f.flightid 
-                and f.active = 't' 
-                and p.launchsite = f.launchsite
+                predictiondata d,
+                    (select 
+                    f.flightid, 
+                    p.launchsite, 
+                    max(p.thedate) as thedate 
+                
+                    from 
+                    flights f, 
+                    predictiondata p 
+                
+                    where 
+                    p.flightid = f.flightid 
+                    and f.active = 't' 
+                    and p.launchsite = f.launchsite
 
-                group by 
-                f.flightid, 
-                p.launchsite 
+                    group by 
+                    f.flightid, 
+                    p.launchsite 
+
+                    order by 
+                    f.flightid) as l
+
+                where 
+                d.flightid = %s
+                and d.launchsite = %s
+                and d.thedate = l.thedate
+                and l.flightid = d.flightid
+                and l.launchsite = d.launchsite
+
 
                 order by 
-                f.flightid) as l
+                d.thedate, 
+                d.thetime asc
+            ) as p
 
-            where 
-            d.flightid = %s
-            and d.launchsite = %s
-            and d.thedate = l.thedate
-            and l.flightid = d.flightid
-            and l.launchsite = d.launchsite
-
-
-            order by 
-            d.thedate, 
-            d.thetime asc
+            order by
+            p.thedate,
+            p.thetime
             ;
-        """
+            """
 
         try:
             # Check if we're connected to the database or not.
@@ -2100,9 +2485,6 @@ class LandingPredictor(PredictorBase):
                     #       from the prediciton file.
                     #   3.  Then insert a landing prediction record back into the landingpredictions table.
 
-                    ##  columns for balloon_data:  timestamp, altitude, latitude, longitude
-                    # Latest altitude, lat, and lon for the flight
-                    #
                     # reference:  latestpackets columns:  
                     #    timestamp, 
                     #    altitude, 
@@ -2117,21 +2499,28 @@ class LandingPredictor(PredictorBase):
                     predictiondata = rows
                     predictiondata_rev = predictiondata[::-1]
 
+                    # Latest altitude, latitude, and longitude heard from the flight
                     latest_altitude = latestpackets[-1, 1]
                     x = float(latestpackets[-1, 2])
                     y = float(latestpackets[-1, 3])
 
-                    #if idx < (balloon_data.shape[0] - 1) and descent_portion.shape[0] > 2 and altitude_slice[idx] > alt_sanity_threshold:
-                    if len(rows) > 0:
-                        # if there are rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, 
-                        # to the current flight location.
+                    # Flight altitude needs to be above this threshold. 
+                    alt_sanity_threshold = 14999
 
+                    # If there are predict file rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, 
+                    # to the current flight location and also attempt to create an early cutdown prediction.
+                    if len(rows) > 0:
+
+                        ####################################
+                        # START:  Determine predict file splice point
+                        ####################################
                         predictiondata_slice = []
                         predictiondata_slice = np.array(predictiondata_slice)
-                        alt_sanity_threshold = 14999
 
+                        # Are we descending and just not enough packets yet to perform a normal landing prediction?  If so then, then we need to determine a different
+                        # splice point.
                         if descent_portion.shape[0] > 1 and latest_altitude > alt_sanity_threshold:
-                            # Are we descending and just not enough packets yet to perform a normal landing prediction?
+                            # The flight is descending, so we look for a splice point from the end of the predict file (instead of the beginning near the launch site).
 
                             # Loop through the prediction data in reverse order to find the closest altitude
                             loop_counter = 0
@@ -2154,7 +2543,7 @@ class LandingPredictor(PredictorBase):
                             predictiondata_slice = predictiondata_slice[::-1]
 
                         else:
-                            # we're still ascending
+                            # We're still ascending so look for a splice point from the beginning of the predict file
 
                             #if latest_altitude > float(flightids[i,5])*1.10:
                             if latest_altitude > float(rec[5])*1.10:
@@ -2173,6 +2562,16 @@ class LandingPredictor(PredictorBase):
                                 # Now slice off the predictiondata we care about
                                 predictiondata_slice = predictiondata[loop_counter:, 0:]
 
+                        ####################################
+                        # END:  Determine predict file splice point
+                        ####################################
+
+
+                        ####################################
+                        # START: Insert pre-flight predict file landing prediction into the database
+                        ####################################
+                        # Check if we found a splice point.  If so, then we proceed with splicing the predict
+                        # file onto the end of the existing flight path.
                         if predictiondata_slice.shape[0] > 0:
                             # Determine the delta between the last heard packet and the prediction data
                             dx = x - float(predictiondata_slice[0, 1]) 
@@ -2181,7 +2580,7 @@ class LandingPredictor(PredictorBase):
                             # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
                             m = 0
                             linestring_text = ""
-                            for k,u,v in predictiondata_slice:
+                            for k,u,v,vrate,ds in predictiondata_slice:
                                 if m > 0:
                                     linestring_text = linestring_text + ", "
                                 linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
@@ -2222,6 +2621,168 @@ class LandingPredictor(PredictorBase):
                                     ]
                             )
                             self.landingconn.commit()
+
+                        ####################################
+                        # END: Insert pre-flight predict file landing prediction into the database
+                        ####################################
+
+
+
+                        ####################################
+                        # START: Early cutdown landing prediction
+                        ####################################
+
+                        # Now add a prediction record for cutdown / early-burst condition, but only if the flight is still ascending and we're above the 
+                        # altitude sanity threshold
+                        if descent_portion.shape[0] < 2 and latest_altitude > alt_sanity_threshold:
+                            # We're here because 
+                            #     a) there was a predict file available (i.e. from the database)
+                            #     b) the flight is not yet descending
+
+                            debugmsg("Calculating early cutdown landing prediction")
+                            
+                            # The part of the predict file data that we'll use for vertical rate data.
+                            cutdown_predictiondata_slice = []
+                            cutdown_predictiondata_slice = np.array(cutdown_predictiondata_slice)
+
+                            # Loop through the prediction data in reverse order to find the closest altitude.  Basically iterating from the beginning (i.e. launch) to
+                            # the flight's current altitude.
+                            loop_counter = 0
+                            l = predictiondata_rev.shape[0]
+                            prev_pred_alt = 0
+                            while predictiondata_rev[loop_counter,0] < latest_altitude and loop_counter < l - 1:
+                                if prev_pred_alt > predictiondata_rev[loop_counter, 0]:
+                                    # we've hit the top in the pred data and we need to stop
+                                    if loop_counter > 0:
+                                        loop_counter -= 1
+                                    break
+                                prev_pred_alt = predictiondata_rev[loop_counter, 0]
+                                loop_counter += 1
+
+                            # Now slice off the predictiondata we care about, plus one more element so there are enough data points that the Algo can create a curve.
+                            cutdown_predictiondata_slice = predictiondata_rev[0:loop_counter+1, 0:]
+                            
+                            # If we found a splice point then proceed with creating a cutdown landing prediction
+                            if cutdown_predictiondata_slice.shape[0] > 0:
+
+                                ####################################
+                                # START:  adjust the prediction floor
+                                ####################################
+                                # If we're close to the balloon (ex. < 35 miles), then we want to adjust our prediction_floor to our current elevation.  
+                                # The idea being that if we're close to the balloon, then our current elevation is likely close to the elevation of the 
+                                # balloon's ultimate landing location.  ...and we want to have the prediction algorithm calculate predicitons down to 
+                                # that elevation.  This should increase landing prediction accuracy a small amount.
+
+                                # Get our latest position
+                                gpspos = self.getGPSPosition()
+
+                                gps_est = False
+                                if gpspos['isvalid']:
+                                    # Calculate the distance between this system (wherever it might be...home...vehicle...etc.) and the last packet 
+                                    # received from the balloon
+                                    dist_to_balloon = self.distance(
+                                            gpspos['latitude'],
+                                            gpspos['longitude'],
+                                            latestpackets[-1, 2],
+                                            latestpackets[-1, 3]
+                                            )
+
+                                    # If we're close to the balloon, then set the prediction floor to that elevation
+                                    if dist_to_balloon < 30:
+                                        debugmsg("Current location < 30 miles from the current flight, using GPS for landing prediction elevation")
+                                        landingprediction_floor = float(gpspos['altitude'])
+                                        gps_estimate = True
+
+                                # If we were unable to get an estimate elevation from the brick's GPS, then then query the database for nearby stations
+                                if gps_est == False:
+                                    debugmsg("Checking for stations near the landing prediction to estimate landing prediction elevation")
+                                    estimate = self.getLandingElevation(callsign, 30)
+                                    if estimate > 0:
+                                        landingprediction_floor = float(estimate)
+
+                                debugmsg("Prediction floor set to: %f" % landingprediction_floor)
+
+                                ####################################
+                                # END:  adjust the prediction floor
+                                ####################################
+
+
+
+                                ####################################
+                                # START:  calculate the cutdown landing prediction
+                                ####################################
+                                # reference:  cutdown_predictiondata_slice columns:
+                                # altitude, 
+                                # latitude,
+                                # longitude,
+                                # vertical rate,
+                                # delta_secs
+                                #
+
+                                # Slice off only the altitude and vertical rate columns as we only need these two columns for creating a velocity vs. altitude curve.
+                                predicted_descent_rates = np.array(cutdown_predictiondata_slice[0:, [0,3]], dtype='float64')
+
+                                # Convert the vertical rate column to ft/sec.  All predict file data is in ft/min.
+                                predicted_descent_rates[:,(1)] /= 60
+
+                                # create a landing prediction based on the predict file descent rates and the latest packets seen thus far.
+                                debugmsg("Running cutdown landing prediction")
+                                flightpath, coef = self.predictionAlgoCutdown(latestpackets, predicted_descent_rates, launchsite["lat"], launchsite["lon"], launchsite["elevation"], landingprediction_floor)
+                                ####################################
+                                # END:  calculate the cutdown landing prediction
+                                ####################################
+
+
+
+                                ####################################
+                                # START:  insert cutdown landing prediction record into the database
+                                ####################################
+                                # Set the initial value of the LINESTRING text to nothing.
+                                linestring_text = ""
+                                array_text = ""
+                                m = 0
+
+                                # If there was a prediction calculated
+                                if flightpath:
+                                    # Now loop through each of these points and create the LINESTRING
+                                    for u,v,t,a in flightpath:
+                                        if m > 0:
+                                            linestring_text = linestring_text + ", "
+                                            array_text = array_text + ", "
+                                        linestring_text = linestring_text + str(round(v, 6)) + " " + str(round(u, 6))
+                                        array_elem = "[" + str(round(u,6)) + ", " + str(round(v,6)) + ", " + str(round(t,4)) + ", " + str(round(a)) + "]"
+                                        array_text = array_text + array_elem
+                                        m += 1
+                                    linestring_text = "LINESTRING(" + linestring_text + ")"
+                                    array_text = "ARRAY[" + array_text + "]"
+                                    if m < 2:
+                                        linestring_text = None
+                                        array_text = None
+
+                                    # The SQL for inserting this prediction record into the database
+                                    landingprediction_sql = """ insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath) values (now(), %s, %s, 'cutdown', %s::numeric, ST_GeometryFromText('POINT(%s %s)', 4326), ST_GeometryFromText(%s, 4326));"""
+
+                                    ts = datetime.datetime.now()
+
+                                    #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
+                                    #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
+
+                                    debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
+                                    debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+
+                                    # execute the SQL insert statement
+                                    landingcur.execute(landingprediction_sql, [ fid, callsign, coef, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text])
+                                    self.landingconn.commit()
+
+
+                                ####################################
+                                # END:  insert cutdown landing prediction record into the database
+                                ####################################
+
+                        ####################################
+                        # START: Early cutdown landing prediction
+                        ####################################
+
 
                     ####################################
                     # END:  Check if predict file is uploaded and upload a landing prediction to the database based on that predict.
