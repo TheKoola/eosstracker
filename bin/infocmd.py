@@ -823,7 +823,7 @@ class infoCmd(object):
             debugmsg("============ infocmd landing_coords processing: %s : %s ==========" % (fid, callsign))
 
             try: 
-                # Get the latest landing prediction for the flight/beacon.  Only look back 20mins.
+                # Get the latest landing prediction for the flight/beacon.  Only look back 20mins and we exclude early cutdown predictions.
                 lastlandingprediction_sql = """
                     select 
                         l.tm as thetime,
@@ -839,6 +839,7 @@ class infoCmd(object):
                         and l.callsign = %s
                         and l.tm > (now() - interval '00:20:00')
                         and l.tm > now()::date
+                        and l.thetype in ('predicted', 'wind_adjusted', 'translated')
 
                     order by
                         l.tm desc 
