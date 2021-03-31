@@ -51,7 +51,7 @@
     var lastposition;
     var activeflights = [];
     var globalUpdateCounter = 0;
-    var syncPacketsCounter = 0;
+    var lastsynctime = new Date("1970-01-01T00:00:00");
     var updateTimeout;
     var sidebar;
     var layerControl;
@@ -3252,8 +3252,6 @@ function getTrackers() {
             updateTimeout = setTimeout(function() {updateAllItems("full")}, 5000);
             globalUpdateCounter = 0;
 
-            // Update the packet syncup counter
-            syncPacketsCounter += 1;
         }
         else {
             // Set updateAllItems to run again in 5 seconds.
@@ -3263,14 +3261,17 @@ function getTrackers() {
         }
         globalUpdateCounter += 1;
 
-
-        // if it's been longer than ~5mins, then try to syncup packets with track.eoss.org
-        if (syncPacketsCounter > 2) {
-            // sync up packets and reset counter back to zero
-            syncPackets();
-            syncPacketsCounter = 0;
+        // if it's been longer than ~5mins, then try to sync packets with track.eoss.org
+        // Get the current time
+        var ts = new Date(Date.now());
+        if (lastsynctime) {
+            // compare with the last time a syncpackets was called
+            if ((ts - lastsynctime) / 1000 > 300) {
+                // sync up packets and set the last sync time
+                syncPackets();
+                lastsynctime = new Date(Date.now());
+            }
         }
-
     }
 
 /***********
