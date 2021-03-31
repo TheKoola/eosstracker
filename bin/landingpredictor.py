@@ -812,6 +812,12 @@ class PredictorBase(object):
         # find the maximum altitude and note the index position of that value
         idx = np.argmax(altitudes)
         max_altitude = altitudes[idx]
+
+        # find the minimum altitude and note that index position
+        idx_min = np.argmin(altitudes)
+        min_altitude = altitudes[idx_min]
+
+        debugmsg("Min altitude heard thus far: %d" % min_altitude)
         debugmsg("Max altitude heard thus far: %d" % max_altitude)
        
         # split the latestpackets list into two portions based on the index just discovered and convert to numpy arrays and trim off the timestamp column
@@ -962,12 +968,14 @@ class PredictorBase(object):
             ####################################
             # We're here because:  conditions are such that we want to calculate a prediction.
 
-            if ascent_portion[0,0] < descent_rates[0,0]:
-                lower_array = np.array([[round(ascent_portion[0,0] * .98) , descent_rates[0,1]]])
+            # check the boundaries of the latest packets heard to make sure that the interpolated curve (below) encompasses those boundaries
+            if min_altitude < descent_rates[0,0]:
+                lower_array = np.array([[round(float(min_altitude) * .98) , descent_rates[0,1]]])
                 descent_rates = np.insert(descent_rates, 0, lower_array, axis=0)
 
-            if ascent_portion[-1,0] > descent_rates[-1,0]:
-                upper_array = np.array([[round(ascent_portion[-1,0] * 1.02) , descent_rates[-1,1]]])
+            # check the boundaries of the latest packets heard to make sure that the interpolated curve (below) encompasses those boundaries
+            if max_altitude > descent_rates[-1,0]:
+                upper_array = np.array([[round(float(max_altitude) * 1.02) , descent_rates[-1,1]]])
                 descent_rates = np.append(descent_rates, upper_array, axis=0)
                 
             # create a curve that will serve as the predicted descent velocity at a given altitude
