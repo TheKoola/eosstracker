@@ -667,7 +667,7 @@ include $documentroot . '/common/header.php';
                 <option value="EOSSE">EOSSE</option>
                 <option value="EOSSF">EOSSF</option>
                 <option value="EOSSG">EOSSG</option>
-                <option value="EOSSH">EOSSH</option>
+                <option value="EOSSX">EOSSX</option>
             </select>
             </td>
         </tr>
