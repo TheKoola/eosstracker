@@ -152,7 +152,7 @@ include $documentroot . '/common/header.php';
     <pre class="packetdata" ><span id="errfile"></span></pre>
     <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
     <pre class="packetdata" ><span id="beacons"></span></pre>
-    <p class="packetdata-header">Direwolf output (limited to the first 100 lines)</p>
+    <p class="packetdata-header">Direwolf Output</p>
     <pre class="packetdata" ><span id="direwolf"></span></pre>
     <p><span id="debug"></span></p>
 </div>
