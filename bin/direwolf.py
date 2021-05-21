@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, 2020, 2021  Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,38 +36,52 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
     # Name of the direwolf configuration file
     filename = "/eosstracker/etc/direwolf.conf"
 
+    # Mapping of direwolf channel to SDR and frequency
+    freqmap = []
+
     try:
 
         # Create or overwrite the direwolf configuration file.  We don't care if we overwrite it as the configuration is created dynamically each time.
         with open(filename, "w") as f:
             f.write("###\n")
             f.write("# " + filename + "\n")
-            f.write("#\n")
-            f.write("# RTL numbers referred to in this file do not coorelate to those returned by rtl_eeprom.\n")
             f.write("#\n\n\n")
-            rtl = 0
             adevice = 0
             channel = 0
 
             # Loop through the frequency/port lists creating the audio device sections
             for freqlist in l:
-                f.write("################## RTL:  " + str(rtl) + " ################\n")
-                for freq, port in freqlist:
-                    # This is the audio device section for this RTL, frequency, and port combination
-                    f.write("# RTL: " + str(rtl) + "   Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
+                f.write("###########################################\n")
+                for freq, port, prefix, sn in freqlist:
+                     # This is the audio device section for this RTL, frequency, and port combination
+                    f.write("# SDR Device: " + prefix + " (s/n: " + sn + ")  Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
                     f.write("ADEVICE" + str(adevice) + " udp:" + str(port) + " null\n")
-                    f.write("ARATE 48000\n")
+
+                    # Airspy SDRs require us to use an audio rate of 50k (it's because those dongles support limited sample rates)
+                    if prefix == "airspy":
+                        f.write("ARATE 50000\n")
+                    else:
+                        f.write("ARATE 48000\n")
+
                     f.write("ACHANNELS 1\n")
                     f.write("CHANNEL " + str(channel) + "\n")
                     f.write("MYCALL " + callsign + "\n")
                     f.write("MODEM 1200\n")
-                    f.write("FIX_BITS 0\n\n")
+                    f.write("FIX_BITS 1\n\n")
+
+                    # If listening to the satellite frequency and igating, then only igate if we heard the packet through a digipeater.
+                    # For satellite ops we don't want to igate packets heard directly.  
+                    # Note:  buddy list filter is clearly a work in progress...
+                    if freq == 145825000 and configdata["igating"] == True:
+                        f.write("FILTER " + str(channel) + " IG d/* | b/PSAT*/USNAP*/*ISS*\n")
+
+                    # Add this channel to the channel-to-frequency mapping
+                    freqmap.append({ "channel" : channel, "frequency" : freq, "sdr" : prefix + sn })
 
                     channel = channel + 2
                     adevice = adevice + 1
 
                 f.write("###########################################\n\n")
-                rtl = rtl + 1
 
             if configdata["includeeoss"] == "true" and configdata["eoss_string"] != "":
                 eoss = str(configdata["eoss_string"]) + ","
@@ -153,14 +167,14 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
             f.write("KISSPORT 8001\n")
 
             f.close()
-        return filename
+        return filename, freqmap
 
     except (KeyboardInterrupt, SystemExit):
         f.close()
-        return ""
+        return (None, None)
     except IOError as error:
         print "Unable to create direwolf configuration file.\n %s" % error
-        return ""
+        return (None, None)
             
 
 
@@ -175,7 +189,12 @@ def direwolf(e, callsign, freqlist, config, position):
     logfile = "/eosstracker/logs/direwolf.out"
 
     # (re)create the direwolf configuration file without database support
-    configfile = createDirewolfConfig(callsign, freqlist, config, position)
+    configfile, freqmap = createDirewolfConfig(callsign, freqlist, config, position)
+
+    # if the configfile is none, something went wrong and we must abort
+    if configfile is None:
+        print "Error creating the direwolf configuration file."
+        return
 
     # The command string and arguments for running direwolf.
     df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
