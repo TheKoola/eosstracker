@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, 2020, 2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -82,10 +82,9 @@ def signal_handler(signum, frame):
 
 
 ##################################################
-# Determine what frequencies and ports GnuRadio should listen on and which UDP ports to send audio over
+# Determine what frequencies GnuRadio should listen on 
 ##################################################
-def getFrequencies(rtl=0):
-    rtl = rtl * 10
+def getFrequencies():
 
     try:
         # connect to the database
@@ -115,13 +114,11 @@ def getFrequencies(rtl=0):
 
         # The frequency list...
         # Always listen on 144.39MHz and send audio for that frequency on UDP port 12000
-        fl = [(144390000, 12000 + rtl)]
+        fl = [144390000]
  
         # Now loop through all frequencies returned from the SQL query above
-        u = 12001 + rtl
         for freq in rows:
-            fl.append((freq[0], u))
-            u += 1
+            fl.append(freq[0])
 
         # Close database connections
         grcur.close()
@@ -653,29 +650,38 @@ def main():
 
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
+
+            # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
+            freqs = getFrequencies()
+
             # For each SDR dongle found, start a separate GnuRadio listening process
             total_freqs = 0
             chan = 0
+            loop_iter = 0
             for k in sdrs:
 
                 print "Using SDR:  ", k
                 status["rf_mode"] = 1
                 
-                # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-                freqlist = getFrequencies(k["rtl"])
-
                 # Append this frequency list to our list for later json output
                 ant = {}
                 ant["rtl_id"] = k["rtl"]
+                ant["prefix"] = k["prefix"]
                 ant["frequencies"] = []
                 ant["rtl_serialnumber"] = k["serialnumber"]
                 ant["rtl_manufacturer"] = k["manufacturer"]
                 ant["rtl_product"] = k["product"]
-                for freq,udpport in freqlist:
+
+                # Create frequency/udpport list that gnuradio and direwolf will use.
+                udpport = 12000 + loop_iter * 10
+                freqlist = []
+                for freq in freqs:
                     ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
+                    freqlist.append([freq, udpport, k["prefix"], k["serialnumber"]])
                     freqmap.append([chan, freq])
                     chan += 2
                     total_freqs += 1
+                    udpport += 1
                 antennas.append(ant) 
 
                 # append this frequency/UDP port list to the list for Direwolf
@@ -686,6 +692,8 @@ def main():
                 grprocess.daemon = True
                 grprocess.name = "GnuRadio_" + str(k["rtl"])
                 processes.append(grprocess)
+
+                loop_iter += 1
 
 
             status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])

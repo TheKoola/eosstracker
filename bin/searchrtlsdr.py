@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -67,10 +67,14 @@ known_devices = [
     { "vendor": 0x1f4d, "product": 0xd286, "prefix":"rtl", "description": "MyGica TD312" },
     { "vendor": 0x1f4d, "product": 0xd803, "prefix":"rtl", "description": "PROlectrix DV107669" },
     { "vendor": 0x1d50, "product": 0x6089, "prefix": "hackrf", "description": "OpenMoko, Inc. Great Scott Gadgets HackRF One SDR" },
+    { "vendor": 0x1d50, "product": 0x60a1, "prefix": "airspy", "description": "Airspy" }
 ]
 
 def getUSBDevices():
-    i = 0
+
+    # Probably need to fix this to be more dynamic...
+    device_no = { "rtl": 0, "hackrf" : 0, "airspy" : 0}
+
     sdrs = []
 
     # Get a list of usb devices
@@ -103,7 +107,7 @@ def getUSBDevices():
                 m = m if m else ""
 
                 # Create a dict for this device
-                rtl = { "rtl" : i, "manufacturer" : m, "product" : p, "serialnumber" : s, "description" : sdr["description"], "prefix" : sdr["prefix"]}
+                rtl = { "rtl" : device_no[sdr["prefix"]], "manufacturer" : m, "product" : p, "serialnumber" : s, "description" : sdr["description"], "prefix" : sdr["prefix"]}
 
                 # Check if the RTLSDR is using a serial number string that contains "adsb".
                 #     The idea being, not to use any SDR attached that is to be used for ADS-B reception instead.
@@ -112,6 +116,6 @@ def getUSBDevices():
                 else:
                     sdrs.append(rtl)
 
-                i = i+1
+                device_no[sdr["prefix"]] += 1
         return sdrs
 
