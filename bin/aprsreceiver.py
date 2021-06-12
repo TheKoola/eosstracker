@@ -138,7 +138,7 @@ class aprs_receiver(gr.top_block):
         self.transition_width = 2000
 
         # For APRS we only care about 2200hz + harmonics...soooo setting this to something high, but not too high.  For reference, 9600baud needs ~5khz.
-        self.lowpass_freq = 8000
+        self.lowpass_freq = 6000
 
         # Audio low pass filter taps.  
         self.audio_taps = firdes.low_pass(1, self.quadrate, self.lowpass_freq, self.transition_width, fft.window.WIN_HAMMING)  
