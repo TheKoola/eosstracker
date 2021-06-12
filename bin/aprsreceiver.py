@@ -48,8 +48,7 @@ class aprs_receiver(gr.top_block):
         # MTU size for the size of packets we'll end up sending over UDP to direwolf
         self.mtusize = 9000
 
-        # FM deviation
-        #self.max_deviation = 3300
+        # FM deviation.  Setting this to 5kHz because we can't "assume".  ;)
         self.max_deviation = 5000
 
         # Setting this scale to ~5000 as we'll use an AGC on the audio sent to direwolf.  Doing that means that Direwolf will report audio levels ~50 for most/all packets.
@@ -114,9 +113,14 @@ class aprs_receiver(gr.top_block):
         # set the source block's center frequency now that we know that.
         self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
 
-        # Channel low pass filter parameters
-        self.channel_cutoff_freq = self.channel_width / 2
-        self.channel_transition_width = 500
+        # FM channel low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.  To compensate (a little) 
+        # adjust the transition band to straddle the channel boundry.
+        self.channel_transition_width = 1000
+        self.channel_cutoff_freq = (self.channel_width / 2) - (self.channel_transition_width / 2)
+
+        # Make sure the cutoff frequency is not less than Carson's rule for 2200hz APRS space tones
+        if self.channel_cutoff_freq < 2200 + self.max_deviation:
+            self.channel_cutoff_freq = 2200 + self.max_deviation
 
         # FM channel low pass filter taps
         self.channel_lowpass_taps = firdes.low_pass(1, self.samp_rate, self.channel_cutoff_freq, self.channel_transition_width, firdes.WIN_HANN, 6.76)
@@ -130,9 +134,11 @@ class aprs_receiver(gr.top_block):
         # Decimation factor for the xlating_fir_filter block
         self.decimation = self.samp_rate / (self.audio_decim * self.direwolf_audio_rate)
 
-        # Audio Low pass filter parameters
-        self.transition_width = 500
-        self.lowpass_freq = 2200 + self.max_deviation
+        # Audio Low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.
+        self.transition_width = 2000
+
+        # For APRS we only care about 2200hz + harmonics...soooo setting this to something high, but not too high.  For reference, 9600baud needs ~5khz.
+        self.lowpass_freq = 8000
 
         # Audio low pass filter taps.  
         self.audio_taps = firdes.low_pass(1, self.quadrate, self.lowpass_freq, self.transition_width, fft.window.WIN_HAMMING)  
