@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, 2021 Jeff Deaton (N6BA)
+#    Copyright (C) 2019, 2020, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,17 +17,19 @@
 #    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
 #
 ##################################################
-
 from gnuradio import analog
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import filter
 from gnuradio import gr
+from gnuradio import fft
+import osmosdr
 from gnuradio.eng_option import eng_option
 from gnuradio.filter import firdes
-import osmosdr
-import sys
 import signal
+import sys
+import time
+import math
 
 
 ##################################################
@@ -38,7 +40,6 @@ class aprs_receiver(gr.top_block):
     def __init__(self, freqlist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl"):
         gr.top_block.__init__(self, "APRS Receiver for Multiple Frequencies")
 
-        # The frequency list
         self.Frequencies = freqlist
 
         # The RTL (or other device) prefix.  Used to tell the osmosdr source block which SDR device we want to use
@@ -47,24 +48,15 @@ class aprs_receiver(gr.top_block):
         # MTU size for the size of packets we'll end up sending over UDP to direwolf
         self.mtusize = 9000
 
-        # Low pass filter parameters
-        self.transition_width = 1000
-        self.lowpass_freq = 5500
-
-        # NBFM demodulation params
+        # FM deviation
         #self.max_deviation = 3300
         self.max_deviation = 5000
 
         # Setting this scale to ~5000 as we'll use an AGC on the audio sent to direwolf.  Doing that means that Direwolf will report audio levels ~50 for most/all packets.
-        #self.scale = 14336
         self.scale = 5119
-
-        # Center frequency
-        self.center_freq = 145000000
 
         # This is the main source block that reads IQ data from the SDR
         self.osmosdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + self.rtl_id)
-        self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
         self.osmosdr_source_0.set_freq_corr(0, 0)
         self.osmosdr_source_0.set_dc_offset_mode(2, 0)
         self.osmosdr_source_0.set_iq_balance_mode(0, 0)
@@ -73,14 +65,10 @@ class aprs_receiver(gr.top_block):
 
         # Airspy R2 / Mini can only accommodate specific sample rates and uses device specific RF gains, so we need to adjust values to accommodate
         if prefix == "airspy":
-
-            # Setting the direwolf audio rate to be a multiple of the 2.5M, 3.0M, 6.0M, and 10.0M sample rates that the airspy devices can run.
             self.direwolf_audio_rate = 50000
 
             # Get the first valid sample rate for the airspy device.  This *should* be the lowest sample rate allowed by the device.
-            rates = self.osmosdr_source_0.get_sample_rates()
-            r = rates[0]
-            self.samp_rate = int(r.start())
+            self.samp_rate = self.osmosdr_source_0.get_sample_rates()[0].start()
 
             # Turn off hardware AGC
             self.osmosdr_source_0.set_gain_mode(False, 0)
@@ -91,9 +79,7 @@ class aprs_receiver(gr.top_block):
             self.osmosdr_source_0.set_gain(13,  'IF',  0)
 
         # Not an airspy device...so we set sample rates and parameters as multiples of a 48k audio sample rate that direwolf will use
-        else:
-
-            # Setting the direwolf audio rate to be 48k (quasi standard for audio).
+        else: 
             self.direwolf_audio_rate = 48000
 
             # Set the sample rate as a multiple of the direwolf audio rate
@@ -110,31 +96,60 @@ class aprs_receiver(gr.top_block):
         # set the source block's sample rate now that we know that.
         self.osmosdr_source_0.set_sample_rate(self.samp_rate)
 
-        # Decimation factor
-        self.decimation = self.samp_rate / (self.direwolf_audio_rate)
+        # Find the median frequency we're listening too
+        freqs = [f[0] for f in freqlist]
+        median_freq = min(freqs) + (max(freqs) - min(freqs)) / 2
 
-        # Quadrature rate (input rate for the NBFM block)
-        self.quadrate = self.samp_rate / self.decimation
+        # Determine the channel width from the frequencies we're listening too
+        if median_freq < 150000000:   # 2m band
+            self.channel_width = 15000
+        elif 220000000 < median_freq < 230000000:  # 1.25m band
+            self.channel_width = 20000
+        elif 410000000 < median_freq < 460000000:  # 70cm band
+            self.channel_width = 25000
 
-        # Low pass filter taps
-        self.lowpass_filter_0 = firdes.low_pass(20, self.samp_rate, self.lowpass_freq, self.transition_width, firdes.WIN_HANN, 6.76)
+        # The center frequency rounded to the nearest multiple of the channel_width
+        self.center_freq = int(math.floor(median_freq / self.channel_width) * self.channel_width)
+
+        # set the source block's center frequency now that we know that.
+        self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
+
+        # Channel low pass filter parameters
+        self.channel_cutoff_freq = self.channel_width / 2
+        self.channel_transition_width = 500
+
+        # FM channel low pass filter taps
+        self.channel_lowpass_taps = firdes.low_pass(1, self.samp_rate, self.channel_cutoff_freq, self.channel_transition_width, firdes.WIN_HANN, 6.76)
+
+        # Quadrature rate (input rate for the quadrature demod block)
+        self.quadrate = self.direwolf_audio_rate * 2
+
+        # audio decimation factor
+        self.audio_decim = self.quadrate / self.direwolf_audio_rate
+
+        # Decimation factor for the xlating_fir_filter block
+        self.decimation = self.samp_rate / (self.audio_decim * self.direwolf_audio_rate)
+
+        # Audio Low pass filter parameters
+        self.transition_width = 500
+        self.lowpass_freq = 2200 + self.max_deviation
+
+        # Audio low pass filter taps.  
+        self.audio_taps = firdes.low_pass(1, self.quadrate, self.lowpass_freq, self.transition_width, fft.window.WIN_HAMMING)  
 
         # Now construct a seperate processing chain for each frequency we're listening to.
         # processing chain:
-        #    osmosdr_source ---> xlating_fir_filter ---> nbfm ---> agc ---> float_to_short ---> UDP_sink
+        #    osmosdr_source ---> xlating_fir_filter ---> quad_demod ---> fm_deemphasis ---> audio_lowpass_filter ---> agc ---> float_to_short ---> UDP_sink
         #
         for freq,port,p,sn in self.Frequencies:
-            freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, (self.lowpass_filter_0), freq-self.center_freq, self.samp_rate)
+            #print "   channel:  [%d] %dMHz" % (port, freq)
+            #print "   quadrate:  %d" % (self.quadrate)
+            freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, (self.channel_lowpass_taps), freq-self.center_freq, self.samp_rate)
             blocks_udp_sink = blocks.udp_sink(gr.sizeof_short*1, '127.0.0.1', port, self.mtusize, True)
             blocks_float_to_short = blocks.float_to_short(1, self.scale)
-            analog_nbfm_rx = analog.nbfm_rx(
-                audio_rate=self.direwolf_audio_rate,
-                quad_rate=self.quadrate,
-                tau=75e-6,
-                max_dev=self.max_deviation,
-            )
-
-            # AGC to normalize the audio levels sent to Direwolf
+            quad_demod = analog.quadrature_demod_cf(self.quadrate/(2*math.pi*self.max_deviation/8.0))
+            fmdeemphasis = analog.fm_deemph(self.quadrate)
+            audio_filter = filter.fir_filter_fff(self.audio_decim, self.audio_taps)
             analog_agc = analog.agc_ff(1e-5, 1.0, 1.0)
             analog_agc.set_max_gain(65536)
 
@@ -142,19 +157,31 @@ class aprs_receiver(gr.top_block):
             # Connections
             ##################################################
             self.connect((self.osmosdr_source_0, 0), (freq_xlating_fir_filter, 0))
-            self.connect((freq_xlating_fir_filter, 0), (analog_nbfm_rx, 0))
-            self.connect((analog_nbfm_rx, 0), (analog_agc, 0))
+            self.connect((freq_xlating_fir_filter, 0), (quad_demod, 0))
+            self.connect((quad_demod, 0), (fmdeemphasis, 0))
+            self.connect((fmdeemphasis, 0), (audio_filter, 0))
+            self.connect((audio_filter, 0), (analog_agc, 0))
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
+
+        print "GnuRadio parameters for:  ", self.rtl_id
+        print "len(channel taps):  ", len(self.channel_lowpass_taps)
+        print "len(audio taps):  ", len(self.audio_taps)
+        #print "Sample rate:  ", self.samp_rate
+        #print "Channel width (Hz):  ", self.channel_width
+        #print "Direwolf audio rate:  ", self.direwolf_audio_rate
+        #print "Quadrature rate:  ", self.quadrate
+        print "Center frequency(", self.rtl_id, "):  ", self.center_freq
+        #print "Xlating decimation:  ", self.decimation
 
         # Query the osmosdr block to determine just what gain and sample rates it set for the airspy device
         if prefix == "airspy":
             print "Airspy LNA Gain set to:  ", self.osmosdr_source_0.get_gain("LNA")
             print "Airspy MIX Gain set to:  ", self.osmosdr_source_0.get_gain("MIX")
             print "Airspy VGA Gain set to:  ", self.osmosdr_source_0.get_gain("IF")
-            print "Airspy sample rate set to:  ", str(round(float(self.samp_rate) / 1000000.0, 3)) + "M"
-            sys.stdout.flush()
+            print "Airspy sample rate set to:  ", self.samp_rate
 
+        sys.stdout.flush()
 
 ##################################################
 # GRProcess:
