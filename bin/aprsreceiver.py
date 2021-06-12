@@ -113,10 +113,9 @@ class aprs_receiver(gr.top_block):
         # set the source block's center frequency now that we know that.
         self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
 
-        # FM channel low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.  To compensate (a little) 
-        # adjust the transition band to straddle the channel boundry.
+        # FM channel low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.  
         self.channel_transition_width = 1000
-        self.channel_cutoff_freq = (self.channel_width / 2) - (self.channel_transition_width / 2)
+        self.channel_cutoff_freq = (self.channel_width / 2) - self.channel_transition_width
 
         # Make sure the cutoff frequency is not less than Carson's rule for 2200hz APRS space tones
         if self.channel_cutoff_freq < 2200 + self.max_deviation:
