@@ -134,7 +134,7 @@ class aprs_receiver(gr.top_block):
         self.decimation = self.samp_rate / (self.audio_decim * self.direwolf_audio_rate)
 
         # Audio Low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.
-        self.transition_width = 2000
+        self.transition_width = 1000
 
         # For APRS we only care about 2200hz + harmonics...soooo setting this to something high, but not too high.  For reference, 9600baud needs ~5khz.
         self.lowpass_freq = 6000
