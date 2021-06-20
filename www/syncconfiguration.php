@@ -320,7 +320,7 @@
         }
     }
 
-    printf ("{\"result\": 1, \"error\": \"Update successful\"}");
+    printf ("{\"result\": 1, \"error\": \"Update successful.\"}");
 
 
     sql_close($link);

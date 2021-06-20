@@ -1998,22 +1998,131 @@
     function syncData() {
 
         $.get("syncconfiguration.php", function(data) {
+            var color;
+            var msg = data.error;
 
-            var color = (data.result > 0 ? "lightgreen" : "yellow");
-            var statushtml = "<mark style=\"background-color: " + color + ";\">" + data.error + "</mark>";
+            // function for returning an HTML string formatted for the status section
+            var statushtml = function(c, t) { return "<mark style=\"background-color: " + c + ";\">" + t + "</mark>" };
 
-            document.getElementById("syncup-status").innerHTML = statushtml;
+            // Function for updating the data on the setup page
+            var updatePage = function() {
 
-            // Get predict files automatically
-            getPredictFiles();
+                // Get predict files automatically
+                getPredictFiles();
 
-            // Refresh all data on the page
-            refreshPage();
+                // Refresh all data on the page
+                refreshPage();
 
-            setTimeout(function() {
-                document.getElementById("syncup-status").innerHTML = "";
-            }, 3000);
+            };
 
+            // This clears out (i.e. blanks) the synchronization status area after x milliseconds
+            var blankStatus = function(x) {
+                // blank out the status area after a timeout value 
+                setTimeout(function() {
+                    document.getElementById("syncup-status").innerHTML = "";
+                }, x);
+            };
+
+            // This function checks if the backend processes are running and recursively waits for them to all be started while updating the status area
+            // on the setup page.
+            var checkBackendStart = function(num, color, msg) {
+                var iteration = num;
+                
+                // Get the backend status
+                $.get("getstatus.php", function(d) {
+                    var procStatusSum = 0;
+                    d.processes.forEach(elem => {
+                        if (elem.process != "gpsd")
+                            procStatusSum += elem.status;
+                    });
+                    var isActive = (procStatusSum >= d.processes.length - (d.rf_mode == 0 ? 2 : 1) ? true : false); 
+
+                    if (isActive) {
+                        document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Backend processes restarted successfully!");
+                        blankStatus(8000);
+                    }
+                    else {
+                        document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Waiting for processes to start..." + iteration);
+                        setTimeout(function() { checkBackendStart(iteration + 1, color, msg);}, 900);
+                    }
+                });
+            };
+
+            // This function will recursively check the backend status to make sure no processes are running the backend processes.  Once nothing is running, it will then start
+            // the backend process and call 'checkBackendStart' to monitor.
+            var restartProcesses = function(num, color, msg) {
+
+                // Get the backend status
+                $.get("getstatus.php", function(d) {
+                    var procStatusSum = 0;
+                    d.processes.forEach(elem => {
+                        if (elem.process != "gpsd")
+                            procStatusSum += elem.status;
+                    });
+                    var isActive = (procStatusSum > 0 ? true : false); 
+
+                    // Check if the backend procesess are running
+                    if (isActive) {
+                        // The backend processes are still active, so we just setup to run this again 1 second from now
+                        document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Waiting for processes to shutdown..." + num);
+                        setTimeout(function() {restartProcesses(num + 1, color, msg);}, 900);
+                    }
+                    else {
+                        // The backend processes are not running, now we try to restart
+                        // Call the startup routine
+                        $.get("startup.php", function(d2) { 
+                            document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Starting processes...");
+                            checkBackendStart(0, color, msg);
+                        });
+                    }
+                });
+            };
+
+            // If the result from syncconfiguration.php was true (i.e. > 0)
+            if (data.result > 0) {
+                color = "lightgreen";
+                
+                document.getElementById("syncup-status").innerHTML = statushtml(color, msg);
+
+                // Update the page asynchronously
+                setTimeout(function() {
+                    updatePage();
+                }, 10);
+
+                // Get the status of the backend processes.  If running AND synchronization was successful, then we need to restart them.
+                $.get("getstatus.php", function(d1) {
+                    var procStatusSum = 0;
+                    d1.processes.forEach(elem => {
+                        if (elem.process != "gpsd")
+                            procStatusSum += elem.status;
+                    });
+                    var isActive = (procStatusSum > 0 ? true : false); 
+
+                    // If the backend was running (i.e. active) then shutdown and call the restartProcesses function to restart.
+                    if (isActive) {
+
+                        // Update the sync status area on the web page
+                        document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Restarting backend processes...");
+
+                        // Call the shutdown routine
+                        $.get("shutdown.php", function(d2) {
+                            document.getElementById("syncup-status").innerHTML = statushtml(color, msg + "  Process shutdown initiated...");
+                            restartProcesses(0, color, msg);
+                        });
+                    }
+                    // The processes were not running
+                    else {
+                        // Update the sync status area on the web page
+                        document.getElementById("syncup-status").innerHTML = statushtml(color, msg);
+                        blankStatus(8000);
+                    }
+                });
+            }
+            else {
+                // Update the sync status area on the web page
+                document.getElementById("syncup-status").innerHTML = statushtml("yellow", msg);
+                blankStatus(8000);
+            }
         });
     }
 

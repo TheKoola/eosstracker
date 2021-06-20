@@ -484,7 +484,7 @@ include $documentroot . '/common/header.php';
             <div id="syncup-div" style="margin-top: 10px;"></div>
         </p>
         <p class="normal-italic">
-            Please restart the System Processes from the <a href="/" class="normal-link-black">Home</a> page for changes to take effect.
+            The System Processes need to be restarted for any changes to take effect - clicking the "Synchronize..." button will attempt to restart them automatically if they are running. 
         </p>
     </div>
 
