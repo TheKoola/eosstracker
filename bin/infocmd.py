@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2020, 2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -679,7 +679,7 @@ class infoCmd(object):
             rows = elev_cur.fetchall()
             
             if debug:
-                print "landing elevation rows[", len(rows), "]: ", rows
+                print("landing elevation rows[", len(rows), "]: ", rows)
 
             # if there were rows returned then proceed to return the estimated elevation near the landing location
             if len(rows) > 0:
@@ -1114,7 +1114,7 @@ def runInfoCmd(schedule, e, config):
             e.wait(schedule)
 
     except (KeyboardInterrupt, SystemExit): 
-        print "infoCmd ended"
+        print("infoCmd ended")
         pass
 
 

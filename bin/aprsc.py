@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, 2020, 2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -101,7 +101,7 @@ def getAPRSISFilter(aprsRadius, customfilter = None):
             latitude = rows[0][4]
             longitude = rows[0][5]
             aprsFilter = aprsFilter + " r/" + str(latitude) + "/" + str(longitude) + "/" + str(int(aprsRadius))
-        #print "aprsFilter1: %s\n" % aprsFilter
+        #print("aprsFilter1: %s\n" % aprsFilter)
 
 
         # SQL query to fetch the callsigns for beacons on active flights
@@ -146,7 +146,7 @@ def getAPRSISFilter(aprsRadius, customfilter = None):
         pgCursor.close()
         pgConnection.close()
 
-        print "Using this filter for APRS-IS uplink: %s\n" % aprsFilter
+        print("Using this filter for APRS-IS uplink: %s\n" % aprsFilter)
         sys.stdout.flush()
 
         # Return the resulting APRS-IS filter string
@@ -155,7 +155,7 @@ def getAPRSISFilter(aprsRadius, customfilter = None):
     except pg.DatabaseError as error:
         pgCursor.close()
         pgConnection.close()
-        print "Database error:  ", error
+        print("Database error:  ", error)
     except (StopIteration, KeyboardInterrupt, SystemExit):
         pgCursor.close()
         pgConnection.close()
@@ -177,16 +177,16 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
         tap.run()
 
     except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
-        print "Closing APRS(", aprsserver, ") Tap: ", error
+        print("Closing APRS(", aprsserver, ") Tap: ", error)
         tap.close()
-        print "Tap ended: ", aprsserver
+        print("Tap ended: ", aprsserver)
 
     except pg.DatabaseError as error:
-        print "[tapProcess(", aprsserver, ")] Database error:  ", error
+        print("[tapProcess(", aprsserver, ")] Database error:  ", error)
         tap.close()
     except (KeyboardInterrupt, SystemExit):
         tap.close()
-        print "Tap ended: ", aprsserver
+        print("Tap ended: ", aprsserver)
 
 
 ##################################################
@@ -236,7 +236,7 @@ def createAprscConfig(filename, callsign, igate, customfilter = None):
     except (KeyboardInterrupt, SystemExit):
         return -1
     except IOError as error:
-        print "Unable to create aprsc configuration file.\n %s" % error
+        print("Unable to create aprsc configuration file.\n %s" % error)
         return -1
 
 
@@ -307,7 +307,7 @@ def aprsc(config, e):
         # If the return code is zero, then we can continue on using the custom filter on the Uplink connection.  If not zero, then
         # there was an error with the aprsc configuration file syntax, presumably because of our custom filter on the uplink port.
         if r != 0:
-            print "WARNING:  Syntax error with aprsc Uplink configuration, retrying without custom uplink filter..."
+            print("WARNING:  Syntax error with aprsc Uplink configuration, retrying without custom uplink filter...")
             sys.stdout.flush()
 
             # We now need to rebuild the configuration file without a custom APRS-IS filer on the Uplink connection.
@@ -317,22 +317,22 @@ def aprsc(config, e):
 
         # The aprsc process should NOT be running, but if it is, we need to kill it.
         if p.poll() is None:
-            print "aprsc is still running..."
+            print("aprsc is still running...")
             killem = ["sudo", "pkill", "aprsc"]
-            print "killing aprsc..."
+            print("killing aprsc...")
             sb.Popen(killem)
-            print "Waiting for aprsc to end..."
+            print("Waiting for aprsc to end...")
             p.wait()
-            print "aprsc ended"
+            print("aprsc ended")
     except (KeyboardInterrupt, SystemExit):
         if p.poll() is None:
-            print "aprsc is still running..."
+            print("aprsc is still running...")
             killem = ["sudo", "pkill", "aprsc"]
-            print "killing aprsc..."
+            print("killing aprsc...")
             sb.Popen(killem)
-            print "Waiting for aprsc to end..."
+            print("Waiting for aprsc to end...")
             p.wait()
-            print "aprsc ended"
+            print("aprsc ended")
 
 
     # Now we start the aprsc process for real...
@@ -350,20 +350,20 @@ def aprsc(config, e):
         debugmsg("aprsc: stopevent must have been set")
 
         if p.poll() is None:
-            print "aprsc is still running..."
+            print("aprsc is still running...")
             killem = ["sudo", "pkill", "aprsc"]
-            print "killing aprsc..."
+            print("killing aprsc...")
             sb.Popen(killem)
-            print "Waiting for aprsc to end..."
+            print("Waiting for aprsc to end...")
             p.wait()
-            print "aprsc ended"
+            print("aprsc ended")
     except (KeyboardInterrupt, SystemExit):
         if p.poll() is None:
-            print "aprsc is still running..."
+            print("aprsc is still running...")
             killem = ["sudo", "pkill", "aprsc"]
-            print "killing aprsc..."
+            print("killing aprsc...")
             sb.Popen(killem)
-            print "Waiting for aprsc to end..."
+            print("Waiting for aprsc to end...")
             p.wait()
-            print "aprsc ended"
+            print("aprsc ended")
 

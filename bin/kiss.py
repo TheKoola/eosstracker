@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 import sys
 import socket
 from inspect import getframeinfo, stack
-from Queue import Queue
+import queue
 import threading as th
 import multiprocessing as mp
 import time
@@ -51,7 +51,7 @@ def debugmsg(message):
     """
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -252,7 +252,7 @@ class KISS(object):
                         debugmsg("Socket was not ready");
                         if socketnotready_count > 4:
                             debugmsg("Failing connection and reconnecting.")
-                            #print "No packets seen from direwolf, attempting to reconnect."
+                            #print("No packets seen from direwolf, attempting to reconnect.")
                             sys.stdout.flush()
 
                             # Reset the not ready count
@@ -335,7 +335,7 @@ class KISS(object):
 
         # If it's not at least 14 chars then eject...
         if length < 14:
-            print "Frame not long enough [", length, "]: ", frame
+            print("Frame not long enough [", length, "]: ", frame)
             return None
 
         # destination address
@@ -390,8 +390,8 @@ class KISS(object):
             packet = src_addr + ">" + dest_addr + repeater_list + ":" + info
             return packet
         except TypeError as e: 
-            print "Type Error occured: ", e
-            print "src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list)
+            print("Type Error occured: ", e)
+            print("src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list))
 
             return None
 
@@ -413,7 +413,7 @@ class KISS(object):
                    pid = pInfoDict["pid"]
         if pid > 0:
             debugmsg ("Sending direwolf process, {}, the SIGTERM signal.".format(pid))
-            print "Stopping direwolf process: ", pid, ", and attempting to restart."
+            print("Stopping direwolf process: ", pid, ", and attempting to restart.")
             sys.stdout.flush()
 
             # kill this pid
@@ -448,7 +448,7 @@ class txKISS(KISS):
             debugmsg("Using default value for via: %s" % " ".join(self.via))
 
         # The queue for transmitting packets
-        self.q = Queue(maxsize = 0)
+        self.q = queue.Queue(maxsize = 0)
 
         # Create the worker thread
         debugmsg("Constructor:  Creating worker subprocess")

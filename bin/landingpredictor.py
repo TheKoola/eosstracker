@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -1195,7 +1195,7 @@ class LandingPredictor(PredictorBase):
                 debugmsg("LandingPredictor destructor:  closing database connection.")
                 self.landingconn.close()
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
 
     ################################
@@ -1236,7 +1236,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.landingconn.close()
-            print error
+            print(error)
             return False
 
 
@@ -1293,7 +1293,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return np.array([])
         
 
@@ -1549,7 +1549,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return []
 
 
@@ -1604,7 +1604,7 @@ class LandingPredictor(PredictorBase):
             # if there were rows returned then proceed to get the surface winds at that location
             if len(rows) > 0:
                 position = [ float(rows[0][1]), float(rows[0][2]) ]
-                #print "position: ", position
+                #print("position: ", position)
                 wx_sql = """
                     select 
                         d.weighted_avg_lat / (5280 * 24901.461 / 360) as lat_s,
@@ -1765,7 +1765,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             wxcur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return ([], False)
 
 
@@ -1933,7 +1933,7 @@ class LandingPredictor(PredictorBase):
             rows = elev_cur.fetchall()
             
             if debug:
-                print "landing elevation rows[", len(rows), "]: ", rows
+                print("landing elevation rows[", len(rows), "]: ", rows)
 
             # if there were rows returned then proceed to return the estimated elevation near the landing location
             if len(rows) > 0:
@@ -1951,7 +1951,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             elev_cur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return 0.0
 
 
@@ -2016,7 +2016,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return gpsposition
 
 
@@ -2117,7 +2117,7 @@ class LandingPredictor(PredictorBase):
             # If there was a connection error, then close these, just in case they're open
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
             return np.array([])
 
 
@@ -2174,7 +2174,7 @@ class LandingPredictor(PredictorBase):
                         "elevation" : float(rec[5])
                         }
                 if debug:
-                    print "Launchsite info: ", launchsite
+                    print("Launchsite info: ", launchsite)
 
                 # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
                 debugmsg("Setting initial landing prediction elevation to launchsite elevation: %d" % launchsite['elevation'])
@@ -2464,7 +2464,7 @@ class LandingPredictor(PredictorBase):
                         ts = datetime.datetime.now()
 
                         #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
-                        #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
+                        #print("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
 
                         debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
                         debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
@@ -2773,7 +2773,7 @@ class LandingPredictor(PredictorBase):
                                     ts = datetime.datetime.now()
 
                                     #debugmsg("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
-                                    #print "SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2]))))
+                                    #print("SQL: " + landingprediction_sql % (ts.strftime("%Y-%m-%d %H:%M:%S"), fid, callsign, predictiontype, str(flightpath[-1][1]), str(flightpath[-1][0]), linestring_text, str(round(float(flightpath[0][2])))))
 
                                     debugmsg("Landing prediction: %f, %f" % (flightpath[-1][0], flightpath[-1][1]))
                                     debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
@@ -2802,7 +2802,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
         except (KeyboardInterrupt, SystemExit):
             landingcur.close()
             self.landingconn.close()
@@ -2832,10 +2832,10 @@ def runLandingPredictor(schedule, e, config):
             lp.processPredictions()
             e.wait(schedule)
 
-        print "Prediction scheduler ended"
+        print("Prediction scheduler ended")
 
     except (KeyboardInterrupt, SystemExit): 
-        print "Prediction scheduler ended"
+        print("Prediction scheduler ended")
         pass
 
 

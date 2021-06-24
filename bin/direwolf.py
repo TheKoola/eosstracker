@@ -173,7 +173,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
         f.close()
         return (None, None)
     except IOError as error:
-        print "Unable to create direwolf configuration file.\n %s" % error
+        print("Unable to create direwolf configuration file.\n %s" % error)
         return (None, None)
             
 
@@ -193,7 +193,7 @@ def direwolf(e, callsign, freqlist, config, position):
 
     # if the configfile is none, something went wrong and we must abort
     if configfile is None:
-        print "Error creating the direwolf configuration file."
+        print("Error creating the direwolf configuration file.")
         return
 
     # The command string and arguments for running direwolf.
@@ -211,33 +211,33 @@ def direwolf(e, callsign, freqlist, config, position):
             l = open(logfile, "w")
 
             # Run the direwolf command
-            print "Starting direwolf."
+            print("Starting direwolf.")
             sys.stdout.flush()
             p = sb.Popen(df_command, stdout=l, stderr=l)
 
             # Wait for it to finish
             while p.poll() is None and not e.is_set():
-                #print "Waiting for direwolf to end..."
+                #print("Waiting for direwolf to end...")
                 e.wait(1)
 
             # Direwolf should not be running, but if it is, we need to kill it
             if p.poll() is None:
-                print "Terminating direwolf..."
+                print("Terminating direwolf...")
                 p.terminate()
-                print "Waiting for direwolf to end.."
+                print("Waiting for direwolf to end..")
                 p.wait()
-                print "Direwolf ended"
+                print("Direwolf ended")
 
             # Close the log file
             l.close()
 
         except (KeyboardInterrupt, SystemExit):
             if p.poll() is None:
-                print "Terminating direwolf..."
+                print("Terminating direwolf...")
                 p.terminate()
-                print "Waiting for direwolf to end.."
+                print("Waiting for direwolf to end..")
                 p.wait()
-                print "Direwolf ended"
+                print("Direwolf ended")
 
 
             # Close the log file
@@ -246,7 +246,7 @@ def direwolf(e, callsign, freqlist, config, position):
             # exit out of this loop
             break
 
-    print "Direwolf process has finished."
+    print("Direwolf process has finished.")
 
 
 

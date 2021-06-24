@@ -149,10 +149,10 @@ class aprs_receiver(gr.top_block):
 
         # Query the osmosdr block to determine just what gain and sample rates it set for the airspy device
         if prefix == "airspy":
-            print "Airspy LNA Gain set to:  ", self.osmosdr_source_0.get_gain("LNA")
-            print "Airspy MIX Gain set to:  ", self.osmosdr_source_0.get_gain("MIX")
-            print "Airspy VGA Gain set to:  ", self.osmosdr_source_0.get_gain("IF")
-            print "Airspy sample rate set to:  ", str(round(float(self.samp_rate) / 1000000.0, 3)) + "M"
+            print("Airspy LNA Gain set to:  ", self.osmosdr_source_0.get_gain("LNA"))
+            print("Airspy MIX Gain set to:  ", self.osmosdr_source_0.get_gain("MIX"))
+            print("Airspy VGA Gain set to:  ", self.osmosdr_source_0.get_gain("IF"))
+            print("Airspy sample rate set to:  ", str(round(float(self.samp_rate) / 1000000.0, 3)) + "M")
             sys.stdout.flush()
 
 
@@ -163,7 +163,7 @@ class aprs_receiver(gr.top_block):
 def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", e = None):
     try:
 
-        #print "GR [%d], listening on: " % rtl, flist
+        #print("GR [%d], listening on: " % rtl, flist)
 
         # create an instance of the aprs receiver class
         tb = aprs_receiver(freqlist=flist, rtl=rtl, prefix=prefix)
@@ -171,13 +171,13 @@ def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", e =
         # call its "run" method...this blocks until done
         tb.start()
         e.wait()
-        print "Stopping GnuRadio..."
+        print("Stopping GnuRadio...")
         tb.stop()
-        print "GnuRadio ended"
+        print("GnuRadio ended")
 
     except (KeyboardInterrupt, SystemExit):
         tb.stop()
-        print "GnuRadio ended"
+        print("GnuRadio ended")
 
 
 

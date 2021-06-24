@@ -2,7 +2,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ STDERR=${LOGFILE}.stderr
 
 
 # Check if things are running:
-let num_procs=$(${BINDIR}/procstatus.py  | python -m json.tool | awk '/\"status\":/ { s+=$2;} END {print s}')
+let num_procs=$(${BINDIR}/procstatus.py  | python3 -m json.tool | awk '/"status":/ { s+=$2;} END {print s}')
 
 # Check if it's just GPSD that is still running
 if [ $num_procs -eq 1 ]; then

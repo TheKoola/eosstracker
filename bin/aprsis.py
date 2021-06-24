@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -66,7 +66,7 @@ def signal_handler(signum, frame):
     pid = os.getpid()
     
     caller = getframeinfo(stack()[1][0])
-    print "{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno)
+    print("{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno))
     sys.stdout.flush()
     raise GracefulExit()
 
@@ -153,7 +153,7 @@ class aisConnection(aprslib.IS):
 
             #if not blocking:
             #    break
-        print "Consumer function ended."
+        print("Consumer function ended.")
 
 
 #####################################
@@ -299,7 +299,7 @@ class APRSIS(object):
                     self.ais.connect()
 
                     debugmsg("Running AIS consumer function....")
-                    print "Aprs-is connection to ", self.server, " successful"
+                    print("Aprs-is connection to ", self.server, " successful")
                     sys.stdout.flush()
 
                     # Set the connect flag 
@@ -319,7 +319,7 @@ class APRSIS(object):
 
                 except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
                     pass
-                    #print "[%s] Aprs-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error
+                    #print("[%s] Aprs-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error)
                     #sys.stdout.flush()
 
                 finally:
@@ -358,7 +358,7 @@ class APRSIS(object):
             else:
                 debugmsg("Database connection not created.")
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
 
     ################################
@@ -393,7 +393,7 @@ class APRSIS(object):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            print error
+            print(error)
             return False
 
 
@@ -459,7 +459,7 @@ class APRSIS(object):
             # If there was a connection error, then close these, just in case they're open
             gpscur.close()
             self.close()
-            print error
+            print(error)
             return gpsposition
 
 
@@ -659,14 +659,14 @@ class APRSIS(object):
         except (ValueError, UnicodeEncodeError) as error:
             #ts = datetime.datetime.now()
             #thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            #print thetime, "Skipping DB insert for packet(", x, "):  ", error
+            #print(thetime, "Skipping DB insert for packet(", x, "):  ", error)
             #sys.stdout.flush()
             pass
 
         except pg.DatabaseError as error:
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Database error with packet(", x, "):  ", error
+            print(thetime, "Database error with packet(", x, "):  ", error)
             tapcur.close()
             self.close()
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
@@ -754,13 +754,13 @@ class APRSIS(object):
                 except pg.DatabaseError as error:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print thetime, "Database error with packet(", x, "):  ", error
+                    print(thetime, "Database error with packet(", x, "):  ", error)
                     tapcur.close()
 
                 except ValueError as e:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print thetime,"aprsis.py, Error adding packet(", x, "): ", e
+                    print(thetime,"aprsis.py, Error adding packet(", x, "): ", e)
                     tapcur.close()
 
         except (StopIteration, KeyboardInterrupt, SystemExit): 
@@ -798,10 +798,10 @@ class APRSIS(object):
                 # Sleep for delta seconds
                 e.wait(delta)
 
-            print "APRS-IS watchdog thread ended"
+            print("APRS-IS watchdog thread ended")
 
         except (StopIteration, KeyboardInterrupt, SystemExit): 
-            print "APRS-IS watchdog thread ended"
+            print("APRS-IS watchdog thread ended")
 
 
     ##################################################
@@ -825,10 +825,10 @@ class APRSIS(object):
                 # Put this filter into effect
                 self.ais.set_filter(filterstring)
 
-            print "APRS-IS filter thread ended"
+            print("APRS-IS filter thread ended")
 
         except (StopIteration, KeyboardInterrupt, SystemExit): 
-            print "APRS-IS filter thread ended"
+            print("APRS-IS filter thread ended")
 
 
     ##################################################
@@ -856,7 +856,7 @@ class APRSIS(object):
             self.close()
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Database error:  ", error
+            print(thetime, "Database error:  ", error)
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             self.close()
 
@@ -936,7 +936,7 @@ class aprsTap(APRSIS):
             self.close()
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Database error:  ", error
+            print(thetime, "Database error:  ", error)
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
@@ -1098,7 +1098,7 @@ class cwopTap(APRSIS):
             self.close()
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Database error:  ", error
+            print(thetime, "Database error:  ", error)
         except (StopIteration, KeyboardInterrupt, SystemExit): 
             pgCursor.close()
             self.close()
@@ -1119,16 +1119,16 @@ def tapProcess(configuration, aprsserver, typeoftap, radius, e):
     except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
         ts = datetime.datetime.now()
         thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print thetime, "Closing APRS(", aprsserver, ") Tap: ", error
+        print(thetime, "Closing APRS(", aprsserver, ") Tap: ", error)
         tap.close()
-        print "Tap ended: ", aprsserver
+        print("Tap ended: ", aprsserver)
 
     except pg.DatabaseError as error:
         ts = datetime.datetime.now()
         thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print thetime, "[tapProcess(", aprsserver, ")] Database error:  ", error
+        print(thetime, "[tapProcess(", aprsserver, ")] Database error:  ", error)
         tap.close()
     except (KeyboardInterrupt, SystemExit):
         tap.close()
-        print "Tap ended: ", aprsserver
+        print("Tap ended: ", aprsserver)
 
