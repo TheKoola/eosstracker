@@ -862,7 +862,7 @@ class infoCmd(object):
 
                     # compute the md5 hash of the beacon and user's callsigns, but save only the last four hex digits.  This will become a unique string to identify the object.
                     hash_this = callsign.upper() + self.callsign.upper()
-                    md5hash = hashlib.md5(hash_this).hexdigest()[-4:]
+                    md5hash = hashlib.md5(hash_this.encode('UTF-8', 'ignore')).hexdigest()[-4:]
 
                     objectname = callsign.split("-")[0][0:4] + "." + md5hash.upper()
                     objectname = objectname + " "*(9 - len(objectname))
