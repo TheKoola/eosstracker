@@ -30,14 +30,14 @@ import psutil
 import os
 import signal
 
-KISS_FEND = 0xC0    # Frame start/end marker
-KISS_FESC = 0xDB    # Escape character
-KISS_TFEND = 0xDC   # If after an escape, means there was an 0xC0 in the source message
-KISS_TFESC = 0xDD   # If after an escape, means there was an 0xDB in the source message
+KISS_FEND = b'\xC0'    # Frame start/end marker
+KISS_FESC = b'\xDB'    # Escape character
+KISS_TFEND = b'\xDC'   # If after an escape, means there was an 0xC0 in the source message
+KISS_TFESC = b'\xDD'   # If after an escape, means there was an 0xDB in the source message
 KISS_FESC_TFESC = b''.join([bytes(KISS_FESC), bytes(KISS_TFESC)])
 KISS_FESC_TFEND = b''.join([bytes(KISS_FESC), bytes(KISS_TFEND)])
-AX25_CONTROL_FIELD = 0x03
-AX25_PROTOCOL_ID = 0xF0
+AX25_CONTROL_FIELD = b'\x03'
+AX25_PROTOCOL_ID = b'\xF0'
 INFO_DELIM = AX25_CONTROL_FIELD + AX25_PROTOCOL_ID
 
 #####################################
@@ -181,7 +181,8 @@ class KISS(object):
                         if raw:
 
                             # split out the pieces of the data returned
-                            fend_pieces = raw.split(chr(KISS_FEND))
+                            #fend_pieces = raw.split(chr(KISS_FEND))
+                            fend_pieces = raw.split(KISS_FEND)
                             num_fends = len(fend_pieces)
 
                             debugmsg("raw: {}, fend_pieces({}): {}".format(type(raw), num_fends, fend_pieces))
@@ -232,11 +233,14 @@ class KISS(object):
                             # ..
 
                             for f in frames:
-                                channel = ord(f[0]) >> 4
+                                debugmsg("type(f[0]): {}, f[0]: {}".format(type(f[0]), f[0]))
+                                #channel = ord(f[0]) >> 4
+                                channel = f[0] >> 4
 
                                 # Strip off the first byte, as that's the KISS data frame byte
                                 s = f[1:]
-                                s = s.strip(chr(KISS_FEND))
+                                #s = s.strip(chr(KISS_FEND))
+                                s = s.strip(KISS_FEND)
 
                                 packet = self.parseFrame(s)
 
@@ -289,7 +293,8 @@ class KISS(object):
         """
 
         # Recover escaped FEND codes
-        tmp = s.replace(KISS_FESC_TFESC, chr(KISS_FESC)).replace(KISS_FESC_TFEND, chr(KISS_FEND))
+        #tmp = s.replace(KISS_FESC_TFESC, chr(KISS_FESC)).replace(KISS_FESC_TFEND, chr(KISS_FEND))
+        tmp = s.replace(KISS_FESC_TFESC, KISS_FESC).replace(KISS_FESC_TFEND, KISS_FEND)
 
         # Now remove the first DF frame code from the beginning and any newline/space chars
         tmp.strip()
@@ -304,11 +309,13 @@ class KISS(object):
 
         addr = data[cursor:cursor+7]
 
-        h = (ord(addr[6]) >> 7) & 0x1
-        ssid = (ord(addr[6]) >> 1) & 0xf     
-        ext = ord(addr[6]) & 0x1
+        h = (addr[6] >> 7) & 0x1
+        ssid = (addr[6] >> 1) & 0xf     
+        ext = addr[6] & 0x1
 
-        converted_addr = ''.join([chr(ord(a) >> 1) for a in addr[0:6]])
+        #converted_addr = ''.join([chr(ord(a) >> 1) for a in addr[0:6]])
+        converted_addr = b''.join([bytes([a>> 1]) for a in addr[0:6]])
+        debugmsg("type(converted_addr): {}, converted_addr: {}".format(type(converted_addr), converted_addr))
         address = converted_addr.decode("UTF-8", "ignore")
 
         if ssid != 0:
@@ -322,7 +329,7 @@ class KISS(object):
         if ctrl == 0x3:
             pos += 1
             info = data[pos:]
-            infopart = info.rstrip('\xff\x0d\x20\x0a').decode("UTF-8", "ignore")
+            infopart = info.rstrip(b'\xff\x0d\x20\x0a').decode("UTF-8", "ignore")
             return infopart
         else:
             return None
@@ -372,7 +379,8 @@ class KISS(object):
             return None
 
         # control code
-        ctrl = ord(frame[pos])
+        #ctrl = ord(frame[pos])
+        ctrl = frame[pos]
         pos += 1
       
         # if this is a U frame

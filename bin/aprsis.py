@@ -109,6 +109,9 @@ class aisConnection(aprslib.IS):
 
         line = ''
 
+        # This is the integer for the '#' character
+        comment_char = ord('#')
+
         while not e.is_set():
             try:
                 # Check socket readiness
@@ -116,7 +119,7 @@ class aisConnection(aprslib.IS):
                     ready = select.select([self.sock], [], [], 10.0)
 
                 for line in self._socket_readlines(blocking):
-                    if line[0] != "#":
+                    if line[0] != comment_char:
 
                         if raw:
                             callback(line)
@@ -524,10 +527,15 @@ class APRSIS(object):
 
                 # Make sure the info part is a string
                 if type(info) is bytes:
-                    info = info.decode("UTF-8", "ignore")
+                    # remvove nul chars from info
+                    info = info.replace(bytes([0x00]), b'')
 
-                # remvove nul chars from info
-                info = info.replace(chr(0x00), '')
+                    # Decode this to a string
+                    info = info.decode("UTF-8", "ignore")
+                else:
+                    # remvove nul chars from info
+                    info = info.replace(chr(0x00), '')
+
             else:
                 ptype = ""
                 info = ""
@@ -674,12 +682,16 @@ class APRSIS(object):
             # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
             debugmsg("Unable to parse APRS packet: {}".format(exp))
 
-            # Remove any NUL characters in the packet
-            x = x.replace(chr(0x00), '')
-
             # If this is s bytes string, then convert it to UTF-8
             if type(x) is bytes:
+                # Remove any NUL characters in the packet
+                x = x.replace(bytes([0x00]), b'')
+
+                # Decode this to string
                 x = x.decode("UTF-8", "ignore")
+            else:
+                # Remove any NUL characters in the packet
+                x = x.replace(chr(0x00), '')
 
             # Find the ">" character and get the length of the packet string
             s = x.find(">")
@@ -704,16 +716,25 @@ class APRSIS(object):
 
                 # Make sure the info part is a string
                 if type(info) is bytes:
+                    # remvove nul chars from info
+                    info = info.replace(bytes([0x00]), b'')
+
+                    # Decode this to a string
                     info = info.decode("UTF-8", "ignore")
 
-                # remvove nul chars from info
-                info = info.replace(chr(0x00), '')
+                else:
+                    # remvove nul chars from info
+                    info = info.replace(chr(0x00), '')
 
             # if we've been able to parse the packet then proceed, otherwise, we skip
             if callsign and ptype and info:
 
                 # Make sure the packet doesn't have a null character in it.
-                x = x.replace(chr(0x00), '').strip()
+                if type(x) is bytes:
+                    x = x.replace(bytes([0x00]), b'').strip()
+                else:
+                    x = x.replace(chr(0x00), '').strip()
+
 
                 # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
                 sql = """insert into packets (tm, source, channel, callsign, raw, ptype, hash) values (
