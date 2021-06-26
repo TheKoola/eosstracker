@@ -147,8 +147,8 @@ class aprs_receiver(gr.top_block):
         #    osmosdr_source ---> xlating_fir_filter ---> quad_demod ---> fm_deemphasis ---> audio_lowpass_filter ---> agc ---> float_to_short ---> UDP_sink
         #
         for freq,port,p,sn in self.Frequencies:
-            #print "   channel:  [%d] %dMHz" % (port, freq)
-            #print "   quadrate:  %d" % (self.quadrate)
+            #print("   channel:  [%d] %dMHz" % (port, freq)
+            #print("   quadrate:  %d" % (self.quadrate)
             freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, (self.channel_lowpass_taps), freq-self.center_freq, self.samp_rate)
             blocks_udp_sink = blocks.udp_sink(gr.sizeof_short*1, '127.0.0.1', port, self.mtusize, True)
             blocks_float_to_short = blocks.float_to_short(1, self.scale)
@@ -169,15 +169,15 @@ class aprs_receiver(gr.top_block):
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
 
-        print "GnuRadio parameters for:  ", self.rtl_id
-        print "len(channel taps):  ", len(self.channel_lowpass_taps)
-        print "len(audio taps):  ", len(self.audio_taps)
-        #print "Sample rate:  ", self.samp_rate
-        #print "Channel width (Hz):  ", self.channel_width
-        #print "Direwolf audio rate:  ", self.direwolf_audio_rate
-        #print "Quadrature rate:  ", self.quadrate
-        print "Center frequency(", self.rtl_id, "):  ", self.center_freq
-        #print "Xlating decimation:  ", self.decimation
+        print("GnuRadio parameters for:  ", self.rtl_id)
+        print("len(channel taps):  ", len(self.channel_lowpass_taps))
+        print("len(audio taps):  ", len(self.audio_taps))
+        #print("Sample rate:  ", self.samp_rate)
+        #print("Channel width (Hz):  ", self.channel_width)
+        #print("Direwolf audio rate:  ", self.direwolf_audio_rate)
+        #print("Quadrature rate:  ", self.quadrate)
+        print("Center frequency(", self.rtl_id, "):  ", self.center_freq)
+        #print("Xlating decimation:  ", self.decimation)
 
         # Query the osmosdr block to determine just what gain and sample rates it set for the airspy device
         if prefix == "airspy":
