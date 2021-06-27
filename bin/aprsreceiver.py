@@ -99,6 +99,9 @@ class aprs_receiver(gr.top_block):
         freqs = [f[0] for f in freqlist]
         median_freq = min(freqs) + (max(freqs) - min(freqs)) / 2
 
+        # Lambda function for finding the max distance between a given frequency (cf) and a list of frequencies (fs)
+        max_d = lambda fs, cf : max([abs(a - cf) for a in fs])
+
         # Determine the channel width from the frequencies we're listening too
         if median_freq < 150000000:   # 2m band
             self.channel_width = 15000
@@ -107,8 +110,15 @@ class aprs_receiver(gr.top_block):
         elif 410000000 < median_freq < 460000000:  # 70cm band
             self.channel_width = 25000
 
-        # The center frequency rounded to the nearest multiple of the channel_width
-        self.center_freq = int(math.floor(median_freq / self.channel_width) * self.channel_width)
+        # Either round up or down to the nearest 1MHz...then check which has the least distance to the various frequencies
+        cf_a = int(math.floor(median_freq / 1000000) * 1000000)
+        cf_b = int(math.ceil(median_freq / 1000000) * 1000000) 
+
+        # Pick the center frequency that has the least delta between the various frequencies
+        if max_d(freqs, cf_a) < max_d(freqs, cf_b):
+            self.center_freq = cf_a
+        else:
+            self.center_freq = cf_b
 
         # set the source block's center frequency now that we know that.
         self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
