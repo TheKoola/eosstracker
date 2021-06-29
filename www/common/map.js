@@ -569,15 +569,60 @@
 
             // Get the timestamp for the last packet
             var lastpacket = $("#" + callsign + "_hud").data().lastpacket;
+            var timer = $("#" + callsign + "_hud").data().timer;
+            var count = $("#" + callsign + "_hud").data().count;
 
             // The time stamp for "this" packet
             var thispacket = parseDate(feature.properties.time);
 
-            // If this is newer info that what's currently displayed on the HUD, then we update...
-            if (thispacket > lastpacket) {
+            // How long has it been in wall clock seconds since the packet occured?
+            var timeDelta =  Math.floor((new Date() - thispacket) / 1000);
+
+            // If this is newer info that what's currently displayed on the HUD, then we update...and it's been < 2hrs since this packet occured
+            if (thispacket > lastpacket && timeDelta < 7200) {
 
                 // Update the lastpacket timestamp with the time from this packet.
                 $("#" + callsign + "_hud").data("lastpacket", thispacket);
+                $("#" + callsign + "_hud").data("count", 0);
+
+                var timerFunction = function() {
+                    var lastcount = $("#" + callsign + "_hud").data().count;
+                    var newcount = lastcount + 1;
+
+                    var count_string;
+                    if (newcount < 60)
+                        count_string = newcount + "s";
+                    else if (newcount >= 60 && newcount < 3600) {
+                        var mins = Math.floor(newcount / 60);
+                        var secs = newcount - (mins * 60);
+                        count_string = mins + "m " + secs + "s";
+                    }
+                    else if (newcount >= 3600) {
+                        var hrs = Math.floor(newcount / 3600);
+                        var mins = Math.floor((newcount - hrs * 3600) / 60);
+                        var secs = (newcount - hrs * 3600 - mins * 60) - (mins * 60);
+                        count_string = hrs + "hr " + mins + "m " + secs + "s";
+                    }
+
+                    if (newcount >= 40 && newcount < 120) 
+                        count_string = "<mark style=\"background-color: #ffff80;\"> &nbsp; " + count_string + " &nbsp; </mark>";
+                    else if (newcount >= 120)
+                        count_string = "<mark style=\"background-color: #e26969;\"> &nbsp; " + count_string + " &nbsp; </mark>";
+
+                    var hr = hud.getRow(callsign);
+                    if (hr) {
+                        hr.last.innerHTML = count_string;
+                    }
+
+                    $("#" + callsign + "_hud").data("count", newcount);
+                };
+
+                if (timer) {
+                    clearInterval(timer);
+                }
+
+                var x = setInterval(timerFunction, 1000);
+                $("#" + callsign + "_hud").data("timer", x);
 
                 var myheading = feature.properties.myheading * 1.0;
                 var rel_bearing = feature.properties.rel_bearing * 1.0;
@@ -598,17 +643,24 @@
 
                 var hudRow = hud.getRow(callsign);
                 if (hudRow) {
-                    hudRow.altitude.innerHTML = thealtitude + " ft";
+                    var thousandsdigit = parseInt(alt / 1000);
+                    var hundredsdigit = parseInt((alt - thousandsdigit * 1000) / 100);
+                    hudRow.altitude.innerHTML = "<font style=\"font-size: 1.3em; color: black; font-weight: bold;\">" + thousandsdigit + "</font><font style=\"color: blue; font-size: .9em;\">" + hundredsdigit + "</font> kft";
                     hudRow.speed.innerHTML = thespeed + " mph";
-                    hudRow.vrate.innerHTML = thevertrate + " ft/min";
+                    hudRow.vrate.innerHTML = thevertrate.toLocaleString() + " ft/min";
 
                     if (thevertrate > 300) 
-                        hudRow.status.innerHTML = "<mark style=\"background-color: cornflowerblue;\">Ascending</mark>";
+                        hudRow.status.innerHTML = "<mark style=\"background-color: #80b3ff;\"><font style=\"font-variant: small-caps;\"> &nbsp; Ascending &nbsp; </font></mark>";
                     else if (thevertrate < -300)
-                        hudRow.status.innerHTML = "<mark style=\"background-color: orange;\">Descending</mark>";
+                        hudRow.status.innerHTML = "<mark style=\"background-color: #ffcc80;\"><font style=\"font-variant: small-caps;\"> &nbsp; Descending &nbsp; </font></mark>";
                     else
-                        hudRow.status.innerHTML = "<mark style=\"background-color: silver;\">On the ground</mark>";
+                        hudRow.status.innerHTML = "<mark style=\"background-color: lightgreen;\"><font style=\"font-variant: small-caps;\"> &nbsp; On the ground &nbsp; </font></mark>";
                 }
+            }
+            else if (timeDelta >= 7200) {
+                var hudRow = hud.getRow(callsign);
+                if (hudRow) 
+                    hudRow.status.innerHTML = "<mark style=\"background-color: #e26969;\"><font style=\"font-variant: small-caps;\"> &nbsp; No packets for > 2hrs &nbsp; </font></mark>";
             }
         }
     }
@@ -3227,7 +3279,7 @@ function getTrackers() {
                     if (packetsource[j] == "R")
                         bgcolor = "lightgreen";
                     else
-                        bgcolor = "yellow";
+                        bgcolor = "#ffff80";
                     html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
                 }
 
@@ -3239,7 +3291,11 @@ function getTrackers() {
 
                 /* since we're here, update the HUD for this callsign with the last packet path */
                 var hudRow = hud.getRow(beacon);
-                if (hudRow) {
+
+                // How long has it been in wall clock seconds since the packet occured?
+                var timeDelta =  Math.floor((new Date() - lastPacketPath[i].time) / 1000);
+
+                if (hudRow && timeDelta < 7200) {
                     hudRow.lastpath.innerHTML = lastpath_html;
                 }
             }

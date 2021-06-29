@@ -89,6 +89,12 @@ L.Control.Hud = L.Control.extend({
         /* reset the last packet time */
         $("#" + name + "_hud").data("lastpacket", new Date("1970-01-01T00:00:00"));
 
+        /* set the timer interval id to null */
+        $("#" + name + "_hud").data("timer", null);
+
+        /* set the count since the last packet to 0 */
+        $("#" + name + "_hud").data("count", 0);
+
         var beaconSpan = document.createElement('span');
         beaconCell.appendChild(beaconSpan);
         var flightidSpan = document.createElement('span');
@@ -105,6 +111,8 @@ L.Control.Hud = L.Control.extend({
         lastCell.appendChild(lastSpan);
         var statusSpan = document.createElement('span');
         statusCell.appendChild(statusSpan);
+
+        statusSpan.innerHTML = "<mark style=\"background-color: #bfbfbf;\"><font style=\"font-variant: small-caps;\"> &nbsp; n/a &nbsp; </font></mark>";
 
         var thisRow = {
             "beacon"   : beaconSpan,

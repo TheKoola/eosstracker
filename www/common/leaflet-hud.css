@@ -26,20 +26,21 @@
 	display: block; 
 	border: 2px solid #ccc;
     border-radius: 5px;
-	background-color: white;
+	/*background-color: white;*/
+    background: rgba(255, 255, 255, .80);
 	padding: 3px 10px;
     font-size: 1em;
 }
 
 .leaflet-control-hud-table {
-    text-align: middle;
+    text-align: center;
     white-space: nowrap;
     vertical-align: middle;
     border-collapse:  collapse;
     /*border:  solid 1px black; */
 }
 .leaflet-control-hud-cell {
-    text-align: middle;
+    text-align: center;
     white-space: nowrap;
     vertical-align: middle;
     /*border-collapse:  collapse; */
@@ -48,7 +49,7 @@
     margin-bottom:  3px;
     padding-right:  5px;
     padding-left:  5px;
-    font-size:  .9em;
+    font-size:  1.2em;
 }
 
 td.leaflet-control-hud-cellright {
@@ -66,13 +67,15 @@ td.leaflet-control-hud-cellright {
 
 .leaflet-control-hud-header {
     /*color:  white;*/
-    text-decoration:none;
+    text-align:  center;
+    text-decoration: none;
     white-space: nowrap;
     font-variant:  small-caps;
+    border-bottom: solid 1px black;
     /*border:  solid 1px black;*/
     /*background-color: #0074d9; */
     padding-right:  5px;
     padding-left:  5px;
-    font-size:  1.2em;
+    font-size:  1.4em;
 }
 
