@@ -1,0 +1,78 @@
+/*
+*
+##################################################
+#    This file is part of the HABTracker project for tracking high altitude balloons.
+#
+#    Copyright (C) 2021 Jeff Deaton (N6BA)
+#
+#    HABTracker is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    HABTracker is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################
+*
+*/
+
+.leaflet-control-hud {
+	display: block; 
+	border: 2px solid #ccc;
+    border-radius: 5px;
+	background-color: white;
+	padding: 3px 10px;
+    font-size: 1em;
+}
+
+.leaflet-control-hud-table {
+    text-align: middle;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    /*border:  solid 1px black; */
+}
+.leaflet-control-hud-cell {
+    text-align: middle;
+    white-space: nowrap;
+    vertical-align: middle;
+    /*border-collapse:  collapse; */
+    /*border:  solid 1px black; */
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+}
+
+td.leaflet-control-hud-cellright {
+    text-align: right;
+    white-space: nowrap;
+    vertical-align: middle;
+    /*border-collapse:  collapse; */
+    /*border:  solid 1px black;*/
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  2px;
+    padding-left:  5px;
+    font-size:  .9em;
+}
+
+.leaflet-control-hud-header {
+    /*color:  white;*/
+    text-decoration:none;
+    white-space: nowrap;
+    font-variant:  small-caps;
+    /*border:  solid 1px black;*/
+    /*background-color: #0074d9; */
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
+}
+

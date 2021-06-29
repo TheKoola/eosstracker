@@ -61,6 +61,7 @@
     var lookbackPeriod = 180;
     var updateType = "regular";
     var gpsStatusBox;
+    var hud;
 
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
@@ -259,6 +260,7 @@
 
                         // Update the telemetry and other sidebar content for this flight
                         updateSideBar(feature);
+                        updateHud(feature);
 
 	        	    }
                     // ...if it's NOT a balloon (i.e. a path, or burst, or prior beacon location then we don't want a hyperlink in the popup.
@@ -411,6 +413,7 @@
 
                 // Update the telemetry and other sidebar content for this flight
                 updateSideBar(item);
+                updateHud(item);
             }
             //...otherwise, we don't want a hyper link because this is a path of some sort.
             else 
@@ -535,6 +538,82 @@
 
         return thisdate;
     }
+
+    /************
+     * updateHud
+     *
+     * This function will update the HUD for this beacon with telemetry data
+     ************/
+    function updateHud(feature) {
+
+        // Make sure we've got valid values for this packet before we try to update the gauges and the sidebar data
+        if (typeof(feature.properties.altitude)    != "undefined" && 
+            typeof(feature.properties.bearing)     != "undefined" &&
+            typeof(feature.properties.speed)       != "undefined" &&
+            typeof(feature.properties.verticalrate)!= "undefined" &&
+            typeof(feature.properties.flightid)    != "undefined" &&
+            typeof(feature.properties.callsign)    != "undefined" &&
+            typeof(feature.properties.time)        != "undefined" &&
+            typeof(feature.properties.source)      != "undefined" &&
+            typeof(feature.geometry.coordinates)   != "undefined" &&
+            typeof(feature.properties.myheading)   != "undefined" &&
+            typeof(feature.properties.rel_angle)   != "undefined" &&
+            typeof(feature.properties.rel_bearing) != "undefined" &&
+            typeof(feature.properties.rel_distance)!= "undefined") {
+
+            // The flightid
+            var flightid = feature.properties.flightid;
+
+            // The callsign
+            var callsign = feature.properties.callsign;
+
+            // Get the timestamp for the last packet
+            var lastpacket = $("#" + callsign + "_hud").data().lastpacket;
+
+            // The time stamp for "this" packet
+            var thispacket = parseDate(feature.properties.time);
+
+            // If this is newer info that what's currently displayed on the HUD, then we update...
+            if (thispacket > lastpacket) {
+
+                // Update the lastpacket timestamp with the time from this packet.
+                $("#" + callsign + "_hud").data("lastpacket", thispacket);
+
+                var myheading = feature.properties.myheading * 1.0;
+                var rel_bearing = feature.properties.rel_bearing * 1.0;
+                var bearing = feature.properties.bearing * 1.0;
+                var angle = feature.properties.rel_angle * 1.0;
+                var distance = feature.properties.rel_distance * 1.0;
+                var lat = feature.geometry.coordinates[1] * 1.0;
+                var lon = feature.geometry.coordinates[0] * 1.0;
+                var alt = feature.properties.altitude * 1.0;
+                var spd = feature.properties.speed * 1.0;
+                var vrate = feature.properties.verticalrate * 1.0;
+
+                // The telemetry values
+                var thealtitude = Math.round(alt);
+                var theheading = Math.round(bearing);
+                var thespeed = Math.round(spd);
+                var thevertrate = Math.round(vrate);
+
+                var hudRow = hud.getRow(callsign);
+                if (hudRow) {
+                    hudRow.altitude.innerHTML = thealtitude + " ft";
+                    hudRow.speed.innerHTML = thespeed + " mph";
+                    hudRow.vrate.innerHTML = thevertrate + " ft/min";
+
+                    if (thevertrate > 300) 
+                        hudRow.status.innerHTML = "<mark style=\"background-color: cornflowerblue;\">Ascending</mark>";
+                    else if (thevertrate < -300)
+                        hudRow.status.innerHTML = "<mark style=\"background-color: orange;\">Descending</mark>";
+                    else
+                        hudRow.status.innerHTML = "<mark style=\"background-color: silver;\">On the ground</mark>";
+                }
+            }
+        }
+    }
+
+
 
 
     /************
@@ -676,6 +755,8 @@
                 $(speedValue).text(thespeed);
                 //******** end: Update the telemetry gauges for this flight **********
                 
+
+
                 
                 //******** start: Update the packet receive path for this flight **********
                 //
@@ -1834,6 +1915,9 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
+        // Add the HUD to the top right
+        hud = L.control.hud({displayHeader: true}).addTo(map);
+
         // Add the GPS status box to the top right
         gpsStatusBox = L.control.gpsbox().addTo(map);
         setTimeout( function() {
@@ -1985,6 +2069,12 @@ function getTrackers() {
 
                 /* Add these layers to the map's layer control */
                 layerControl.addOverlay(activeflightlayer, flightids[key].callsigns[key2], "Flight:  " + flightids[key].flightid);
+
+                /* Add a row to the HUD for this beacon */
+                var thisRow = hud.addRow(flightids[key].callsigns[key2]);
+                thisRow.beacon.innerHTML = flightids[key].callsigns[key2];
+                thisRow.flightid.innerHTML = flightids[key].flightid;
+
             }
 
             /* The Trackers and Predict File layers */
@@ -3140,10 +3230,18 @@ function getTrackers() {
                         bgcolor = "yellow";
                     html = html + "<mark style=\"background-color: " + bgcolor + ";\">" + packetsource[j] + "</mark>";
                 }
+
+                var lastpath_html = "n/a";
                 if (packetsource.length > 0)
-                    packetcell.innerHTML = "<pre class=\"packetdata\">" + html + "</pre>";
-                else
-                    packetcell.innerHTML = "n/a";
+                    lastpath_html = "<pre class=\"packetdata\">" + html + "</pre>";
+
+                packetcell.innerHTML = lastpath_html;
+
+                /* since we're here, update the HUD for this callsign with the last packet path */
+                var hudRow = hud.getRow(beacon);
+                if (hudRow) {
+                    hudRow.lastpath.innerHTML = lastpath_html;
+                }
             }
         }
 
