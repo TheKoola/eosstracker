@@ -62,6 +62,34 @@ class aprs_receiver(gr.top_block):
         self.osmosdr_source_0.set_antenna('', 0)
         self.osmosdr_source_0.set_bandwidth(0, 0)
 
+        # Find the median frequency we're listening too
+        freqs = [f[0] for f in freqlist]
+        median_freq = min(freqs) + (max(freqs) - min(freqs)) / 2
+
+        # Lambda function for finding the max distance between a given frequency (cf) and a list of frequencies (fs)
+        max_d = lambda fs, cf : max([abs(a - cf) for a in fs])
+
+        # Determine the channel width from the frequencies we're listening too
+        if median_freq < 150000000:   # 2m band
+            self.channel_width = 15000
+        elif 220000000 < median_freq < 230000000:  # 1.25m band
+            self.channel_width = 20000
+        elif 410000000 < median_freq < 460000000:  # 70cm band
+            self.channel_width = 25000
+
+        # Either round up or down to the nearest 1MHz...then check which has the least distance to the various frequencies
+        cf_a = int(math.floor(float(median_freq) / 1000000.0) * 1000000)
+        cf_b = int(math.ceil(float(median_freq) / 1000000.0) * 1000000) 
+
+        # Pick the center frequency that has the least delta between the various frequencies
+        if max_d(freqs, cf_a) < max_d(freqs, cf_b):
+            self.center_freq = cf_a
+        else:
+            self.center_freq = cf_b
+
+        # set the source block's center frequency now that we know that.
+        self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
+
         # Airspy R2 / Mini can only accommodate specific sample rates and uses device specific RF gains, so we need to adjust values to accommodate
         if prefix == "airspy":
             self.direwolf_audio_rate = 50000
@@ -81,8 +109,52 @@ class aprs_receiver(gr.top_block):
         else: 
             self.direwolf_audio_rate = 48000
 
-            # Set the sample rate as a multiple of the direwolf audio rate
-            self.samp_rate = self.direwolf_audio_rate * 42
+            # For the determined center frequency (above) we find the maximum distance between it and the freqs we're listening too.   Multiple that "spread" by two, 
+            # then round up to the nearest multiple of the direwolf audio rate (i.e. 48k).  The idea being we want a sample rate that is 2 x the max spread between 
+            # the center frequency and all those we're listening too.   We choose 2x because of nyquist.
+            spread = int(math.ceil(max_d(freqs, self.center_freq) * 2.0 / self.direwolf_audio_rate) * self.direwolf_audio_rate)
+
+            # Now check if our calculated sample rate falls within the allowed sample rates for the RTL-SDR device.
+            # For reference, valid sample rates for RTL-SDR dongles:
+            # 225001 to 300000 and 900001 to 3200000
+            if spread < 225001:
+
+                # get the multiple vs. the direwolf audio rate
+                n = int(math.ceil(225001.0 / self.direwolf_audio_rate))
+
+                # make sure we're using an even multiple of the direwolf audio rate (for nice decimations later on)
+                if n % 2:
+                    n = n + 1
+
+                # set the sample rate
+                self.samp_rate = self.direwolf_audio_rate * n
+
+            elif spread > 2200000:
+
+                # get the multiple vs. the direwolf audio rate
+                n = int(math.ceil(2200000.0 / self.direwolf_audio_rate))
+
+                # make sure we're using an even multiple of the direwolf audio rate (for nice decimations later on)
+                if n % 2:
+                    n = n + 1
+
+                # set the sample rate
+                self.samp_rate = self.direwolf_audio_rate * n
+
+            elif 300000 < spread < 900001:
+                
+                # get the multiple vs. the direwolf audio rate
+                n = int(math.ceil(900001.0 / self.direwolf_audio_rate))
+
+                # make sure we're using an even multiple of the direwolf audio rate (for nice decimations later on)
+                if n % 2:
+                    n = n + 1
+
+                # set the sample rate
+                self.samp_rate = self.direwolf_audio_rate * n
+
+            else:   # otherwise, we're good
+                self.samp_rate = spread
 
             # Turn on hardware AGC
             self.osmosdr_source_0.set_gain_mode(True, 0)
@@ -94,34 +166,6 @@ class aprs_receiver(gr.top_block):
 
         # set the source block's sample rate now that we know that.
         self.osmosdr_source_0.set_sample_rate(self.samp_rate)
-
-        # Find the median frequency we're listening too
-        freqs = [f[0] for f in freqlist]
-        median_freq = min(freqs) + (max(freqs) - min(freqs)) / 2
-
-        # Lambda function for finding the max distance between a given frequency (cf) and a list of frequencies (fs)
-        max_d = lambda fs, cf : max([abs(a - cf) for a in fs])
-
-        # Determine the channel width from the frequencies we're listening too
-        if median_freq < 150000000:   # 2m band
-            self.channel_width = 15000
-        elif 220000000 < median_freq < 230000000:  # 1.25m band
-            self.channel_width = 20000
-        elif 410000000 < median_freq < 460000000:  # 70cm band
-            self.channel_width = 25000
-
-        # Either round up or down to the nearest 1MHz...then check which has the least distance to the various frequencies
-        cf_a = int(math.floor(median_freq / 1000000) * 1000000)
-        cf_b = int(math.ceil(median_freq / 1000000) * 1000000) 
-
-        # Pick the center frequency that has the least delta between the various frequencies
-        if max_d(freqs, cf_a) < max_d(freqs, cf_b):
-            self.center_freq = cf_a
-        else:
-            self.center_freq = cf_b
-
-        # set the source block's center frequency now that we know that.
-        self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
 
         # FM channel low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.  
         self.channel_transition_width = 1000
@@ -182,7 +226,7 @@ class aprs_receiver(gr.top_block):
         print "GnuRadio parameters for:  ", self.rtl_id
         print "len(channel taps):  ", len(self.channel_lowpass_taps)
         print "len(audio taps):  ", len(self.audio_taps)
-        #print "Sample rate:  ", self.samp_rate
+        print "Sample rate (", self.rtl_id, "):  ", self.samp_rate
         #print "Channel width (Hz):  ", self.channel_width
         #print "Direwolf audio rate:  ", self.direwolf_audio_rate
         #print "Quadrature rate:  ", self.quadrate
