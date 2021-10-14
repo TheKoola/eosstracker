@@ -1455,7 +1455,8 @@ class LandingPredictor(PredictorBase):
                                     --floor(extract(epoch from a.tm) / 30) * 30
 
                                     order by 
-                                    a.tm asc
+                                    a.tm asc,
+                                    a.channel desc
                                 )
 
                                 from 
@@ -1478,6 +1479,7 @@ class LandingPredictor(PredictorBase):
                         
                         where 
                         c.dense_rank = 1
+                        and abs(extract('epoch' from (c.thetime::time - c.packet_time::time))) < 120
 
                     ) as y
                     left outer join
@@ -1519,6 +1521,11 @@ class LandingPredictor(PredictorBase):
                         r.tm
                     ) as lp
                     on lp.flightid = y.flightid and lp.callsign = y.callsign
+                    
+                where
+                    abs(y.lat - y.previous_lat) < 1 
+                    and abs(y.lon - y.previous_lon) < 1 
+                    and abs(y.altitude - y.previous_altitude) < 10000
 
                 order by
                     y.callsign,
