@@ -829,7 +829,8 @@ class infoCmd(object):
                         l.tm as thetime,
                         st_y(l.location2d) as lat,
                         st_x(l.location2d) as lon,
-                        round(ttl) as ttl
+                        round(ttl) as ttl,
+                        round(coef_a, 9) as coef
 
                     from
                         landingpredictions l
@@ -837,7 +838,7 @@ class infoCmd(object):
                     where 
                         l.flightid = %s
                         and l.callsign = %s
-                        and l.tm > (now() - interval '00:20:00')
+                        and l.tm > (now() - interval '20:20:00')
                         and l.tm > now()::date
                         and l.thetype in ('predicted', 'wind_adjusted', 'translated')
 
@@ -882,12 +883,17 @@ class infoCmd(object):
                     lon = "{:02d}{:05.2f}{}".format(abs(degrees), abs(minutes), "E" if r[2] >= 0 else "W")
 
                     # create a string for the TTL value
-                    ttl_string = "";
+                    ttl_string = ""
                     if r[3]:
                         ttl = float(r[3]) / 60.0
-                        ttl_string = "Time to live: " + str(int(ttl)) + "mins"
+                        ttl_string = "Time to live: " + str(int(ttl)) + ("min" if int(ttl) == 1 else "mins")
+
+                    # Create the flight descent coefficient string
+                    coef_string = ""
+                    if r[4]:
+                        coef_string = " coef:" + str(r[4])
           
-                    objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + " (from " + self.callsign + ")"
+                    objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + coef_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
 
             except pg.DatabaseError as error:
