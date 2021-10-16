@@ -830,7 +830,8 @@ class infoCmd(object):
                         st_y(l.location2d) as lat,
                         st_x(l.location2d) as lon,
                         round(ttl) as ttl,
-                        round(coef_a, 9) as coef
+                        round(coef_a, 9) as coef,
+                        l.thetype
 
                     from
                         landingpredictions l
@@ -890,7 +891,7 @@ class infoCmd(object):
 
                     # Create the flight descent coefficient string
                     coef_string = ""
-                    if r[4]:
+                    if r[4] and (r[5] == "predicted" or r[5] == "wind_adjusted"):
                         coef_string = " coef:" + str(r[4])
           
                     objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + coef_string + " (from " + self.callsign + ")"
