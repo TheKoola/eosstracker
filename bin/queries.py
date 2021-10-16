@@ -321,9 +321,21 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
                 ) as y
                 
             where
-                abs(y.lat - y.previous_lat) < 1 
-                and abs(y.lon - y.previous_lon) < 1 
-                and abs(y.altitude - y.previous_altitude) < 10000
+                case when y.delta_secs > 0 then
+                    abs((y.altitude - y.previous_altitude) / y.delta_secs)
+                else
+                    0
+                end < 1000
+                and case when y.delta_secs > 0 then
+                    abs((y.lat - y.previous_lat) / y.delta_secs)
+                else
+                    0
+                end < .04
+                and case when y.delta_secs > 0 then
+                    abs((y.lon - y.previous_lon) / y.delta_secs)
+                else
+                    0
+                end < .04
 
             order by
                 y.callsign,
