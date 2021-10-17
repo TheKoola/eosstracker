@@ -197,6 +197,10 @@ class infoCmd(object):
         # Information string
         infoStrings = []
 
+        if debug:
+            for r in flightrecords:
+                debugmsg("landing_coords:  " + r[0] + " :: " + r[1])
+                
         # Loop through the list of beacons
         for rec in flightrecords:
 
@@ -236,10 +240,45 @@ class infoCmd(object):
                     ;
                 """
 
+                # Execute the query to get the most recent landing prediction for this callsign
                 wxcur.execute(lastlandingprediction_sql, [ fid, callsign ])
                 rows = wxcur.fetchall()
+                debugmsg("landing prediction for " + callsign + ": " + str(len(rows)))
 
+                # Check if there are any packets available for this callsign
+                packets = queries.getLatestPackets(self.dbconn, callsign, self.timezone, 20)
+                debugmsg("# of packets(" + callsign + "): " + str(len(packets)))
+                if len(packets) > 0:
+
+                    # Get the amount of time that's elapsed since the last packet we heard
+                    minutes_elapsed = packets[-1][7]
+
+                    debugmsg("minutes_elapsed:  " + str(minutes_elapsed))
+
+                    # If there was a landing prediction available then we compare the TTL to the amount of
+                    # time elapsed since the last packet heard
+                    if len(rows) > 0:
+                        t = float(rows[0][3]) / 60.0
+                        
+                        debugmsg("ttl: " + str(t))
+                        # If more time has elapsed than the TTL was indicating, plus a little buffer (ex. 5mins), then 
+                        # chances are the flight is already on the ground.
+                        if minutes_elapsed > t + 5:
+                            debugmsg("Skipping " + callsign + " as too much time has elapsed")
+                            continue
+                    else: 
+                        debugmsg("No recent landing predictions available for " + callsign)
+                        continue
+                else:
+                    # no packets were returned so we shouldn't construct an infostring for this callsign
+                    continue
+
+
+                # If we're here, then there are recent packets from this callsign that we've heard and there's still
+                # time left in the flight before it touched down.
+                #
                 # Loop through the rows returned creating an APRS object packet for the landing prediction
+                debugmsg("Processing records for:  " + callsign)
                 for r in rows:
                     #infoString = "{{{{z{}|L|{:.6f},{:.6f}".format(callsign, r[1], r[2])
 
@@ -273,12 +312,18 @@ class infoCmd(object):
                     ttl_string = ""
                     if r[3]:
                         ttl = float(r[3]) / 60.0
-                        ttl_string = "Time to live: " + str(int(ttl)) + ("min" if int(ttl) == 1 else "mins")
+                        ttl_string = "TTL: " + str(int(ttl)) + ("min" if int(ttl) == 1 else "mins")
 
                     # Create the flight descent coefficient string
                     coef_string = ""
                     if r[4] and (r[5] == "predicted" or r[5] == "wind_adjusted"):
                         coef_string = " coef:" + str(r[4])
+
+                        # Add the number of packets used for the landing prediction to the end of the coef string.
+                        # This isn't the "exact" number of packets used in the prediction algo, but it's close
+                        # and is a good indicator of the accuracy of the prediction.
+                        if len(packets) > 0:
+                            coef_string += "," + str(len(packets))
           
                     objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + coef_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
