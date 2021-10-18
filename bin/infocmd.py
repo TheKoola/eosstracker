@@ -248,6 +248,9 @@ class infoCmd(object):
                 # Check if there are any packets available for this callsign
                 packets = queries.getLatestPackets(self.dbconn, callsign, self.timezone, 20)
                 debugmsg("# of packets(" + callsign + "): " + str(len(packets)))
+
+                minutes_elapsed = -1
+
                 if len(packets) > 0:
 
                     # Get the amount of time that's elapsed since the last packet we heard
@@ -308,12 +311,6 @@ class infoCmd(object):
                     minutes = (r[2] - degrees) * 60
                     lon = "{:02d}{:05.2f}{}".format(abs(degrees), abs(minutes), "E" if r[2] >= 0 else "W")
 
-                    # create a string for the TTL value
-                    ttl_string = ""
-                    if r[3]:
-                        ttl = float(r[3]) / 60.0
-                        ttl_string = "TTL: " + str(int(ttl)) + ("min" if int(ttl) == 1 else "mins")
-
                     # Create the flight descent coefficient string
                     coef_string = ""
                     if r[4] and (r[5] == "predicted" or r[5] == "wind_adjusted"):
@@ -324,7 +321,23 @@ class infoCmd(object):
                         # and is a good indicator of the accuracy of the prediction.
                         if len(packets) > 0:
                             coef_string += "," + str(len(packets))
-          
+
+                    # create a string for the TTL value
+                    ttl_string = ""
+                    if r[3]:
+                        ttl = float(r[3]) / 60.0
+
+                        # Adjust the time to live (TTL) based on how much time has elapsed since we last heard a packet
+                        if minutes_elapsed > -1:
+                            ttl = (0 if ttl - minutes_elapsed < 0 else ttl - minutes_elapsed)
+
+                        # If the time to live is 0, then just report that the flight is on the ground IF it's been 5mins past the original TTL value (i.e. a small time buffer).
+                        if int(ttl) == 0 and ttl < minutes_elapsed + 5:
+                            ttl_string = "On the ground."
+                            coef_string = ""
+                        else:
+                            ttl_string = "TTL: " + str(int(ttl)) + ("min" if int(ttl) == 1 else "mins")
+
                     objectPacket = ";" + objectname + "*" + timestring + "h" + lat + "\\" + lon + "<000/000" + "Predicted landing for " + callsign + ". " + ttl_string + coef_string + " (from " + self.callsign + ")"
                     infoStrings.append(objectPacket)
 
