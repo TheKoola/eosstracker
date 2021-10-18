@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -492,7 +492,7 @@
                                 else
                                     NULL
                                 end as sourcename,
-                                a.frequency as freq,
+                                round(a.frequency / 1000000.0,3) as freq, 
                                 a.channel,
 
                                 -- The temperature (if available) from any KC0D packets
@@ -519,7 +519,6 @@
 
                                     order by 
                                     a.tm asc,
-                                    --date_trunc('second', a.tm) asc,
                                     cast(
                                         cardinality(
                                             (
@@ -537,8 +536,7 @@
                                                 NULL)
                                             )[2:]
                                     ) as int) asc,
-                                    a.source asc,
-                                    a.channel asc
+                                    a.channel desc
                                 ),
                                 case when a.raw similar to '%>%:%' then
                                     (array_remove(string_to_array(regexp_replace(
@@ -575,6 +573,7 @@
 
                         where
                         c.dense_rank = 1
+                        and abs(extract('epoch' from (c.thetime::time - c.packet_time::time))) < 120
 
                     ) as y
                     left outer join
@@ -636,6 +635,23 @@
                         limit 1
                     ) as gps
                     on gps.tm::date = y.thetime::date
+
+                where 
+                    case when y.delta_secs > 0 then
+                        abs((y.altitude - y.previous_altitude) / y.delta_secs)
+                    else
+                        0
+                    end < 1000
+                    and case when y.delta_secs > 0 then
+                        abs((y.lat - y.previous_lat) / y.delta_secs)
+                    else
+                        0
+                    end < .04
+                    and case when y.delta_secs > 0 then
+                        abs((y.lon - y.previous_lon) / y.delta_secs)
+                    else
+                        0
+                    end < .04
 
                 order by
                     y.callsign,
@@ -793,7 +809,7 @@
                 -- The ranking of whether this was heard directly or via a digipeater
                 dense_rank () over (partition by a.callsign order by
                     date_trunc('millisecond', a.tm) desc,
-                    a.channel asc,
+                    a.channel desc,
                     cast(
                         cardinality(
                             (
