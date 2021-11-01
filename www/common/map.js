@@ -3242,6 +3242,10 @@ function getTrackers() {
             getTrackers();
         }, 10);
 
+        // Update the TTL values
+        checkTTL();
+
+        // Update the GPS display
         getgps();
 
         // ...the idea being that ever so often, we should try a special update
@@ -3273,6 +3277,56 @@ function getTrackers() {
             }
         }
     }
+
+
+
+/***********
+* checkTTL
+*
+* This checks the TTL values displayed on the map for each flight.  This provides a means to 
+* update that Time To Live value even if the backend hasn't heard from the flight for some time.
+***********/
+function checkTTL() {
+
+    flightList.forEach(function(f) {
+        // The flight ID
+        var fid = f.flightid;
+
+        // The HTML element where the TTL value is displayed
+        var ttl_elem = $("#" + fid + "_ttl");
+
+        // Get the timestamp for the last packet for this flight
+        var lastpacket = $("#" + fid + "_sidebar").data().lastpacket.getTime();
+
+        // Get the current time
+        var current_time = Date.now();
+
+        // How many mins have elapsed since we last heard a packet from this flight?
+        var delta_mins = Math.floor((current_time - lastpacket) / 1000 / 60);
+
+        // If there's a delta (in mins) then see about adjusting what's displayed on the map. 
+        if (delta_mins > 0) {
+            //******** start: Update the ttl value **********
+            var ttl = ttl_elem.text();
+
+            // if the value is NOT "n/a" or "" then proceed with updating it.  
+            if (ttl != "n/a" && ttl != "") {
+                ttl = ttl.split(" ")[0] * 1.0;
+                ttl = (isNaN(ttl) ? 0 : ttl);
+                var new_ttl = Math.floor(ttl - delta_mins <= 0 ? 0 : ttl - delta_mins);
+                var ttl_string = new_ttl.toString() + (new_ttl == 1 ? "min" : "mins");
+
+                // if more time has elapsed (plus a 5min buffer) then the flight is likely already on the ground.
+                if (new_ttl == 0 && delta_mins > ttl + 5)
+                    ttl_string = "On The Ground";
+
+                // update the display
+                ttl_elem.text(ttl_string);
+            }
+        }
+    });
+}
+
 
 /***********
 * lostFocus
