@@ -82,6 +82,9 @@
     var lastUpdateTime = 0;
     var flightList = [];
 
+    // flight HUD
+    var hud;
+
 
     /***********
     * getChartWidth
@@ -260,6 +263,9 @@
                         // Update the telemetry and other sidebar content for this flight
                         updateSideBar(feature);
 
+                        // Update the HUD with the telemetry from this feature 
+                        if (hud)
+                            hud.update(feature);
 	        	    }
                     // ...if it's NOT a balloon (i.e. a path, or burst, or prior beacon location then we don't want a hyperlink in the popup.
                     else 
@@ -411,6 +417,10 @@
 
                 // Update the telemetry and other sidebar content for this flight
                 updateSideBar(item);
+
+                // Update the HUD with the telemetry from this feature 
+                if (hud)
+                    hud.update(item);
             }
             //...otherwise, we don't want a hyper link because this is a path of some sort.
             else 
@@ -1397,6 +1407,10 @@
 		            document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
                     lookbackPeriod = jsonData.lookbackperiod * 1.0;
 
+                    // Update the HUD with the new lookbackperiod
+                    if (hud)
+                        hud.setCutoff(lookbackPeriod);
+
 		            /*if (jsonData.plottracks == "on")
 			            document.getElementById("plottracks").checked = true;
 		            else
@@ -1434,6 +1448,9 @@
 		    document.getElementById("iconsize").value = jsonData.iconsize;
 		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
             lookbackPeriod = jsonData.lookbackperiod * 1.0;
+
+            if (hud)
+                hud.setCutoff(lookbackPeriod);
 
 		    /*if (jsonData.plottracks == "on")
 			    document.getElementById("plottracks").checked = true;
@@ -1758,6 +1775,48 @@ function getTrackers() {
       });
     }
 
+    /***********
+    * addControlPlaceholders
+    *
+    * Create additional Control element placeholders (i.e. locations where one can place Controls on the map)
+    ***********/
+    function addControlPlaceholders(m) {
+        var corners = m._controlCorners,
+            l = 'leaflet-',
+            container = m._controlContainer;
+
+        function createCorner(vSide, hSide) {
+            var className = l + vSide + ' ' + l + hSide;
+
+            corners[vSide + hSide] = L.DomUtil.create('div', className, container);
+        }
+
+        createCorner('center', 'top');
+        createCorner('center', 'bottom');
+    }
+
+
+    /***********
+    * toggleHUD
+    *
+    * This function will toggle visibility for the HUD on the map
+    ***********/
+    function toggleHUD() {
+        if (hud && map) {
+
+            // if the HUD is on the map already, then remove it
+            if (hud.onMap()) 
+                hud.remove();
+            else {
+                // if the sidebar is open, close it before adding the HUD to the map
+                sidebar.close();
+
+                // Add the HUD to the map
+                hud.addTo(map);
+            }
+       }
+    }
+
 
     /***********
     * initialize_map function
@@ -1793,6 +1852,9 @@ function getTrackers() {
             minZoom: 4,
             maxZoom: 20
         });
+
+        // Add additional locations (ex. center-top and center-bottom) for control elements 
+        addControlPlaceholders(map);
 
         // Set default map location and zoom
         if (latitude != 0 && longitude != 0 && zoom != 0)
@@ -1895,6 +1957,8 @@ function getTrackers() {
 	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
 	    map.addControl(marker_control);
 
+        // Add the HUD to the bottom center
+        hud = L.control.flighthud({ position: "centerbottom", flights: flightids});
     }
 
     /*********
