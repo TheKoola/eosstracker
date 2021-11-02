@@ -597,8 +597,7 @@
                             landingpredictions l
 
                             where
-                            --l.tm > now() - interval '00:10:00'
-                            l.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time)  
+                            l.tm > now() - interval '00:20:00'
                             and l.ttl is not null
 
                             order by
@@ -628,7 +627,7 @@
                         gpsposition g 
 
                         where
-                        g.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time)
+                        g.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time)
 
                         order by 
                         g.tm desc
@@ -668,7 +667,6 @@
                 sql_escape_string($config["lookbackperiod"] . " minute"), 
                 $get_starttime,
                 sql_escape_string($cs),
-                sql_escape_string($config["lookbackperiod"] . " minute"), 
                 sql_escape_string($config["lookbackperiod"] . " minute"), 
                 )
             );
