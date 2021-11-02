@@ -597,7 +597,7 @@
                             landingpredictions l
 
                             where
-                            l.tm > now() - interval '00:10:00'
+                            l.tm > now() - interval '00:20:00'
                             and l.ttl is not null
 
                             order by

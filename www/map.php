@@ -385,7 +385,7 @@
         printf ("<div class=\"div-table\">");
         printf ("   <div class=\"table-row\">");
         printf ("       <div class=\"panel-cell\">");
-        printf ("           <div style=\"margin: 5px;\">Time to live: &nbsp; <span id=\"%s\">n/a mins</span></div>", $row['flightid'] . "_ttl");
+        printf ("           <div style=\"margin: 5px;\">Time to live: &nbsp; <span id=\"%s\">n/a</span></div>", $row['flightid'] . "_ttl");
         printf ("       </div>");
         printf ("   </div>");
         printf ("</div>");

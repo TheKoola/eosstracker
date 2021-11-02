@@ -592,8 +592,14 @@
                 var ttl = "";
                 var ttl_string = "n/a";
                 if (typeof(feature.properties.ttl) != "undefined") {
-                    if (feature.properties.ttl != "") 
+                    if (feature.properties.ttl != "") {
+                        
+                        // Update the lastpacket timestamp with the time from this packet.
+                        $("#" + flightid + "_sidebar").data("ttl", feature.properties.ttl * 1.0);
+
+                        // The string used to update the TTL field on the map
                         ttl_string = feature.properties.ttl + " mins";
+                    }
                     var elem = "#" + flightid + "_ttl";
                     $(elem).text(ttl_string);
                 }
@@ -3306,19 +3312,24 @@ function checkTTL() {
 
         // If there's a delta (in mins) then see about adjusting what's displayed on the map. 
         if (delta_mins > 0) {
-            //******** start: Update the ttl value **********
-            var ttl = ttl_elem.text();
 
-            // if the value is NOT "n/a" or "" then proceed with updating it.  
-            if (ttl != "n/a" && ttl != "") {
-                ttl = ttl.split(" ")[0] * 1.0;
-                ttl = (isNaN(ttl) ? 0 : ttl);
+            // Get the last ttl value for the last packet for this flight
+            var ttl = 0;
+            if (typeof($("#" + fid + "_sidebar").data().ttl) != "undefined")
+                ttl = $("#" + fid + "_sidebar").data().ttl;
+
+            // if there was a valid, non-zero value for the TTL (i.e. not "n/a" or "", then we proceed with updating the value displayed in the sidebar.
+            if (ttl > 0) {
                 var new_ttl = Math.floor(ttl - delta_mins <= 0 ? 0 : ttl - delta_mins);
-                var ttl_string = new_ttl.toString() + (new_ttl == 1 ? "min" : "mins");
+                var ttl_string = new_ttl.toString() + (new_ttl == 1 ? " min" : " mins");
 
-                // if more time has elapsed (plus a 5min buffer) then the flight is likely already on the ground.
-                if (new_ttl == 0 && delta_mins > ttl + 5)
+                // if more time has elapsed (plus a 5min buffer) since the last packet, then the flight is likely already on the ground.
+                if (new_ttl == 0 && delta_mins >= ttl + 5)
                     ttl_string = "On The Ground";
+
+                // If it's been a really long time, then we just set the display back to "n/a"
+                if (delta_mins >= lookbackPeriod)
+                    ttl_string = "n/a";
 
                 // update the display
                 ttl_elem.text(ttl_string);
