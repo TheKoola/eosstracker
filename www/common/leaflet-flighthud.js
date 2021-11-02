@@ -419,6 +419,9 @@ L.Control.FlightHud = L.Control.extend({
                 }
             }
 
+            // If this flight is getting a new update and is on the map, but is not running, then start it.
+            if (!this._isRunning && this._onTheMap) 
+                this.startTimer();
         }
         
         // Without a flightid we cannot proceed
