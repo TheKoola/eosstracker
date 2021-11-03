@@ -261,14 +261,15 @@ class infoCmd(object):
                     # If there was a landing prediction available then we compare the TTL to the amount of
                     # time elapsed since the last packet heard
                     if len(rows) > 0:
-                        t = float(rows[0][3]) / 60.0
-                        
-                        debugmsg("ttl: " + str(t))
-                        # If more time has elapsed than the TTL was indicating, plus a little buffer (ex. 5mins), then 
-                        # chances are the flight is already on the ground.
-                        if minutes_elapsed > t + 5:
-                            debugmsg("Skipping " + callsign + " as too much time has elapsed")
-                            continue
+                        if rows[0][3]:
+                            t = float(rows[0][3]) / 60.0
+                            
+                            debugmsg("ttl: " + str(t))
+                            # If more time has elapsed than the TTL was indicating, plus a little buffer (ex. 5mins), then 
+                            # chances are the flight is already on the ground.
+                            if minutes_elapsed > t + 5:
+                                debugmsg("Skipping " + callsign + " as too much time has elapsed")
+                                continue
                     else: 
                         debugmsg("No recent landing predictions available for " + callsign)
                         continue
