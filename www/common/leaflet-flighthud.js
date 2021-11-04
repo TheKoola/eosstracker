@@ -546,6 +546,7 @@ L.Control.FlightHud = L.Control.extend({
                 var stop = this._clearTimers.bind(this);
                 var reset = this.resetHUD.bind(this);
                 var purge = this.purgeFlight.bind(this);
+                var updatestatus = this.updateFlightStatus.bind(this);
 
                 // use this function to update the time elapsed counter
                 var timerFunction = function() {
@@ -573,7 +574,16 @@ L.Control.FlightHud = L.Control.extend({
                         stop();
                         reset();
                     }
-                    else  {
+                    
+                    // It's been > 60s since we heard from the flight.  So we should then manually update the flight status since we're no longer receiving updates.
+                    else { 
+                        if (f.count > 60) {
+
+                            // we only want to update the flight status every 10secs...no need to do this every second.
+                            if (f.count % 10 == 0) 
+                                updatestatus(f);
+                        }
+
                         // Update the counter HTML element
                         elems.counter.innerHTML = getstring(f.count);
                     }
@@ -750,54 +760,20 @@ L.Control.FlightHud = L.Control.extend({
                     this.elements.beacon.innerHTML = callsignHTML;
                 }
 
-                var statushtml = "";
-                var ascending   = "<mark style=\"background-color: #00a933;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Ascending &nbsp; </font></mark>";
-                var descending  = "<mark style=\"background-color: #ff0000;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Descending &nbsp; </font></mark>";
-                var ontheground = "<mark style=\"background-color: #bfbfbf;\"><font style=\"font-variant: small-caps; color: black;\"> &nbsp; On The Ground &nbsp; </font></mark>"; 
-                var los         = "<mark style=\"background-color: black;\"><font style=\"text-transform: uppercase;  color: white;\"> &nbsp; LOS &nbsp; </font></mark>"; 
                 if (thevertrate > 300)  {
                     this.elements.altitude.innerHTML = "<img src=\"/images/graphics/up-green-arrow.png\" class=\"leaflet-control-flighthud-cell-image\"><font style=\"font-size: 1.3em; color: black; font-weight: bold;\">" + thousandsdigit + "</font><font style=\"color: blue; font-size: .5em;\">" + hundredsdigit + "</font> <font style=\"font-size: .5em;\"> kft</font>";
-                    statushtml = ascending;
-                    //statushtml = "<mark style=\"background-color: #00a933;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Ascending @ " + thevertrate.toLocaleString() + " ft/min </font></mark>";
                     this.elements.speed_direction.innerHTML = textDirection + " (" + theheading + "&deg;) at " + thespeed + " mph";
                 }
                 else if (thevertrate < -300) {
                     this.elements.altitude.innerHTML = "<img src=\"/images/graphics/down-red-arrow.png\" class=\"cleaflet-control-flighthud-cell-image\"><font style=\"font-size: 1.3em; color: black; font-weight: bold;\">" + thousandsdigit + "</font><font style=\"color: blue; font-size: .5em;\">" + hundredsdigit + "</font> kft";
-                    statushtml = descending;
-                    //statushtml = "<mark style=\"background-color: #ff0000;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Descending @ " + thevertrate.toLocaleString() + " ft/min </font></mark>";
                     this.elements.speed_direction.innerHTML = textDirection + " (" + theheading + "&deg;) at " + thespeed + " mph";
                 }
                 else {
                     this.elements.altitude.innerHTML = "<img src=\"/images/graphics/horiz-gray-bar.png\" class=\"leaflet-control-flighthud-cell-image\"><font style=\"font-size: 1.3em; color: black; font-weight: bold;\">" + thousandsdigit + "</font><font style=\"color: blue; font-size: .5em;\">" + hundredsdigit + "</font> kft";
-                    statushtml = ontheground; 
                     this.elements.speed_direction.innerHTML = textDirection + " (" + theheading + "&deg;) at " + thespeed + " mph";
                 }
 
-                // Did we lose contact with the flight?
-                var now = new Date();
-                var last = (feature.properties.time ? parseDate(feature.properties.time) : fid.lastpacket);
-                var delta = now - last;
-                delta /= 1000;
-
-                // If it's been less than 5mins since the last packet then we update status appropriately
-                if (delta < 300) {
-                    if (ttl > 0)
-                        this.elements.ttl.innerHTML = (ttl == 1 ? "TTL: &nbsp; " + ttl + " min" : "TTL: &nbsp; " + ttl + " mins");
-                    else
-                        this.elements.ttl.innerHTML = statushtml;
-                }
-
-                // If it's been longer than 5mins but less than 20mins...
-                else if (delta >= 300 && delta < 1200) {
-                    if (ttl > 0 && delta/60.0 > ttl) 
-                        this.elements.ttl.innerHTML = ontheground;
-                    else 
-                        this.elements.ttl.innerHTML = statushtml;
-                }
-
-                // If it's been longer than 20mins, then we're assuming LOS (loss of signal)
-                else if (delta >= 1200) 
-                    this.elements.ttl.innerHTML = los;
+                this.updateFlightStatus(fid);
 
 
                 // Flash the background to red, then back to white.
@@ -814,6 +790,136 @@ L.Control.FlightHud = L.Control.extend({
                 this.elements.beacon.innerHTML = "No Data Available";
                 this.elements.beacon.setAttribute("style", "font-size: 2em; text-align: center;");
             }
+        }
+    },
+
+    updateFlightStatus: function(fid) {
+
+        var feature = fid.feature;
+
+        if (typeof(feature.properties.ttl) == "undefined" || typeof(feature.properties.verticalrate) == "undefined" || typeof(feature.properties.time) == "undefined")
+            return;
+
+        var ttl = feature.properties.ttl * 1.0;
+        var vrate = Math.round(feature.properties.verticalrate * 1.0);
+        var thevertrate = Math.round(vrate);
+
+        var statushtml = "";
+        var ascending   = "<mark style=\"background-color: #00a933;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Ascending &nbsp; </font></mark>";
+        var descending  = "<mark style=\"background-color: #ff0000;\"><font style=\"font-variant: small-caps; color: white;\"> &nbsp; Descending &nbsp; </font></mark>";
+        var ontheground = "<mark style=\"background-color: #bfbfbf;\"><font style=\"font-variant: small-caps; color: black;\"> &nbsp; On The Ground &nbsp; </font></mark>"; 
+        var los         = "<mark style=\"background-color: black;\"><font style=\"text-transform: uppercase;  color: white;\"> &nbsp; LOS &nbsp; </font></mark>"; 
+
+        // 300 ft/min = 5 ft/sec
+        if (thevertrate > 300)
+            statushtml = ascending;
+        else if (thevertrate < -300)
+            statushtml = descending;
+        else
+            statushtml = ontheground;
+
+        var now = new Date();
+        var last = (feature.properties.time ? parseDate(feature.properties.time) : fid.lastpacket);
+        var delta = now - last;
+        delta /= 1000;
+
+        // If it's been longer than one min, then we adjust the TTL (artificially) by subtracting the delta_mins from the original TTL value.
+        var delta_mins = Math.floor(delta / 60);
+        if (delta_mins > 0) {
+            var ret = this.flightStatus(delta_mins, ttl, 2);
+
+            //    flightStatus return values:
+            //    -4 = ttl was null or none
+            //    -3 = invalid condition, not tracking flight
+            //    -2 = loss of signal, > 20mins since we last heard from the flight
+            //    -1 = the flight is on the ground
+            //     n = adjusted TTL
+            switch(ret) {
+
+                //  -4 = ttl was null or none
+                case -4:
+                    this.elements.ttl.innerHTML = statushtml;
+                    break;
+
+                //  -3 = invalid condition, not tracking flight, should never be here, but JIC
+                case -3:
+                    this.elements.ttl.innerHTML = statushtml;
+                    break;
+
+                //  -2 = loss of signal, > 20mins since we last heard from the flight
+                case -2:
+                    this.elements.ttl.innerHTML = los;
+                    break;
+
+                //  -1 = the flight is on the ground
+                case -1:
+                    this.elements.ttl.innerHTML = ontheground;
+                    this.elements.altitude.innerHTML = "<font style=\"font-size: 1.3em; color: black; font-weight: bold;\">--</font> kft";
+                    this.elements.vrate.innerHTML = "<font style=\"font-size: 1em; color: black; font-weight: bold;\">--</font><br>ft/min";
+                    break;
+
+                //  n = adjusted TTL
+                default:
+                    this.elements.ttl.innerHTML = (ret == 1 ? "TTL: &nbsp; " + ret + " min" : "TTL: &nbsp; " + ret + " mins");
+            }
+        }
+
+        // Otherwise, it's been < 1min since we last heard from the flight and we have a valid TTL (i.e. the flight is descending) then we update the status area with that TTL value.
+        else if (feature.properties.ttl != "" && ttl >= 0) {
+            this.elements.ttl.innerHTML = (ttl == 1 ? "TTL: &nbsp; " + ttl + " min" : "TTL: &nbsp; " + ttl + " mins");
+        }
+
+        // Finally, it's been, < 1min since we last heard from the flight and the flight is not descending, so we just update with status.
+        else {
+            this.elements.ttl.innerHTML = statushtml;
+        }
+    },
+
+
+    /***************************************
+     * flightStatus
+     *
+     * Function to determine the status of a flight is when descending.
+     *
+     *    Return values:
+     *    -4 = ttl was null or none
+     *    -3 = invalid condition, not tracking flight
+     *    -2 = loss of signal, > 20mins since we last heard from the flight
+     *    -1 = the flight is on the ground
+     *     n = adjusted TTL
+     *    
+     *    Inputs:
+     *     delta_mins = number of minutes since we last heard from the the flight
+     *            ttl = number of minutes remaining before the flight touches down as calculated by the landing predictor backend.
+     *    buffer_mins = number of minutes we add to the ttl before declaring the flight is "on the ground".
+     *
+    ***************************************/
+    flightStatus: function(delta_mins, ttl, buffer_mins) {
+
+        // if ttl is None, then we just return as we're only interested in determining flight status during the descent.
+        if (!ttl)
+            return -4;
+
+        // if delta_mins > cutoff, we ignore as we're not longer interested in the flight
+        if (delta_mins > this._cutoff)
+            return -3;
+
+        // if delta_mins > 20mins && <= cutoff, then we declare LOS
+        else if (delta_mins > 20 && delta_mins <= this._cutoff)
+            return -2;
+
+        // If delta_mins <= 20mins, then we we're working the TTL adjustment logic to determine:
+        //     - adjust the TTL
+        //     - or declare that the flight is "on the ground" if delta_mins > ttl
+        else {
+
+
+            // if the elapsed mins since the last packet is greater than the TTL + a buffer, then we declare the flight to be on the ground.
+            if (delta_mins > ttl + buffer_mins) 
+                return -1;
+
+            // Otherwise we return a new TTL value by subtracting the delta_mins from the ttl
+            return Math.floor(ttl - delta_mins <= 0 ? 0 : ttl - delta_mins);
         }
     },
 
