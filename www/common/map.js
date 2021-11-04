@@ -3393,7 +3393,7 @@ function checkTTL() {
 function flightStatus(delta_mins, ttl, buffer_mins) {
 
     // if ttl is None, then we just return as we're only interested in determining flight status during the descent.
-    if (!ttl)
+    if (!ttl && delta_mins <= lookbackPeriod)
         return -4;
 
     // if delta_mins > lookback period, we ignore as we're not longer interested in the flight
