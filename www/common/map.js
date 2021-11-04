@@ -3330,12 +3330,12 @@ function checkTTL() {
             //     n = adjusted TTL
             switch(ret) {
 
-                //  -4 = ttl was null or none
+                //  -4 = ttl was null or none, but delta_mins is still <= lookback period
                 case -4:
-                    ttl_string = "n/a";
+                    ttl_string = "Loss of Signal";
                     break;
 
-                //  -3 = invalid condition, not tracking flight, should never be here, but JIC
+                //  -3 = invalid condition, not tracking flight
                 case -3:
                     ttl_string = "n/a";
                     break;
