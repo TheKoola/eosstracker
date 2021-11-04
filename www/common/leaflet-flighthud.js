@@ -829,16 +829,16 @@ L.Control.FlightHud = L.Control.extend({
             var ret = this.flightStatus(delta_mins, ttl, 2);
 
             //    flightStatus return values:
-            //    -4 = ttl was null or none
+            //    -4 = ttl was null or none, but delta_mins is still < cutoff
             //    -3 = invalid condition, not tracking flight
             //    -2 = loss of signal, > 20mins since we last heard from the flight
             //    -1 = the flight is on the ground
             //     n = adjusted TTL
             switch(ret) {
 
-                //  -4 = ttl was null or none
+                //  -4 = ttl was null or none, but delta_mins is still < cutoff
                 case -4:
-                    this.elements.ttl.innerHTML = statushtml;
+                    this.elements.ttl.innerHTML = los;
                     break;
 
                 //  -3 = invalid condition, not tracking flight, should never be here, but JIC
@@ -897,7 +897,7 @@ L.Control.FlightHud = L.Control.extend({
     flightStatus: function(delta_mins, ttl, buffer_mins) {
 
         // if ttl is None, then we just return as we're only interested in determining flight status during the descent.
-        if (!ttl)
+        if (!ttl && delta_mins <= this._cutoff)
             return -4;
 
         // if delta_mins > cutoff, we ignore as we're not longer interested in the flight
