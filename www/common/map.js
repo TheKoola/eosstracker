@@ -3300,6 +3300,7 @@ function checkTTL() {
 
         // The HTML element where the TTL value is displayed
         var ttl_elem = $("#" + fid + "_ttl");
+        var ttl_string = "";
 
         // Get the timestamp for the last packet for this flight
         var lastpacket = $("#" + fid + "_sidebar").data().lastpacket.getTime();
@@ -3310,32 +3311,111 @@ function checkTTL() {
         // How many mins have elapsed since we last heard a packet from this flight?
         var delta_mins = Math.floor((current_time - lastpacket) / 1000 / 60);
 
-        // If there's a delta (in mins) then see about adjusting what's displayed on the map. 
+        // Get the last ttl value for the last packet for this flight
+        var ttl = "";
+        if (typeof($("#" + fid + "_sidebar").data().ttl) != "undefined")
+            ttl = $("#" + fid + "_sidebar").data().ttl;
+
+        // If there's a delta (in mins) then see about adjusting what's displayed for the TTL value within the sidebar
         if (delta_mins > 0) {
 
-            // Get the last ttl value for the last packet for this flight
-            var ttl = 0;
-            if (typeof($("#" + fid + "_sidebar").data().ttl) != "undefined")
-                ttl = $("#" + fid + "_sidebar").data().ttl;
+            // Get the flight status
+            var ret = flightStatus(delta_mins, ttl, 2);
 
-            // if there was a valid, non-zero value for the TTL (i.e. not "n/a" or "", then we proceed with updating the value displayed in the sidebar.
-            if (ttl > 0) {
-                var new_ttl = Math.floor(ttl - delta_mins <= 0 ? 0 : ttl - delta_mins);
-                var ttl_string = new_ttl.toString() + (new_ttl == 1 ? " min" : " mins");
+            //    flightStatus return values:
+            //    -4 = ttl was null or none
+            //    -3 = invalid condition, not tracking flight
+            //    -2 = loss of signal, > 20mins since we last heard from the flight
+            //    -1 = the flight is on the ground
+            //     n = adjusted TTL
+            switch(ret) {
 
-                // if more time has elapsed (plus a 5min buffer) since the last packet, then the flight is likely already on the ground.
-                if (new_ttl == 0 && delta_mins >= ttl + 5)
-                    ttl_string = "On The Ground";
-
-                // If it's been a really long time, then we just set the display back to "n/a"
-                if (delta_mins >= lookbackPeriod)
+                //  -4 = ttl was null or none
+                case -4:
                     ttl_string = "n/a";
+                    break;
 
-                // update the display
-                ttl_elem.text(ttl_string);
+                //  -3 = invalid condition, not tracking flight, should never be here, but JIC
+                case -3:
+                    ttl_string = "n/a";
+                    break;
+
+                //  -2 = loss of signal, > 20mins since we last heard from the flight
+                case -2:
+                    ttl_string = "Loss of Signal";
+                    break;
+
+                //  -1 = the flight is on the ground
+                case -1:
+                    ttl_string = "On The Ground";
+                    break;
+
+                //  n = adjusted TTL
+                default:
+                    ttl_string = (ret == 1 ? ret + " min" : ret + " mins");
             }
         }
+
+        // Otherwise, it's been < 1min since we last heard from the flight and we have a valid TTL (i.e. the flight is descending) then we update the sidebar with that TTL value.
+        else if (ttl != "" && ttl >= 0) {
+            ttl_string = (ttl == 1 ? ttl + " min" : ttl + " mins");
+        }
+
+        // Finally, it's been, < 1min since we last heard from the flight and the flight is not descending, so we just update with status.
+        else {
+            ttl_string = "n/a";
+        }
+
+        // update the display
+        ttl_elem.text(ttl_string);
     });
+}
+
+
+/***************************************
+ * flightStatus
+ *
+ * Function to determine the status of a flight is when descending.
+ *
+ *    Return values:
+ *    -4 = ttl was null or none
+ *    -3 = invalid condition, not tracking flight
+ *    -2 = loss of signal, > 20mins since we last heard from the flight
+ *    -1 = the flight is on the ground
+ *     n = adjusted TTL
+ *    
+ *    Inputs:
+ *     delta_mins = number of minutes since we last heard from the the flight
+ *            ttl = number of minutes remaining before the flight touches down as calculated by the landing predictor backend.
+ *    buffer_mins = number of minutes we add to the ttl before declaring the flight is "on the ground".
+ *
+***************************************/
+function flightStatus(delta_mins, ttl, buffer_mins) {
+
+    // if ttl is None, then we just return as we're only interested in determining flight status during the descent.
+    if (!ttl)
+        return -4;
+
+    // if delta_mins > lookback period, we ignore as we're not longer interested in the flight
+    if (delta_mins > lookbackPeriod)
+        return -3;
+
+    // if delta_mins > 20mins && <= lookback period, then we declare LOS
+    else if (delta_mins > 20 && delta_mins <= lookbackPeriod)
+        return -2;
+
+    // If delta_mins <= 20mins, then we we're working the TTL adjustment logic to determine:
+    //     - adjust the TTL
+    //     - or declare that the flight is "on the ground" if delta_mins > ttl
+    else {
+
+        // if the elapsed mins since the last packet is greater than the TTL + a buffer, then we declare the flight to be on the ground.
+        if (delta_mins > ttl + buffer_mins) 
+            return -1;
+
+        // Otherwise we return a new TTL value by subtracting the delta_mins from the ttl
+        return Math.floor(ttl - delta_mins <= 0 ? 0 : ttl - delta_mins);
+    }
 }
 
 
