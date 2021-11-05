@@ -733,10 +733,10 @@ L.Control.FlightHud = L.Control.extend({
                 var thedistance;
                 if (feature.properties.rel_distance)
                     thedistance = Math.round(distance * 10) / 10 + " mi, ";
-                else if (currentLocation) 
-                    thedistance = Math.round(distance(currentLocation.lat, currentLocation.lng, lat, lon) * 10) / 10 + " mi, ";
-                else
-                    thedistance = "";
+                //else if (currentLocation) 
+                //    thedistance = Math.round(distance(currentLocation.lat, currentLocation.lng, lat, lon) * 10) / 10 + " mi, ";
+                //else
+                //    thedistance = "";
 
                 var callsignHTML = callsign;
 
