@@ -125,7 +125,13 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                 # If this is a mobile station, then we want to turn on "smart" beaconing.
                 viapath = ""
                 if configdata["mobilestation"] == "true":
-                    viapath = " via=" + str(eoss) + "WIDE1-1,WIDE2-1"
+
+                    # If we're using AIRSS then we assuming the external radio is transmitting on 145.825MHz and we alter our path to only add WIDE2-1.
+                    if str(configdata["eoss_string"]) == "ARISS":
+                        viapath = " via=" + str(eoss) + "WIDE2-1"
+                    else:
+                        viapath = " via=" + str(eoss) + "WIDE1-1,WIDE2-1"
+
                     f.write("# This is for a mobile station\n")
                     f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1 " + viapath + " symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
                     f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
