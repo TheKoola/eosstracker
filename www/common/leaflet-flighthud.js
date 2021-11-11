@@ -797,7 +797,7 @@ L.Control.FlightHud = L.Control.extend({
 
         var feature = fid.feature;
 
-        if (typeof(feature.properties.ttl) == "undefined" || typeof(feature.properties.verticalrate) == "undefined" || typeof(feature.properties.time) == "undefined")
+        if (typeof(feature.properties.ttl) == "undefined" || typeof(feature.properties.verticalrate) == "undefined" || typeof(feature.properties.time) == "undefined" || typeof(feature.properties.altitude) == "undefined")
             return;
 
         var ttl = feature.properties.ttl * 1.0;
@@ -815,8 +815,10 @@ L.Control.FlightHud = L.Control.extend({
             statushtml = ascending;
         else if (thevertrate < -300)
             statushtml = descending;
-        else
+        else if (feature.properties.altitude * 1.0 < 14000)
             statushtml = ontheground;
+        else
+            statushtml = "";
 
         var now = new Date();
         var last = (feature.properties.time ? parseDate(feature.properties.time) : fid.lastpacket);
@@ -853,9 +855,13 @@ L.Control.FlightHud = L.Control.extend({
 
                 //  -1 = the flight is on the ground
                 case -1:
-                    this.elements.ttl.innerHTML = ontheground;
-                    this.elements.altitude.innerHTML = "<font style=\"font-size: 1.3em; color: black; font-weight: bold;\">--</font> kft";
-                    this.elements.vrate.innerHTML = "<font style=\"font-size: 1em; color: black; font-weight: bold;\">--</font><br>ft/min";
+                    if (feature.properties.altitude * 1.0 < 14000) {
+                        this.elements.ttl.innerHTML = ontheground;
+                        this.elements.altitude.innerHTML = "<font style=\"font-size: 1.3em; color: black; font-weight: bold;\">--</font> kft";
+                        this.elements.vrate.innerHTML = "<font style=\"font-size: 1em; color: black; font-weight: bold;\">--</font><br>ft/min";
+                    }
+                    else
+                        this.elements.ttl.innerHTML = statushtml;
                     break;
 
                 //  n = adjusted TTL
