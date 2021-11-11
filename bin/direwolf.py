@@ -39,6 +39,10 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
     # Mapping of direwolf channel to SDR and frequency
     freqmap = []
 
+    # The igating filter string for when using 145.825MHz.  We only want to igate packets heard on 145.815MHz if they were digipeated prior ___or___
+    # they were from one of the satellites themselves
+    satfilter = " IG d/* | b/PSAT*/USNAP*/RS0ISS*/ARISS*/NA1ISS*/DP0ISS*"
+
     try:
 
         # Create or overwrite the direwolf configuration file.  We don't care if we overwrite it as the configuration is created dynamically each time.
@@ -73,7 +77,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                     # For satellite ops we don't want to igate packets heard directly.  
                     # Note:  buddy list filter is clearly a work in progress...
                     if freq == 145825000 and configdata["igating"] == True:
-                        f.write("FILTER " + str(channel) + " IG d/* | b/PSAT*/USNAP*/*ISS*\n")
+                        f.write("FILTER " + str(channel) + satfilter + "\n")
 
                     # Add this channel to the channel-to-frequency mapping
                     freqmap.append({ "channel" : channel, "frequency" : freq, "sdr" : prefix + sn })
@@ -108,6 +112,14 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                 if configdata["serialport"] != "none":
                     f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
                 f.write("\n\n")
+
+
+                # If we're using the ARISS pre-pended string with the VIA path for transmitted packets ('cause we're beaconing), 
+                # then we need to assume the external radio is tuned to 145.825MHz.  Therefore, if configured to igate, we don't want to igate anything
+                # from the external radio unless it was digipeated first.
+                if str(configdata["eoss_string"]) == "ARISS" and configdata["igating"] == True:
+                    f.write("FILTER " + str(channel) + satfilter + "\n\n")
+
                 f.write("######### beaconing configuration #########\n")
 
                 # If this is a mobile station, then we want to turn on "smart" beaconing.
