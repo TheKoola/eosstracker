@@ -366,7 +366,7 @@ td.packetlistright {
 
 .monospace {
     font-family:  "Lucida Console", Monaco, monospace;
-    font-size:  .85em;
+    font-size:  1em;
     text-align:  left;
     white-space: pre-wrap;
     word-wrap: break-word;

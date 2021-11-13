@@ -241,7 +241,8 @@
 
                 <p class="section-header">Message Packets</p>
                 <!--<div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>-->
-                <div class="packetdata" id="packetdata"></div>
+                <!--<div class="packetdata" id="packetdata"></div>-->
+                <div style="width: 100%; white-space: break-word; word-wrap: break-word; overflow-wrap: break-word;" id="packetdata"></div>
                 <div id="packeterrors"></div>
             </div> 
 
