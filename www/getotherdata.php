@@ -975,7 +975,11 @@
     printf (", \"messages\" : ");
     if ($numrows > 0) {
         $rows = sql_fetch_all($result);
-        printf("%s", $rows[0]['json']);
+        if ($rows[0]['json'] != "")
+            printf("%s", $rows[0]['json']);
+        else
+            printf("[]");
+
     }
     else 
         printf("[]");

@@ -3115,6 +3115,17 @@ function getTrackers() {
         else {
             msgs.forEach(function(m, i) {
 
+                // Make sure all of the JSON elements are defined
+                if (typeof(m.callsign_to) == "undefined" ||
+                    typeof(m.callsign_from) == "undefined" ||
+                    typeof(m.thetime) == "undefined" || 
+                    typeof(m.the_message) == "undefined" ||
+                    typeof(m.message_num) == "undefined" ||
+                    typeof(m.sat) == "undefined") {
+                    return;
+                }
+
+
                 // create a row for this message
                 row = table.insertRow(-1);
 
