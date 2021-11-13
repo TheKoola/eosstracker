@@ -23,7 +23,6 @@
 *
  */
 
-    ###  This will query the database for the n most recent packets.  
     header("Content-Type:  application/json;");
     session_start();
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
@@ -879,8 +878,107 @@
         } */
     }
 
-/* This is for the ending of a FeatureCollection */
+
+    /* This is for the ending of a FeatureCollection */
     printf ("] }");
+
+
+    /*********************** get APRS message packets heard over RF*******************/
+
+    $query = "
+     select 
+        array_to_json(array_agg(c)) as json
+     from
+        (select 
+            date_trunc('milliseconds', f.tm)::timestamp without time zone as thetime,
+            f.callsign as callsign_from,
+            case when array_length(f.message, 1) > 0 then
+                rtrim(f.message[1])
+            else
+                NULL
+            end as callsign_to,
+            case when array_length(f.message, 1) > 1 then
+                (regexp_split_to_array(f.message[2], '{'))[1]
+            else
+                NULL
+            end as the_message,
+            case when array_length(f.message, 1) > 1 then
+                (regexp_split_to_array(f.message[2], '{'))[2]
+            else
+                NULL
+            end as message_num,
+            case when f.raw like '%ARISS%' then
+                1
+            else
+                0
+            end as sat
+            
+            from
+                (select distinct
+                a.hash,
+                a.tm,
+                a.callsign, 
+                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
+                    split_part(a.raw, '>', 1)
+                else
+                    NULL
+                end as sourcename,
+                a.ptype,
+                a.raw,
+                case when a.raw similar to '%>%:%' then
+                    (string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]
+                else
+                    NULL
+                end as path,
+                case when a.raw similar to '%>%::%' then
+                        regexp_split_to_array(split_part(a.raw, '::', 2), ':')
+                else
+                    NULL
+                end as message,
+                rank() over (partition by a.callsign order by a.tm desc)
+
+                from packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign
+
+                where 
+                b.callsign is null
+                and a.tm > now()::date
+                and a.ptype = ':'
+                and a.source = 'direwolf'
+                and a.raw not like ('%:PARM.%')
+                and a.raw not like ('%:UNIT.%')
+                and a.raw not like ('%:EQNS.%')
+                and a.raw not like ('%:BITS.%')
+
+                order by 
+                a.tm,
+                a.callsign) as f
+
+            where 
+            f.rank = 1
+
+            order by
+            thetime desc,
+            f.callsign
+        ) as c
+    ;";
+
+    $result = pg_query($link, $query);
+
+    if (!$result) {
+        db_error(sql_last_error());
+        sql_close($link);
+        return 0;
+    }
+
+    $numrows = sql_num_rows($result);
+
+    printf (", \"messages\" : ");
+    if ($numrows > 0) {
+        $rows = sql_fetch_all($result);
+        printf("%s", $rows[0]['json']);
+    }
+    else 
+        printf("[]");
 
 /******************** my station *****************/
     printf (", \"myposition\" : ");
