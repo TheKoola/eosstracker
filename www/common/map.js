@@ -3089,6 +3089,7 @@ function getTrackers() {
         // the table itself
         var table = document.createElement("table");
         table.setAttribute("class", "packetlist");
+        table.setAttribute("width", "100%");
 
         // the columns
         //var columns = ["Time", "To", "From", "Msg #"];
