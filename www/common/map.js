@@ -3184,7 +3184,10 @@ function getTrackers() {
                 // If we found the sender's station on the map, then grab the lat/lon and create a hyperlink for panning the map.
                 var fromStation;
                 if (found && found.geometry.coordinates) {
-                    fromStation = "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + found.geometry.coordinates[1] + "', '" + found.geometry.coordinates[0] + "');\">" +  m.callsign_from.toUpperCase() + "</a>"
+                    var onclick;
+
+                    onclick="(function () { if (!map.hasLayer(rfStationsLayer.options.container)) map.addLayer(rfStationsLayer.options.container); dispatchPanToEvent('" + found.geometry.coordinates[1] + "', '" + found.geometry.coordinates[0] + "'); })();";
+                    fromStation = "<a href=\"#\"  onclick=\"" + onclick + "\">" + m.callsign_from.toUpperCase() + "</a>";
                 }
                 else
                     fromStation = m.callsign_from.toUpperCase();
