@@ -235,9 +235,12 @@
             <div class="sidebar-pane" id="messages">
                 <h1 class="sidebar-header">APRS Messages<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="section-header">APRS Message Packets:</p>
-                <p class="lorem">This tab will display all APRS message packets received on today's date and only those heard over RF.
-                    Packets are displayed in reverse chronological order with the latest packets on top, oldest on bottom.
-                    If an APRS message is addressed directly to you then that message will be <mark>highlighted</mark>.</p>
+                <p class="lorem">This tab will display all APRS message packets received via RF on today's date.
+                    Packets are displayed in reverse chronological order with the latest packets on top, oldest on bottom.</p>
+                <p class="lorem">Those packets with ARISS in their path are assumed to have come from a satellite digipeater and will 
+                    be denoted with, <mark class="okay" style="white-space: nowrap; word-wrap: nowrap; overflow-wrap: nowrap;">
+                    [ satellite ]</mark>.</p>
+                <p class="lorem">If an APRS message is addressed directly to you then that message will be <mark>highlighted</mark>.</p>
 
                 <p class="section-header">Message Packets</p>
                 <!--<div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>-->

@@ -3160,7 +3160,7 @@ function getTrackers() {
                 // Was this to/from a satellite?
                 var sat = "";
                 if (m.sat * 1.0 == 1) 
-                    sat = "<p class=\"normal\" style=\"margin: 0; background-color: lightgreen;\">Satellite</p>";
+                    sat = "<br><mark class=\"okay\">[ Satellite ]</mark>";
 
                 // Search through the map layers to determine if the sender of this message is on the map
                 // First, look through the RF stations layer (as that's likely where the station is...so we search it first).
