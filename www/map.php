@@ -151,7 +151,8 @@
             </ul>
 
             <ul role="tablist">
-                <li id="hud"><a href="#nothing" role="hud" onclick="toggleHUD();"><strong>HUD</strong></a></li>
+                <li id="spd" role="hud"><a href="#nothing" role="hud" onclick="toggleSpeed();"><strong>SPD</strong></a></li>
+                <li id="hud" role="hud"><a href="#nothing" role="hud" onclick="toggleHUD();"><strong>HUD</strong></a></li>
                 <li><a href="#settings" role="tab"><img src="/images/graphics/gear.png" width="30" height="30"></a></li>
             </ul>
         </div> <!-- end of sidebar-tabs -->

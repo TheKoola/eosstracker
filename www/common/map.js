@@ -85,6 +85,12 @@
     // flight HUD
     var hud;
 
+    // speed display box
+    var speedStatusBox;
+
+    // followme when set to true the map will continuously pan to the user's current location
+    var followme = false;
+
 
     /***********
     * getChartWidth
@@ -1797,6 +1803,23 @@ function getTrackers() {
 
 
     /***********
+    * toggleSpeed
+    *
+    * This function will toggle visibility for the speed display box on the map
+    ***********/
+    function toggleSpeed() {
+        if (speedStatusBox && map) {
+
+            // if the speed box is on the map already, then remove it
+            if (speedStatusBox.onMap()) 
+                speedStatusBox.remove();
+            else 
+                // Add the speed box to the map
+                speedStatusBox.addTo(map);
+       }
+    }
+
+    /***********
     * toggleHUD
     *
     * This function will toggle visibility for the HUD on the map
@@ -1902,11 +1925,16 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
+        // Setup the listener for map panTo events
+        createTheListener();
+
         // Add the GPS status box to the top right
         gpsStatusBox = L.control.gpsbox().addTo(map);
+
+        // get the current GPS location and update the GPS status box.  Input variable is true so as to pan the map to the GPS location - to set the initial location of the map.
         setTimeout( function() {
-            getgps();
-        }, 20);
+            getgps(true);
+        }, 10);
 
         baselayer = { "Base Map (raster)" : tilelayer };
  
@@ -1956,6 +1984,9 @@ function getTrackers() {
 	    // add a widget in the upper right hand corner for adding waypoints
 	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
 	    map.addControl(marker_control);
+
+        // Add the speed box
+        speedStatusBox = L.control.box({ callback: centerFollow, position: "centertop" });
 
         // Add the HUD to the bottom center
         hud = L.control.flighthud({ position: "centerbottom", flights: flightids});
@@ -2172,9 +2203,6 @@ function getTrackers() {
         // Read in the configuration
 	    setTimeout(function() { getConfiguration(); }, 20);
 
-        // Setup the listener
-        setTimeout(function() { createTheListener(); }, 25);
-
         // Get the status of running processes
         setTimeout(function() { getProcessStatus(); }, 30);
 
@@ -2193,18 +2221,6 @@ function getTrackers() {
         window.onfocus = gainFocus;
         window.onblur = lostFocus;
 
-        // Get the latest position from GPS
-        $.get("getposition.php", function(data) { 
-            lastposition = JSON.parse(data);
-            
-            // Set the map center position
-            if (latitude != 0 && longitude != 0 && zoom != 0)
-	            map.setView(new L.latLng(latitude, longitude), zoom);
-            else
-    	        map.setView(new L.latLng(lastposition.geometry.coordinates[1], lastposition.geometry.coordinates[0]), 10);
-        });
-
-
         //document.getElementById("screenw").innerHTML = window.innerWidth;
         //document.getElementById("screenh").innerHTML = window.innerHeight;
         // Listener so that the charts for flights are resized when the screen changes size.
@@ -2221,11 +2237,15 @@ function getTrackers() {
     *
     * This function will get the current status of the GPS that's connected to the system and populate the web page with its status/state
     ***********/
-    function getgps() {
+    function getgps(panto) {
+
+        var p = (panto ? true : false);
+
         $.get("getgps.php", function(data) {
             var jsonData = JSON.parse(data);
             var gpsfix;
             var gpsMode;
+            var pan_the_map = p;
 
             gpsMode = jsonData.mode * 10 / 10;
 
@@ -2239,14 +2259,53 @@ function getTrackers() {
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO FIX ]</mark>";
                 else if (gpsMode == 2)
                     gpsfix = "GPS: <mark class=\"marginal\">[ 2D ]</mark>";
-                else if (gpsMode == 3) 
+                else if (gpsMode == 3) {
                     gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
+                    
+                    // set the lastlocation variable to output
+                    lastposition = jsonData;
+
+                    // Pan the map to the latest location
+                    if (pan_the_map || followme) {
+                        dispatchPanToEvent(lastposition.lat * 1.0, lastposition.lon * 1.0);
+                    }
+
+                    // Update the speed status box
+                    if (speedStatusBox)
+                        speedStatusBox.show(Math.round(lastposition.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+                }
                 else
                     gpsfix = "Unable to get GPS status";
-                gpsStatusBox.show(gpsfix);
+                
+                // Now update the GPS status box
+                if (gpsStatusBox)
+                    gpsStatusBox.show(gpsfix);
             }
         });
     }
+
+
+    /***********
+    * centerFollow
+    *
+    * This function will center the map over the user's current location and initiate followme mode
+    ***********/
+    function centerFollow(onoff) {
+
+        // If selected, then pan the map to the current user's location and enable followme mode
+        if (onoff) {
+            followme = true;
+
+            if (lastposition)
+                dispatchPanToEvent(lastposition.lat, lastposition.lon);
+        }
+
+        // ...otherwise we simply turn off followme mode
+        else {
+            followme = false;
+        }
+    }
+
 
     /************
      * toggle
@@ -3315,7 +3374,7 @@ function getTrackers() {
         // Update the TTL values
         checkTTL();
 
-        // Update the GPS display
+        // Update the GPS display and the lastposition object
         getgps();
 
         // ...the idea being that ever so often, we should try a special update

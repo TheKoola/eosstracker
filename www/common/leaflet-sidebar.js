@@ -38,7 +38,7 @@ L.Control.Sidebar = L.Control.extend(/** @lends L.Control.Sidebar.prototype */ {
         }
 
         // Find sidebar ul.sidebar-tabs > li, sidebar .sidebar-tabs > ul > li
-        this._tabitems = this._sidebar.querySelectorAll('ul.sidebar-tabs > li, .sidebar-tabs > ul > li:not([id="hud"])');
+        this._tabitems = this._sidebar.querySelectorAll('ul.sidebar-tabs > li, .sidebar-tabs > ul > li:not([role="hud"])');
         for (i = this._tabitems.length - 1; i >= 0; i--) {
             this._tabitems[i]._sidebar = this;
         }
