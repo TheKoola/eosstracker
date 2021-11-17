@@ -65,7 +65,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                     if prefix == "airspy":
                         f.write("ARATE 50000\n")
                     else:
-                        f.write("ARATE 48000\n")
+                        f.write("ARATE 44100\n")
 
                     f.write("ACHANNELS 1\n")
                     f.write("CHANNEL " + str(channel) + "\n")
@@ -104,7 +104,7 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                 f.write("###########################################\n\n")
                 f.write("# This is the external radio connection\n")
                 f.write("ADEVICE" + str(adevice) + " plughw:" + str(configdata["audiodev"]) + ",0\n")
-                f.write("ARATE 48000\n")
+                f.write("ARATE 44100\n")
                 f.write("ACHANNELS 1\n")
                 f.write("CHANNEL " + str(channel) + "\n")
                 f.write("MYCALL " + callsign + "\n")
