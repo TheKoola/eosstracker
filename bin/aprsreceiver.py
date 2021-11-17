@@ -107,10 +107,10 @@ class aprs_receiver(gr.top_block):
 
         # Not an airspy device...so we set sample rates and parameters as multiples of a 48k audio sample rate that direwolf will use
         else: 
-            self.direwolf_audio_rate = 48000
+            self.direwolf_audio_rate = 44100
 
             # For the determined center frequency (above) we find the maximum distance between it and the freqs we're listening too.   Multiple that "spread" by two, 
-            # then round up to the nearest multiple of the direwolf audio rate (i.e. 48k).  The idea being we want a sample rate that is 2 x the max spread between 
+            # then round up to the nearest multiple of the direwolf audio rate (i.e. 48k, 44.1k, etc.).  The idea being we want a sample rate that is 2 x the max spread between 
             # the center frequency and all those we're listening too.   We choose 2x because of nyquist.
             spread = int(math.ceil(max_d(freqs, self.center_freq) * 2.0 / self.direwolf_audio_rate) * self.direwolf_audio_rate)
 
