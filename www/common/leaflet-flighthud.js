@@ -40,7 +40,8 @@ L.Control.FlightHud = L.Control.extend({
     
     // this is in ft/min.  It's the descent rate alerting threshold.  This should always be a positive value (comparisons within _updateDisplay() will adjust for 
     // descent rates being negative.
-    _vrateThreshold: 10000, 
+    // Setting this to an absurdly high value for now so that no alerting will occur.  Will revisit this after determining what a "normal" descent velocity profile looks like.
+    _vrateThreshold: 999999999,
 
     elements: { 
         flist: null,
@@ -59,7 +60,9 @@ L.Control.FlightHud = L.Control.extend({
         //this._createDom(flightlist);
         this._flightlist = (options.flights ? options.flights : null);
         this._cutoff = (options.cutoff ? options.cutoff : 180);
-        this._vrateThreshold = (options.vrateThreshold ? options.vrateThreshold : 10000);
+
+        // Setting this to an absurdly high value for now so that no alerting will occur.  Will revisit this after determining what a "normal" descent velocity profile looks like.
+        this._vrateThreshold = (options.vrateThreshold ? options.vrateThreshold : 999999999);
 
         // set the flightid that we'll montior to the first one in the list (if it exists)
         if (this._flightlist.length > 0) {
