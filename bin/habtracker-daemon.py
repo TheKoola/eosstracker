@@ -376,6 +376,22 @@ def databaseUpdates():
                 dbcur.execute(sql_add)
                 dbconn.commit()
 
+
+        # SQL to add an index on the tm, source, and ptype columns of the packets table
+        sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm_source_ptype');"
+        dbcur.execute(sql_exists)
+        rows = dbcur.fetchall()
+        if len(rows) > 0:
+            if rows[0][0] == False:
+                # Add the index since it didn't seem to exist.
+                sql_add = "create index packets_tm_source_ptype on packets(tm, source, ptype);"
+                print "Adding packets_tm_source_ptype index."
+                sys.stdout.flush()
+                debugmsg("Adding packets_tm_source_ptype index to the packets table: %s" % sql_add)
+                dbcur.execute(sql_add)
+                dbconn.commit()
+
+
         #------------------- packets table ------------------#
 
         ts = datetime.datetime.now()

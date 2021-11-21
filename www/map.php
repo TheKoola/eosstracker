@@ -139,7 +139,7 @@
                 <!-- <li><a href="#screenh" role="tab"><span id="screenh"></span></a></li> -->
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
                 <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
-                <!-- <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li> -->
+                <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li>
 <?php
     if ($numflights > 0) {
         foreach ($flightlist as $row){
@@ -234,37 +234,24 @@
 
 
             <!-- messages sidebar pane (live packet stream) -->
-            <!--
             <div class="sidebar-pane" id="messages">
-                <h1 class="sidebar-header">Live Packet Stream<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
-                <p class="section-header">Live Packet Stream: &nbsp; <span id="livePacketStreamState"><mark style="background-color: red;">off</mark></span></p>
-                <p class="lorem">This tab will display all APRS packets received on today's date for a given flight.  
+                <h1 class="sidebar-header">APRS Messages<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
+                <p class="section-header">APRS Message Packets:</p>
+                <p class="lorem">This tab will display all APRS message packets received via RF on today's date.
                     Packets are displayed in reverse chronological order with the latest packets on top, oldest on bottom.</p>
+                <p class="lorem">Those packets with ARISS in their path are assumed to have come from a satellite digipeater and will 
+                    be denoted with, <mark class="okay" style="white-space: nowrap; word-wrap: nowrap; overflow-wrap: nowrap;">
+                    [ satellite ]</mark>.</p>
+                <p class="lorem">If an APRS message is addressed directly to you then that message will be <mark>highlighted</mark>.</p>
 
-                <p class="section-header"><a href="#" class="section-link" id="livePacketFlightSelectionLink">(<span style="color: red;" id="livePacketFlightSelectionSign">-</span>) Select flight</a>:</p>
-                <div id="livePacketFlightSelection">
-                    <p class="lorem">To start the packet stream, select a flight, then click start.  Once running, the packet display will be automatically updated every 5 seconds.</p>
-                    <p><span id="flightsLivePacketStream"></span></p>
-                    <p class="section-header"><button name="livepacketstart" id="livepacketstart" >Start</button><button name="livepacketstop" id="livepacketstop">Stop</button></p>
-                </div>
- 
-                <p class="section-header"><a href="#" class="section-link" id="livePacketSearchLink">(<span style="color: red;" id="livePacketSearchSign">-</span>) Search</a>:</p>
-                <div id="livePacketSearch">
-                    <p class="lorem">Enter search characters to filter the displayed packets.  All searches are case insensitive, so "AAA" is equivalent to "aaa".</p>
-                    <p>
-                    <input type="text" size="16" maxlength="128" name="searchfield" id="searchfield" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off">
-                    <select id="operation">
-                        <option value="and" selected="selected">And</option>
-                        <option value="or">Or</option>
-                        <option value="not">Not</option>
-                    </select>
-                    <input type="text" size="16" maxlength="128" name="searchfield2" id="searchfield2" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" >
-                    </p>
-                    <p><button onclick="clearLivePacketFilters();">Clear</button></p>
-                </div>
-                <p class="section-header">Packets: <mark><span id="packetcount">0</span></mark></p>
-                <div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>
-            </div> -->  <!-- end of messages sidebar pane -->
+                <p class="section-header">Message Packets</p>
+                <!--<div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>-->
+                <!--<div class="packetdata" id="packetdata"></div>-->
+                <div style="width: 100%; white-space: break-word; word-wrap: break-word; overflow-wrap: break-word;" id="packetdata"></div>
+                <div id="packeterrors"></div>
+            </div> 
+
+            <!-- end of messages sidebar pane -->
 
 
             <!-- settings sidebar pane -->

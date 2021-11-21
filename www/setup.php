@@ -655,7 +655,9 @@ include $documentroot . '/common/header.php';
             <td class="packetlist" id="objectbeaconb" style="text-align: center; white-space: nowrap;">Enable object beaconing: <input type="checkbox" name="objectbeaconing" disabled="disabled" id="objectbeaconing"></td>
         </tr>
 
-		<tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" or "EOSSx" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.</td>
+        <tr><td class="packetlist" id="beaconingtext9a"><strong>Prepend EOSS to your APRS path</strong> when tracking flights with EOSS.  The system will alway use WIDE1-1,WIDE2-1, but one can optionally can prepend "EOSS" or "EOSSx" to the beginning of that path.  For example, EOSS,WIDE1-1,WIDE2-1. Be mindful not to transmit normal 144.39MHz packets with this option enabled.
+<br><u>For satellite operations</u>, select <strong>ARISS</strong>, however, for this to be successful the external radio used for transmissions will need to be tuned to 145.825MHz.
+</td>
             <td class="packetlist" id="beaconingtext9b" style="text-align: center; white-space: nowrap;">
             Enable/Disable <input type="checkbox" name="includeeoss" disabled="disabled" id="includeeoss" form="configuration_form" checked onchange="checkEOSS();">
             &nbsp; String: <select form="configuration_form" name="eoss_string" id="eoss_string" disabled="disabled">
@@ -668,6 +670,7 @@ include $documentroot . '/common/header.php';
                 <option value="EOSSF">EOSSF</option>
                 <option value="EOSSG">EOSSG</option>
                 <option value="EOSSX">EOSSX</option>
+                <option value="ARISS">ARISS</option>
             </select>
             </td>
         </tr>

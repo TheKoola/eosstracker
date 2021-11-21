@@ -69,6 +69,9 @@
     var livePacketStreamState = 0;;
     var processInTransition = 0;
 
+    // callsign 
+    var mycallsign;
+
     // The list of realtime layers 
     var realtimeflightlayers = [];
     var landingpredictionlayers = [];
@@ -1458,6 +1461,10 @@
             if (hud)
                 hud.setCutoff(lookbackPeriod);
 
+            if (typeof(jsonData.callsign) != "undefined")
+                if (jsonData.callsign != "")
+                    mycallsign = jsonData.callsign.toUpperCase();
+
 		    /*if (jsonData.plottracks == "on")
 			    document.getElementById("plottracks").checked = true;
 		    else
@@ -1469,7 +1476,6 @@
 			    document.getElementById("airdensity").checked = false;
             });
     }
-
 
 
 
@@ -3180,7 +3186,154 @@ function getTrackers() {
                 }
             });
 
+            // APRS messages packets
+            if (typeof(data.messages) != "undefined") {
+                updateMessagesTable(data.messages);
+            }
+
         });
+    }
+
+
+
+    /************
+     * updateMessagesTable
+     *
+     * With a list of messages as input, create a table within the sidebar for these APRS message packets highlighting any that are addressed to mycallsign.
+     *
+     * Example:  [{"thetime":"2021-11-12T07:22:52.392","callsign_from":"SP9UOB-12","callsign_to":"EMAIL-2","the_message":"sp9uob@gmail.com tracker boot 2630 144390000 kHz last=50.33168,-125.64470 rtc=396","message_num":"2630"}]
+    *************/
+    function updateMessagesTable(msgs) {
+        var keys = Object.keys(msgs);
+
+        // the element that we'll ultimately load our content into
+        var container = document.getElementById("packetdata");
+
+        // the table itself
+        var table = document.createElement("table");
+        table.setAttribute("class", "packetlist");
+        table.setAttribute("width", "100%");
+
+        // the columns
+        //var columns = ["Time", "To", "From", "Msg #"];
+        var columns = ["Time", "Message"];
+
+        // Add the header row
+        var row = table.insertRow(-1);
+        columns.forEach(function(l) {
+            var headerCell = row.insertCell(-1);
+            headerCell.innerHTML = l;
+            headerCell.setAttribute("class", "packetlistheader");
+        });
+
+        // Now add the messages themselves to the table
+        if (keys.length == 0) {
+            row = table.insertRow(-1);
+            var blankcell1 = row.insertCell(-1);
+            var blankcell2 = row.insertCell(-1);
+            blankcell1.setAttribute("class", "packetlist");
+            blankcell2.setAttribute("class", "packetlist");
+            blankcell1.innerHTML = "n/a";
+            blankcell2.innerHTML = "No messages available.";
+        }
+        else {
+            msgs.forEach(function(m, i) {
+
+                // Make sure all of the JSON elements are defined
+                if (typeof(m.callsign_to) == "undefined" ||
+                    typeof(m.callsign_from) == "undefined" ||
+                    typeof(m.thetime) == "undefined" || 
+                    typeof(m.the_message) == "undefined" ||
+                    typeof(m.message_num) == "undefined" ||
+                    typeof(m.sat) == "undefined") {
+                    return;
+                }
+
+
+                // create a row for this message
+                row = table.insertRow(-1);
+
+                // Cells for each data element
+                var time = row.insertCell(-1);
+                var content = row.insertCell(-1);
+
+                var classlist = "packetlist";
+
+                // change the background color on every other row
+                if (i % 2) {
+                    classlist = "packetlist highlight";
+                }
+
+                // If this message is addressed directly to "mycallsign", then change the highlighting
+                if (mycallsign == m.callsign_to.toUpperCase()) {
+                    classlist = "packetlist important";
+                }
+
+                time.setAttribute("class", classlist + " normal");
+                content.setAttribute("class", classlist + " monospace");
+
+                // create a new date object fromt the time
+                var thetime = new Date(m.thetime);
+
+                // create a 24hr time string
+                var time_string = (thetime.getHours() < 10 ? "0" : "") + thetime.getHours() + ":" 
+                    + (thetime.getMinutes() < 10 ? "0" : "") + thetime.getMinutes() + ":" 
+                    + (thetime.getSeconds() < 10 ? "0" : "") + thetime.getSeconds();
+
+                // Was this to/from a satellite?
+                var sat = "";
+                if (m.sat * 1.0 == 1) 
+                    sat = "<br><mark class=\"okay\">[ Satellite ]</mark>";
+
+                // Search through the map layers to determine if the sender of this message is on the map
+                // First, look through the RF stations layer (as that's likely where the station is...so we search it first).
+                var found = rfStationsLayer.getFeature(m.callsign_from.toUpperCase());
+
+                // if not found, then we next check the at large trackers layer
+                if (!found) 
+                    found = trackersAtLargeLayer.getFeature(m.callsign_from.toUpperCase());
+
+                // if still not found, then we next check the the trackers layers from each active flight
+                if (!found) {
+                    flightList.forEach(function(f) {
+                        var trackers = f.trackerlayer;
+                        var id = trackers.getFeature(m.callsign_from.toUpperCase());
+
+                        if (id)
+                            found = id;
+                    });
+                }
+
+                // If we found the sender's station on the map, then grab the lat/lon and create a hyperlink for panning the map.
+                var fromStation;
+                if (found && found.geometry.coordinates) {
+                    var onclick;
+
+                    onclick="(function () { if (!map.hasLayer(rfStationsLayer.options.container)) map.addLayer(rfStationsLayer.options.container); dispatchPanToEvent('" + found.geometry.coordinates[1] + "', '" + found.geometry.coordinates[0] + "'); })();";
+                    fromStation = "<a href=\"#\"  onclick=\"" + onclick + "\">" + m.callsign_from.toUpperCase() + "</a>";
+                }
+                else
+                    fromStation = m.callsign_from.toUpperCase();
+
+                var html = "<table cellpadding=0 cellspacing=0 border=0><tr><td><font class=\"normal\">From: </font></td><td>" + fromStation + "</td></tr>"
+                    + "<tr><td><font class=\"normal\">To: </font></td><td>" + m.callsign_to.toUpperCase() + "</td></tr>"
+                    + "<tr><td><font class=\"normal\">Msg#: </font></td><td>" + (m.message_num ? m.message_num : "--") + "</td></tr></table>"
+                    + "<p>" + m.the_message + "</p>";
+
+                // Update content of the cells
+                time.innerHTML = time_string + sat;
+                content.innerHTML = html;
+
+            });
+        }
+
+
+        // Blank the container to clear out any prior data
+        container.innerHTML = "";
+
+        // Now update with our content
+        container.appendChild(table);
+
     }
 
 

@@ -1530,6 +1530,11 @@
             var selectedSymbol = jsonData.symbol;
             var overlaymatch = false;
             var tc;
+
+            // blank out the list of options within the symbol dropdown, then repopulate that. 
+            $("#symbol")[0].options.length = 0;
+
+            // Now repopulate the symbol selections
             for (sym in keys) {
                 if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
                     if (selectedSymbol == r[sym].symbol) {
