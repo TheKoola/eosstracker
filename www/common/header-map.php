@@ -59,6 +59,8 @@ else
 <link href="/common/MarkerCluster.Default.css" rel="stylesheet">
 <link href="/common/mapstyles.css" rel="stylesheet">
 <link href="/common/leaflet-gpsbox.css" rel="stylesheet">
+<link href="/common/leaflet-flighthud.css" rel="stylesheet">
+<link href="/common/leaflet-box.css" rel="stylesheet">
 
 <!-- Load js -->
 <script src="/common/d3.min.js" charset="utf-8"></script>
@@ -74,6 +76,8 @@ else
 <script src="/common/Control.SimpleMarkers.js"></script>
 <script src="/common/leaflet.rotatedMarker.js"></script>
 <script src="/common/leaflet-gpsbox.js"></script>
+<script src="/common/leaflet-flighthud.js"></script>
+<script src="/common/leaflet-box.js"></script>
 
 <!-- Mapbox GL JS -->
 <script src="/common/mapbox-gl.js"></script>

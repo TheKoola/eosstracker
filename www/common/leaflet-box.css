@@ -1,0 +1,45 @@
+/*
+*
+##################################################
+#    This file is part of the HABTracker project for tracking high altitude balloons.
+#
+#    Copyright (C) 2019,2020 Jeff Deaton (N6BA)
+#
+#    HABTracker is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    HABTracker is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
+#
+##################################################
+*
+*/
+
+.leaflet-control-box {
+	display: block; 
+	border: 2px solid #ccc;
+    border-radius: 5px;
+	background-color: white;
+	padding: 3px 10px;
+    font-size:  1em;
+    opacity:  0.65;
+}
+
+.leaflet-control-box-textbox {
+	display: block; 
+	/*padding: 3px 10px;*/
+    font-size: 8em;
+    /*opacity:  1.0;*/
+    cursor: pointer;
+}
+
+.leaflet-control-box-glow {
+    box-shadow: 0px 0px 0px 10px #005ce6;
+}

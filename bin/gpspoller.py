@@ -137,6 +137,7 @@ def GpsPoller(e):
                                  "lat" : "n/a",
                                  "lon" : "n/a",
                                  "satellites" : [],
+                                 "bearing" : "n/a", 
                                  "speed_mph" : "n/a",
                                  "altitude" : "n/a"
                                    }
@@ -155,6 +156,7 @@ def GpsPoller(e):
                          "lat" : "n/a",
                          "lon" : "n/a",
                          "satellites" : [],
+                         "bearing" : "n/a", 
                          "speed_mph" : "n/a",
                          "altitude" : "n/a"
                            }
@@ -233,7 +235,7 @@ def GpsPoller(e):
                                     try:
                                         gpscur.execute(sql, [
                                             thetime,
-                                            round(gpsd.fix.speed * 2.236936, 0),
+                                            round(gpsd.fix.speed * 2.236936, 1),
                                             gpsd.fix.track,
                                             round(gpsd.fix.altitude * 3.2808399, 0),
                                             gpsd.fix.longitude,
@@ -284,7 +286,8 @@ def GpsPoller(e):
                                      "lat" : str(round(gpsd.fix.latitude, 6)),
                                      "lon" : str(round(gpsd.fix.longitude, 6)),
                                      "satellites" : mysats_sorted,
-                                     "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)),
+                                     "bearing" : str(round(gpsd.fix.track, 0)),
+                                     "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 1)),
                                      "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0))
                                    }
 
@@ -317,7 +320,8 @@ def GpsPoller(e):
                                      "lat" : str(round(gpsd.fix.latitude, 6)),
                                      "lon" : str(round(gpsd.fix.longitude, 6)),
                                      "satellites" : mysats_sorted,
-                                     "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 0)),
+                                     "bearing" : str(round(gpsd.fix.track, 0)),
+                                     "speed_mph" : str(round(gpsd.fix.speed * 2.236936, 1)),
                                      "altitude" : str(round(gpsd.fix.altitude * 3.2808399, 0))
                                        }
 
@@ -334,6 +338,7 @@ def GpsPoller(e):
                                  "lat" : "n/a",
                                  "lon" : "n/a",
                                  "satellites" : [],
+                                 "bearing" : "n/a", 
                                  "speed_mph" : "n/a",
                                  "altitude" : "n/a"
                                    }
@@ -374,6 +379,7 @@ def GpsPoller(e):
                      "lat" : "n/a", 
                      "lon" : "n/a", 
                      "satellites" : [], 
+                     "bearing" : 0, 
                      "speed_mph" : 0, 
                      "altitude" : 0 
                     }
@@ -404,6 +410,7 @@ def GpsPoller(e):
                      "lat" : "n/a", 
                      "lon" : "n/a", 
                      "satellites" : [], 
+                     "bearing" : 0, 
                      "speed_mph" : 0, 
                      "altitude" : 0 
                     }

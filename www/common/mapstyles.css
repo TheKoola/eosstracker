@@ -28,6 +28,21 @@
 *
 */
 
+.leaflet-center {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    left: 50%; /* possible because the placeholder's parent is the map */
+    transform: translateX(-50%); /* using the CSS3 Transform technique */
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.leaflet-center .leaflet-control {
+    margin: 10px;
+}
+
+
 .leaflet-control-layers-group-name {
     font-weight: 700;
     text-decoration: underline;
