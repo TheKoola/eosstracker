@@ -1612,7 +1612,16 @@ class LandingPredictor(PredictorBase):
                     # Get any prediction file rows (if loaded in the database)
                     rows = queries.getPredictFile(self.landingconn, fid, launchsite["name"])
                     predictiondata = rows
+
+                    # we reverse this so that the starting element is the down range landing and the ending element is the launchsite
                     predictiondata_rev = predictiondata[::-1]
+
+                    # reference:  predictiondata columns:
+                    #     altitude,
+                    #     latitude,
+                    #     longitude,
+                    #     vert_rate,
+                    #     delta_secs
 
                     # Latest altitude, latitude, and longitude heard from the flight
                     latest_altitude = latestpackets[-1, 1]
@@ -1620,7 +1629,9 @@ class LandingPredictor(PredictorBase):
                     y = float(latestpackets[-1, 3])
 
                     # Flight altitude needs to be above this threshold. 
-                    alt_sanity_threshold = 14999
+                    #alt_sanity_threshold = 14999
+                    # Set this to something lower??
+                    alt_sanity_threshold = 8500
 
                     # If there are predict file rows returned, then we run through them finding the "splice" point, the closest point, altitude-wise, 
                     # to the current flight location and also attempt to create an early cutdown prediction.
@@ -1651,7 +1662,6 @@ class LandingPredictor(PredictorBase):
                                 loop_counter += 1
 
                             # Now slice off the predictiondata we care about
-                            l = len(predictiondata_rev)
                             predictiondata_slice = predictiondata_rev[0:loop_counter, 0:]
                             
                             # reverse this back in HIGH to LOW altitude order
@@ -1660,11 +1670,16 @@ class LandingPredictor(PredictorBase):
                         else:
                             # We're still ascending so look for a splice point from the beginning of the predict file
 
-                            #if latest_altitude > float(flightids[i,5])*1.10:
-                            if latest_altitude > float(rec[5])*1.10:
+                            # We only want to find a splice point during the flight's ascent IF it's at least 10% higher than the launch site elevation.
+                            # That way we're only creating a prediction after we're "sure" the flight has been launched.
+                            altitude_threshold = float(rec[5]) * 1.10
+                            if latest_altitude > altitude_threshold:
                                 loop_counter = 0
                                 l = predictiondata.shape[0]
                                 prev_pred_alt = 0
+
+                                # We now loop through each row in the prediction data, from launch site elevation to predicted burst until we land on
+                                # an altitude that is greater than where the flight is currently at.
                                 while predictiondata[loop_counter,0] < latest_altitude and loop_counter < l - 1:
                                     if prev_pred_alt > predictiondata[loop_counter, 0]:
                                         # we've hit the top in the pred data and we need to stop
@@ -1682,70 +1697,15 @@ class LandingPredictor(PredictorBase):
                         ####################################
 
 
-                        ####################################
-                        # START: Insert pre-flight predict file landing prediction into the database
-                        ####################################
-                        # Check if we found a splice point.  If so, then we proceed with splicing the predict
-                        # file onto the end of the existing flight path.
-                        if predictiondata_slice.shape[0] > 0:
-                            # Determine the delta between the last heard packet and the prediction data
-                            dx = x - float(predictiondata_slice[0, 1]) 
-                            dy = y - float(predictiondata_slice[0, 2])
-
-                            # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
-                            m = 0
-                            linestring_text = ""
-                            for k,u,v,vrate,ds in predictiondata_slice:
-                                if m > 0:
-                                    linestring_text = linestring_text + ", "
-                                linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
-                                m += 1
-                            linestring_text = "LINESTRING(" + linestring_text + ")"
-
-                            # Now we construct the GIS linestring string for the database insert
-                            landingprediction_sql = """
-                                 insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
-                                 values (now(),
-                                     %s, 
-                                     %s, 
-                                     'translated', 
-                                     %s::numeric, 
-                                     ST_GeometryFromText('POINT(%s %s)', 4326), 
-                                     ST_GeometryFromText(%s, 4326));
-                            """
-
-                            #debugmsg("SQL: " + landingprediction_sql % 
-                            #        (   fid, 
-                            #            callsign, 
-                            #            str(-1), 
-                            #            str(float(predictiondata_slice[-1,2])+dy), 
-                            #            str(float(predictiondata_slice[-1,1])+dx), 
-                            #            linestring_text 
-                            #        ))
-
-                            ts = datetime.datetime.now()
-                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
-
-                            landingcur.execute(landingprediction_sql, 
-                                    [   fid, 
-                                        callsign, 
-                                        float(-1), 
-                                        float(predictiondata_slice[-1,2])+dy, 
-                                        float(predictiondata_slice[-1,1])+dx, 
-                                        linestring_text 
-                                    ]
-                            )
-                            self.landingconn.commit()
-
-                        ####################################
-                        # END: Insert pre-flight predict file landing prediction into the database
-                        ####################################
-
 
 
                         ####################################
                         # START: Early cutdown landing prediction
                         ####################################
+
+                        # We define flightpath here, outside of the block below for pre-cutdown computations, so we can reference it later in the pre-flight 
+                        # predictions (down below this block).
+                        flightpath = None
 
                         # Now add a prediction record for cutdown / early-burst condition, but only if the flight is still ascending and we're above the 
                         # altitude sanity threshold
@@ -1895,8 +1855,149 @@ class LandingPredictor(PredictorBase):
                                 ####################################
 
                         ####################################
-                        # START: Early cutdown landing prediction
+                        # END: Early cutdown landing prediction
                         ####################################
+
+
+
+                        ####################################
+                        # START: Insert pre-flight predict file landing prediction into the database
+                        ####################################
+                        # Check if we found a splice point.  If so, then we proceed with splicing the predict
+                        # file onto the end of the existing flight path.
+                        #
+                        # We've delayed inserting this pre-flight prediction into the database until after the pre-cutdown prediction has been
+                        # [potentially] computed.  If a pre-cutdown prediction does exist, then we want to splice that onto the end of this
+                        # pre-flight prediction.  This will create a predicted flight path and landing that consists of unknown data (i.e. the pre-
+                        # flight prediction) as well as observed wind data for the flight thus far (i.e. the pre-cutdown prediction).  Combining these
+                        # results in a more accurate prediction prior to descent.
+                        #
+                        if predictiondata_slice.shape[0] > 0:
+
+                            # If there was a pre-cutdown prediction created up above, then we splice that onto the end section of the pre-flight prediction 
+                            if flightpath:
+
+                                # reference:  flightpath columns:
+                                #     latitude,
+                                #     longitude,
+                                #     ttl,
+                                #     altitude
+
+                                # first we find the splice point
+                                loop_counter = 0
+                                prev_pred_alt = 0
+
+                                # this is the altitude that the pre-cutdown landing prediction starts at...and should be our splice point
+                                cutdown_altitude = flightpath[0][3]
+
+                                # we reverse the pre-flight prediction data slice because we want to loop from landing up, towards the current flight altitude.
+                                predictiondata_slice_rev = predictiondata_slice[::-1]
+                                l = predictiondata_slice_rev.shape[0]
+
+                                # Now loop through the prediction data, stopping at the point where the pre-flight altitude is higher than the pre-cutdown starting altitude.
+                                while predictiondata_slice_rev[loop_counter,0] < cutdown_altitude and loop_counter < l - 1:
+                                    if prev_pred_alt > predictiondata_slice_rev[loop_counter, 0]:
+                                        # we've hit the top in the pred data and we need to stop
+                                        if loop_counter > 0:
+                                            loop_counter -= 1
+                                        break
+                                    prev_pred_alt = predictiondata_slice_rev[loop_counter, 0]
+                                    loop_counter += 1
+
+                                # Now slice off the predictiondata we care about
+                                predictiondata_slice_rev = predictiondata_slice_rev[loop_counter:, 0:]
+                                
+                                # reverse this back in HIGH to LOW altitude order
+                                predictiondata_slice = predictiondata_slice_rev[::-1]
+
+                                # reference:  predictiondata columns:
+                                #     altitude,
+                                #     latitude,
+                                #     longitude,
+                                #     vert_rate,
+                                #     delta_secs
+
+                                # reswizzle the flightpath columns into an array that matches the predictiondata format
+                                # convert the flightpath list to a numpyarray
+                                temparray = np.array(flightpath)
+
+                                # reorder the columns so we have altitude, latitude, longitude, and ttl
+                                newarray = temparray[:,[3,0,1,2]]
+
+                                # add a column with 0's in it
+                                newarray = np.hstack((newarray, np.zeros((newarray.shape[0], 1), dtype=newarray.dtype)))
+
+                                # now zero out the last two columns
+                                newarray[:,[3,4]] = 0
+
+                                # Now we need to translate the pre-cutdown prediction so that it begins (at the similar lat, lon) at the point where the pre-flight
+                                # prediction ends.
+                                # Determine the delta between the end of the pre-flight prediction and the beginning of the pre-cutdown prediction
+                                dx = float(predictiondata_slice[-1, 1]) - newarray[0,1]
+                                dy = float(predictiondata_slice[-1, 2]) - newarray[0,2]
+
+                                # Add this delta to the lat and lon columns of the pre-cutdown prediction.  This should translate the pre-cutdown predicted flight path
+                                # so that it begins at the same point that the pre-flight prediction ends.
+                                newarray[:,1] = [dx + i for i in newarray[:,1]]
+                                newarray[:,2] = [dy + i for i in newarray[:,2]]
+
+                                # Now, finally, append the two arrays
+                                predictiondata_slice = np.append(predictiondata_slice, newarray, axis=0)
+
+
+                            # Determine the delta between the last heard packet and the prediction data
+                            dx = x - float(predictiondata_slice[0, 1]) 
+                            dy = y - float(predictiondata_slice[0, 2])
+
+                            # Apply that delta to the prediction data, translating that curve and create the linestring string in the process
+                            m = 0
+                            linestring_text = ""
+                            for k,u,v,vrate,ds in predictiondata_slice:
+                                if m > 0:
+                                    linestring_text = linestring_text + ", "
+                                linestring_text = linestring_text + str(round(float(v)+dy, 6)) + " " + str(round(float(u)+dx, 6))
+                                m += 1
+                            linestring_text = "LINESTRING(" + linestring_text + ")"
+
+                            # Now we construct the GIS linestring string for the database insert
+                            landingprediction_sql = """
+                                 insert into landingpredictions (tm, flightid, callsign, thetype, coef_a, location2d, flightpath)
+                                 values (now(),
+                                     %s, 
+                                     %s, 
+                                     'translated', 
+                                     %s::numeric, 
+                                     ST_GeometryFromText('POINT(%s %s)', 4326), 
+                                     ST_GeometryFromText(%s, 4326));
+                            """
+
+                            #debugmsg("SQL: " + landingprediction_sql % 
+                            #        (   fid, 
+                            #            callsign, 
+                            #            str(-1), 
+                            #            str(float(predictiondata_slice[-1,2])+dy), 
+                            #            str(float(predictiondata_slice[-1,1])+dx), 
+                            #            linestring_text 
+                            #        ))
+
+                            ts = datetime.datetime.now()
+                            debugmsg("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
+
+                            landingcur.execute(landingprediction_sql, 
+                                    [   fid, 
+                                        callsign, 
+                                        float(-1), 
+                                        float(predictiondata_slice[-1,2])+dy, 
+                                        float(predictiondata_slice[-1,1])+dx, 
+                                        linestring_text 
+                                    ]
+                            )
+                            self.landingconn.commit()
+
+                        ####################################
+                        # END: Insert pre-flight predict file landing prediction into the database
+                        ####################################
+
 
 
                     ####################################
