@@ -1709,7 +1709,8 @@ class LandingPredictor(PredictorBase):
 
                         # Now add a prediction record for cutdown / early-burst condition, but only if the flight is still ascending and we're above the 
                         # altitude sanity threshold
-                        if descent_portion.shape[0] < 2 and latest_altitude > alt_sanity_threshold:
+                        #if descent_portion.shape[0] < 2 and latest_altitude > alt_sanity_threshold:
+                        if latest_altitude > alt_sanity_threshold:
                             # We're here because 
                             #     a) there was a predict file available (i.e. from the database)
                             #     b) the flight is not yet descending
