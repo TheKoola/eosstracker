@@ -594,6 +594,9 @@
                 // Update the lastpacket timestamp with the time from this packet.
                 $("#" + flightid + "_sidebar").data("lastpacket", thispacket);
 
+                // Update the feature...we want to save this so other parts of the web app can get to the latest telemetry for a given flight
+                $("#" + flightid + "_sidebar").data("feature", feature);
+
                 var myheading = feature.properties.myheading * 1.0;
                 var rel_bearing = feature.properties.rel_bearing * 1.0;
                 var bearing = feature.properties.bearing * 1.0;
@@ -605,6 +608,19 @@
                 var spd = feature.properties.speed * 1.0;
                 var vrate = feature.properties.verticalrate * 1.0;
 
+
+                //******** start: Update the flight coordinates fields **********
+                var celement = "#" + flightid + "_relativeballooncoords";
+                $(celement).text(lat.toFixed(4) + ", " + lon.toFixed(4));
+
+                //******** end: Update the flight coordinates fields **********
+
+
+
+                //******** start: Update relative position fields and gauges **********
+                updateRelativePosition(lastposition, flightid);
+
+                //******** end: Update relative position fields and gauges **********
 
 
                 //******** start: Update the ttl value **********
@@ -623,46 +639,6 @@
                     $(elem).text(ttl_string);
                 }
                 //******** end: Update the ttl value **********
-
-
-
-                //******** start: Update the relative position dials for this flight *******
-                // These are the values that are stuck in the table
-                var delement = "#" + flightid + "_relativepositiondistance";
-                var celement = "#" + flightid + "_relativeballooncoords";
-
-                // These are the dials
-                var eelement = "#" + flightid + "_relativeelevationangle";
-                var evelement = "#" + flightid + "_relativeelevationanglevalue";
-                var hvelement = "#" + flightid + "_relativebearingvalue";
-                var mhvelement = "#" + flightid + "_myheadingvalue";
-
-                // Determine the relative bearing based on GPS heading and the 
-                var relativeBearing = rel_bearing - myheading;
-                if (relativeBearing < 0)
-                    relativeBearing = 360 + relativeBearing;
-
-		if (feature.properties.myheading == null
-			|| feature.properties.rel_bearing == null
-			|| feature.properties.rel_angle == null
-			|| feature.properties.rel_distance == null) {
-	            $(delement).html("n/a");    
-		    $(evelement).text("n/a");
-		    $(hvelement).text("n/a");
-		    $(mhvelement).text("n/a");
-                }
-		else {
-		    $(hvelement).data("relativebearing").setRelativeHeading(myheading, rel_bearing);
-		    $(evelement).data("relativeangle").setElevationAngle(angle);
-		    $(delement).html(distance.toFixed(2) + " mi" + " @ " + rel_bearing.toFixed(0) + "&#176;");
-		    $(evelement).text(angle.toFixed(0));
-		    $(hvelement).text(relativeBearing.toFixed(0));
-		    $(mhvelement).text(myheading.toFixed(0));
-		}
-	
-		$(celement).text(lat.toFixed(4) + ", " + lon.toFixed(4));
-
-                //******** end: Update the relative position dials for this flight *******
 
 
                 //******** start: Update the telemetry gauges for this flight **********
@@ -701,13 +677,153 @@
                 $(speedValue).text(thespeed);
                 //******** end: Update the telemetry gauges for this flight **********
                 
-                
-                //******** start: Update the packet receive path for this flight **********
-                //
-                //
-                //******** end: Update the packet receive path for this flight **********
             }
         }
+    }
+
+
+    /*********
+    * updateRelativePosition
+    *
+    * This is called from getgps() and updateSideBar() to update the relative position fields and gauges for each flight
+    * getgps() is called at every update (every ~5 secs) and updateSideBar() is called whenever new packets from the flight are available.
+    **********/
+    function updateRelativePosition(positionJSON, fid) {
+
+        // by default we'll loop through each flight in the flightList
+        var theflightlist = flightList;
+
+        // If the fid parameter is given, then set the flightlist to just that flightid
+        if (typeof(fid) != "undefined") 
+            if (fid) {
+                theflightlist = [{"flightid" : fid}];
+            }
+
+        // Loop through each flight updating relative position stuffs
+        theflightlist.forEach(function(f) {
+
+            // the flightid
+            var flightid = f.flightid;
+
+            // Get the latest geoJson feature for this flight
+            var feature = $("#" + flightid + "_sidebar").data().feature;
+
+            // This is the distance and bearing field
+            var delement = "#" + flightid + "_relativepositiondistance";
+
+            // These are the relative position dials
+            var eelement = "#" + flightid + "_relativeelevationangle";
+            var evelement = "#" + flightid + "_relativeelevationanglevalue";
+            var hvelement = "#" + flightid + "_relativebearingvalue";
+            var mhvelement = "#" + flightid + "_myheadingvalue";
+
+            // If telemetry exists for the flight and we have a position from the GPS, then try and update the relative position fields/gauges
+            if (feature && positionJSON) {
+
+                // the GPS position and heading
+                var gps_heading = positionJSON.bearing * 1.0;
+                var gps_lat = positionJSON.lat * 1.0;
+                var gps_lon = positionJSON.lon * 1.0;
+                var gps_alt = positionJSON.altitude * 1.0;
+
+                // The flight's last location
+                var flight_lat = feature.geometry.coordinates[1] * 1.0;
+                var flight_lon = feature.geometry.coordinates[0] * 1.0;
+                var flight_alt = feature.properties.altitude * 1.0;
+
+                // The distance in miles from the GPS location to the flight's last known location
+                var dist = distance(gps_lat, gps_lon, flight_lat, flight_lon);
+
+                // Calculate the elevation angle in degrees between the flight and the GPS location
+                var ratio = (flight_alt - gps_alt) / (dist * 5280);
+                var angle = 0;
+                if (ratio != 0) 
+                    angle = Math.floor(180 * Math.atan(ratio) / Math.PI);
+
+                // Calculate the azimuth angle in degrees from North between the GPS and the flight's last known location
+                var rel_bearing = azimuth(gps_lat, gps_lon, flight_lat, flight_lon);
+
+                // Determine the relative bearing based on GPS heading and the bearing to the flight
+                // Note:  the relative bearing assumes the front of vehicle is considered "north"...assuming the GPS is in a mobile unit.
+                var relativeBearing = rel_bearing - gps_heading;
+                if (relativeBearing < 0)
+                    relativeBearing = 360 + relativeBearing;
+
+                // Now update the two relative position gauges
+                $(hvelement).data("relativebearing").setRelativeHeading(gps_heading.toFixed(0), rel_bearing.toFixed(0));
+                $(evelement).data("relativeangle").setElevationAngle(angle.toFixed(0));
+
+                // Now update the text values
+                $(delement).html(dist.toFixed(2) + " mi" + " @ " + rel_bearing.toFixed(0) + "&#176;");
+                $(evelement).text(angle.toFixed(0));
+                $(hvelement).text(relativeBearing.toFixed(0));
+                $(mhvelement).text(gps_heading.toFixed(0));
+            }
+            else {
+                // Without a valid GPS position or a last flight location, then just blank out the "values" fields on the sidebar and set the
+                // relative position dials to 0's.
+                $(hvelement).data("relativebearing").setRelativeHeading(0, 0);
+                $(evelement).data("relativeangle").setElevationAngle(0);
+                $(delement).html("n/a");    
+                $(evelement).text("--");
+                $(hvelement).text("--");
+                $(mhvelement).text("--");
+            }
+        });
+    }
+
+
+    /***********
+    * azimuth 
+    *
+    * This function will return the azimuth bearing in degrees from North between two points
+    * Note:  this assumes a flat earth model where the distances between two points is relatively small (ex. a few hundred miles or less).
+    ***********/
+    function azimuth(lat1, lon1, lat2, lon2) {
+
+        // The difference in latitude and longitude
+        var dx = lon2 - lon1;
+        var dy = lat2 - lat1;
+
+        // the azimuth angle
+        var azimuth;
+
+        if (dx > 0) 
+            azimuth = (Math.PI / 2) - Math.atan(dy/dx)
+        else if (dx < 0) 
+            azimuth = (3 * Math.PI / 2) - Math.atan(dy/dx)
+        else if (dy > 0) 
+            azimuth = 0
+        else if (dy < 0) 
+            azimuth = Math.PI
+        else
+            return null;
+
+        // convert to degrees before returning
+        return azimuth * 180 / Math.PI;
+    }
+
+
+    /***********
+    * distance
+    *
+    * This function return the distance in miles between two lat/lon points
+    ***********/
+    function distance(lat1, lon1, lat2, lon2) {
+
+        // Radians per degree
+        var p = Math.PI / 180;
+        
+        // The cosine function
+        var c = Math.cos;
+
+        // partial calculation...
+        var a = 0.5 - c((lat2 - lat1) * p)/2 + 
+                c(lat1 * p) * c(lat2 * p) * 
+                (1 - c((lon2 - lon1) * p))/2;
+
+        // Finish the calcs and return the distance in miles
+        return Math.round((12742 * Math.asin(Math.sqrt(a)))*.6213712 * 100)/100; 
     }
 
 
@@ -2192,6 +2308,7 @@ function getTrackers() {
 
                 // We use this to determine when the last packet came in for a given flight.
                 $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
+                $("#" + flightids[flight].flightid + "_sidebar").data("feature", "");
                 var d = $("#" + flightids[flight].flightid + "_sidebar").data().lastpacket;
                 
                 i += 1;
@@ -2279,6 +2396,9 @@ function getTrackers() {
                     // Update the speed status box
                     if (speedStatusBox)
                         speedStatusBox.show(Math.round(lastposition.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+
+                    // Now update the relative position gauges and fields
+                    updateRelativePosition(lastposition);
                 }
                 else
                     gpsfix = "Unable to get GPS status";
