@@ -2376,12 +2376,27 @@ function getTrackers() {
                 gpsStatusBox.show("GPS: <mark class=\"notokay\">[ NO DEVICE ]</mark>");
             }
             else {
-                if (gpsMode == 0)
+                if (gpsMode == 0) {
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO DATA ]</mark>";
-                else if (gpsMode == 1)
+
+                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
+                    if (speedStatusBox)
+                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
+                }
+                else if (gpsMode == 1) {
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO FIX ]</mark>";
-                else if (gpsMode == 2)
+
+                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
+                    if (speedStatusBox)
+                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
+                }
+                else if (gpsMode == 2) {
                     gpsfix = "GPS: <mark class=\"marginal\">[ 2D ]</mark>";
+
+                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
+                    if (speedStatusBox)
+                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
+                }
                 else if (gpsMode == 3) {
                     gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
                     
