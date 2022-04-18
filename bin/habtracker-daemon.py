@@ -44,6 +44,7 @@ import landingpredictor as lp
 import gpspoller
 import aprsis
 import infocmd
+import aprsstatus
 import kisstap
 import searchrtlsdr
 import aprsreceiver
@@ -717,6 +718,10 @@ def main():
             # Get our our current position
             myposition = getGPSPosition()
 
+            #if str(configuration["callsign"]) == 'N6BA' and str(configuration["ssid"]) == "2":
+            #    myposition["latitude"] = 39.2885
+            #    myposition["longitude"] = -104.6452
+
             # The direwolf process
             dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
             dfprocess.daemon = True
@@ -729,17 +734,26 @@ def main():
             dftapprocess.name = "Direwolf Tap"
             processes.append(dftapprocess)
 
-
-            if configuration["beaconing"] == "true" and configuration["objectbeaconing"] == "true":
-
+            if configuration["beaconing"] == "true": 
                 configuration["xmit_channel"] = total_freqs * 2
 
-                # The beaconing process (this is different from the position beacons that direwolf will transmit)
-                print "Starting object beaconing process..."
-                icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
-                icprocess.daemon = True
-                icprocess.name = "Object beaconing"
-                processes.append(icprocess)
+                # The status packet beaconing process
+                print "Starting status beaconing process..."
+                statusprocess = mp.Process(target=aprsstatus.runAPRSStatus, args=(stopevent, configuration))
+                statusprocess.daemon = True
+                statusprocess.name = "Status Beaconing"
+                processes.append(statusprocess)
+
+                # This transmits object packets and other experimental packet types via APRS, but we only want to do this if objectbeaconing is enbled.
+                if configuration["objectbeaconing"] == "true":
+
+                    # The beaconing process (this is different from the position beacons that direwolf will transmit)
+                    print "Starting object beaconing process..."
+                    icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
+                    icprocess.daemon = True
+                    icprocess.name = "Beaconing"
+                    processes.append(icprocess)
+
 
         else:
             status["rf_mode"] = 0

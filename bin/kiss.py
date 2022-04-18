@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2022 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ INFO_DELIM = AX25_CONTROL_FIELD + AX25_PROTOCOL_ID
 
 #####################################
 ## Set this to "True" to have debugging text output when running
-debug = False 
+debug = False
 #####################################
 
 def debugmsg(message):
@@ -437,7 +437,7 @@ class txKISS(KISS):
         # The via path for the packets to be sent to the KISS IP-based TNC
         # if the via parameter is a string, then split it into a list
         debugmsg("Type of 'via' parameter: %s" % type(via))
-        if type(via) is str:
+        if type(via) is str or type(via) is unicode:
             debugmsg("Splitting 'via' path into list.  via: %s" % via)
             self.via = via.split(",")
         elif type(via) is list:
@@ -609,7 +609,7 @@ class txKISS(KISS):
                 debugmsg("Sleeping for 5...")
 
                 # Now sleep a bit before getting the next item.
-                e.wait(15)
+                e.wait(5)
 
 
         except (KeyboardInterrupt, SystemExit):

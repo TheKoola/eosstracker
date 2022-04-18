@@ -140,6 +140,7 @@
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
                 <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
                 <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li>
+                <li><a href="#transmit" role="tab"><img src="/images/graphics/xmit.png" width="30" height="30"></a></li>
 <?php
     if ($numflights > 0) {
         foreach ($flightlist as $row){
@@ -233,7 +234,7 @@
             </div>  <!-- end of profile sidebar pane -->
 
 
-            <!-- messages sidebar pane (live packet stream) -->
+            <!-- messages sidebar pane -->
             <div class="sidebar-pane" id="messages">
                 <h1 class="sidebar-header">APRS Messages<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
                 <p class="section-header">APRS Message Packets:</p>
@@ -249,6 +250,20 @@
                 <!--<div class="packetdata" id="packetdata"></div>-->
                 <div style="width: 100%; white-space: break-word; word-wrap: break-word; overflow-wrap: break-word;" id="packetdata"></div>
                 <div id="packeterrors"></div>
+            </div> 
+
+            <!-- end of messages sidebar pane -->
+
+
+            <!-- transmit sidebar pane -->
+            <div class="sidebar-pane" id="transmit">
+                <h1 class="sidebar-header">Transmit APRS Status<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
+                <p class="section-header">Transmit APRS Status:</p>
+                <p class="lorem">If RF beaconing is enabled, one can transmit an APRS status packet from this tab.</p>
+                <p class="section-header">Transmit Form </p>
+                <div id="transmitdata"></div>
+                <div id="transmitstatus"></div>
+                <div id="transmiterrors"></div>
             </div> 
 
             <!-- end of messages sidebar pane -->

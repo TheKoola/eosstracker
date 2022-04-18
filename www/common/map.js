@@ -1237,6 +1237,19 @@
 
 
     /********
+    * This function is for acknowledging a status message from an indivdual tracker station
+    *********/
+    function statusAcknowledge(thetime, callsign, statusmsg) {
+        var url = "ackstatus.php?thetime=" + thetime + "&callsign=" + callsign + "&statusmsg=" + statusmsg;
+        var urlencoded = encodeURI(url);
+
+        $.get(urlencoded, function(d) {
+        });
+
+        return false;
+    }
+
+    /********
     * This function is for creating a new realtime layer object.
     *********/
     function createRealtimeLayer(url, startvalue, container, interval, styleFunction) {
@@ -1256,6 +1269,8 @@
                     var mapcenter = map.getCenter();
                     var mapzoom = map.getZoom(); 
                     var id = feature.properties.id;
+                    var statusPopupContent = false;
+
     		        html = "<a target=\"_blank\" href=\"map.php" + 
                         "?followfeatureid=" + feature.properties.id + 
                         "&latitude=" + feature.geometry.coordinates[1] + 
@@ -1263,7 +1278,17 @@
                         "&zoom=" + mapzoom + 
                         "&showallstations=1\">" + 
                         "<strong>" + feature.properties.callsign + "</strong></a>";
-                        html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
+
+                    if (typeof(feature.properties.statusmessage) != "undefined")  {
+                        if (feature.properties.statusmessage.acknowledged && feature.properties.statusmessage.statusmsgtime && feature.properties.statusmessage.statusmsg) {
+                            if (feature.properties.statusmessage.acknowledged * 1.0 == 0) {
+                                statusPopupContent = true;
+                            }
+                            html = html + "<br><font style=\"font-style: italic;\">Status: </font><font class=\"statusstyle\">" + feature.properties.statusmessage.statusmsg + "</font>";
+                        }
+                    }
+
+                    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
                         (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
                         (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency  +
                             (feature.properties.frequency == "ext radio" || feature.properties.frequency == "TCPIP" ? "" : "MHz") +
@@ -1276,6 +1301,14 @@
                         (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
 
                     layer.bindPopup(html, {className:  'myPopupStyle'} );
+                    if (statusPopupContent) {
+                        var t = feature.properties.statusmessage.statusmsgtime;
+                        var c = feature.properties.id;
+                        var m = feature.properties.statusmessage.statusmsg;
+                        layer.once("popupclose", function (e) {
+                            statusAcknowledge(t, c, m);
+                        });
+                    }
 
                     var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
 
@@ -1297,6 +1330,7 @@
                var filename;
                var id = feature.properties.id;
                var rotation = 0;
+               var classname = "";
 
                // Only try to display an "icon" if there was a symbol provided
                if (typeof(feature.properties.symbol) != "undefined") {
@@ -1337,6 +1371,48 @@
 		           return L.circleMarker(latlon, { radius: 8, pane: "breadcrumbPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
 
+              // This sets the classname for those symbols that have a status message  
+               if (typeof(feature.properties.statusmessage) != "undefined") {
+                   var statusmsg = feature.properties.statusmessage;
+
+                   if (typeof(statusmsg.statusmsgtime) != "undefined"
+                       && typeof(statusmsg.statusmsg) != "undefined"
+                       && typeof(statusmsg.priority) != "undefined"
+                       && typeof(statusmsg.acknowledged) != "undefined") {
+                       if (statusmsg.statusmsgtime && statusmsg.statusmsg && statusmsg.priority && statusmsg.acknowledged) {
+
+                           // Only change the highlighting around this symbol IF this status message is unacknowledged
+                           if (statusmsg.acknowledged * 1.0 == 0) {
+
+                                // determine the classname from the priority level
+                                switch (statusmsg.priority * 1) {
+                                    case 0: // informational
+                                        classname = 'informationalstatus';
+                                        break;
+                                    case 1: // priority
+                                        classname = 'prioritystatus';
+                                        break;
+                                    case 2: // warning
+                                        classname = 'warningstatus';
+                                        break;
+                                    case 3: // event notice
+                                        classname = 'eventstatus';
+                                        break;
+                                }
+
+                                // special case for when status is:  Out of The Vehicle
+                                if (statusmsg.statusmsg.includes("Out of The Vehicle"))
+                                    classname = 'outofthevehiclestatus';
+
+                                // special case for when status is:  Leading Client
+                                if (statusmsg.statusmsg.includes("Leading Client"))
+                                    classname = 'leaderstatus';
+                           }
+                       }
+                   }
+               }
+
+
                var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
@@ -1346,10 +1422,9 @@
                    iconSize: [iconsize, iconsize],
                    iconAnchor: [iconsize_center, iconsize_center], 
                    popupAnchor: [0, -iconsize_center],
-                   tooltipAnchor: [0, tipanchor]
+                   tooltipAnchor: [0, tipanchor],
+                   className: classname
                }); 
-
-
 
     		   return L.marker(latlon, { icon: myIcon, pane: "otherStationsPane", riseOnHover: true, rotationAngle: rotation, rotationOrigin: "center center" });
             } 
@@ -1373,6 +1448,7 @@
             var id = item.properties.id;
             var layer = realtimelayer.getLayer(id);
             var html = "";
+            var statusPopupContent = false;
 
             html = "<a target=\"_blank\" href=\"map.php" +
                       "?followfeatureid=" + item.properties.id + 
@@ -1381,6 +1457,16 @@
                       "&zoom=" + mapzoom + 
 		              "&showallstations=1\">" + 
                       "<strong>" + item.properties.callsign + "</strong></a>";
+
+            if (typeof(item.properties.statusmessage) != "undefined")  {
+                if (item.properties.statusmessage.acknowledged && item.properties.statusmessage.statusmsgtime && item.properties.statusmessage.statusmsg) {
+                    if (item.properties.statusmessage.acknowledged * 1.0 == 0) {
+                        statusPopupContent = true;
+                    }
+                    html = html + "<br><font style=\"font-style: italic;\">Status: </font><font class=\"statusstyle\">" + item.properties.statusmessage.statusmsg + "</font>";
+                }
+            }
+            
 
 	        html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		          (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
@@ -1396,6 +1482,15 @@
 
             // Update the popup content
             layer.setPopupContent(html, { className: 'myPopupStyle' });
+            if (statusPopupContent) {
+                var t = item.properties.statusmessage.statusmsgtime;
+                var c = item.properties.id;
+                var m = item.properties.statusmessage.statusmsg;
+                layer.off("popupclose");
+                layer.once("popupclose", function(e) {
+                    statusAcknowledge(t, c, m);
+                });
+            }
    
 
             // Set the icon for this object.  We do this for two reasons:  1) user might have changed theh iconsize, and 2) the APRS station might have changed it's symbol.
@@ -1435,6 +1530,49 @@
                      }
                  }
 
+                var classname = "";
+
+                // This sets the classname for those symbols that have a status message  
+                 if (typeof(item.properties.statusmessage) != "undefined") {
+                     var statusmsg = item.properties.statusmessage;
+
+                     if (typeof(statusmsg.statusmsgtime) != "undefined"
+                         && typeof(statusmsg.statusmsg) != "undefined"
+                         && typeof(statusmsg.priority) != "undefined"
+                         && typeof(statusmsg.acknowledged) != "undefined") {
+                         if (statusmsg.statusmsgtime && statusmsg.statusmsg && statusmsg.priority && statusmsg.acknowledged) {
+
+                           // Only change the highlighting around this symbol IF this status message is unacknowledged
+                           if (statusmsg.acknowledged * 1.0 == 0) {
+
+                                  // determine the classname from the priority level
+                                  switch (statusmsg.priority * 1) {
+                                      case 0: // informational
+                                          classname = 'informationalstatus';
+                                          break;
+                                      case 1: // priority
+                                          classname = 'prioritystatus';
+                                          break;
+                                      case 2: // warning
+                                          classname = 'warningstatus';
+                                          break;
+                                      case 3: // event notice
+                                          classname = 'eventstatus';
+                                          break;
+                                  }
+
+                                  // special case for when status is:  Out of The Vehicle
+                                  if (statusmsg.statusmsg.includes("Out of The Vehicle"))
+                                      classname = 'outofthevehiclestatus';
+
+                                  // special case for when status is:  Leading Client
+                                  if (statusmsg.statusmsg.includes("Leading Client"))
+                                      classname = 'leaderstatus';
+                           }
+                         }
+                     }
+                }
+
                  var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
                  var iconsize_center = Math.trunc(iconsize/2);
                  var tipanchor = iconsize_center + 10;
@@ -1444,7 +1582,8 @@
                      iconSize: [iconsize, iconsize],
                      iconAnchor: [iconsize_center, iconsize_center], 
                      popupAnchor: [0, -iconsize_center],
-                     tooltipAnchor: [0, tipanchor]
+                     tooltipAnchor: [0, tipanchor],
+                     className: classname
                  }); 
                  layer.setIcon(myIcon);
                  layer.setRotationAngle(rotation);
@@ -1704,6 +1843,68 @@ function getTrackers() {
     });
 }
 
+
+    /***********
+    * getStatusMessages
+    *
+    * This function queries the backend for the list of APRS status messages that a user can select for transmitting from the "Transmit Tab".
+    ***********/
+    function getStatusMessages() {
+        $.get("getstatusmessages.php", function(data) {
+            var json = data;
+            var div = document.getElementById("transmitdata");
+            var key;
+
+            // blank out the transmit area
+            div.innerHTML = "";
+
+            var html = "<p class=\"lorem\">Select the status message to transmit: </p><p><select style=\"color: black; font-size: 1.2em; white-space: nowrap;\" id=\"transmitselection\">";  
+            html += "<optgroup>";
+            html += "<option disabled>── priority 0 ──</option>";
+            var prior_p = 0;
+            for (key in json) {
+
+                if (json[key].priority != prior_p) {
+                    html += "</optgroup><optgroup>";
+                    html += "<option disabled>── priority " + json[key].priority + " ──</option>";
+                }
+                html = html + "<option value=\"p" + json[key].priority + json[key].transmit_text + "\" >" + json[key].transmit_text + "</option>";
+                prior_p = json[key].priority;
+            }
+            html += "</optgroup>";
+            html = html + "</select></p>";
+            html = html + "<p><button class=\"transmitbutton\" onclick='return submitTransmitStatus()'>TRANSMIT</button></p>";
+
+            div.innerHTML = html;
+        });
+    }
+
+
+    /***********
+    * submitTransmitStatus
+    *
+    * This function will submit the chosen transmit_text to the backend for transmission by the radio
+    ***********/
+    function submitTransmitStatus() {
+        var s = document.getElementById("transmitselection");
+        var v = s.options[s.selectedIndex].value;
+
+        var priority = v.substring(1,2);
+        var transmit_text = v.substring(2);
+        var url = "transmitstatus.php?transmit_text=" + transmit_text + "&priority=" + priority;
+        var urlencoded = encodeURI(url);
+
+        $.get(urlencoded, function(d) {
+            var text = (d.result == 0 ? "<mark class=\"notokay\">" + d.error : "<mark class=\"okay\">Success") + "</mark>";
+            var a = document.getElementById("transmitstatus");
+            a.innerHTML = text;
+            setTimeout(function() {
+                document.getElementById("transmitstatus").innerHTML = "";
+            }, 3000);
+        });
+
+        return false;
+    }
 
 
     /***********
@@ -2334,6 +2535,9 @@ function getTrackers() {
 
         // build the Trackers table
         setTimeout(function() { getTrackers(); }, 40);
+
+        // build the Trackers table
+        setTimeout(function() { getStatusMessages(); }, 50);
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
         if (updateTimeout)
@@ -3326,9 +3530,109 @@ function getTrackers() {
                 updateMessagesTable(data.messages);
             }
 
+            // APRS status packets from trackers
+            //if (typeof(data.statusmsgs) != "undefined") {
+            //    updateTrackerStatus(data.statusmsgs);
+            //}
+
         });
     }
 
+
+    /************
+     * updateTrackerStatus
+     *
+     * This will update the popup dialog box for a tracker and change the CSS class so that the marker is highlighted based on the priority 
+     * of the status message.
+     *
+     */
+
+    function updateTrackerStatus(thejson) {
+
+        if (thejson.length > 0) {
+            var x;
+
+            // Remove this tracker from the Trackers At Large layer...
+            for (x in thejson) {
+                var tracker;
+
+                var statusmsg = thejson[x];
+
+                // Try to find this tracker in the At Large layer first
+                tracker = (typeof(trackersAtLargeLayer.getLayer(thejson[x].callsign)) != "undefined" ? trackersAtLargeLayer.getLayer(statusmsg.callsign) : null);
+
+                // If not found, then look in each flight's tracker layer
+                if (! tracker) {
+                    var z;
+
+                    for (z in flightList) {
+                        tracker = (typeof(flightList[z].trackerlayer.getLayer(thejson[x].callsign)) != "undefined" ? flightList[z].trackerlayer.getLayer(statusmsg.callsign) : null);
+                        if (tracker)
+                            break;
+                    }
+                }
+
+                // if a tracker was found, then update it's layer and popup.
+                if (tracker) {
+                    var icon = tracker.options.icon;
+                    var classname = '';
+
+                    // determine the classname from the priority level
+                    switch (statusmsg.priority) {
+                        case 0: // informational
+                            classname = 'informationalstatus';
+                            break;
+                        case 1: // priority
+                            classname = 'prioritystatus';
+                            break;
+                        case 2: // warning
+                            classname = 'warningstatus';
+                            break;
+                        case 3: // event notice
+                            classname = 'eventstatus';
+                            break;
+                    }
+
+                    // special case for when status is:  Out of The Vehicle
+                    if (statusmsg.message.includes("Out of The Vehicle"))
+                        classname = 'outofthevehiclestatus';
+
+                    // special case for when status is:  Leading Client...
+                    if (statusmsg.message.includes("Leading Client"))
+                        classname = 'leaderstatus';
+
+                    // Change the tooltip
+                    tracker.setTooltipContent("<div class=\"" + classname + "\">" + statusmsg.callsign + "</div>");
+
+                    // the popup object assigned to this layer
+                    var popup = tracker.getPopup();
+
+                    // if there was a popup, then update the content
+                    if (popup) {
+                        var content = popup.getContent().split("</strong></a>");
+                        var uppercontent = content[0];
+                        var lowercontent = content[1];
+                        var msg = "<br><font class=\"statusstyle\">Status: " + statusmsg.message + "</font>";
+                        var newcontent = uppercontent + "</strong></a>" + msg + lowercontent;
+
+                        // Now update the popup's content
+                        tracker.setPopupContent(newcontent);
+
+                        var resettracker = function(popupcontent, tooltipcontent) {
+                            tracker.setPopupContent(popupcontent);
+                            tracker.setTooltipContent(tooltipcontent);
+                        };
+
+                        // now set a popupclose event to undo all of this once the popup is closed 
+                        tracker.once("popupclose", function(e) {
+                            tracker.setPopupContent(content);
+                            tracker.setTooltipContent(statusmsg.callsign);
+                        });
+                    }
+                }
+            }
+        }
+    }
 
 
     /************

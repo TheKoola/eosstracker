@@ -756,6 +756,14 @@
     ## query the last packets from stations...
     $query = "
         select
+        x.*,
+        z.thetime as statusmsgtime,
+        z.statusmsg,
+        z.priority,
+        z.acknowledged
+
+        from 
+        (select
             y.thetime,
             y.callsign,
             y.hash,
@@ -857,7 +865,6 @@
                 b.callsign is null
                 and a.location2d != ''
                 and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
-                and a.tm > (to_timestamp($2)::timestamp)
                 and case
                     when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
                         a.callsign  = tr.callsign
@@ -879,18 +886,162 @@
             order by
             y.thetime,
             y.callsign
-                ;
+        ) as x
+        left outer join 
+        ( select
+        max(c.thetime) as thetime,
+        c.callsign, 
+        c.priority,
+        c.statusmsg,
+        case when s.thetime is NULL then
+            0
+        else
+            1
+        end as acknowledged
+
+        from (
+            select
+                y.thetime,
+                y.callsign,
+                y.priority,
+                y.statusmsg
+
+            from 
+                (select 
+                    date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                    a.callsign,
+                    t.flightid,
+                    a.altitude,
+                    a.comment,
+                    a.symbol,
+                    a.speed_mph,
+                    a.bearing,
+                    cast(ST_Y(a.location2d) as numeric) as lat,
+                    cast(ST_X(a.location2d) as numeric) as lon,
+
+                    -- This is the source name.  Basically the name of the RF station that we heard this packet from
+                    case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%' then
+                        split_part(a.raw, '>', 1)
+                    else
+                        NULL
+                    end as sourcename,
+
+                    -- This is the status message 
+                    case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*%:>p[0-9]%' then substr(split_part(a.raw, ':>p', 2), 2)
+                         when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*%:>%' then split_part(a.raw, ':>', 2)
+                    else
+                        NULL
+                    end as statusmsg,
+
+                    case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*%:>p[0-9]%' then 
+                        cast(substr(split_part(a.raw, ':>p', 2), 1, 1) as integer)
+                    else
+                       0
+                    end as priority,
+             
+
+                    -- The frequency this packet was heard on
+                    round(a.frequency / 1000000.0,3) as freq,
+                    
+
+                    -- The Dire Wolf channel
+                    a.channel,
+
+                    -- The ranking of whether this was heard directly or via a digipeater
+                    dense_rank () over (partition by a.callsign order by 
+                        date_trunc('millisecond', a.tm) desc,
+                        a.channel asc,
+                        cast(
+                            cardinality(
+                                (
+                                    array_remove(
+                                    string_to_array(
+                                        regexp_replace(
+                                            split_part(
+                                                split_part(a.raw, ':', 1), 
+                                                '>', 
+                                                2), 
+                                            ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)', 
+                                            '', 
+                                            'g'), 
+                                        ',',''),
+                                    NULL)
+                                )[2:]
+                        ) as int) asc
+                    ),
+                    a.ptype,
+                    a.hash,
+                    a.raw,
+                    a.source,
+                    t.tactical,
+                    case when a.raw similar to '%>%:%' then
+                        (array_remove(string_to_array(regexp_replace(
+                                        split_part(
+                                            split_part(a.raw, ':', 1),
+                                            '>',
+                                            2),
+                                        ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
+                                        '',
+                                        'g'),
+                                    ',',''), NULL))[2:]
+                    else
+                        NULL
+                    end as path
+
+
+                    from packets a
+                    left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign,
+                    teams t,
+                    trackers tr
+
+                    where
+                    b.callsign is null
+                    and a.ptype = '>'
+                    and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
+                    and case
+                        when tr.callsign similar to '[A-Z]{1,2}[0-9][A-Z]{1,3}-[0-9]{1,2}' then
+                            a.callsign  = tr.callsign
+                        else
+                            a.callsign like tr.callsign || '-%'
+                    end
+                    and t.tactical != 'ZZ-Not Active'
+                    and tr.tactical = t.tactical 
+
+                    order by
+                    dense_rank,
+                    a.callsign,
+                    thetime) as y
+
+                where
+                y.dense_rank = 1
+
+                order by
+                y.thetime,
+                y.callsign
+            ) as c
+            left outer join
+            statusacknowledgements s on c.thetime = s.thetime and c.callsign = s.callsign and c.statusmsg = s.statusmsg
+
+            group by
+            2,3,4,5
+        ) as z
+        on z.callsign = x.callsign
+
+        order by 
+        x.thetime,
+        x.callsign
+        ;
     ";
 
     if ($get_flightid == "")
         $result = pg_query_params($link, $query, array(
             sql_escape_string($config["lookbackperiod"] . " minute"),
-            $get_starttime
+            sql_escape_string($config["lookbackperiod"] . " minute"),
         ));
     else
         $result = pg_query_params($link, $query, array(
             sql_escape_string($config["lookbackperiod"] . " minute"), 
-            $get_starttime,
+            sql_escape_string($config["lookbackperiod"] . " minute"), 
             sql_escape_string($get_flightid)
         ));
 
@@ -916,6 +1067,12 @@
         $tactical = $row['tactical'];
         $speed_mph = $row['speed_mph'];
         $heardfrom = $row['heardfrom'];
+
+        $statusmsgtime = $row['statusmsgtime'];
+        $statusmsg = $row['statusmsg'];
+        $priority = $row['priority'];
+        $acknowledged = $row['acknowledged'];
+
         if ($row["source"] == 'direwolf')
             $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
         else
@@ -927,13 +1084,13 @@
         if (array_key_exists($callsign, $positioninfo)) {
             $speed = calc_speed($latitude, $longitude, $positioninfo[$callsign][2], $positioninfo[$callsign][3], $positioninfo[$callsign][0], $thetime);
             if ($speed < 310) 
-                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency);
+                $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency, $statusmsgtime, $statusmsg, $priority, $acknowledged);
             else {
                 unset($features[$callsign][$latitude . $longitude . $altitude]);
             }
         }
         else
-            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency);
+            $positioninfo[$callsign] = array($thetime, $symbol, $latitude, $longitude, $altitude, $comment, $tactical, $bearing, $speed_mph, $heardfrom, $frequency, $statusmsgtime, $statusmsg, $priority, $acknowledged);
     }    
 
 
@@ -958,7 +1115,13 @@
                 "bearing" => $positioninfo[$callsign][7],
                 "speed" => $positioninfo[$callsign][8],
                 "heardfrom" => ($positioninfo[$callsign][9] == $callsign ? "direct" : $positioninfo[$callsign][9]), 
-                "frequency" => $positioninfo[$callsign][10]
+                "frequency" => $positioninfo[$callsign][10],
+                "statusmessage" => array(
+                    "statusmsgtime" => $positioninfo[$callsign][11],
+                    "statusmsg" => $positioninfo[$callsign][12],
+                    "priority" => $positioninfo[$callsign][13],
+                    "acknowledged" => $positioninfo[$callsign][14]
+                )
             ),
             "geometry" => array(
                 "type" => "Point",
