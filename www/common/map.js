@@ -1577,9 +1577,9 @@
             if (hud)
                 hud.setCutoff(lookbackPeriod);
 
-            if (typeof(jsonData.callsign) != "undefined")
-                if (jsonData.callsign != "")
-                    mycallsign = jsonData.callsign.toUpperCase();
+            if (typeof(jsonData.callsign) != "undefined" && typeof(jsonData.ssid) != "undefined")
+                if (jsonData.callsign != "" && jsonData.ssid != "")
+                    mycallsign = jsonData.callsign.toUpperCase() + "-" + jsonData.ssid;
 
 		    /*if (jsonData.plottracks == "on")
 			    document.getElementById("plottracks").checked = true;
