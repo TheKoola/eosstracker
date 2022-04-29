@@ -32,10 +32,13 @@ import signal
 import random
 from inspect import getframeinfo, stack
 import string
+import numpy as np
+import json
 
 #import local configuration items
 import habconfig 
 import kiss
+import queries
 
 #logging.basicConfig(level=0)
 
@@ -97,6 +100,9 @@ class kissTap(object):
         else:
             self.freqmap = [ [0, 144390000] ]
 
+        # List of active flights
+        self.flightlist = None
+
         debugmsg("kissTap Instance Created:")
         debugmsg("    dbstring:       %s" % self.dbstring)
         debugmsg("    timezone:       %s" % self.timezone)
@@ -122,6 +128,9 @@ class kissTap(object):
             # Check the database connection
             if not self.connectToDatabase():
                 return
+
+            # Get a list of active flights
+            self.flightlist = queries.getFlights(self.kissconn)
 
             # set the connection retry loop limit
             if self.connectionRetryLimit:
@@ -389,6 +398,7 @@ class kissTap(object):
             debugmsg("checking if a posit packet...")
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
             if packet["latitude"] == "" or packet["longitude"] == "":
+
                 # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
                 sql = """insert into packets (tm, source, channel, frequency, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                     now()::timestamp with time zone, 
@@ -408,6 +418,7 @@ class kissTap(object):
                     md5(%s)
                 );"""
 
+
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (
                     source,
@@ -422,7 +433,8 @@ class kissTap(object):
                     raw, 
                     ptype, 
                     info)
-                    )
+                )
+                    
                 tapcur.execute(sql, [
                     source,
                     channel,
@@ -438,7 +450,36 @@ class kissTap(object):
                     info.strip()
                 ])
 
+                # if this packet was from a callsign on an active flight, then we want to use PG_NOTIFY to alert any listners
+                if self.flightlist.shape[0] > 0:
+                    # columns for self.flightlist:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+                    listofcalls = self.flightlist[0:,1]
+                    if packet["from"].strip() in listofcalls:
+                        ts = datetime.datetime.now()
+                        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                        pg_notify = { 
+                                "tm": thetime,
+                                "source": source,
+                                "channel": channel,
+                                "frequency": frequency,
+                                "callsign": packet["from"].strip(), 
+                                "symbol": packet["symbol"].strip(), 
+                                "speed": packet["speed"],
+                                "course": packet["course"],
+                                "altitude": packet["altitude"],
+                                "comment": packet["comment"].strip(), 
+                                "longitude": "",
+                                "latitude": "",
+                                "raw": raw, 
+                                "ptype": ptype.strip(), 
+                                "info": info.strip()
+                                }
+                        pg_notify_sql = " select pg_notify('flightpacket', '" + json.dumps(pg_notify, separators=(',', ':')) + "');"
+                        tapcur.execute(pg_notify_sql)
+                        self.kissconn.commit()
+
             else:
+
                 # SQL insert statement for packets that DO contain a location (i.e. lat/lon)
                 sql = """insert into packets (tm, source, channel, frequency, callsign, symbol, speed_mph, bearing, altitude, comment, location2d, location3d, raw, ptype, hash) values (
                     now()::timestamp with time zone, 
@@ -457,6 +498,8 @@ class kissTap(object):
                     %s, 
                     md5(%s)
                 );"""
+
+
 
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (
@@ -478,6 +521,7 @@ class kissTap(object):
                     ptype,
                     info)
                     )
+                    
                 tapcur.execute(sql, [
                     source,
                     channel,
@@ -497,6 +541,34 @@ class kissTap(object):
                     ptype.strip(),
                     info.strip()
                 ])
+
+                # if this packet was from a callsign on an active flight, then we want to use PG_NOTIFY to alert any listners
+                if self.flightlist.shape[0] > 0:
+                    # columns for self.flightlist:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+                    listofcalls = self.flightlist[0:,1]
+                    if packet["from"].strip() in listofcalls:
+                        ts = datetime.datetime.now()
+                        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                        pg_notify = { 
+                                "tm": thetime,
+                                "source": source,
+                                "channel": channel,
+                                "frequency": frequency,
+                                "callsign": packet["from"].strip(), 
+                                "symbol": packet["symbol"].strip(), 
+                                "speed": packet["speed"],
+                                "course": packet["course"],
+                                "altitude": packet["altitude"],
+                                "comment": packet["comment"].strip(), 
+                                "longitude": packet["longitude"],
+                                "latitude": packet["latitude"],
+                                "raw": raw, 
+                                "ptype": ptype.strip(), 
+                                "info": info.strip()
+                                }
+                        pg_notify_sql = " select pg_notify('flightpacket', '" + json.dumps(pg_notify, separators=(',', ':')) + "');"
+                        tapcur.execute(pg_notify_sql)
+                        self.kissconn.commit()
 
             # Commit the insert to the database
             self.kissconn.commit()

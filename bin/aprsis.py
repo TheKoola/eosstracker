@@ -34,9 +34,12 @@ from inspect import getframeinfo, stack
 import string
 import select
 import logging
+import numpy as np
+import json
 
 #import local configuration items
 import habconfig 
+import queries
 
 #logging.basicConfig(level=0)
 logging.getLogger("aprslib").addHandler(logging.NullHandler())
@@ -233,6 +236,9 @@ class APRSIS(object):
         # Last time a packet was ingested/handled.  For the watchdog thread.
         self.ts = datetime.datetime.now()
 
+        # The list of active flights
+        self.flightlist = np.array([])
+
         debugmsg("APRSIS Instance Created:")
         debugmsg("    dbstring:       %s" % self.dbstring)
         debugmsg("    timezone:       %s" % self.timezone)
@@ -252,6 +258,7 @@ class APRSIS(object):
     def run(self):
 
         try:
+
             # Create an aprslib object
             debugmsg("APRS-IS connection: callsign: %s, passcode: %s, host: %s, port: %s" % (self.callsign, aprslib.passcode(self.callsign), self.server, '14580'))
             #self.ais = aprslib.IS(self.callsign, aprslib.passcode(self.callsign), host=self.server, port='14580')
@@ -304,6 +311,16 @@ class APRSIS(object):
 
                     # Set the connect flag 
                     self.connected = True
+
+                    # connect to the database (if not already)
+                    self.connectToDatabase()
+
+                    # Update the flightlist
+                    self.flightlist = queries.getFlights(self.aprsconn)
+                    if debug:
+                        print "==== APRSIS flightlist ===="
+                        for a in self.flightlist:
+                            print a
 
                     # Update the last timestamp
                     self.ts = datetime.datetime.now()
@@ -562,6 +579,38 @@ class APRSIS(object):
                     md5(%s)
                 );"""
 
+                # if this packet was from a callsign on an active flight, then we want to use PG_NOTIFY to alert any listners
+                if self.flightlist.shape[0] > 0:
+                    # columns for self.flightlist:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+                    listofcalls = self.flightlist[0:,1]
+                    if debug:
+                        print "==== APRSIS listofcalls ===="
+                        for a in listofcalls:
+                            print a
+
+                    if packet["from"].strip() in listofcalls:
+                        ts = datetime.datetime.now()
+                        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                        pg_notify = { 
+                                "tm": thetime,
+                                "source": source,
+                                "channel": channel,
+                                "callsign": packet["from"].strip(), 
+                                "symbol": packet["symbol"].strip(), 
+                                "speed": packet["speed"],
+                                "course": packet["course"],
+                                "altitude": packet["altitude"],
+                                "comment": packet["comment"].strip(), 
+                                "longitude": "",
+                                "latitude": "",
+                                "raw": raw, 
+                                "ptype": ptype.strip(), 
+                                "info": info.strip()
+                                }
+                        pg_notify_sql = " select pg_notify('flightpacket', '" + json.dumps(pg_notify, separators=(',', ':')) + "');"
+                        tapcur.execute(pg_notify_sql)
+
+
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (
                     source, 
@@ -609,6 +658,39 @@ class APRSIS(object):
                     %s, 
                     md5(%s)
                 );"""
+
+                # if this packet was from a callsign on an active flight, then we want to use PG_NOTIFY to alert any listners
+                if self.flightlist.shape[0] > 0:
+                    # columns for self.flightlist:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+                    listofcalls = self.flightlist[0:,1]
+
+                    if debug:
+                        print "==== APRSIS listofcalls ===="
+                        for a in listofcalls:
+                            print a
+
+
+                    if packet["from"].strip() in listofcalls:
+                        ts = datetime.datetime.now()
+                        thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
+                        pg_notify = { 
+                                "tm": thetime,
+                                "source": source,
+                                "channel": channel,
+                                "callsign": packet["from"].strip(), 
+                                "symbol": packet["symbol"].strip(), 
+                                "speed": packet["speed"],
+                                "course": packet["course"],
+                                "altitude": packet["altitude"],
+                                "comment": packet["comment"].strip(), 
+                                "longitude": packet["longitude"],
+                                "latitude": packet["latitude"],
+                                "raw": raw, 
+                                "ptype": ptype.strip(), 
+                                "info": info.strip()
+                                }
+                        pg_notify_sql = " select pg_notify('flightpacket', '" + json.dumps(pg_notify, separators=(',', ':')) + "');"
+                        tapcur.execute(pg_notify_sql)
 
                 # Execute the SQL statement
                 debugmsg("Packet SQL: " + sql % (

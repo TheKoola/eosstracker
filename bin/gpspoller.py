@@ -210,8 +210,28 @@ def GpsPoller(e):
                     # 3D Fix
                     if report["mode"] == 3:
 
+
                         # If our position has changed by .0001 of a lat/lon degree, then we consider it significant enough to add a row to the database
                         if round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon:
+
+                            # The time of the last GPS position fix
+                            thetime = datetime_record
+
+                            # json for PG_NOTIFY
+                            pg_notify = {
+                                    "tm": datetime_record,
+                                    "mode": gpsd.fix.mode,
+                                    "speed_mph": round(gpsd.fix.speed * 2.236936, 1),
+                                    "bearing" : round(gpsd.fix.track, 0),
+                                    "latitude" : round(gpsd.fix.latitude, 6),
+                                    "longitude" : round(gpsd.fix.longitude, 6),
+                                    "altitude_ft": round(gpsd.fix.altitude * 3.2808399, 0),
+                                    }
+                            pg_notify_string = " select pg_notify('gpsupdate', %s)"
+                            try:
+                                gpscur.execute(pg_notify_string, [json.dumps(pg_notify, separators=(',', ':'))])
+                            except pg.DatabaseError as error:
+                                    print error
 
                             # SQL statement
                             sql = """insert into
@@ -223,9 +243,6 @@ def GpsPoller(e):
                                     ST_GeometryFromText('POINT(%s %s)', 4326),
                                     ST_GeometryFromText('POINTZ(%s %s %s)', 4326)
                                 );"""
-
-                            # The time of the last GPS position fix
-                            thetime = datetime_record
 
                             # If our position is non-zero and altitude is > 0 then proceed with the database insert
                             if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
