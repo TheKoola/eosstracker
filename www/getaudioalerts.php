@@ -28,7 +28,6 @@
 #
 # This will return JSON of the form:  {"flightid" : "abcd-xxx", "audiofile" : "filename" }
 
-    session_start();
     header("Content-Type:  application/json;");
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];

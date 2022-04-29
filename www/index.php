@@ -24,7 +24,6 @@
  */
 
 
-session_start();
 $pagetitle="APRS:  Home";
 if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
