@@ -703,8 +703,15 @@ def main():
                 # append this frequency/UDP port list to the list for Direwolf
                 direwolfFreqList.append(freqlist)
 
+                # The IP destination for where the GnuRadio UDP network block is to send its audio packets too.  This is hard coded to be the loopback address (for now).
+                ip_dest = "127.0.0.1"
+
+                # The direwolf audio sample rate.  This is hardcoded for now to be 50000 as it makes the math easier for the Resampler blocks within the GnuRadio receiver.
+                # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
+                samplerate = 50000
+
                 # This is the GnuRadio process
-                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], stopevent))
+                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], ip_dest, samplerate, stopevent))
                 grprocess.daemon = True
                 grprocess.name = "GnuRadio_" + str(k["rtl"])
                 processes.append(grprocess)

@@ -61,11 +61,8 @@ def createDirewolfConfig(callsign, l, configdata, gpsposition):
                     f.write("# SDR Device: " + prefix + " (s/n: " + sn + ")  Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
                     f.write("ADEVICE" + str(adevice) + " udp:" + str(port) + " null\n")
 
-                    # Airspy SDRs require us to use an audio rate of 50k (it's because those dongles support limited sample rates)
-                    if prefix == "airspy":
-                        f.write("ARATE 50000\n")
-                    else:
-                        f.write("ARATE 44100\n")
+                    # Defaulting to an audio rate of 50000.  Fixing this makes it easier on the GnuRadio receiver side when working with resampling.
+                    f.write("ARATE 50000\n")
 
                     f.write("ACHANNELS 1\n")
                     f.write("CHANNEL " + str(channel) + "\n")
