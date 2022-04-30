@@ -232,16 +232,22 @@ class KISS(object):
                             # ..
 
                             for f in frames:
-                                channel = ord(f[0]) >> 4
+                                try:
 
-                                # Strip off the first byte, as that's the KISS data frame byte
-                                s = f[1:]
-                                s = s.strip(chr(KISS_FEND))
+                                    channel = ord(f[0]) >> 4
 
-                                packet = self.parseFrame(s)
+                                    # Strip off the first byte, as that's the KISS data frame byte
+                                    s = f[1:]
+                                    s = s.strip(chr(KISS_FEND))
 
-                                debugmsg("calling function for: [{}] {}\n".format(channel, s))
-                                callback(packet, channel)
+                                    packet = self.parseFrame(s)
+
+                                    debugmsg("calling function for: [{}] {}\n".format(channel, s))
+                                    callback(packet, channel)
+
+                                except Exception as e:
+                                    print "error (", e, ") parsing packet: ", f
+                                    sys.stdout.flush()
 
                             kiss_frames = []
                         else:
