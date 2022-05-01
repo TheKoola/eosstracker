@@ -173,9 +173,14 @@ function getrecentdata() {
         var freqhtml = "";
         var callsign_html = "";
         //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
+        //
+
+        var product_name_lower = antennas[i].rtl_product.toLowerCase();
+        var instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
 
         for (k = 0; k < frequencies.length; k++) 
             freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
+
         antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
             + "<div class=\"antenna-table\">"
             + "<div class=\"table-row\">"
@@ -192,7 +197,7 @@ function getrecentdata() {
             + "</div>"
             + "<div class=\"table-row\">"
             + "    <div class=\"table-cell\">SDR Information</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">RTL-SDR #: " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
+            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
             + "</div>"
             + "<div class=\"table-row\">"
             + "    <div class=\"table-cell\">Igating Status</div>"
