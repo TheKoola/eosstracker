@@ -233,7 +233,6 @@ class KISS(object):
 
                             for f in frames:
                                 try:
-
                                     channel = ord(f[0]) >> 4
 
                                     # Strip off the first byte, as that's the KISS data frame byte
@@ -246,8 +245,8 @@ class KISS(object):
                                     callback(packet, channel)
 
                                 except Exception as e:
-                                    print "error (", e, ") parsing packet: ", f
-                                    sys.stdout.flush()
+                                    # we skip any frames that have some sort of issue...
+                                    pass
 
                             kiss_frames = []
                         else:
