@@ -182,16 +182,16 @@ class aprs_receiver(gr.top_block):
         self.downstream_samp_rate = None
 
         # Airspy R2 / Mini can only accommodate specific sample rates and uses device specific RF gains, so we need to adjust values to accommodate
+        airspy_rates_string = ""
         if prefix == "airspy":
 
             # Get the list of supported sample rates from the Airspy device
             rates = self.osmosdr_source_0.get_sample_rates()
 
             # Report sample rates supported by the Airspy device
-            s = "Airspy supported sample rates: "
+            airspy_rates_string = "Airspy supported sample rates: "
             for r in rates:
-                s += "  " + str(int(r.start()))
-            print s
+                airspy_rates_string += "  " + str(int(r.start()))
 
             # Get the first valid sample rate for the airspy device.  This *should* be the lowest sample rate allowed by the device.
             self.samp_rate = int(rates[0].start())
@@ -315,24 +315,37 @@ class aprs_receiver(gr.top_block):
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
 
-        print "GnuRadio parameters for:  ", self.rtl_id
-        print "len(channel taps):  ", len(self.channel_lowpass_taps)
-        print "len(audio taps):  ", len(self.audio_taps)
-        print "Source sample rate (", self.rtl_id, "):  ", self.samp_rate
-        print "Downstream sample rate (", self.rtl_id, "):  ", self.downstream_samp_rate
-        #print "Channel width (Hz):  ", self.channel_width
-        print "Direwolf audio rate:  ", self.direwolf_audio_rate
-        print "Quadrature rate:  ", self.quadrate
-        print "Frequency spread:  ", spread
-        print "Center frequency(", self.rtl_id, "):  ", self.center_freq
-        print "Xlating decimation:  ", self.decimation
+        print "==== GnuRadio parameters ===="
+        instance_string = "    " + str(self.rtl_id) + ":  "
+        if prefix == "airspy": 
+            print "    Processing chain:"
+            print "        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->"
+            print "        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink"
+        else:
+            print "    Processing chain:"
+            print "        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->"
+            print "        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink"
+        print instance_string, "len(channel taps):   ", len(self.channel_lowpass_taps)
+        print instance_string, "len(audio taps):     ", len(self.audio_taps)
+        print instance_string, "Source sample rate:  ", self.samp_rate
+        print instance_string, "Downstrm samp rate:  ", self.downstream_samp_rate
+        print instance_string, "Channel width (Hz):  ", self.channel_width
+        print instance_string, "Dwolf audio rate:    ", self.direwolf_audio_rate
+        print instance_string, "Quadrature rate:     ", self.quadrate
+        print instance_string, "Frequency spread:    ", spread
+        print instance_string, "Center frequency:    ", self.center_freq
+        print instance_string, "Xlating decimation:  ", self.decimation
 
-        # Query the osmosdr block to determine just what gain and sample rates it set for the airspy device
         if prefix == "airspy":
-            print "Airspy LNA Gain set to:  ", self.osmosdr_source_0.get_gain("LNA")
-            print "Airspy MIX Gain set to:  ", self.osmosdr_source_0.get_gain("MIX")
-            print "Airspy VGA Gain set to:  ", self.osmosdr_source_0.get_gain("IF")
-            print "Airspy source sample rate set to:  ", self.samp_rate
+            print instance_string, "Airspy LNA Gain:     ", self.osmosdr_source_0.get_gain("LNA")
+            print instance_string, "Airspy MIX Gain:     ", self.osmosdr_source_0.get_gain("MIX")
+            print instance_string, "Airspy VGA Gain:     ", self.osmosdr_source_0.get_gain("IF")
+            print instance_string, airspy_rates_string
+            print instance_string, "Airspy source sample rate set to:  ", self.samp_rate
+        else:
+            print instance_string, "Gain mode:           ", "automatic"
+
+        print "============================="
 
         sys.stdout.flush()
 
