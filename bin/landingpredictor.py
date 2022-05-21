@@ -546,25 +546,32 @@ class PredictorBase(object):
                        delta = avg_asc_rate - k[3] 
 
                        t = 0
-                       h_range = []
-                       if k[0] - backstop <= step_size:
-                           v_0 =  v(backstop)
-                           v_1 =  v(k[0])
-                           v_avg = (v_0 + v_1) / 2.0
-                           t = abs((k[0] - backstop) / v_avg)
+                       #h_range = []
 
-                       else:
-                           h_range = np.arange(backstop + step_size, k[0], step_size)
-                           for h in h_range:
-                               v_0 =  v(h - step_size)
-                               v_1 =  v(h)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t += abs(step_size / v_avg)
+                       # compute the time of descent from k[0] down to the backstop
+                       v_0 =  v(backstop)
+                       v_1 =  v(k[0])
+                       v_avg = (v_0 + v_1) / 2.0
+                       t = abs((k[0] - backstop) / v_avg)
 
-                           v_0 =  v(h_range[-1])
-                           v_1 =  v(k[0])
-                           v_avg = (v_0 + v_1) / 2.0
-                           t += abs((k[0] - h_range[-1]) / v_avg)
+                       #if k[0] - backstop <= step_size:
+                       #    v_0 =  v(backstop)
+                       #    v_1 =  v(k[0])
+                       #    v_avg = (v_0 + v_1) / 2.0
+                       #    t = abs((k[0] - backstop) / v_avg)
+
+                       #else:
+                       #    h_range = np.arange(backstop + step_size, k[0], step_size)
+                       #    for h in h_range:
+                       #        v_0 =  v(h - step_size)
+                       #        v_1 =  v(h)
+                       #        v_avg = (v_0 + v_1) / 2.0
+                       #        t += abs(step_size / v_avg)
+
+                       #    v_0 =  v(h_range[-1])
+                       #    v_1 =  v(k[0])
+                       #    v_avg = (v_0 + v_1) / 2.0
+                       #    t += abs((k[0] - h_range[-1]) / v_avg)
 
 
                        if surface_winds:
@@ -643,24 +650,31 @@ class PredictorBase(object):
                            delta = avg_asc_rate - k[3]
 
                            t = 0
-                           h_range = []
-                           if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
-                               v_0 =  v(backstop)
-                               v_1 =  v(last_heard_altitude)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t = abs((last_heard_altitude - backstop) / v_avg)
-                           else:
-                               h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
-                               for h in h_range:
-                                   v_0 =  v(h - step_size)
-                                   v_1 =  v(h)
-                                   v_avg = (v_0 + v_1) / 2.0
-                                   t += abs(step_size / v_avg)
+                           #h_range = []
 
-                               v_0 =  v(h_range[-1])
-                               v_1 =  v(last_heard_altitude)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t += abs((last_heard_altitude - h_range[-1]) / v_avg)
+                           # compute the time of descent from k[0] down to the backstop
+                           v_0 =  v(backstop)
+                           v_1 =  v(last_heard_altitude)
+                           v_avg = (v_0 + v_1) / 2.0
+                           t = abs((last_heard_altitude - backstop) / v_avg)
+
+                           #if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
+                           #    v_0 =  v(backstop)
+                           #    v_1 =  v(last_heard_altitude)
+                           #    v_avg = (v_0 + v_1) / 2.0
+                           #    t = abs((last_heard_altitude - backstop) / v_avg)
+                           #else:
+                           #    h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
+                           #    for h in h_range:
+                           #        v_0 =  v(h - step_size)
+                           #        v_1 =  v(h)
+                           #        v_avg = (v_0 + v_1) / 2.0
+                           #        t += abs(step_size / v_avg)
+
+                           #    v_0 =  v(h_range[-1])
+                           #    v_1 =  v(last_heard_altitude)
+                           #    v_avg = (v_0 + v_1) / 2.0
+                           #    t += abs((last_heard_altitude - h_range[-1]) / v_avg)
 
                            if surface_winds:
 
@@ -1006,25 +1020,32 @@ class PredictorBase(object):
                        delta = avg_asc_rate - k[3] 
 
                        t = 0
-                       h_range = []
-                       if k[0] - backstop <= step_size:
-                           v_0 =  v(backstop)
-                           v_1 =  v(k[0])
-                           v_avg = (v_0 + v_1) / 2.0
-                           t = abs((k[0] - backstop) / v_avg)
+                       #h_range = []
 
-                       else:
-                           h_range = np.arange(backstop + step_size, k[0], step_size)
-                           for h in h_range:
-                               v_0 =  v(h - step_size)
-                               v_1 =  v(h)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t += abs(step_size / v_avg)
+                       # compute the time of descent from k[0] down to the backstop
+                       v_0 =  v(backstop)
+                       v_1 =  v(k[0])
+                       v_avg = (v_0 + v_1) / 2.0
+                       t = abs((k[0] - backstop) / v_avg)
 
-                           v_0 =  v(h_range[-1])
-                           v_1 =  v(k[0])
-                           v_avg = (v_0 + v_1) / 2.0
-                           t += abs((k[0] - h_range[-1]) / v_avg)
+                       #if k[0] - backstop <= step_size:
+                       #    v_0 =  v(backstop)
+                       #    v_1 =  v(k[0])
+                       #    v_avg = (v_0 + v_1) / 2.0
+                       #    t = abs((k[0] - backstop) / v_avg)
+
+                       #else:
+                       #    h_range = np.arange(backstop + step_size, k[0], step_size)
+                       #    for h in h_range:
+                       #        v_0 =  v(h - step_size)
+                       #        v_1 =  v(h)
+                       #        v_avg = (v_0 + v_1) / 2.0
+                       #        t += abs(step_size / v_avg)
+
+                       #    v_0 =  v(h_range[-1])
+                       #    v_1 =  v(k[0])
+                       #    v_avg = (v_0 + v_1) / 2.0
+                       #    t += abs((k[0] - h_range[-1]) / v_avg)
 
 
                        dx = t * k[4]
@@ -1057,24 +1078,31 @@ class PredictorBase(object):
                            delta = avg_asc_rate - k[3]
 
                            t = 0
-                           h_range = []
-                           if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
-                               v_0 =  v(backstop)
-                               v_1 =  v(last_heard_altitude)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t = abs((last_heard_altitude - backstop) / v_avg)
-                           else:
-                               h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
-                               for h in h_range:
-                                   v_0 =  v(h - step_size)
-                                   v_1 =  v(h)
-                                   v_avg = (v_0 + v_1) / 2.0
-                                   t += abs(step_size / v_avg)
+                           #h_range = []
 
-                               v_0 =  v(h_range[-1])
-                               v_1 =  v(last_heard_altitude)
-                               v_avg = (v_0 + v_1) / 2.0
-                               t += abs((last_heard_altitude - h_range[-1]) / v_avg)
+                           # compute the time of descent from k[0] down to the backstop
+                           v_0 =  v(backstop)
+                           v_1 =  v(last_heard_altitude)
+                           v_avg = (v_0 + v_1) / 2.0
+                           t = abs((last_heard_altitude - backstop) / v_avg)
+
+                           #if last_heard_altitude - backstop <= step_size and last_heard_altitude > backstop:
+                           #    v_0 =  v(backstop)
+                           #    v_1 =  v(last_heard_altitude)
+                           #    v_avg = (v_0 + v_1) / 2.0
+                           #    t = abs((last_heard_altitude - backstop) / v_avg)
+                           #else:
+                           #    h_range = np.arange(backstop + step_size, last_heard_altitude, step_size)
+                           #    for h in h_range:
+                           #        v_0 =  v(h - step_size)
+                           #        v_1 =  v(h)
+                           #        v_avg = (v_0 + v_1) / 2.0
+                           #        t += abs(step_size / v_avg)
+
+                           #    v_0 =  v(h_range[-1])
+                           #    v_1 =  v(last_heard_altitude)
+                           #    v_avg = (v_0 + v_1) / 2.0
+                           #    t += abs((last_heard_altitude - h_range[-1]) / v_avg)
 
                            dx = t * k[4]
                            dy = t * k[5]
