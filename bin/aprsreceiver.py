@@ -30,6 +30,9 @@ import signal
 import sys
 import time
 import math
+import threading
+from multiprocessing import Queue
+from Queue import Empty, Full
 
 
 ##################################################
@@ -232,6 +235,29 @@ class aprs_receiver(gr.top_block):
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
 
+
+        # Probe rate
+        self.probe_rate = .08
+
+        # Initial value from probe
+        self.power_dbm = 0
+
+        # Create the Average Magnitude Squared block (signal strength 'ish)
+        #self.probe_avg_mag_sqrd = analog.probe_avg_mag_sqrd_c(-1000, 0.00001) 
+        self.complex_to_mag_squared = blocks.complex_to_mag_squared()
+
+        # We want a moving average of about .05 secs.  
+        #mva_len = int(self.samp_rate * 0.05)
+        #print "moving average length: ", mva_len
+        #self.moving_average =  blocks.moving_average_ff(mva_len, 1.0 / mva_len)
+        self.log10 =  blocks.nlog10_ff(n=10, k=30)
+        self.probe_signal = blocks.probe_signal_f()
+
+        self.connect((self.osmosdr_source_0, 0), (self.complex_to_mag_squared, 0))
+        self.connect((self.complex_to_mag_squared, 0), (self.log10, 0))
+        self.connect((self.log10, 0), (self.probe_signal, 0))
+        #self.connect((self.moving_average, 0), (self.probe_signal, 0))
+
         print "GnuRadio parameters for:  ", self.rtl_id
         print "len(channel taps):  ", len(self.channel_lowpass_taps)
         print "len(audio taps):  ", len(self.audio_taps)
@@ -251,11 +277,43 @@ class aprs_receiver(gr.top_block):
 
         sys.stdout.flush()
 
+        _thread_power_dbm = threading.Thread(target=self._func_power_dbm)
+        _thread_power_dbm.daemon = True
+        _thread_power_dbm.start()
+
+
+    def get_probe_rate(self):
+        return self.probe_rate
+
+    def set_probe_rate(self, rate):
+        self.probe_rate = rate
+
+    def get_power_dbm(self):
+        return self.power_dbm
+
+    def get_stats(self):
+        v = self.get_power_dbm()
+        return {"device": self.rtl_id, "power_dbm": v }
+
+    def set_power_dbm(self, value):
+        self.power_dbm = value
+
+    def _func_power_dbm(self):
+        while True:
+            val = self.probe_signal.level()
+            try:
+                self.set_power_dbm(val)
+            except AttributeError:
+                pass
+            #time.sleep(1.0 / (float(self.probe_rate)))
+            time.sleep(self.probe_rate)
+
+
 ##################################################
 # GRProcess:
 #    - Then starts up an instance of the aprs_receiver class
 ##################################################
-def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", e = None):
+def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", q = None, e = None):
     try:
 
         #print "GR [%d], listening on: " % rtl, flist
@@ -265,7 +323,20 @@ def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", e =
 
         # call its "run" method...this blocks until done
         tb.start()
-        e.wait()
+        if q:
+            while not e.is_set():
+                value = tb.get_stats()
+                try:
+                    #print "placing on queue:  ", value
+                    q.put(value)
+                except (Empty, Full) as error:
+                    print "Error putting item in queue: ", error
+                    pass
+                #e.wait(tb.get_probe_rate())
+                e.wait(.1)
+        else:
+            e.wait()
+
         print "Stopping GnuRadio..."
         tb.stop()
         print "GnuRadio ended"

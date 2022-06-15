@@ -22,6 +22,7 @@
 
 from optparse import OptionParser
 import multiprocessing as mp
+from multiprocessing import Queue
 import subprocess as sb
 import os
 import math
@@ -49,6 +50,7 @@ import searchrtlsdr
 import aprsreceiver
 import aprsc
 import direwolf
+import ssestreamer
 from inspect import getframeinfo, stack
 
 
@@ -495,6 +497,8 @@ def main():
     # the process id of this script
     mypid = os.getpid()
 
+    # This is the queue used by other processes as a place to store JSON data about their activity.
+    dataqueue = Queue(maxsize=0)
 
     # --------- this section checks for already running processes --------
     # check if any processes are running
@@ -704,7 +708,7 @@ def main():
                 direwolfFreqList.append(freqlist)
 
                 # This is the GnuRadio process
-                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], stopevent))
+                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], dataqueue, stopevent))
                 grprocess.daemon = True
                 grprocess.name = "GnuRadio_" + str(k["rtl"])
                 processes.append(grprocess)
@@ -791,12 +795,16 @@ def main():
         landingprocess.name = "Landing Predictor"
         processes.append(landingprocess)
 
+        # This is the SSE Streamer process 
+        sseprocess = mp.Process(target=ssestreamer.runSSEStreamer, args=(dataqueue, 8765, stopevent))
+        sseprocess.daemon = True
+        sseprocess.name = "SSE Streamer Process"
+        processes.append(sseprocess)
 
         # Loop through each process starting it
         for p in processes:
             #print "Starting:  %s" % p.name
             p.start()
-
 
         # Save the operating mode and status to a JSON file
         jsonStatusFile = "/eosstracker/www/daemonstatus.json"
