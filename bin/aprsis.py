@@ -317,7 +317,7 @@ class APRSIS(object):
                     debugmsg("Closing APRS-IS connection [%s]." % self.server)
                     self.ais.close()
 
-                except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError) as error:
+                except (aprslib.ConnectionDrop, aprslib.ConnectionError, aprslib.LoginError, aprslib.ParseError, Exception) as error:
                     pass
                     #print "[%s] Aprs-is connection to %s failed. Attempt # %d, %s" % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.server, trycount, error
                     #sys.stdout.flush()
