@@ -503,6 +503,10 @@ class PredictorBase(object):
             # This is the time to live until landing, in seconds
             ttl = 0
 
+            # Placeholders for the winds at the "prior" altitude level
+            next_lower_wind_x = 0
+            next_lower_wind_y = 0
+
             ####################################
             # END:  initialize loop variables
             ####################################
@@ -529,6 +533,10 @@ class PredictorBase(object):
                 # prediction_floor, we don't want to run any calculations.  The "backstop" is therefore set to the last_heard_altitude (up above)
                 # to ensure this happens.
                 if k[0] >= self.prediction_floor and k_idx > 0 and k[0] > backstop:
+
+                   # The average latitude and longitude change rates experienced by the balloon during the ascent.
+                   avg_wind_x = (k[4] + next_lower_wind_x) / 2
+                   avg_wind_y = (k[5] + next_lower_wind_y) / 2
 
                    # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight then continue 
                    # with calcuations from one ascent waypoint to the next higher one.
@@ -558,8 +566,8 @@ class PredictorBase(object):
 
                            # Which wind vector to use?
                            if wind_rates is None:
-                               lat_wind_rate = k[4]
-                               lon_wind_rate = k[5]
+                               lat_wind_rate = avg_wind_x
+                               lon_wind_rate = avg_wind_y
                                debugmsg("No wind rates given")
                            else:
                                surface_weight = (1 - (k[0] - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
@@ -572,8 +580,8 @@ class PredictorBase(object):
                                    surface_weight = 0
 
 
-                               lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * k[4]
-                               lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * k[5]
+                               lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * avg_wind_x
+                               lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * avg_wind_y
                                debugmsg("latest alt: %f, wind[0]: %f, wind[1]: %f, k[0]: %f, surface_weight: %f, latwr: %f, lonwr: %f" % (last_heard_altitude, wind_rates[0], wind_rates[1], k[0], surface_weight, lat_wind_rate, lon_wind_rate))
 
 
@@ -600,8 +608,8 @@ class PredictorBase(object):
                            dx = t * lat_rate
                            dy = t * lon_rate
                        else:
-                           dx = t * k[4]
-                           dy = t * k[5]
+                           dx = t * avg_wind_x
+                           dy = t * avg_wind_y
 
                        x += dx
                        y += dy
@@ -642,8 +650,8 @@ class PredictorBase(object):
 
                                # Which wind vector to use?
                                if wind_rates is None:
-                                   lat_wind_rate = k[4]
-                                   lon_wind_rate = k[5]
+                                   lat_wind_rate = avg_wind_x
+                                   lon_wind_rate = avg_wind_y
                                else:
                                    surface_weight = (1 - (k[0] - surface_wind_cutoff) / float(surface_wind_threshold - surface_wind_cutoff))**surface_exponent_weight
                                    if surface_weight > 1:
@@ -654,8 +662,8 @@ class PredictorBase(object):
                                    if k[0] >= surface_wind_threshold:
                                        surface_weight = 0
 
-                                   lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * k[4]
-                                   lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * k[5]
+                                   lat_wind_rate = surface_weight * wind_rates[0] + (1 - surface_weight) * avg_wind_x
+                                   lon_wind_rate = surface_weight * wind_rates[1] + (1 - surface_weight) * avg_wind_y
 
                                # If this is true then the flight is already descending below the surface_wind_threshold
                                if use_surface_wind:
@@ -680,8 +688,8 @@ class PredictorBase(object):
                                dx = t * lat_rate
                                dy = t * lon_rate
                            else:
-                               dx = t * k[4]
-                               dy = t * k[5]
+                               dx = t * avg_wind_x
+                               dy = t * avg_wind_y
 
                            x += dx
                            y += dy
@@ -703,6 +711,8 @@ class PredictorBase(object):
 
 
                 backstop = k[0]
+                next_lower_wind_x = k[4]
+                next_lower_wind_y = k[5]
                 k_idx += 1
 
             # END:  for k in ascent_portion:
@@ -926,6 +936,10 @@ class PredictorBase(object):
             # This is the time to live until landing, in seconds
             ttl = 0
 
+            # Placeholders for the winds at the "prior" altitude level
+            next_lower_wind_x = 0
+            next_lower_wind_y = 0
+
             ####################################
             # END:  initialize loop variables
             ####################################
@@ -966,6 +980,10 @@ class PredictorBase(object):
                 # to ensure this happens.
                 if k[0] >= self.prediction_floor and k_idx > 0 and k[0] > backstop:
 
+                   # The average latitude and longitude change rates experienced by the balloon during the ascent.
+                   avg_wind_x = (k[4] + next_lower_wind_x) / 2
+                   avg_wind_y = (k[5] + next_lower_wind_y) / 2
+
                    # If the prior heard altitude (i.e. during the ascent) is lower than the last heard position of the flight then continue 
                    # with calcuations from one ascent waypoint to the next higher one.
                    if k[0] < last_heard_altitude:
@@ -990,8 +1008,8 @@ class PredictorBase(object):
                        v_avg = (v_0 + v_1) / 2.0
                        t = abs((k[0] - backstop) / v_avg)
 
-                       dx = t * k[4]
-                       dy = t * k[5]
+                       dx = t * avg_wind_x
+                       dy = t * avg_wind_y
 
                        x += dx
                        y += dy
@@ -1028,8 +1046,8 @@ class PredictorBase(object):
                            v_avg = (v_0 + v_1) / 2.0
                            t = abs((last_heard_altitude - backstop) / v_avg)
 
-                           dx = t * k[4]
-                           dy = t * k[5]
+                           dx = t * avg_wind_x
+                           dy = t * avg_wind_y
 
                            x += dx
                            y += dy
@@ -1051,6 +1069,8 @@ class PredictorBase(object):
 
 
                 backstop = k[0]
+                next_lower_wind_x = k[4]
+                next_lower_wind_y = k[5]
                 k_idx += 1
 
             # END:  for k in ascent_portion:
