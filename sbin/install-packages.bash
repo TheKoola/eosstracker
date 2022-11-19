@@ -84,5 +84,11 @@ echo "Installing aprslib..."
 su - -c "pip3 install aprslib"
 echo ""
 
+sleep 1
+echo "Autoremoving unused software..."
+apt-get -y autoremove
+echo ""
+
+
 echo "All packages installed successfully."
 exit 0
