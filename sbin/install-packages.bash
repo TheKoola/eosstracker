@@ -69,6 +69,11 @@ apt-get -y install gpsd gpsd-clients
 echo ""
 
 sleep 1
+echo "Installing some additional packages..."
+apt-get -y install ipheth-utils libttspico-utils ffmpeg
+echo ""
+
+sleep 1
 echo "Installing alsa-utils and removing pulseaudio..."
 apt-get -y install alsa-utils
 apt-get -y remove pulseaudio
