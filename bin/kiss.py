@@ -21,7 +21,7 @@
 import sys
 import socket
 from inspect import getframeinfo, stack
-from Queue import Queue
+from queue import Queue
 import threading as th
 import multiprocessing as mp
 import time
@@ -51,7 +51,7 @@ def debugmsg(message):
     """
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -340,7 +340,7 @@ class KISS(object):
 
         # If it's not at least 14 chars then eject...
         if length < 14:
-            print "Frame not long enough [", length, "]: ", frame
+            print("Frame not long enough [", length, "]: ", frame)
             return None
 
         # destination address
@@ -395,8 +395,8 @@ class KISS(object):
             packet = src_addr + ">" + dest_addr + repeater_list + ":" + info
             return packet
         except TypeError as e: 
-            print "Type Error occured: ", e
-            print "src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list)
+            print("Type Error occured: ", e)
+            print("src_addr({}): {}, dest_addr({}): {}, repeater_list({}): {}\n".format(type(src_addr), src_addr, type(dest_addr), dest_addr, type(repeater_list), repeater_list))
 
             return None
 
@@ -418,7 +418,7 @@ class KISS(object):
                    pid = pInfoDict["pid"]
         if pid > 0:
             debugmsg ("Sending direwolf process, {}, the SIGTERM signal.".format(pid))
-            print "Stopping direwolf process: ", pid, ", and attempting to restart."
+            print("Stopping direwolf process: ", pid, ", and attempting to restart.")
             sys.stdout.flush()
 
             # kill this pid

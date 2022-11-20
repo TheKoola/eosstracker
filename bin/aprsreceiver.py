@@ -1,4 +1,3 @@
-#!/usr/bin/python
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -18,17 +17,20 @@
 #    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
 #
 ##################################################
+import sys
+#sys.stdout.reconfigure(encoding="utf-8", newline='\r\n')
+#sys.stderr.reconfigure(encoding="utf-8", newline='\r\n')
 from gnuradio import analog
 from gnuradio import blocks
 from gnuradio import eng_notation
 from gnuradio import filter
 from gnuradio import gr
 from gnuradio import fft
+from gnuradio import network
 import osmosdr
 from gnuradio.eng_option import eng_option
 from gnuradio.filter import firdes
 import signal
-import sys
 import time
 import math
 
@@ -123,7 +125,8 @@ class aprs_receiver(gr.top_block):
         self.rtl_id = prefix + "=" + str(rtl)
 
         # MTU size for the size of packets we'll end up sending over UDP to direwolf
-        self.mtusize = 9000
+        #self.mtusize = 9000
+        self.mtusize = 1472
 
         # FM deviation.  Setting this to 5kHz because we can't "assume".  ;)
         self.max_deviation = 5000
@@ -261,16 +264,16 @@ class aprs_receiver(gr.top_block):
             self.channel_cutoff_freq = 2200 + self.max_deviation
 
         # FM channel low pass filter taps
-        self.channel_lowpass_taps = firdes.low_pass(1, self.downstream_samp_rate, self.channel_cutoff_freq, self.channel_transition_width, firdes.WIN_HANN, 6.76)
+        self.channel_lowpass_taps = firdes.low_pass(1, self.downstream_samp_rate, self.channel_cutoff_freq, self.channel_transition_width, fft.window.WIN_HANN, 6.76)
 
         # Quadrature rate (input rate for the quadrature demod block)
         self.quadrate = self.direwolf_audio_rate * 2
 
         # audio decimation factor
-        self.audio_decim = self.quadrate / self.direwolf_audio_rate
+        self.audio_decim = int(self.quadrate / self.direwolf_audio_rate)
 
         # Decimation factor for the xlating_fir_filter block
-        self.decimation = self.downstream_samp_rate / (self.audio_decim * self.direwolf_audio_rate)
+        self.decimation = int(self.downstream_samp_rate / (self.audio_decim * self.direwolf_audio_rate))
 
         # Audio Low pass filter parameters.  We want a lazy transition to minimize filter taps and CPU usage.
         self.transition_width = 1000
@@ -292,8 +295,8 @@ class aprs_receiver(gr.top_block):
         for freq,port,p,sn in self.Frequencies:
             #print "   channel:  [%d] %dMHz" % (port, freq)
             #print "   quadrate:  %d" % (self.quadrate)
-            freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, (self.channel_lowpass_taps), freq-self.center_freq, self.downstream_samp_rate)
-            blocks_udp_sink = blocks.udp_sink(gr.sizeof_short*1, ip, port, self.mtusize, True)
+            freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, self.channel_lowpass_taps, float(freq)-float(self.center_freq), float(self.downstream_samp_rate))
+            blocks_udp_sink = network.udp_sink(gr.sizeof_short*1, 1, ip, port, 0, self.mtusize, True)
             blocks_float_to_short = blocks.float_to_short(1, self.scale)
             quad_demod = analog.quadrature_demod_cf(self.quadrate/(2*math.pi*self.max_deviation/8.0))
             fmdeemphasis = analog.fm_deemph(self.quadrate)
@@ -315,37 +318,37 @@ class aprs_receiver(gr.top_block):
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
 
-        print "==== GnuRadio parameters ===="
+        print("==== GnuRadio parameters ====")
         instance_string = "    " + str(self.rtl_id) + ":  "
         if prefix == "airspy": 
-            print "    Processing chain:"
-            print "        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->"
-            print "        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink"
+            print("    Processing chain:")
+            print("        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->")
+            print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
         else:
-            print "    Processing chain:"
-            print "        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->"
-            print "        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink"
-        print instance_string, "len(channel taps):   ", len(self.channel_lowpass_taps)
-        print instance_string, "len(audio taps):     ", len(self.audio_taps)
-        print instance_string, "Source sample rate:  ", self.samp_rate
-        print instance_string, "Downstrm samp rate:  ", self.downstream_samp_rate
-        print instance_string, "Channel width (Hz):  ", self.channel_width
-        print instance_string, "Dwolf audio rate:    ", self.direwolf_audio_rate
-        print instance_string, "Quadrature rate:     ", self.quadrate
-        print instance_string, "Frequency spread:    ", spread
-        print instance_string, "Center frequency:    ", self.center_freq
-        print instance_string, "Xlating decimation:  ", self.decimation
+            print("    Processing chain:")
+            print("        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->")
+            print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
+        print(instance_string, "len(channel taps):   ", len(self.channel_lowpass_taps))
+        print(instance_string, "len(audio taps):     ", len(self.audio_taps))
+        print(instance_string, "Source sample rate:  ", self.samp_rate)
+        print(instance_string, "Downstrm samp rate:  ", self.downstream_samp_rate)
+        print(instance_string, "Channel width (Hz):  ", self.channel_width)
+        print(instance_string, "Dwolf audio rate:    ", self.direwolf_audio_rate)
+        print(instance_string, "Quadrature rate:     ", self.quadrate)
+        print(instance_string, "Frequency spread:    ", spread)
+        print(instance_string, "Center frequency:    ", self.center_freq)
+        print(instance_string, "Xlating decimation:  ", self.decimation)
 
         if prefix == "airspy":
-            print instance_string, "Airspy LNA Gain:     ", self.osmosdr_source_0.get_gain("LNA")
-            print instance_string, "Airspy MIX Gain:     ", self.osmosdr_source_0.get_gain("MIX")
-            print instance_string, "Airspy VGA Gain:     ", self.osmosdr_source_0.get_gain("IF")
-            print instance_string, airspy_rates_string
-            print instance_string, "Airspy source sample rate set to:  ", self.samp_rate
+            print(instance_string, "Airspy LNA Gain:     ", self.osmosdr_source_0.get_gain("LNA"))
+            print(instance_string, "Airspy MIX Gain:     ", self.osmosdr_source_0.get_gain("MIX"))
+            print(instance_string, "Airspy VGA Gain:     ", self.osmosdr_source_0.get_gain("IF"))
+            print(instance_string, airspy_rates_string)
+            print(instance_string, "Airspy source sample rate set to:  ", self.samp_rate)
         else:
-            print instance_string, "Gain mode:           ", "automatic"
+            print(instance_string, "Gain mode:           ", "automatic")
 
-        print "============================="
+        print("=============================")
 
         sys.stdout.flush()
 
@@ -356,7 +359,7 @@ class aprs_receiver(gr.top_block):
 def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip_dest = '127.0.0.1', rate = 48000, e = None):
     try:
 
-        #print "GR [%d], listening on: " % rtl, flist
+        #print("GR [%d], listening on: " % rtl, flist)
 
         # create an instance of the aprs receiver class
         tb = aprs_receiver(freqlist=flist, rtl=rtl, prefix=prefix, ip=ip_dest, samplerate=rate)
@@ -364,12 +367,12 @@ def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip_
         # call its "run" method...this blocks until done
         tb.start()
         e.wait()
-        print "Stopping GnuRadio..."
+        print("Stopping GnuRadio...")
         tb.stop()
-        print "GnuRadio ended"
+        print("GnuRadio ended")
 
     except (KeyboardInterrupt, SystemExit):
         tb.stop()
-        print "GnuRadio ended"
+        print("GnuRadio ended")
 
 

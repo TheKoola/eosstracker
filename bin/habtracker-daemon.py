@@ -32,6 +32,9 @@ import aprslib
 import logging
 import threading as th
 import sys
+sys.stderr.reconfigure(encoding="UTF-8", newline='\r\n')
+sys.stdout.reconfigure(encoding="UTF-8", newline='\r\n')
+
 import signal
 import psutil
 import json
@@ -52,6 +55,7 @@ import direwolf
 from inspect import getframeinfo, stack
 
 
+
 #####################################
 ## Set this to "True" to have debugging text output when running
 debug = False
@@ -63,7 +67,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print(("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)))
         sys.stdout.flush()
 
 
@@ -76,7 +80,7 @@ def signal_handler(signum, frame):
     pid = os.getpid()
     
     caller = getframeinfo(stack()[1][0])
-    print "{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno)
+    print(("{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno)))
     sys.stdout.flush()
     raise GracefulExit()
 
@@ -130,7 +134,7 @@ def getFrequencies():
     except pg.DatabaseError as error:
         grcur.close()
         grconn.close()
-        print error
+        print(error)
         return None
     except (GracefulExit, KeyboardInterrupt, SystemExit): 
         grcur.close()
@@ -204,7 +208,7 @@ def databaseUpdates():
 
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print "/******* Starting database checks:  ", time_string, " ********/"
+        print(("/******* Starting database checks:  ", time_string, " ********/"))
         sys.stdout.flush()
 
 
@@ -217,7 +221,7 @@ def databaseUpdates():
 
         # If the number of rows returned is zero, then we need to add the row
         if len(rows) == 0:
-            print "Adding the 'ZZ-Not Active' team to the tracker team list."
+            print("Adding the 'ZZ-Not Active' team to the tracker team list.")
             sys.stdout.flush()
             
             # SQL to add the row
@@ -239,7 +243,7 @@ def databaseUpdates():
 
             # If the number of rows returned is zero, then we need to create the column
             if len(rows) == 0:
-                print "Adding landingpredictions::%s column." % column
+                print(("Adding landingpredictions::%s column." % column))
                 sys.stdout.flush()
                 
                 # SQL to alter the "landingpredictions" table and add the "flightpath" column
@@ -255,7 +259,7 @@ def databaseUpdates():
             if rows[0][0] == False:
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index landingpredictions_tm on landingpredictions(tm);"
-                print "Adding landingpredictions_tm index."
+                print("Adding landingpredictions_tm index.")
                 sys.stdout.flush()
                 debugmsg("Adding landingpredictions_tm index to the landingpredictions table: %s" % sql_add)
                 dbcur.execute(sql_add)
@@ -274,7 +278,7 @@ def databaseUpdates():
             if rows[0][0] == False:
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index packets_tm on packets(tm);"
-                print "Adding packets_tm index."
+                print("Adding packets_tm index.")
                 sys.stdout.flush()
                 debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
                 dbcur.execute(sql_add)
@@ -293,7 +297,7 @@ def databaseUpdates():
 
             # If the number of rows returned is zero, then we need to create the column
             if len(rows) == 0:
-                print "Adding packets::%s column." % column
+                print(("Adding packets::%s column." % column))
                 sys.stdout.flush()
 
                 # SQL to alter the "landingpredictions" table and add the "flightpath" column
@@ -309,7 +313,7 @@ def databaseUpdates():
             packets_sql = "select count(*) from packets;"
             lp_sql = "select count(*) from landingpredictions;"
 
-            print "Checking number of rows in tables..."
+            print("Checking number of rows in tables...")
             sys.stdout.flush()
 
             dbcur.execute(packets_sql)
@@ -320,13 +324,13 @@ def databaseUpdates():
             rows = dbcur.fetchall()
             lp_count = rows[0][0]
 
-            print "Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)
+            print(("Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)))
             sys.stdout.flush()
 
 
             # SQL to update the source column to "other" in those cases were it's empty
             sql_source = "update packets set source='other' where source is null;"
-            print "Updating packets::source column."
+            print("Updating packets::source column.")
             sys.stdout.flush()
             debugmsg("Updating source column: %s" % sql_source);
             dbcur.execute(sql_source)
@@ -334,7 +338,7 @@ def databaseUpdates():
 
             # SQL to update the channel column to "-1" in those cases were it's empty
             sql_channel = "update packets set channel=-1 where channel is null;"
-            print "Updating packets::channel column."
+            print("Updating packets::channel column.")
             sys.stdout.flush()
             debugmsg("Updating channel column: %s" % sql_channel);
             dbcur.execute(sql_channel)
@@ -348,13 +352,13 @@ def databaseUpdates():
                 if rows[0][0] == True:
                     sql_drop = "alter table packets drop constraint packets_pkey;"
                     debugmsg("Dropping existing primary key: %s" % sql_drop);
-                    print "Dropping primary key from packets table."
+                    print("Dropping primary key from packets table.")
                     dbcur.execute(sql_drop)
                     dbconn.commit()
 
             # Now add back an updated primary index
             sql_add = "alter table packets add primary key (tm, source, channel, callsign, hash);"
-            print "Adding primary key to packets table."
+            print("Adding primary key to packets table.")
             sys.stdout.flush()
             debugmsg("Adding new primary key: %s" % sql_add);
             try:
@@ -362,17 +366,17 @@ def databaseUpdates():
                 dbconn.commit()
             except pg.DatabaseError as e:
                 # We were unable to add this key back to the existing table.  The only path forward from here is to delete all rows...
-                print "Error updating primary key:  ", e
+                print(("Error updating primary key:  ", e))
 
                 # SQL to truncate rows older than one month.
                 sql_source = "truncate table packets;"
-                print "Unable to create index on packets table, deleteing all rows...sorry, only way.  :("
+                print("Unable to create index on packets table, deleteing all rows...sorry, only way.  :(")
                 sys.stdout.flush()
                 debugmsg("Deleting all rows from packets table: %s" % sql_source);
                 dbcur.execute(sql_source)
                 dbconn.commit()
 
-                print "Adding primary key on packets table."
+                print("Adding primary key on packets table.")
                 dbcur.execute(sql_add)
                 dbconn.commit()
 
@@ -385,7 +389,7 @@ def databaseUpdates():
             if rows[0][0] == False:
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index packets_tm_source_ptype on packets(tm, source, ptype);"
-                print "Adding packets_tm_source_ptype index."
+                print("Adding packets_tm_source_ptype index.")
                 sys.stdout.flush()
                 debugmsg("Adding packets_tm_source_ptype index to the packets table: %s" % sql_add)
                 dbcur.execute(sql_add)
@@ -396,7 +400,7 @@ def databaseUpdates():
 
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print "/******* Completed database checks:  ", time_string, "********/"
+        print(("/******* Completed database checks:  ", time_string, "********/"))
         sys.stdout.flush()
 
         # Close DB connection
@@ -407,7 +411,7 @@ def databaseUpdates():
     except pg.DatabaseError as error:
         dbcur.close()
         dbconn.close()
-        print error
+        print(error)
 
 
 ################################
@@ -477,7 +481,7 @@ def getGPSPosition():
         # If there was a connection error, then close these, just in case they're open
         dbcur.close()
         dbconn.close()
-        print error
+        print(error)
         return gpsposition
 
 
@@ -509,14 +513,14 @@ def main():
  
     # If the kill switch was given the we kill these pids
     if options.kill:
-        print "Killing processes..."
+        print("Killing processes...")
         for pid in pids:
     
             try: 
                 # kill this pid
                 os.kill(pid, signal.SIGTERM)
             except Exception as e:
-                print "Unable to kill %d, %s" % (pid, e)
+                print(("Unable to kill %d, %s" % (pid, e)))
     
             # we give it a little time to work before going to the next pid
             time.sleep(1)
@@ -535,19 +539,19 @@ def main():
                 # kill this pid
                 os.kill(pid, signal.SIGTERM)
             except Exception as e:
-                print "Unable to kill %d, %s" % (pid, e)
+                print(("Unable to kill %d, %s" % (pid, e)))
     
             # we give it a little time to work before going to the next pid
             time.sleep(1)
 
         # now exit
-        print "Done."
+        print("Done.")
         sys.exit()
 
     else:  
         # if there are running pids and we didn't get the kill switch, then exit
         if len(pids) > 0:
-            print "Processes are running, exiting."
+            print("Processes are running, exiting.")
             sys.exit()
 
     # --------- end of process checking section ----------
@@ -570,10 +574,10 @@ def main():
             # If these permisisons are not 777 then try to set them to 777
             if perms & 0o777 != 0o777:
                 try:
-                    print "Setting permissions to 777 on:", thedir 
+                    print(("Setting permissions to 777 on:", thedir)) 
                     os.chmod(thedir, 0o777)
                 except OSError as e:
-                    print "Unable to set permisisons to 777 on,", thedir, ", ", os.strerror(e.errno)
+                    print(("Unable to set permisisons to 777 on,", thedir, ", ", os.strerror(e.errno)))
 
     # --------- End of directory permissions section ----------
 
@@ -598,7 +602,7 @@ def main():
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
     defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400", "objectbeaconing" : "false", "mobilestation" : "true"}
 
-    for the_key in defaultkeys.keys():
+    for the_key in list(defaultkeys.keys()):
         if the_key not in configuration:
             configuration[the_key] = defaultkeys[the_key]
 
@@ -612,12 +616,12 @@ def main():
 
     if configuration["igating"] == "true":
         if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
-            print "Incorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."
+            print(("Incorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."))
             configuration["igating"] = "false"
 
 
-    print "Starting HAB Tracker backend daemon"
-    print "Callsign:  %s" % str(configuration["callsign"])
+    print("Starting HAB Tracker backend daemon")
+    print(("Callsign:  %s" % str(configuration["callsign"])))
 
     # this holds the list of sub-processes and threads that we want to start/run
     processes = []
@@ -642,7 +646,7 @@ def main():
         # The number of SDRs
         i = len(sdrs)
  
-        print "Number of usable SDRs: ", i
+        print(("Number of usable SDRs: ", i))
 
         #  Online-only mode:  
         #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
@@ -676,7 +680,7 @@ def main():
             loop_iter = 0
             for k in sdrs:
 
-                print "Using SDR:  ", k
+                print(("Using SDR:  ", k))
                 status["rf_mode"] = 1
                 
                 # Append this frequency list to our list for later json output
@@ -742,7 +746,7 @@ def main():
                 configuration["xmit_channel"] = total_freqs * 2
 
                 # The beaconing process (this is different from the position beacons that direwolf will transmit)
-                print "Starting object beaconing process..."
+                print("Starting object beaconing process...")
                 icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
                 icprocess.daemon = True
                 icprocess.name = "Object beaconing"
@@ -820,18 +824,18 @@ def main():
     except (KeyboardInterrupt): 
         # The KeyboardInterrupt event is caught by all of the individual threads/processes so we just need to wait for them to finish
         for p in processes:
-            print "Waiting for [%s] %s to end..." % (p.pid, p.name)
+            print(("Waiting for [%s] %s to end..." % (p.pid, p.name)))
             p.join()
 
     except (GracefulExit, SystemExit) as msg: 
         # Set this event to be as graceful as we can for shutdown...
-        print "Caught signal: {}, Setting stop event...".format(msg)
+        print(("Caught signal: {}, Setting stop event...".format(msg)))
         sys.stdout.flush()
 
         stopevent.set()
         # For catching a kill signal, we need to tell the individual processes to terminate
         for p in processes:
-            print "Waiting for [%s] %s to end..." % (p.pid, p.name)
+            print(("Waiting for [%s] %s to end..." % (p.pid, p.name)))
             p.join()
             #print "Sending terminate signal to [%s] %s..." % (p.pid, p.name)
             #p.terminate()
@@ -849,7 +853,7 @@ def main():
     if os.path.isfile(jsonStatusTempFile):
         os.rename(jsonStatusTempFile, jsonStatusFile)
 
-    print "\nDone."
+    print("\nDone.")
 
 
 

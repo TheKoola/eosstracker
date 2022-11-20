@@ -49,7 +49,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -1183,7 +1183,7 @@ class LandingPredictor(PredictorBase):
                 debugmsg("LandingPredictor destructor:  closing database connection.")
                 self.landingconn.close()
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
 
     ################################
@@ -1224,7 +1224,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.landingconn.close()
-            print error
+            print(error)
             return False
 
 
@@ -1281,7 +1281,7 @@ class LandingPredictor(PredictorBase):
                         "elevation" : float(rec[5])
                         }
                 if debug:
-                    print "Launchsite info: ", launchsite
+                    print("Launchsite info: ", launchsite)
 
                 # This is the default for where the prediction "floor" is placed.  Landing predictions won't use altitude values below this.
                 debugmsg("Setting initial landing prediction elevation to launchsite elevation: %d" % launchsite['elevation'])
@@ -2011,7 +2011,7 @@ class LandingPredictor(PredictorBase):
         except pg.DatabaseError as error:
             landingcur.close()
             self.landingconn.close()
-            print error
+            print(error)
         except (KeyboardInterrupt, SystemExit):
             landingcur.close()
             self.landingconn.close()
@@ -2041,10 +2041,10 @@ def runLandingPredictor(schedule, e, config):
             lp.processPredictions()
             e.wait(schedule)
 
-        print "Prediction scheduler ended"
+        print("Prediction scheduler ended")
 
     except (KeyboardInterrupt, SystemExit): 
-        print "Prediction scheduler ended"
+        print("Prediction scheduler ended")
         pass
 
 

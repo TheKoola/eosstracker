@@ -51,7 +51,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -162,7 +162,7 @@ class kissTap(object):
                     # Increment trycount each time through the loop
                     trycount += 1
 
-            print "Ending KISS-tap process."
+            print("Ending KISS-tap process.")
             self.close()
 
         except (KeyboardInterrupt, SystemExit) as err:
@@ -192,7 +192,7 @@ class kissTap(object):
             else:
                 debugmsg("Database connection not created.")
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
 
     ################################
@@ -231,7 +231,7 @@ class kissTap(object):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            print error
+            print(error)
             return False
 
 
@@ -297,7 +297,7 @@ class kissTap(object):
             # If there was a connection error, then close these, just in case they're open
             gpscur.close()
             self.close()
-            print error
+            print(error)
             return gpsposition
 
 
@@ -516,7 +516,7 @@ class kissTap(object):
         except pg.DatabaseError as error:
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print thetime, "Database error with packet(", x, "):  ", error
+            print(thetime, "Database error with packet(", x, "):  ", error)
             tapcur.close()
             self.close()
 
@@ -552,7 +552,7 @@ class kissTap(object):
                 info = x[s+1:]
 
                 if info.find(chr(0x00)) >= 0:
-                    print "unable to parse. null character, info:  ", info
+                    print("unable to parse. null character, info:  ", info)
 
                 # remvove nul chars from info
                 info = info.replace(chr(0x00), '')
@@ -562,7 +562,7 @@ class kissTap(object):
                     info = info.decode("UTF-8", "ignore")
 
                 if info.find(chr(0x00)) >= 0:
-                    print "unable to parse again. null character, info:  ", info
+                    print("unable to parse again. null character, info:  ", info)
 
 
             # if we've been able to parse the packet then proceed, otherwise, we skip
@@ -605,13 +605,13 @@ class kissTap(object):
                 except pg.DatabaseError as error:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print thetime, "Database error with packet(", x, "):  ", error
+                    print(thetime, "Database error with packet(", x, "):  ", error)
                     tapcur.close()
                     
                 except ValueError as e:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print thetime, "kisstap. Error adding packet(", x, "): ", e
+                    print(thetime, "kisstap. Error adding packet(", x, "): ", e)
                     tapcur.close()
 
 
@@ -639,5 +639,5 @@ def runKissTap(schedule, e, config, freqmap):
 
     except (KeyboardInterrupt, SystemExit): 
         k.close()
-        print "kissTap ended"
+        print("kissTap ended")
 

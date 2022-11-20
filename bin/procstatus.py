@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
@@ -73,4 +73,4 @@ status.update(a)
 
 
 # Print out JSON for the status
-print json.dumps(status)
+print(json.dumps(status))

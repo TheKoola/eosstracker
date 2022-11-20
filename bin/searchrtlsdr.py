@@ -112,7 +112,7 @@ def getUSBDevices():
                 # Check if the RTLSDR is using a serial number string that contains "adsb".
                 #     The idea being, not to use any SDR attached that is to be used for ADS-B reception instead.
                 if "adsb" in s.lower():
-                    print "Skipping SDR: ", rtl
+                    print("Skipping SDR: ", rtl)
                 else:
                     sdrs.append(rtl)
 

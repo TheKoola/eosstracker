@@ -50,7 +50,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -566,7 +566,7 @@ def runInfoCmd(schedule, e, config):
             e.wait(schedule)
 
     except (KeyboardInterrupt, SystemExit): 
-        print "infoCmd ended"
+        print("infoCmd ended")
         pass
 
 

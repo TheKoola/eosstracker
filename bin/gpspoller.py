@@ -1,5 +1,3 @@
-#!/usr/bin/python
-  
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -91,7 +89,7 @@ def GpsPoller(e):
             while gpsDeviceFound == False and not e.is_set():
                 # Get latest status from GPSD
                 try: 
-                    report = gpsd.next()
+                    report = next(gpsd)
                 except Exception as error:
 
                     # Set this to false so the inner loop will end
@@ -125,7 +123,7 @@ def GpsPoller(e):
                     gpspath = ""
                     for gpsdev in report["devices"]:
                         if "path" in gpsdev and "activated" in gpsdev:
-                            if gpsdev["activated"] > 0:
+                            if gpsdev["activated"]:
                                 gpsDeviceFound = True
                                 if "path" in gpsdev:
                                     gpspath = gpspath + gpsdev["path"] + " "
@@ -176,7 +174,7 @@ def GpsPoller(e):
             ##########
             while gpsDeviceFound == True and not e.is_set():
                 try: 
-                    report = gpsd.next()
+                    report = next(gpsd)
                 except Exception as error:
 
                     # Set this to false so the inner loop will end
@@ -257,7 +255,7 @@ def GpsPoller(e):
                            
                                     # If a database error occured, print the error, the set the variable so that this loop ends.
                                     except pg.DatabaseError as error:
-                                        print error
+                                        print(error)
 
                                         # Set this so that we restart our primary/outer loop and re-connect to the database
                                         gpsDeviceFound = False
@@ -392,9 +390,9 @@ def GpsPoller(e):
             gpsconn.close()
 
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
-        print "GPS poller ended."
+        print("GPS poller ended.")
 
     except (KeyboardInterrupt, SystemExit):
 
@@ -420,7 +418,7 @@ def GpsPoller(e):
 
         # Close the database connection
         gpsconn.close()
-        print "GPS poller caught event and has ended."
+        print("GPS poller caught event and has ended.")
 
 
     finally:

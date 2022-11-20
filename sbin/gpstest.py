@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
   
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
@@ -61,45 +61,45 @@ def GpsPoller(e):
             while gpsDeviceFound == False and not e.is_set():
                 # Get latest status from GPSD
                 try: 
-                    report = gpsd.next()
+                    report = next(gpsd)
                 except Exception as error:
 
                     # Set this to false so the inner loop will end
                     gpsDeviceFound = False
 
-                print report
+                print(report)
 
                 # If GPSD is reporting a DEVICE or DEVICES event then look at that to see if a GPS device was actually "activated"
                 if report['class'] == "DEVICE":
-                    print "Checking DEVICE"
+                    print("Checking DEVICE")
                     if "path" in report and "activated" in report:
-                        print "Activated is: ", report["activated"]
+                        print("Activated is: ", report["activated"])
                         if report["activated"]:
-                            print "Activated was TRUE"
+                            print("Activated was TRUE")
                             gpsDeviceFound = True
                             if "path" in report:
                                 gpspath = report["path"]
                             else:
                                 gpspath = "n/a"
                         else:
-                            print "Activated was FALSE"
+                            print("Activated was FALSE")
 
                 elif report['class'] == "DEVICES":
-                    print "Checking DEVICES"
+                    print("Checking DEVICES")
                     gpspath = ""
                     for gpsdev in report["devices"]:
                         if "path" in gpsdev and "activated" in gpsdev:
-                            print "Activated is: ", gpsdev["activated"]
+                            print("Activated is: ", gpsdev["activated"])
                             if gpsdev["activated"]:
-                                print "Activated was TRUE"
+                                print("Activated was TRUE")
                                 gpsDeviceFound = True
                                 if "path" in gpsdev:
                                     gpspath = gpspath + gpsdev["path"] + " "
                         else:
-                            print "Activated was TRUE"
+                            print("Activated was TRUE")
 
                 if gpsDeviceFound == False:
-                    print "no device found"
+                    print("no device found")
                     gpsstats = { "utc_time" : str(gpsd.utc if gpsd.utc else datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'),
                                  "mode" : str(report["mode"] if "mode" in report else "0"),
                                  "status" : "no device",
@@ -127,7 +127,7 @@ def GpsPoller(e):
                          "speed_mph" : "n/a",
                          "altitude" : "n/a"
                            }
-            print gpsstats
+            print(gpsstats)
 
 
 
@@ -143,7 +143,7 @@ def GpsPoller(e):
             ##########
             while gpsDeviceFound == True and not e.is_set():
                 try: 
-                    report = gpsd.next()
+                    report = next(gpsd)
                 except Exception as error:
 
                     # Set this to false so the inner loop will end
@@ -160,7 +160,7 @@ def GpsPoller(e):
                 # If GPSD provided a Time-Position-Velocity report we process that...
                 if report['class'] == 'TPV':
 
-                    print report
+                    print(report)
 
                     # If the device is reporting that it has a 3D fix, then we want to grab our position.
                     # 3D Fix
@@ -188,7 +188,7 @@ def GpsPoller(e):
 
                                 # Only insert this record into the database if we've not already had an update for this GPS position
                                 if thetime != timeprev:
-                                    print "What would have been inserted into the DB:  ", [
+                                    print("What would have been inserted into the DB:  ", [
                                         thetime,
                                         round(gpsd.fix.speed * 2.236936, 0),
                                         gpsd.fix.track,
@@ -198,7 +198,7 @@ def GpsPoller(e):
                                         gpsd.fix.longitude,
                                         gpsd.fix.latitude,
                                         gpsd.fix.altitude
-                                    ]
+                                    ])
 
                                     # Set the previous time to this time
                                     timeprev = thetime
@@ -294,7 +294,7 @@ def GpsPoller(e):
                     # If a DEVICE event has occured, abort this inner loop and restart 
                     gpsDeviceFound = False
 
-                print gpsstats
+                print(gpsstats)
 
             # Close GPSD connection.
             gpsd.close()
@@ -327,9 +327,9 @@ def GpsPoller(e):
             gpsconn.close()
 
         except pg.DatabaseError as error:
-            print error
+            print(error)
 
-        print "GPS poller ended."
+        print("GPS poller ended.")
 
     except (KeyboardInterrupt, SystemExit):
 
@@ -349,7 +349,7 @@ def GpsPoller(e):
                      "altitude" : 0 
                     }
 
-        print "GPS poller caught event and has ended."
+        print("GPS poller caught event and has ended.")
 
 
     finally:

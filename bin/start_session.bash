@@ -45,7 +45,7 @@ STDERR=${LOGFILE}.stderr
 
 
 # Check if things are running:
-let num_procs=$(${BINDIR}/procstatus.py  | python -m json.tool | awk '/\"status\":/ { s+=$2;} END {print s}')
+let num_procs=$(${BINDIR}/procstatus.py  | python3 -m json.tool | awk '/"status":/ { s+=$2;} END {print s}')
 
 # Check if it's just GPSD that is still running
 if [ $num_procs -eq 1 ]; then

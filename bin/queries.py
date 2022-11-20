@@ -64,7 +64,7 @@ debug = False
 def debugmsg(message):
     if debug:
         caller = getframeinfo(stack()[1][0])
-        print "%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)
+        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
         sys.stdout.flush()
 
 
@@ -125,7 +125,7 @@ def getFlights(dbconn):
     except pg.DatabaseError as error:
         # If there was a connection/database error
         landingcur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return np.array([])
     
@@ -169,7 +169,7 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
     checkcur.close()
 
     if len(checkrows) > 0:
-        elapsed_mins = checkrows[-1][0] / 60.0
+        elapsed_mins = float(checkrows[-1][0]) / 60.0
         # If the last heard packet is > xx mins old, return zero rows.  We don't want to process a landing prediction for a flight that is over/stale/lost/etc.
         if elapsed_mins > timecutoff_mins:
             debugmsg("Last packet for %s is > %dmins old: %dmins." % (callsign, timecutoff_mins, elapsed_mins))
@@ -362,7 +362,7 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
     except pg.DatabaseError as error:
         # If there was a connection/database error
         landingcur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return []
 
@@ -578,7 +578,7 @@ def getSurfaceWinds(dbconn, flightid):
     except pg.DatabaseError as error:
         # If there was a connection error, then close these, just in case they're open
         wxcur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return ([], False)
 
@@ -747,7 +747,7 @@ def getLandingElevation(dbconn, balloon_callsign, distance):
         rows = elev_cur.fetchall()
         
         if debug:
-            print "landing elevation rows[", len(rows), "]: ", rows
+            print("landing elevation rows[", len(rows), "]: ", rows)
 
         # if there were rows returned then proceed to return the estimated elevation near the landing location
         if len(rows) > 0:
@@ -764,7 +764,7 @@ def getLandingElevation(dbconn, balloon_callsign, distance):
     except pg.DatabaseError as error:
         # If there was a connection/db error
         elev_cur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return 0.0
 
@@ -830,7 +830,7 @@ def getGPSPosition(dbconn):
     except pg.DatabaseError as error:
         # If there was a connection/db error
         landingcur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return gpsposition
 
@@ -928,7 +928,7 @@ def getPredictFile(dbconn, flightid = '', launchsite = ''):
     except pg.DatabaseError as error:
         # If there was a connection/db error
         landingcur.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return np.array([])
 
@@ -956,7 +956,7 @@ def test_connectToDatabase(db_connection_string = None):
     except pg.DatabaseError as error:
         # If there was a connection error
         dbconn.close()
-        print error
+        print(error)
         sys.stdout.flush()
         return None
 
@@ -974,11 +974,11 @@ def test_queries():
     # get our current location
     gps = getGPSPosition(dbconn)
 
-    print "======================= GPS Position ======================="
-    print gps
+    print("======================= GPS Position =======================")
+    print(gps)
 
-    print "======================= Active Flights ======================="
-    print flights
+    print("======================= Active Flights =======================")
+    print(flights)
 
     for f in flights:
 
@@ -999,17 +999,17 @@ def test_queries():
         landing = getLandingElevation(dbconn, callsign, 20)
         predict = getPredictFile(dbconn, flightid, launchsite)
 
-        print "======================= Latest Packets (" + flightid + "::" + callsign + ") ======================="
-        print latest
+        print("======================= Latest Packets (" + flightid + "::" + callsign + ") =======================")
+        print(latest)
 
-        print "======================= Surface Winds (" + flightid + "::" + callsign + ") ======================="
-        print winds
+        print("======================= Surface Winds (" + flightid + "::" + callsign + ") =======================")
+        print(winds)
 
-        print "======================= Landing Elevation (" + flightid + "::" + callsign + ") ======================="
-        print landing
+        print("======================= Landing Elevation (" + flightid + "::" + callsign + ") =======================")
+        print(landing)
 
-        print "======================= Predict File (" + flightid + "::" + callsign + ") ======================="
-        print predict
+        print("======================= Predict File (" + flightid + "::" + callsign + ") =======================")
+        print(predict)
 
     dbconn.close()
-    print "Done."
+    print("Done.")
