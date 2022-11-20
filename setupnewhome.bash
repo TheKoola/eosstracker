@@ -18,9 +18,9 @@ fi
 if [ -d /eosstracker ]; then
 
     # get the number of files in the /eosstracker directory
-    let numfiles=$(ls -la /eosstracker | head -1 | awk '{print $2}')
+    let numfiles=$(ls -1a /eosstracker | wc -l)
 
-    if [ ${numfiles} -gt 0 ]; then
+    if [ ${numfiles} -gt 2 ]; then
 
         # /eosstracker has something it it.  We exit for fear of messing up something in an existing installation.
         echo "/eosstracker is not empty, exiting..."
