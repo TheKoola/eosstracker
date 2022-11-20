@@ -49,7 +49,7 @@ echo ""
 sleep 1
 echo "Installing build libraries..."
 #apt-get -y install make cmake g++ libboost-dev libboost-system-dev libboost-filesystem-dev libexpat1-dev zlib1g-dev libbz2-dev libpq-dev libgeos-dev libgeos++-dev libproj-dev lua5.2 liblua5.2-dev
-apt-get -y install git gcc g++ make cmake libasound2-dev libudev-dev 
+apt-get -y install git gcc g++ make cmake libasound2-dev libudev-dev libevent-dev
 echo ""
 
 #sleep 1
@@ -65,7 +65,7 @@ echo ""
 
 sleep 1
 echo "Installing GPSD"
-apt-get -y install gpsd gpsd-clients
+apt-get -y install gpsd gpsd-clients libgps-dev
 echo ""
 
 sleep 1
