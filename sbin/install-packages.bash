@@ -70,7 +70,7 @@ echo ""
 
 sleep 1
 echo "Installing some additional packages..."
-apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon
+apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony
 echo ""
 
 sleep 1
