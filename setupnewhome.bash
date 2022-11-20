@@ -15,37 +15,42 @@ if [ ${ME} != "root" ]; then
 	exit
 fi
 
+if [ -d /eosstracker ]; then
 
-if [ ! -d /eosstracker ]; then
+    # get the number of files in the /eosstracker directory
+    let numfiles=$(ls -l /eosstracker | head -1 | awk '{print $2}')
+
+    if [ ${numfiles} -gt 0 ]; then
+
+        # /eosstracker has something it it.  We exit for fear of messing up something in an existing installation.
+        echo "/eosstracker is not empty, exiting..."
+        exit 1
+    fi
+else
 
     # /eosstracker does not exist, continue...
     echo "Creating /eosstracker directory"
     mkdir /eosstracker
 
-    # Change ownership
-    echo "Changing ownership on /eosstracker"
-    chown eosstracker:eosstracker /eosstracker
-
-    # Add the eosstracker user to these groups
-    echo "Adding eosstracker to the audio and dialout groups"
-    adduser eosstracker audio
-    adduser eosstracker dialout
-
-    # Now clone the github repo 
-    echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
-    cd /
-    su - eosstracker -c "cd /; git clone https://www.github.com/thekoola/eosstracker"
-    su - eosstracker -c "cd /eosstracker; git checkout brickv2; git status"
-
-    echo
-    echo
-    echo "/eosstracker successfully setup!"
-
-else
-
-    # /eosstracker exists.  We exit for fear of messing up something in an existing installation.
-    echo "/eosstracker already exists, exiting..."
-    exit 1
-
 fi
+
+
+# Change ownership
+echo "Changing ownership on /eosstracker"
+chown eosstracker:eosstracker /eosstracker
+
+# Add the eosstracker user to these groups
+echo "Adding eosstracker to the audio and dialout groups"
+adduser eosstracker audio
+adduser eosstracker dialout
+
+# Now clone the github repo 
+echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
+cd /
+su - eosstracker -c "cd /; git clone https://www.github.com/thekoola/eosstracker"
+su - eosstracker -c "cd /eosstracker; git checkout brickv2; git status"
+
+echo
+echo
+echo "/eosstracker successfully setup!"
 

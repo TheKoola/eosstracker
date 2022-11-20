@@ -70,7 +70,7 @@ echo ""
 
 sleep 1
 echo "Installing some additional packages..."
-apt-get -y install ipheth-utils libttspico-utils ffmpeg
+apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon
 echo ""
 
 sleep 1
@@ -88,6 +88,12 @@ sleep 1
 echo "Installing aprslib..."
 su - -c "pip3 install aprslib"
 echo ""
+
+sleep 1
+echo "Removing ModemMananager..."
+apt-get -y remove modemmanager
+echo ""
+
 
 sleep 1
 echo "Autoremoving unused software..."
