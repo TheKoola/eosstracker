@@ -18,7 +18,7 @@ fi
 if [ -d /eosstracker ]; then
 
     # get the number of files in the /eosstracker directory
-    let numfiles=$(ls -l /eosstracker | head -1 | awk '{print $2}')
+    let numfiles=$(ls -la /eosstracker | head -1 | awk '{print $2}')
 
     if [ ${numfiles} -gt 0 ]; then
 
