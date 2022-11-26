@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  eosstracker:
+    image: thekoola/eosstracker:brickv2
+    devices:
+      - /dev/bus/usb
+    container_name: eosstracker
+    restart: unless-stopped
+    command: /run.sh
+    environment:
+      - PGID=1000
+      - PUID=1000
+      - TZ=America/Denver
+    volumes:
+      - /opt/eosstracker/config/eosstracker:/eosstracker
+    ports:
+      - "8321:8000"
+      - "8322:8001"
+      - "8421:80"
+      - "8422:443"
+      - "9988:14501"
+    networks:
+      - dev
+
+networks:
+  dev:
+    external: true
