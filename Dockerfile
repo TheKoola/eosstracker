@@ -10,7 +10,7 @@ RUN apt-get update \
 && apt-get install -y --no-install-recommends \
  git-core \
  ca-certificates \
-&& apt-get update
+&& apt-get update 
 
 # make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
 RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
@@ -33,7 +33,7 @@ RUN apt-get update \
  alsa-utils \
 && apt-get clean autoclean \
 && apt-get autoremove --yes \
-&& rm -rf /var/lib/{apt,dpkg,cache,log}/
+&& rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
 #### Install eosstracker from https://github.com/TheKoola/eosstracker ####
 
@@ -75,7 +75,7 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  rm -f symbols2.csv tocalls.bash tocalls.txt tocalls2.bash tocalls3.bash; \
  cd /eosstracker/www; \
  rm -f common/COPYING common/sessionvariables.php common/symbols.js images/graphics/eosslogo.png; \
- rm -f predictiondata/*.txt preferences.php; \
+ rm -f predictiondata/*.txt preferences.php; \ 
  rm -fr images/flightindicators/img images/aprs/aprs-symbol-index/; \
  cd /eosstracker; \
  rm -f bin/COPYING www/COPYING; \
@@ -92,9 +92,10 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash" >> /etc/sudoers
 
 # Set time zone
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone 
 
 #### Install direwolf from https://www.github.com/wb2osz/direwolf.git with EOSS mods ####
+
 WORKDIR /usr/src/app
 
 RUN git clone -b 1.6 https://github.com/wb2osz/direwolf.git && \
@@ -111,6 +112,7 @@ RUN git clone -b 1.6 https://github.com/wb2osz/direwolf.git && \
  make install-conf
 
 #### Install EOSS aprsc from https://github.com/edgeofspace/aprsc.git ####
+
 WORKDIR /usr/src/app
 
 RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc; \
@@ -201,7 +203,6 @@ RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/no
 EXPOSE 8000/tcp 8001/tcp
 
 # Copy the binaries from the build image
-RUN mkdir -p /root/target/eosstracker
 COPY --from=build /etc/udev/rules.d/99-direwolf-cmedia.rules /etc/udev/rules.d/
 COPY --from=build /usr/local/ /usr/local/
 COPY --from=build /opt/ /opt/
@@ -214,14 +215,20 @@ COPY --from=build /eosstracker/ /root/target/eosstracker/
 RUN cd /eosstracker; \
  su eosstracker -c "git pull && git status"; \
  echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt; \
+ echo "EOSS-Docker" >> /root/target/eosstracker/www/nodeid.txt; \
  chown eosstracker:eosstracker /eosstracker/www/nodeid.txt; \
+ chown eosstracker:eosstracker /root/target/eosstracker/www/nodeid.txt; \
+ chmod 444 /root/target/eosstracker/www/nodeid.txt; \
  chmod 444 /eosstracker/www/nodeid.txt
 
 # Unlock aprsc for testing
 RUN sed -i '$d' /opt/aprsc/etc/aprsc.conf; sed -i '$d' /opt/aprsc/etc/aprsc.conf
 
 # Configure PostgreSQL 
-RUN service postgresql start && \
+RUN cp -rpa /var/lib/postgresql/* /eosstracker/db/; \
+ sed -i "s/data_directory = '\/var\/lib\/postgresql\/14\/main'/data_directory = '\/eosstracker\/db\/14\/main'/g" \
+       /etc/postgresql/14/main/postgresql.conf; \
+ service postgresql start && \
  su - postgres -c "createuser eosstracker"; \
  MyPass="'Thisisthedatabasepassword!'"; \
  MyCommand="echo \"alter user eosstracker with encrypted password $MyPass;\" | psql"; \
@@ -248,9 +255,9 @@ RUN a2enmod ssl; \
  sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/eosstracker\/www/g' /etc/apache2/sites-enabled/000-default.conf; \
  sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/eosstracker\/www/g' /etc/apache2/sites-enabled/default-ssl.conf; \
  echo "<Directory /eosstracker/www/>" >> /etc/apache2/apache2.conf; \
- echo " Options Indexes FollowSymLinks" >> /etc/apache2/apache2.conf; \
- echo " AllowOverride None" >> /etc/apache2/apache2.conf; \
- echo " Require all granted" >> /etc/apache2/apache2.conf; \
+ echo "	Options Indexes FollowSymLinks" >> /etc/apache2/apache2.conf; \
+ echo "	AllowOverride None" >> /etc/apache2/apache2.conf; \
+ echo "	Require all granted" >> /etc/apache2/apache2.conf; \
  echo "</Directory>" >> /etc/apache2/apache2.conf; \
  service apache2 restart
 
@@ -260,8 +267,10 @@ RUN sed -i 's/GPSD_OPTIONS=""/GPSD_OPTIONS="-n -G"/g' /etc/default/gpsd; \
  sed -i 's/# ListenStream=0.0.0.0:2947/ListenStream=0.0.0.0:2947/g' /lib/systemd/system/gpsd.socket
 
 COPY run.sh /
+RUN cp -rpa /eosstracker/db /root/target/eosstracker/
 
-WORKDIR /eosstracker
+WORKDIR /
 VOLUME /eosstracker
 
 CMD ["/bin/bash"]
+
