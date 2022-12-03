@@ -51,6 +51,9 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
      >> /home/eosstracker/.bash_aliases; \
  echo "alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'" >> /home/eosstracker/.bash_aliases; \
  echo "alias blank='echo \"update teams set flightid=NULL;\" | psql -d aprs'" >> /home/eosstracker/.bash_aliases; \
+# Set up gnuradio preferences
+ su - eosstracker -c "mkdir -p /home/eosstracker/.gnuradio/prefs/"; \
+ su - eosstracker -c 'echo -n "gr::vmcircbuf_sysv_shm_factory" >> /home/eosstracker/.gnuradio/prefs/vmcircbuf_default_factory'; \
 # Set up /eosstracker
  mkdir /eosstracker; \
  chown -R eosstracker:eosstracker /eosstracker; \
