@@ -43,6 +43,7 @@ WORKDIR /usr/src/app
 RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eosstracker; \
  adduser eosstracker audio && adduser eosstracker dialout; \
  usermod -aG sudo eosstracker; \
+ usermod -aG plugdev eosstracker; \
  usermod -aG sudo www-data; \
  echo "export PGDATABASE=aprs" >> /home/eosstracker/.bashrc; \
  echo "set -o vi" >> /home/eosstracker/.bashrc; \
@@ -175,6 +176,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eosstracker; \
  adduser eosstracker audio && adduser eosstracker dialout; \
  usermod -aG sudo eosstracker; \
+ usermod -aG plugdev eosstracker; \
  usermod -aG sudo www-data; \
 # Make /usr/src/eosstracker and set permissions
  mkdir /usr/src/eosstracker; \
