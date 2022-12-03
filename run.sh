@@ -4,8 +4,8 @@ set -m
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
-        echo "not running as root...exiting"
-        exit
+	echo "not running as root...exiting"
+	exit
 fi
 
 if [ -d /eosstracker ]; then
@@ -20,7 +20,7 @@ if [ -d /eosstracker ]; then
 
     else
 
-        # /eosstracker is empty, continue...
+	# /eosstracker is empty, continue...
         echo "OK ... Setting up /eosstracker directory"
         chown eosstracker:eosstracker /eosstracker
         cp -rpav /usr/src/eosstracker/* /eosstracker/
@@ -49,3 +49,4 @@ service postgresql start
 service apache2 start
 
 fg %1
+
