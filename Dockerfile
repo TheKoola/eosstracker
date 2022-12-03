@@ -21,8 +21,8 @@ ENV LANG en_US.utf8
 RUN apt-get update \
 && apt-get install -qq -y --no-install-recommends \
  git sed sudo wget vim tini usbutils \
- gcc g++ make cmake \
- apache2 apache2-dev php php-pgsql \
+ gcc g++ make cmake build-essential \
+ apache2 apache2-dev php php-pgsql libusb-1.0-0-dev \
  postgresql-14 postgresql-14-postgis-3 postgresql-14-postgis-3-scripts postgis \
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
  libasound2-dev libudev-dev libgps-dev ax25-tools \
@@ -152,11 +152,11 @@ RUN apt-get update \
  libevent-dev libssl-dev libsctp-dev libcap-dev zlib1g-dev \
 # Run environment for eosstracker
  git sudo curl wget \
- apache2 php php-pgsql \
+ apache2 apache2-dev php php-pgsql \
  postgresql-14 postgresql-14-postgis-3 postgresql-14-postgis-3-scripts postgis \
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
  gnuradio gnuradio-dev gr-osmosdr rtl-sdr airspy \
- gpsd gpsd-clients alsa-utils \
+ gpsd gpsd-clients libgps-dev alsa-utils usbutils \
 # General utilities
  ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon \
 && apt-get clean autoclean \
@@ -176,8 +176,9 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  adduser eosstracker audio && adduser eosstracker dialout; \
  usermod -aG sudo eosstracker; \
  usermod -aG sudo www-data; \
- mkdir /eosstracker; \
- chown -R eosstracker:eosstracker /eosstracker; \
+# Make /usr/src/eosstracker and set permissions
+ mkdir /usr/src/eosstracker; \
+ chown -R eosstracker:eosstracker /usr/src/eosstracker; \
 # Install aprslib
  su - eosstracker -c "pip3 install --no-cache-dir aprslib"; \
 # Update sudoers
@@ -208,36 +209,33 @@ COPY --from=build /usr/local/ /usr/local/
 COPY --from=build /opt/ /opt/
 COPY --from=build /root/ /root/
 COPY --from=build /home/eosstracker/ /home/eosstracker/
-COPY --from=build /eosstracker/ /eosstracker/
-COPY --from=build /eosstracker/ /root/target/eosstracker/
+COPY --from=build /eosstracker/ /usr/src/eosstracker/
 
 # Check github status and set nodeid.txt
-RUN cd /eosstracker; \
- su eosstracker -c "git pull && git status"; \
- echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt; \
- echo "EOSS-Docker" >> /root/target/eosstracker/www/nodeid.txt; \
- chown eosstracker:eosstracker /eosstracker/www/nodeid.txt; \
- chown eosstracker:eosstracker /root/target/eosstracker/www/nodeid.txt; \
- chmod 444 /root/target/eosstracker/www/nodeid.txt; \
- chmod 444 /eosstracker/www/nodeid.txt
+RUN cd /usr/src/eosstracker; \
+ chmod 777 /usr/src/eosstracker/www/configuration /usr/src/eosstracker/www/audio; \
+ chmod 444 /usr/src/eosstracker/www/configuration/defaults.txt; \
+ #su eosstracker -c "git pull && git status"; \
+ su eosstracker -c 'echo "EOSS-Docker" >> /usr/src/eosstracker/www/nodeid.txt'; \
+ chmod 444 /usr/src/eosstracker/www/nodeid.txt
 
 # Unlock aprsc for testing
 RUN sed -i '$d' /opt/aprsc/etc/aprsc.conf; sed -i '$d' /opt/aprsc/etc/aprsc.conf
 
 # Configure PostgreSQL 
-RUN cp -rpa /var/lib/postgresql/* /eosstracker/db/; \
- sed -i "s/data_directory = '\/var\/lib\/postgresql\/14\/main'/data_directory = '\/eosstracker\/db\/14\/main'/g" \
-       /etc/postgresql/14/main/postgresql.conf; \
- service postgresql start && \
+RUN service postgresql start && \
  su - postgres -c "createuser eosstracker"; \
  MyPass="'Thisisthedatabasepassword!'"; \
  MyCommand="echo \"alter user eosstracker with encrypted password $MyPass;\" | psql"; \
  su - postgres -c "$MyCommand" && \
  su - postgres -c "createdb aprs -O eosstracker" && \
  su - postgres -c 'echo "create extension postgis;" | psql -d aprs' && \
- cd /eosstracker/sql; \
- su eosstracker -c "psql -d aprs -f ./aprs-database.v2.sql" && \
- su eosstracker -c "psql -d aprs -f ./eoss_specifics.sql"
+ su eosstracker -c "psql -q -d aprs -f /usr/src/eosstracker/sql/aprs-database.v2.sql" && \
+ su eosstracker -c "psql -q -d aprs -f /usr/src/eosstracker/sql/eoss_specifics.sql" && \
+ service postgresql stop && \
+ mv /var/lib/postgresql /usr/src/eosstracker/db/; \
+ sed -i "s/data_directory = '\/var\/lib\/postgresql\/14\/main'/data_directory = '\/eosstracker\/db\/postgresql\/14\/main'/g" \
+       /etc/postgresql/14/main/postgresql.conf 
 
 # Configure Apache
 RUN a2enmod ssl; \
@@ -259,7 +257,7 @@ RUN a2enmod ssl; \
  echo "	AllowOverride None" >> /etc/apache2/apache2.conf; \
  echo "	Require all granted" >> /etc/apache2/apache2.conf; \
  echo "</Directory>" >> /etc/apache2/apache2.conf; \
- service apache2 restart
+ service apache2 stop
 
 # Configure gpsd
 RUN sed -i 's/GPSD_OPTIONS=""/GPSD_OPTIONS="-n -G"/g' /etc/default/gpsd; \
@@ -267,7 +265,6 @@ RUN sed -i 's/GPSD_OPTIONS=""/GPSD_OPTIONS="-n -G"/g' /etc/default/gpsd; \
  sed -i 's/# ListenStream=0.0.0.0:2947/ListenStream=0.0.0.0:2947/g' /lib/systemd/system/gpsd.socket
 
 COPY run.sh /
-RUN cp -rpa /eosstracker/db /root/target/eosstracker/
 
 WORKDIR /
 VOLUME /eosstracker

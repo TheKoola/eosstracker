@@ -23,7 +23,7 @@ if [ -d /eosstracker ]; then
         # /eosstracker is empty, continue...
         echo "OK ... Setting up /eosstracker directory"
         chown eosstracker:eosstracker /eosstracker
-        cp -rpav /root/target/eosstracker/* /eosstracker/
+        cp -rpav /usr/src/eosstracker/* /eosstracker/
 
     fi
 else
@@ -32,7 +32,7 @@ else
     echo "OK ... Creating and setting up /eosstracker directory"
     mkdir -p /eosstracker
     chown eosstracker:eosstracker /eosstracker
-    cp -rpav /root/target/eosstracker/* /eosstracker/
+    cp -rpav /usr/src/eosstracker/* /eosstracker/
 
 fi
 
