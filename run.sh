@@ -21,18 +21,18 @@ if [ -d /eosstracker ]; then
     else
 
 	# /eosstracker is empty, continue...
-        echo "OK ... Setting up /eosstracker directory"
+        echo "OK ... Setting up and copying /eosstracker directory"
         chown eosstracker:eosstracker /eosstracker
-        cp -rpav /usr/src/eosstracker/* /eosstracker/
+        cp -rpa /usr/src/eosstracker/* /eosstracker/
 
     fi
 else
 
     # /eosstracker does not exist, continue...
-    echo "OK ... Creating and setting up /eosstracker directory"
+    echo "OK ... Creating, setting up and copying /eosstracker directory"
     mkdir -p /eosstracker
     chown eosstracker:eosstracker /eosstracker
-    cp -rpav /usr/src/eosstracker/* /eosstracker/
+    cp -rpa /usr/src/eosstracker/* /eosstracker/
 
 fi
 
