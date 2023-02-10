@@ -30,15 +30,23 @@ import psutil
 import os
 import signal
 
-KISS_FEND = 0xC0    # Frame start/end marker
-KISS_FESC = 0xDB    # Escape character
-KISS_TFEND = 0xDC   # If after an escape, means there was an 0xC0 in the source message
-KISS_TFESC = 0xDD   # If after an escape, means there was an 0xDB in the source message
-KISS_FESC_TFESC = b''.join([bytes(KISS_FESC), bytes(KISS_TFESC)])
-KISS_FESC_TFEND = b''.join([bytes(KISS_FESC), bytes(KISS_TFEND)])
-AX25_CONTROL_FIELD = 0x03
-AX25_PROTOCOL_ID = 0xF0
-INFO_DELIM = AX25_CONTROL_FIELD + AX25_PROTOCOL_ID
+KISS_FESC = b'\xdb'      #0xDB   # Escape character
+KISS_FEND = b'\xc0'      #0xC0   # Frame start/end marker
+KISS_TFEND = b'\xdc'     #0xDC   # If after an escape, means there was an 0xC0 in the source message
+KISS_TFESC = b'\xdd'     #0xDD   # If after an escape, means there was an 0xDB in the source message
+int_fend = int.from_bytes(KISS_FEND, 'big')
+int_fesc = int.from_bytes(KISS_FESC, 'big')
+int_tfend = int.from_bytes(KISS_TFEND, 'big')
+int_tfesc = int.from_bytes(KISS_TFESC, 'big')
+
+KISS_FESC_TFESC = b''.join([KISS_FESC, KISS_TFESC])
+KISS_FESC_TFEND = b''.join([KISS_FESC, KISS_TFEND])
+int_fesc_tfesc = int.from_bytes(KISS_FESC_TFESC, 'big')
+int_fesc_tfend = int.from_bytes(KISS_FESC_TFEND, 'big')
+
+AX25_CONTROL_FIELD = b'\x03'    #0x03
+AX25_PROTOCOL_ID = b'\xf0'      #0xF0
+INFO_DELIM = b''.join([AX25_CONTROL_FIELD, AX25_PROTOCOL_ID])
 
 #####################################
 ## Set this to "True" to have debugging text output when running
@@ -181,17 +189,28 @@ class KISS(object):
                         if raw:
 
                             # split out the pieces of the data returned
-                            fend_pieces = raw.split(chr(KISS_FEND))
+                            idx = 0
+                            j = 0
+                            fend_pieces = []
+                            for loopidx, i in enumerate(raw):
+                                if i == int_fend and loopidx > 0:
+                                    fend_pieces.append(raw[j:idx])
+                                    j = idx
+                                idx += 1
+
+                            if j == 0:
+                                fend_pieces = [raw]
+
                             num_fends = len(fend_pieces)
 
-                            debugmsg("raw: {}, fend_pieces({}): {}".format(type(raw), num_fends, fend_pieces))
+                            #debugmsg("raw: {}, j: {}, fend_pieces({}): {}".format(type(raw), j, num_fends, fend_pieces))
 
-                            # zero FENDs found, keep appending data to the buffer  
-                            if num_fends == 1:
+                            # no FENDs were present in raw
+                            if num_fends == 0:
                                 buf += fend_pieces[0]
 
-                            # one FEND found, there is a complete kiss frame available
-                            elif num_fends == 2:
+                            # one FEND was found
+                            elif num_fends == 1:
 
                                 # Found closing fend for the currently building kiss frame, so append the first piece and append it to the buffer
                                 # accummulated thus far.  Then add that buffer to the list of frames that we've found in this loop.
@@ -201,17 +220,16 @@ class KISS(object):
                                     # add this frame to our list of accummulated frames
                                     kiss_frames.append(b''.join([buf, fend_pieces[0]]))
 
-
-                                # FEND code was the first char...
                                 else: 
                                     # add this frame to our list of accummulated frames
                                     kiss_frames.append(buf)
 
                                 # reset the buffer
-                                buf = fend_pieces[1]
+                                #buf = fend_pieces[1]
+                                buf = bytes()
 
-                            # two or more FEND codes were found
-                            elif num_fends>= 3:
+                            # more than one FEND was present
+                            elif num_fends >= 2:
 
                                 # run through each fend_piece extracting the frames
                                 for i in range(0, num_fends - 1):
@@ -224,6 +242,7 @@ class KISS(object):
                                 if fend_pieces[num_fends - 1]:
                                     buf = fend_pieces[num_fends - 1]
 
+                            #debugmsg("kiss_frames: {}, kiss_frames({}): {}, {}".format(type(kiss_frames), len(kiss_frames), kiss_frames, [type(f) for f in kiss_frames]))
                             frames = list(map(self.cleanframe, kiss_frames))
 
                             # Check for bad / malformed frames here and remove them from the list
@@ -233,16 +252,25 @@ class KISS(object):
 
                             for f in frames:
                                 try:
-                                    channel = ord(f[0]) >> 4
+                                    if len(f) > 2:
+                                        #channel = ord(f[0]) >> 4
+                                        channel = f[0] >> 4
+                                        debugmsg("f[0]: {}, channel: {}".format(f[0], channel))
 
-                                    # Strip off the first byte, as that's the KISS data frame byte
-                                    s = f[1:]
-                                    s = s.strip(chr(KISS_FEND))
+                                        
+                                        # Strip off the first byte, as that's the KISS data frame byte
+                                        s = f[1:]
 
-                                    packet = self.parseFrame(s)
+                                        #s = s.strip(chr(KISS_FEND))
+                                        s = s.strip(KISS_FEND)
+                                        debugmsg("Parsing frame({})[{}]: {} : {}".format(len(f), channel, f, s))
 
-                                    debugmsg("calling function for: [{}] {}\n".format(channel, s))
-                                    callback(packet, channel)
+                                        packet = self.parseFrame(s)
+
+                                        debugmsg("calling function for: [{}] {}\n".format(channel, packet))
+                                        callback(packet, channel)
+                                    else:
+                                        debugmsg("Frame was < 2 bytes: {}".format(f))
 
                                 except Exception as e:
                                     # we skip any frames that have some sort of issue...
@@ -294,9 +322,29 @@ class KISS(object):
         """
 
         # Recover escaped FEND codes
-        tmp = s.replace(KISS_FESC_TFESC, chr(KISS_FESC)).replace(KISS_FESC_TFEND, chr(KISS_FEND))
+        tmp = b''
+        f_fesc = False
+        for idx, a in enumerate(s):
+            if idx == 0 and a == int_fend:
+                pass
+            elif f_fesc:
+                if a == int_tfesc:
+                    tmp += bytes([KISS_FESC])
+                elif a == int_tfend:
+                    tmp += bytes([KISS_FEND])
+                else:
+                    tmp += bytes([KISS_FESC])
+                    tmp += bytes([a])
 
-        # Now remove the first DF frame code from the beginning and any newline/space chars
+                f_fesc = False
+
+            elif a == int_fesc:
+                f_fesc = True
+            else:
+                tmp += bytes([a])
+                f_fesc = False
+
+        # Now remove any newline/space chars
         tmp.strip()
 
         return tmp
@@ -309,12 +357,20 @@ class KISS(object):
 
         addr = data[cursor:cursor+7]
 
-        h = (ord(addr[6]) >> 7) & 0x1
-        ssid = (ord(addr[6]) >> 1) & 0xf     
-        ext = ord(addr[6]) & 0x1
+        #h = (ord(addr[6]) >> 7) & 0x1
+        #ssid = (ord(addr[6]) >> 1) & 0xf     
+        #ext = ord(addr[6]) & 0x1
 
-        converted_addr = ''.join([chr(ord(a) >> 1) for a in addr[0:6]])
+        h = (addr[6] >> 7) & 0x1
+        ssid = (addr[6] >> 1) & 0xf     
+        ext = addr[6] & 0x1
+
+        debugmsg("decode: {}, h: {}, ssid: {}, ext: {}".format(addr, h, ssid, ext))
+        #converted_addr = ''.join([chr(ord(a) >> 1) for a in addr[0:6]])
+        converted_addr = b''.join([bytes([a >> 1]) for a in addr[0:6]])
         address = converted_addr.decode("UTF-8", "ignore")
+
+        debugmsg("decode. converted_addr: {}, address: {}".format(converted_addr, address))
 
         if ssid != 0:
             call = "{}-{}".format(address.strip(), ssid)
@@ -324,17 +380,19 @@ class KISS(object):
         return (call, h, ext)
 
     def decode_uframe(self, ctrl, data, pos):
+        #debugmsg("decode_uframe. ctrl: {}, data: {}, pos: {}".format(ctrl, data, pos))
         if ctrl == 0x3:
             pos += 1
             info = data[pos:]
-            infopart = info.rstrip('\xff\x0d\x20\x0a').decode("UTF-8", "ignore")
+            #debugmsg("decode_uframe. info: {}".format(info))
+            infopart = info.rstrip(b'\xff\x0d\x20\x0a').decode("UTF-8", "ignore")
             return infopart
         else:
             return None
              
     def parseFrame(self, frame):
         pos = 0
-        
+
         # Length of the frame
         length = len(frame)
 
@@ -346,6 +404,8 @@ class KISS(object):
         # destination address
         (dest_addr, dest_hrr, dest_ext) = self.decode_addr(frame, pos)
 
+        debugmsg("parseFrame destination: {}:{}, {}:{}, {}:{}".format(dest_addr, type(dest_addr), dest_hrr, type(dest_hrr), dest_ext, type(dest_ext)))
+
         if dest_addr is None:
             debugmsg("Destination address is invalid")
             return None
@@ -353,6 +413,8 @@ class KISS(object):
         
         # source address
         (src_addr, src_hrr, src_ext) = self.decode_addr(frame, pos)  
+
+        debugmsg("parseFrame source: {}, {}, {}".format(src_addr, src_hrr, src_ext))
 
         if src_addr is None:
             debugmsg("Source address is invalid")
@@ -370,14 +432,13 @@ class KISS(object):
             repeater_list += "," + rpt_addr 
             pos += 7
 
-
-
         # make sure this packet wasn't truncated...
         if pos >= length:
             return None
 
         # control code
-        ctrl = ord(frame[pos])
+        #ctrl = ord(frame[pos])
+        ctrl = frame[pos]
         pos += 1
       
         # if this is a U frame
@@ -500,7 +561,9 @@ class txKISS(KISS):
 
         # Convert the information part to bytes
         msg = [ord(c) for c in info]
+        debugmsg("msg({}): {}, info: {}".format(type(msg), msg, info))
         packet = dest_addr + src_addr 
+        debugmsg("packet({}): {}, dest_addr: {}, src_addr: {}".format(type(packet), packet, dest_addr, src_addr))
 
         dlen = len(self.via)
         i = 0
@@ -517,31 +580,41 @@ class txKISS(KISS):
         #packet += bytearray(c_byte + pid) + msg
         packet += c_byte + pid + msg
         chan_cmd = self.channel << 4
-        if chan_cmd == KISS_FEND:
+        if chan_cmd == int_fend:
             chan_cmd = [KISS_FESC, KISS_TFEND]
         else:
-            chan_cmd = [chan_cmd]
+            chan_cmd = [chan_cmd.to_bytes(1, 'big')]
 
-        debugmsg("Channel command: {}".format(chan_cmd))
+        debugmsg("Channel command({}): {}".format(type(chan_cmd), chan_cmd))
 
         # Escape the packet in case either KISS_FEND or KISS_FESC ended up in our stream
         packet_escaped = []
-        for x in packet:
-            if x == KISS_FEND:
+        for element in packet:
+            if type(element) is int:
+                x = element.to_bytes(1, 'big')
+            elif type(element) is bytes:
+                x = element
+            else:
+                x = element
+
+            if x == int_fesc:
                 packet_escaped += [KISS_FESC, KISS_TFEND]
-            elif x == KISS_FESC:
+            elif x == int_fesc:
                 packet_escaped += [KISS_FESC, KISS_TFESC]
             else:
                 packet_escaped += [x]
 
         # Build the frame that we will send to Dire Wolf and turn it into a string
-        kiss_frame = [KISS_FEND] + chan_cmd + packet_escaped + [KISS_FEND]
-
-        debugmsg("kiss_frame to be transmitted: [{}]".format(', '.join(hex(a) for a in kiss_frame)))
+        kiss_frame = b''.join([KISS_FEND] + chan_cmd + packet_escaped + [KISS_FEND])
+        debugmsg("kiss_frame to be transmitted({}): [{}]".format(type(kiss_frame), kiss_frame))
 
         output = bytearray(kiss_frame)
 
-        return output
+        debugmsg("output to be transmitted({}): [{}]".format(type(output), output))
+
+        #debugmsg("kiss_frame to be transmitted: [{}]".format(', '.join(hex(a) for a in kiss_frame)))
+
+        return kiss_frame
 
 
     def _transmit_msg(self, message):
@@ -549,8 +622,10 @@ class txKISS(KISS):
         Call this to transmit the message as a KISS frame to the direwolf TNC.
         """
 
-        encodedmessage = self._encode_msg(message)
         debugmsg("Transmiting packet: %s" % message)
+
+        encodedmessage = self._encode_msg(message)
+        debugmsg("encoded message:  {}".format(encodedmessage))
 
          # If a socket hasn't been created yet, then we're not connected
         if self.sock is None:

@@ -178,7 +178,7 @@ class aprs_receiver(gr.top_block):
         # the center frequency and all those we're listening too.   We choose 2x because of nyquist.
         spread = int(math.ceil(max_d(freqs, self.center_freq) * 2.0 / self.direwolf_audio_rate) * self.direwolf_audio_rate)
 
-        # resampler for the airspy to get the direwolf sample rate down to 44k
+        # resampler for the airspy to get the direwolf sample rate down to an integer value
         self.rational_resampler = None
 
         # downstream sample rate for blocks south of the Osmocom source or the rational resampler in the case of an airspy dongle
@@ -192,12 +192,22 @@ class aprs_receiver(gr.top_block):
             rates = self.osmosdr_source_0.get_sample_rates()
 
             # Report sample rates supported by the Airspy device
+            #airspy_rates_string = "Airspy supported sample rates: "
+            #for r in rates:
+            #    airspy_rates_string += "  " + str(int(r.start()))
+            
+            # Report sample rates supported by the Airspy device
             airspy_rates_string = "Airspy supported sample rates: "
-            for r in rates:
-                airspy_rates_string += "  " + str(int(r.start()))
+            airspy_freq = rates.start()
+            airspy_freq_list = []
+            while airspy_freq <= rates.stop():
+                airspy_rates_string += "  " + str(int(airspy_freq))
+                airspy_freq_list.append(airspy_freq)
+                airspy_freq += rates.step()
 
             # Get the first valid sample rate for the airspy device.  This *should* be the lowest sample rate allowed by the device.
-            self.samp_rate = int(rates[0].start())
+            #self.samp_rate = int(rates[0].start())
+            self.samp_rate = int(airspy_freq_list[0])
 
             # Turn off hardware AGC
             self.osmosdr_source_0.set_gain_mode(False, 0)
@@ -207,21 +217,16 @@ class aprs_receiver(gr.top_block):
             self.osmosdr_source_0.set_gain(12, 'MIX', 0)
             self.osmosdr_source_0.set_gain(13,  'IF',  0)
 
-            # We need to determine a sample rate that is a multiple of the direwolf audio rate (ex. 44k), then from that, we can determine 
+            # We need to calculate a sample rate which is a multiple of the direwolf audio rate, from there we can then determine the numerator & denominator for the resampler
             numerator, denominator, n = getResamplerFactors(self.samp_rate, spread, self.direwolf_audio_rate)
 
             # The downstream sample rate (i.e. used by blocks south of the rational resampler)
             self.downstream_samp_rate = self.direwolf_audio_rate * n
 
-            # resampler to get the sample rate down to something that will fit nicely with a 44k audio rate to direwolf
-            self.rational_resampler = filter.rational_resampler_ccc(
-                interpolation=numerator,
-                decimation=denominator,
-                taps=None,
-                fractional_bw=None,
-            )
+            # resampler to get the sample rate down to something that will fit nicely with the audio rate to direwolf
+            self.rational_resampler = filter.rational_resampler_ccc(interpolation=numerator, decimation=denominator)
 
-        # Not an airspy device...so we set sample rates and parameters as multiples of the 44k audio sample rate that direwolf will use
+        # Not an airspy device...so we set sample rates and parameters as multiples direwolf audio rate
         else: 
 
             # Now check if our calculated sample rate falls within the allowed sample rates for the RTL-SDR device.
@@ -284,13 +289,13 @@ class aprs_receiver(gr.top_block):
         # Audio low pass filter taps.  
         self.audio_taps = firdes.low_pass(1, self.quadrate, self.lowpass_freq, self.transition_width, fft.window.WIN_HAMMING)  
 
-        # If we're using an airspy device, then we need to resample the sample rate to a value that is a nice multiple of the direwolf audio rate (ex. 44k)
+        # If we're using an airspy device, then we need to reswizzle the sample rate to a value that is a nice multiple of the direwolf audio rate
         if prefix == "airspy" and self.rational_resampler:
             self.connect((self.osmosdr_source_0, 0), (self.rational_resampler, 0))
 
         # Now construct a seperate processing chain for each frequency we're listening to.
         # processing chain:
-        #    osmosdr_source ---> xlating_fir_filter ---> quad_demod ---> fm_deemphasis ---> audio_lowpass_filter ---> agc ---> float_to_short ---> UDP_sink
+        #    osmosdr_source ---> xlating_fir_filter ---> quad_demod ---> audio_lowpass_filter ---> agc ---> float_to_short ---> UDP_sink
         #
         for freq,port,p,sn in self.Frequencies:
             #print "   channel:  [%d] %dMHz" % (port, freq)
@@ -299,7 +304,11 @@ class aprs_receiver(gr.top_block):
             blocks_udp_sink = network.udp_sink(gr.sizeof_short*1, 1, ip, port, 0, self.mtusize, True)
             blocks_float_to_short = blocks.float_to_short(1, self.scale)
             quad_demod = analog.quadrature_demod_cf(self.quadrate/(2*math.pi*self.max_deviation/8.0))
-            fmdeemphasis = analog.fm_deemph(self.quadrate)
+
+            # Don't need to perform deemphasis on the resulting audio from quadrature demod because Direwolf handles this very well.  In the end, it just adds
+            # cpu cycles to a workflow with little return on that investment.
+            #fmdeemphasis = analog.fm_deemph(self.quadrate)
+
             audio_filter = filter.fir_filter_fff(self.audio_decim, self.audio_taps)
             analog_agc = analog.agc_ff(1e-5, 1.0, 1.0)
             analog_agc.set_max_gain(65536)
@@ -312,8 +321,7 @@ class aprs_receiver(gr.top_block):
             else:
                 self.connect((self.osmosdr_source_0, 0), (freq_xlating_fir_filter, 0))
             self.connect((freq_xlating_fir_filter, 0), (quad_demod, 0))
-            self.connect((quad_demod, 0), (fmdeemphasis, 0))
-            self.connect((fmdeemphasis, 0), (audio_filter, 0))
+            self.connect((quad_demod, 0), (audio_filter, 0))
             self.connect((audio_filter, 0), (analog_agc, 0))
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
@@ -322,11 +330,11 @@ class aprs_receiver(gr.top_block):
         instance_string = "    " + str(self.rtl_id) + ":  "
         if prefix == "airspy": 
             print("    Processing chain:")
-            print("        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->")
+            print("        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod -->")
             print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
         else:
             print("    Processing chain:")
-            print("        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod --> fm_deemphasis -->")
+            print("        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod -->")
             print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
         print(instance_string, "len(channel taps):   ", len(self.channel_lowpass_taps))
         print(instance_string, "len(audio taps):     ", len(self.audio_taps))
