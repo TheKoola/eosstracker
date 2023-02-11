@@ -254,7 +254,7 @@ class infoCmd(object):
                 if len(packets) > 0:
 
                     # Get the amount of time that's elapsed since the last packet we heard
-                    minutes_elapsed = packets[-1][7]
+                    minutes_elapsed = float(packets[-1][7])
 
                     debugmsg("minutes_elapsed:  " + str(minutes_elapsed))
 
@@ -293,7 +293,9 @@ class infoCmd(object):
 
                     # compute the md5 hash of the beacon and user's callsigns, but save only the last four hex digits.  This will become a unique string to identify the object.
                     hash_this = callsign.upper() + self.callsign.upper()
-                    md5hash = hashlib.md5(hash_this).hexdigest()[-4:]
+
+                    debugmsg("hash_this ({}): {}".format(type(hash_this.encode("utf-8", "ignore")), hash_this.encode("utf-8", "ignore")))
+                    md5hash = hashlib.md5(hash_this.encode("utf-8", "ignore")).hexdigest()[-4:]
 
                     objectname = callsign.split("-")[0][0:4] + "." + md5hash.upper()
                     objectname = objectname + " "*(9 - len(objectname))
