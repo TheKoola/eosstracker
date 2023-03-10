@@ -791,7 +791,7 @@ def main():
 
 
         # This is the GPS position tracker process
-        gpsprocess = mp.Process(target=gpspoller.GpsPoller, args=(stopevent,))
+        gpsprocess = mp.Process(target=gpspoller.runGPSPoller, args=(stopevent,))
         gpsprocess.daemon = True
         gpsprocess.name = "GPS Position Tracker"
         processes.append(gpsprocess)
