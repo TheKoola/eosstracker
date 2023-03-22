@@ -397,47 +397,57 @@ def databaseUpdates():
 
         # SQL to add a trigger on inserts into the packets table.  This trigger is then used to call PG_NOTIFY to notify listening clients that a new
         # packet was added to the table.
-        sql_function = """CREATE or REPLACE FUNCTION notify_new_packet()
+        sql_function = """CREATE or REPLACE FUNCTION notify_v1()
                             RETURNS trigger
                              LANGUAGE 'plpgsql'
                         as $BODY$
                         declare
                         begin
-                            if (tg_op = 'INSERT') then
-                                perform pg_notify('new_packet', (ST_asGeoJSON(NEW)::jsonb)::text);
+                            if (tg_nargs > 0) then
+                                if (tg_argv[0] != '') then
+                                    if (tg_op = 'INSERT') then
+                                        perform pg_notify(tg_argv[0], (ST_asGeoJSON(NEW)::jsonb)::text);
+                                    end if;
+                                end if;
                             end if;
-                         
+                                 
                             return null;
                         end
                         $BODY$;"""
-        sql_trigger = """CREATE or REPLACE TRIGGER after_new_packet
+        sql_trigger_newpacket = """CREATE or REPLACE TRIGGER after_new_packet_v1
                         AFTER INSERT
                         ON packets
                         FOR EACH ROW
-                        EXECUTE PROCEDURE notify_new_packet();"""
-        sql_checkfunction = "select p.proname from pg_proc p where p.proname = 'notify_new_packet';"
-        sql_checktrigger = "select t.tgname from pg_trigger t where t.tgname = 'after_new_packet';"
+                        EXECUTE PROCEDURE notify_v1('new_packet');"""
+        sql_trigger_newposition = """CREATE or REPLACE TRIGGER after_new_position_v1
+                        AFTER INSERT
+                        ON gpsposition
+                        FOR EACH ROW
+                        EXECUTE PROCEDURE notify_v1('new_position');"""
+        sql_checkfunction = "select p.proname from pg_proc p where p.proname = 'notify_v1';"
+        sql_checktrigger_packet = "select t.tgname from pg_trigger t where t.tgname = 'after_new_packet_v1';"
+        sql_checktrigger_position = "select t.tgname from pg_trigger t where t.tgname = 'after_new_position_v1';"
         
         # check if the function exists already
         dbcur.execute(sql_checkfunction)
         rows = dbcur.fetchall()
         if len(rows) <= 0:
             # Add the function since it doesn't exist
-            print("Adding notify_new_packet function to database.")
+            print("Adding notify_v1 function to database.")
             sys.stdout.flush()
-            debugmsg("Adding notify_new_packet function to database.")
+            debugmsg("Adding notify_v1 function to database.")
             dbcur.execute(sql_function)
             dbconn.commit()
 
-        # check if the trigger exists already
-        dbcur.execute(sql_checktrigger)
+        # check if the packet trigger exists already
+        dbcur.execute(sql_checktrigger_packet)
         rows = dbcur.fetchall()
         if len(rows) <= 0:
             # Add the trigger since it doesn't exist
-            print("Adding after_new_packet trigger to the packets table.")
+            print("Adding after_new_packet_v1 trigger to the packets table.")
             sys.stdout.flush()
-            debugmsg("Adding after_new_packet trigger to the packets table.")
-            dbcur.execute(sql_trigger)
+            debugmsg("Adding after_new_packet_v1 trigger to the packets table.")
+            dbcur.execute(sql_trigger_newpacket)
             dbconn.commit()
 
         #------------------- packets table ------------------#

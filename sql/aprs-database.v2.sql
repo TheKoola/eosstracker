@@ -433,3 +433,34 @@ create table launchsites (
     alt numeric
 );
 
+
+CREATE or REPLACE FUNCTION notify_v1()
+    RETURNS trigger
+     LANGUAGE 'plpgsql'
+as $BODY$
+declare
+begin
+    if (tg_nargs > 0) then
+        if (tg_argv[0] != '') then
+            if (tg_op = 'INSERT') then
+                perform pg_notify(tg_argv[0], (ST_asGeoJSON(NEW)::jsonb)::text);
+            end if;
+        end if;
+    end if;
+
+    return null;
+end
+$BODY$;
+
+
+CREATE or REPLACE TRIGGER after_new_position_v1
+    AFTER INSERT
+    ON gpsposition
+    FOR EACH ROW
+    EXECUTE PROCEDURE notify_v1('new_position');
+
+CREATE or REPLACE TRIGGER after_new_packet_v1
+    AFTER INSERT
+    ON packets
+    FOR EACH ROW
+    EXECUTE PROCEDURE notify_v1('new_position');
