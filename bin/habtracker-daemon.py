@@ -404,8 +404,7 @@ def databaseUpdates():
                         declare
                         begin
                             if (tg_op = 'INSERT') then
-                         
-                                perform pg_notify('new_packet', row_to_json(NEW)::text);
+                                perform pg_notify('new_packet', (ST_asGeoJSON(NEW)::jsonb)::text);
                             end if;
                          
                             return null;
