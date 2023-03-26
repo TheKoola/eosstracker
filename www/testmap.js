@@ -34,14 +34,11 @@ var starting_location = { "lat": 39.739, "lon": -104.984, "zoom": 7 };
 // The layercontrol object
 var layercontrol;
 
-// the debugging box
-var debugbox;
+// the status message box
+var statusbox;
 
-// The stations layer
+// The catchall stations layer
 var stations;
-
-// The weather stations layer
-var wxstations;
 
 // The active trackers list
 var trackerslist = {};
@@ -167,7 +164,24 @@ AprsStations = L.GeoJSON.extend({
             updateIcon(newjson, layer);
             
             return layer;
-        } // updateFeature
+        }, // updateFeature
+
+        // This will filter out geojson objects we don't want added.  It should return true/false.
+        // By default, we're only interested in tracker, flight, or "My Location" packets.  All other stations we want to ignore.
+        filter:  function(geojson) {
+
+            // Determine what type of station this is
+            var t = isTracker(geojson);
+            var f = isFlight(geojson);
+            var l = (geojson.properties.callsign && geojson.properties.callsign == "My Location" ? true : false);
+
+            // Check this callsign against the flightlist and trackerlist and "My Location"
+            if (t || f || l)
+                return true;
+
+            // by default return false.
+            return false;
+        }
     }, // options
     
 
@@ -179,7 +193,13 @@ AprsStations = L.GeoJSON.extend({
 
         // must be properly formed
         if (!f.properties || !f.properties.callsign || !f.geometry || !f.geometry.type)
-            return;
+            return this;
+
+
+        // check if this incoming geojson passes our filter
+        if (this.options.filter && !this.options.filter(geojson)) 
+            return this;
+
 
         // Try and determine who we heard this packet from
         var heardfrom = getPacketSource(f);
@@ -201,8 +221,10 @@ AprsStations = L.GeoJSON.extend({
                 this._features[existing_f.properties.callsign].feature = geojson;
 
                 // now update this feature's popup, tooltip, etc., etc.
-                var layer = this.options.updateFeature(f, oldlayer);
+                return this.options.updateFeature(f, oldlayer);
             }
+            else 
+                return this;
         }
         else {
             console.log({"w": "new data", "callsign": f.properties.callsign, "tm": f.properties.tm, "heardfrom": f.properties.heardfrom, "f": f});
@@ -222,7 +244,7 @@ AprsStations = L.GeoJSON.extend({
             this.options.onEachFeature(f, layer);
 
             // add this new layer 
-            this.addLayer(layer);
+            return this.addLayer(layer);
         }
 
     }, // addData
@@ -474,22 +496,40 @@ function updateTooltipContent(geojson, layer) {
     // the callsign of the existing feature
     var callsign = geojson.properties.callsign;
 
+    // display different content for trackers and flights
+    // ...
+    // ...
+
     // if there isn't a callsign we can't add a label under the this object's icon.  If the callsign is "My Location", then we return as 
     // we don't want any sort of label under a user's 'blue dot' that identifies their location.  
     if (!callsign || callsign == "My Location") 
         return null;
+
+
+    // the tool tip content.  By default it only consists of the station's callsign.
+    var content = callsign;
+
+    // is this a tracker?
+    var t = isTracker(geojson);
+    if (t) 
+        content = t.tactical.toUpperCase();
+
+    // is this a flight beacon?
+    var f = isFlight(geojson);
+    if (f)
+        content = callsign + (geojson.properties.altitude && geojson.properties.altitude > 0 ? "<br>" + (geojson.properties.altitude * 1.0).toFixed(0).toLocaleString() + "ft" : "");
 
     // does a Tooltip for this layer already exist?
     var tooltip = layer.getTooltip();
     if (tooltip) {
         
         // Update the tooltip's content 
-        layer.setTooltipContent(callsign);
+        layer.setTooltipContent(content);
     }
     else {
 
         // a tooltip doesn't exist yet, so create a new tooltip and bind it to this layer.
-        layer.bindTooltip(callsign, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9 }).openTooltip();
+        layer.bindTooltip(content, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9 }).openTooltip();
     }
 
     return layer;
@@ -514,7 +554,7 @@ function setupMap() {
     map = new L.Map('map', {
         //renderer : canvasRenderer,
         preferCanvas:  true,
-        zoomControloption: false,
+        zoomControl: false,
         minZoom: 1,
         maxZoom: 20
     });
@@ -539,26 +579,22 @@ function setupMap() {
     });
     /********************************************************/
 
-    // debugging box
-    debugbox = L.control.gpsbox().addTo(map);
-    debugbox.show("test");
+    // The status message box
+    statusbox = L.control.gpsbox({"position": "topleft"}).addTo(map);
+    statusbox.show("Loading map...");
 
-
-    // Add a GeoJSON layer to hold heard stations
+    // Add a GeoJSON layer to hold heard stations (this is the catchall)
     stations = new AprsStations().addTo(map);
 
     // Add a GeoJSON layer for the end user's position
     mylocation = new AprsStations().addTo(map);
-
-    // Add a GeoJSON layer for weather stations
-    wxstations = new AprsStations().addTo(map);
 
     /************************ layer selection control ***********/
     // Add our OSM map as the "base map" layer.
     var baselayer = { "Base Map": tilelayer };
 
     // Overlay layers
-    var overlays = { "My Location": mylocation, "Weather Stations": wxstations, "Other Stations": stations };
+    var overlays = { "My Location": mylocation, "Other Stations": stations };
 
     // Add the layer control to the map
     layercontrol = L.control.layers(baselayer, overlays).addTo(map);
@@ -575,7 +611,82 @@ function setupMap() {
         L.DomEvent.disableClickPropagation(layercontrol._container);
     }
 
+    // Add a zoom control to the map.  We do this last so that it's below the other controls in the top righthand corner of the map.:w
+    var zoom = L.control.zoom({ "position": "topright" }).addTo(map);
+
+    // Update status message
+    statusbox.show("Map loaded");
 }
+
+
+/***********
+* isTracker
+*
+* This will compare the incoming geojson.properties.callsign against the trackerlist global.
+* returns the tracker json if this callsign represents a tracker, otherwise false/null/undefined.
+***********/
+function isTracker(geojson) {
+
+    // make sure this geojson has a callsign property
+    if (!geojson.properties || !geojson.properties.callsign)
+        return false;
+
+    // we have to check if the incoming callsign matches the trackerlist callsign with/without an SSID
+    var t;
+    for (t in trackerslist) {
+        
+        // split out the trackerlist callsign from its SSID (ex. call-XX)
+        var pieces = t.split("-");
+        var callsign = pieces[0];
+        var ssid = (pieces[1] ? pieces[1] : null);
+
+        // Check if the incoming geojson matches the callsign-ssid or the callsign of the trackerlist entry
+        //var match = ssid ? geojson.properties.callsign == t) ? true : (geojson.properties.callsign.startsWith(callsign.toUpperCase()));
+        var match = (call, ssid, callssid, incomingcall) => {
+            //console.log("call:  " + call + ", ssid: " + ssid + ", callssid: " + callssid + ", incomingcall: " + incomingcall);
+            if (ssid) 
+                return incomingcall == callssid;
+            else 
+                return incomingcall.startsWith(call.toUpperCase());
+        };
+
+        // If there was a match, then return the trackerlist entry it matches.
+        if (match(callsign, ssid, t, geojson.properties.callsign)) {
+            //console.log(geojson.properties.callsign + " Matches tracker entry: " + JSON.stringify(trackerslist[t]));
+            return trackerslist[t];
+        }
+    }
+
+    return false;
+}
+
+/***********
+* isFlight
+*
+* This will compare the incoming geojson.properties.callsign against the flightlist global.
+* returns the flight json if this callsign represents a flight, otherwise false/null/undefined.
+***********/
+function isFlight(geojson) {
+
+    // make sure this geojson has a callsign property
+    if (!geojson.properties || !geojson.properties.callsign)
+        return false;
+
+    // cycle through the list of flights to determine if this packet belongs to a flight
+    var f;
+    for (f in flightlist) {
+
+        // now loop through each callsign (i.e. beacon) assigned to this flight comparing it to our test case
+        var c;
+        for (c in flightlist[f]) {
+            if (c == geojson.properties.callsign) {
+                return flightlist[f];
+            }
+        }
+    }
+    return false;
+}
+
 
 /***********
 * packetRouter
@@ -583,43 +694,37 @@ function setupMap() {
 * This function return the correct GeoJSON layer that a packet should be added too
 ***********/
 function packetRouter(p) {
-    var layer = null;
+    var layer = stations;
 
-    if (p.properties.symbol) {
-        switch (p.properties.symbol) {
-            // weather station
-            case '/_': 
-                layer =  wxstations;
-                break;
-            default:
-                // by default all stations land in the 'stations' layer
-                layer = stations;
+    // check if this station is in the flight list or is a tracker "assigned" to a flight (i.e. not "At Large")
+    if (p.properties.callsign) {
 
-                // check if this station is a tracker
-                if (p.properties.callsign) {
+        // cycle through the list of flights to determine if this packet belongs to a flight
+        var f;
+        for (f in flightlist) {
 
-                    // cycle through the list of flights to determine if this packet belongs to a flight
-                    var f;
-                    for (f in flightlist) {
-
-                        // now loop through each callsign (i.e. beacon) assigned to this flight 
-                        var c;
-                        for (c in flightlist[f]) {
-                            if (c == p.properties.callsign) {
-                                return flightlist[f]["layer"];
-                            }
-                        }
-
-                        // if this is not a balloon beacon, then check the tracker list
-                        if (trackerslist[p.properties.callsign]) {
-                            if (trackerslist[p.properties.callsign].flightid == f) {
-                                return flightlist[f]["layer"];
-                            }
-                        }
-
-                    }
+            // now loop through each callsign (i.e. beacon) assigned to this flight 
+            var c;
+            for (c in flightlist[f]) {
+                if (c == p.properties.callsign) {
+                    return flightlist[f]["layer"];
                 }
-                break;
+            }
+
+            // if this is not a balloon beacon, then check the tracker list for if this callsign is assigned to this flight.
+            var tracker = isTracker(p);
+
+            //console.log("packetRouter[" + f + "]: " + JSON.stringify(tracker));
+            if (tracker && tracker.flightid == f) {
+                console.log("Matches " + f);
+                return flightlist[f]["layer"];
+            }
+            //if (trackerslist[p.properties.callsign]) {
+            //    if (trackerslist[p.properties.callsign].flightid == f) {
+            //        return flightlist[f]["layer"];
+            //    }
+            //}
+
         }
     }
 
@@ -649,10 +754,18 @@ function setupSSE(backendurl) {
             // to the leaflet layer group of choice.
 
             if (geojson) {
+
+                // Determine which map layer this packet belongs too
                 var layer = packetRouter(geojson);
                 
-                if (layer)
+                if (layer) {
+
+                    // Add this packet to the appropriate map layer
                     layer.addData(geojson);
+
+                    if (statusbox)
+                        statusbox.show("Packet from:  " + (geojson.properties.callsign ? geojson.properties.callsign : "no callsign"));
+                }
             }    
         });
 
@@ -715,7 +828,6 @@ function setupSSE(backendurl) {
             console.log("SSE Error");
         });
 
-        console.log("setup complete with: " + backendurl);
         return true;
     } 
 
@@ -766,6 +878,8 @@ function getPacketSource(packet) {
 }
 
 /***********
+* NEED TO UPDATE THIS.  DON'T USE YET.
+*
 * trim_packetlist function
 *
 * This function will look through the packetlist array 'shifting' off those packets that are older than the agelimit.
@@ -1033,6 +1147,53 @@ function getFlights() {
     xhttp.send();
 }
 
+/***********
+* getFlightPackets
+*
+* This request all packets from the prior 3hrs for all active flights.  We don't really care about packets from the past for any other station - they
+* will come in as the transmit.  For flights, however, we need prior packets in order to plot paths, compute landing predictions, etc..
+***********/
+function getFlightPackets() {
+
+    // get the list of flights
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+
+            // Parse the returned json 
+            var js = JSON.parse(this.responseText);
+            var key, i;
+            var num = Object.keys(js).length;
+
+            if (num > 0)
+                statusbox.show("Loading " + num + " flight packets...");
+            //statusbox.show("Loading packets...");
+            
+            // Loop through each geojson packet
+            for (key in js) {
+                var geojson = js[key];
+
+                if (geojson) {
+                    var layer = packetRouter(geojson);
+                    
+                    if (layer)
+                        layer.addData(geojson);
+                }
+            }
+
+            // If there were packets to load, then report that we're done
+            if (num > 0)
+                statusbox.show("Finished loading flight packets.");
+        }
+    };
+
+    // Connect to the backend server
+    xhttp.open("GET", "getpackets2.php", true);
+
+    // Send our request
+    xhttp.send();
+}
+
 
 /***********
 * startup function
@@ -1046,6 +1207,9 @@ function startup() {
 
     // get the current list of flights 
     getFlights();
+
+    // Get prior packets
+    getFlightPackets();
 
     // setup the map
     setupMap();

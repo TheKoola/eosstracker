@@ -1110,7 +1110,7 @@
             // This is the flight path from the last location of the flight to the predicted landing spot (the "X" marks the spot).
             if (array_key_exists($callsign, $flightpath)) {
                 if ($flightpath[$callsign]) {
-                    if (array_key_exists("coordinates", $flightpath[$callsign])) {
+                   # if (array_key_exists("coordinates", $flightpath[$callsign])) {
                         $landingfeatures[] = array(
                             "type" => "Feature",
                             "properties" => array(
@@ -1120,7 +1120,6 @@
                             ),
                             "geometry" => $flightpath[$callsign]
                         );
-                    }
                 }
             }
 
@@ -1300,7 +1299,7 @@
             // This is the flight path from the last location of the flight to the predicted landing spot (the "X" marks the spot).
             if (array_key_exists($callsign, $flightpath)) {
                 if ($flightpath[$callsign]) {
-                    if (array_key_exists("coordinates", $flightpath[$callsign])) {
+                    #if (array_key_exists("coordinates", $flightpath[$callsign])) {
                         $cutdownlandingfeatures[] = array(
                             "type" => "Feature",
                             "properties" => array(
@@ -1310,7 +1309,6 @@
                             ),
                             "geometry" => $flightpath[$callsign]
                         );
-                    }
                 }
             }
 
