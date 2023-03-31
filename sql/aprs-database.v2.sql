@@ -463,4 +463,4 @@ CREATE or REPLACE TRIGGER after_new_packet_v1
     AFTER INSERT
     ON packets
     FOR EACH ROW
-    EXECUTE PROCEDURE notify_v1('new_position');
+    EXECUTE PROCEDURE notify_v1('new_packet');

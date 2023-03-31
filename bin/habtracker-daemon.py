@@ -395,6 +395,12 @@ def databaseUpdates():
                 dbcur.execute(sql_add)
                 dbconn.commit()
 
+        #------------------- packets table ------------------#
+
+
+
+        #------------------- triggers and notifications ------------------#
+
         # SQL to add a trigger on inserts into the packets table.  This trigger is then used to call PG_NOTIFY to notify listening clients that a new
         # packet was added to the table.
         sql_function = """CREATE or REPLACE FUNCTION notify_v1()
@@ -450,7 +456,7 @@ def databaseUpdates():
             dbcur.execute(sql_trigger_newpacket)
             dbconn.commit()
 
-        #------------------- packets table ------------------#
+        #------------------- triggers and notifications ------------------#
 
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
