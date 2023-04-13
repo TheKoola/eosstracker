@@ -558,9 +558,7 @@ Supported sample rates:
 Close board 1
 ```
 
-
-
-
+# Necessary System Services
 <a name="sudo"></a>
 ## Update sudo
 
@@ -575,7 +573,6 @@ eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
 www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
 ```
 
-# Necessary System Services
 <a name="apache"></a>
 ## Switch Apache to use SSL
 
