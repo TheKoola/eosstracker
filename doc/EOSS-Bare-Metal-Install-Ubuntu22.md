@@ -1,15 +1,13 @@
-EOSS Brick Build Notes - Ubuntu 22
+#EOSS Brick Build Notes - Ubuntu 22
 
 Last update:  03/21/2023
 
-Install the base OS
+##Install the base OS
 
 Start with a clean install of Ubuntu 22.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
 
 User Name:  EOSS Tracker
-
 Computer name:  eosstracker
-
 username:  eosstracker
 
 Password:  <insert standard password>
