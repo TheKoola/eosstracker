@@ -29,7 +29,7 @@ First we need to install network manager.
 
 `sudo apt install network-manager`
 
-Now also remove the modemmanager (it used to mess up GPSD)
+Now also remove the modemmanager (it can cause GPSD to misidentify the device)
 
 `sudo apt remove --purge modemmanager`
 
@@ -75,9 +75,6 @@ sudo nmcli c modify Home-wifi connection.autoconnect true connection.autoconnect
 
 nmcli c show
 ```
-
-### You can try to reboot to verify that everything is working:
-`sudo reboot`
 
 ### Add in the hotspot wifi configuration
 ```
@@ -132,7 +129,7 @@ This issue has to do with the new wpasupplicant package 2.10 that comes with Ubu
 
 Follow this link for howto
 
-[can't connect to ubuntu 22.04 hotspot]<https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot>
+[can't connect to ubuntu 22.04 hotspot](https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot)
 
 First you have to edit the /etc/apt/sources.list file:
 
@@ -590,7 +587,7 @@ eosstracker@eosstracker:~$
 ## Building direwolf 
 
 ### Cloning the direwolf repo from github
-For direwolf, this will need to be built from source and installed (from here:  [github]<https://github.com/wb2osz/direwolf>).  Change the the home directory for the `eosstracker` user:
+For direwolf, this will need to be built from source and installed (from here: [github](https://github.com/wb2osz/direwolf).  Change the the home directory for the `eosstracker` user:
 
 `cd ~`
 
@@ -669,7 +666,7 @@ You can then test this by trying to run direwolf:
 
 ## Building aprsc
 
-For aprsc, this will need to be built from source and installed (from here:  <https://github.com/hessu/aprsc>).  Reference this document for build instructions, if needed:  <http://he.fi/aprsc/BUILDING.html>.
+For aprsc, this will need to be built from source and installed (from here:  [github](https://github.com/hessu/aprsc).  Reference this document for build instructions, if needed:  [he.fi](http://he.fi/aprsc/BUILDING.html).
 
 NOTE:  If you haven't already created the `/etc/rc.local` file and rebooted the system, then do that first before proceeding with the build of aprsc.
 
@@ -751,4 +748,4 @@ Close board 1
 
 ## Open Street Map Configuration
 
-Now create an Open Street Map server by following the steps on [switch2osm]<https://www.switch2osm.org/> for Ubuntu 22.04.
+Now create an Open Street Map server by following the steps on [switch2osm](https://www.switch2osm.org/) for Ubuntu 22.04.
