@@ -2,6 +2,15 @@
 
 Last update:  04/12/2023
 
+## High Level Steps
+1. [Install Ubuntu 22.04 LTS](#installos)
+2. [Configure Networking](#networking)
+3. [Convenience Settings](#convenience)
+4. [Install & Configure EOSSTracker Software](#eosstracker)
+5. [Setup PostgresQL Database](#database)
+6. 
+
+<a name="installos"></a>
 ## Install the base OS
 
 Start with a clean install of Ubuntu 22.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
@@ -20,7 +29,7 @@ sudo apt update
 sudo apt upgrade
 sudo reboot
 ```
-
+<a name="networking"></a>
 ## Networking Configuration
 
 ### Install/remove packages
@@ -95,11 +104,11 @@ Then change the "search" line at the bottom to look like:
 search local
 ```
 
-## Dnsmasq configuration
+### Dnsmasq configuration
 
 Create a new file in `/etc` that contains an entry for `eosstracker.local` using the IP address that NetworkManager+dnsmasq uses when in hotspot mode.
 
-### An additional hosts file
+#### An additional hosts file
 
 Edit this file
 
@@ -109,7 +118,7 @@ Place these lines therein and save:
 
 `10.42.0.1  eosstracker.local  eosstracker`
 
-### NetworkManager dnsmasq conf file
+#### NetworkManager dnsmasq conf file
 
 Now edit this file:
 
@@ -165,11 +174,10 @@ You'll likely need to reboot to test all of this:
 
 `sudo reboot`
 
+<a name="convenience"></a>
+## Convenience Stuff
 
-## Continued Configuration
-
-### Convenience Stuff
-
+### VI Editor preferences
 Add this to the eosstracker's `~/.vimrc` file:
 ```
 filetype plugin indent on
@@ -182,12 +190,14 @@ if has("autocmd")
 endif
 ```
 
+### Bashrc entries
 Add this to the end of the eosstracker's `~/.bashrc` file:
 ```
 export PGDATABASE=aprs
 set -o vi
 ```
 
+### Bash command aliases
 Create the `~/.bash_aliases` file with the following contents:
 ```
 alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker-daemon|gpswss" | grep -v grep'
@@ -195,8 +205,10 @@ alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 ```
 
-## Clone the eosstracker repo to `/tmp`, install packages, and setup `/eosstracker`
+<a name="eosstracker"></a>
+## EOSSTracker Software Setup
 
+### Clone the eosstracker repo to `/tmp`, install packages, and setup `/eosstracker`
 First we need to clone the eosstracker repo to `/tmp` so we can get the list of packages to install (i.e. to support build steps further down).
 ```
 cd /tmp
@@ -206,18 +218,20 @@ git pull
 git checkout brickv2
 ```
 
+### Install packages
 Switch to the `sbin` subdirectory and run the installation script to get the vast majority of packages installed.
 ```
 cd /tmp/eosstracker/sbin
 sudo ./install-packages.sh
 ```
 
+### Create and configure `/eosstracker`
 Now run the `setupnewhome.bash` script to create the /eosstracker directory and clone the `eosstracker` GitHub repo to it.
 ```
 cd /tmp/eosstracker
 sudo ./setupnewhome.bash
 ```
-
+<a name="database"></a>
 ## Setup the Database
 
 ### Switch to the Postgres user:
@@ -254,6 +268,7 @@ psql -d aprs -f ./aprs-database.v2.sql 
 psql -d aprs -f ./eoss_specifics.sql
 ```
 
+<a name="sudo"></a>
 ## Update sudo
 
 Edit the `/etc/sudoers` file by running the `visudo` command.  Paste in the following lines at the end of that file, then press `CTRL-X` and answer `y` to save changes:
@@ -267,6 +282,7 @@ eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
 www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
 ```
 
+<a name="apache"></a>
 ## Switch Apache to use SSL
 
 ### Apache modules and configuration
@@ -339,6 +355,7 @@ Then paste in these lines:
 `sudo systemctl restart apache2`
 
 
+<a name="gps"></a>
 ## Update GPS
 
 ### Update configuration
@@ -385,6 +402,7 @@ Here is an example screen shot:
 
 insert screen shot
 
+<a name="timezones"></a>
 ## Timezones
 
 ### Set the operating system timezone
@@ -415,7 +433,7 @@ Now restart the database for these changes to take effect:
 
 `sudo systemctl restart postgresql`
 
-
+<a name="firewall"></a>
 ## Firewall
 
 ### Check status
@@ -443,6 +461,7 @@ sudo ufw reload
 sudo ufw status
 ```
 
+<a name="time"></a>
 ## Time Server Configuration
 
 ### Edit the time configuration configuration file:
@@ -503,6 +522,7 @@ sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
 sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
 ```
 
+<a name="rclocal"></a>
 ## Creating rc.local
 
 Edit or create the `/etc/rc.local` file and place the following contents therein.  
@@ -601,7 +621,7 @@ Reboot the system for the `rc.local` changes to take effect:
 
 `sudo reboot`
 
-
+<a name="direwolf"></a>
 ## Building direwolf 
 
 ### Cloning the direwolf repo from github
@@ -681,7 +701,7 @@ Assuming the compile worked without errors then install direwolf with the follow
 
 `direwolf --help`
 
-
+<a name="aprsc"></a>
 ## Building aprsc
 
 For aprsc, this will need to be built from source and installed (from here:  [github](https://github.com/hessu/aprsc).  Reference this document for build instructions, if needed:  [he.fi](http://he.fi/aprsc/BUILDING.html).
@@ -727,12 +747,14 @@ Fix up the ownership on the files under `/opt/aprsc`
 sudo chown aprsc:aprsc /opt/aprsc/logs /opt/aprsc/web /opt/aprsc/sbin /opt/aprsc/data
 ```
 
+<a name="dump1090"></a>
 ## Building Dump1090-fa
 
 TBD
 
 The existing dump1090-fa repo under Edgeofspace on GitHub needs to be brought up to current levels of the main dump1090-fa repo.  There seem to be a lot of changes/fixes/feature updates since we created the 'eoss' branch.  Likely means reapplying those brick specific changes to the latest code in the 'master' branch.
 
+<a name="airspy"></a>
 ## Fixing Airspy Udev Rules
 
 In the odd chance that the airspy rules are not installed, you'll need to create a file under `/etc/udev/rules.d/` so that any airspy SDR devices attached to the system are usable by non-root users.
@@ -770,6 +792,7 @@ Supported sample rates:
 Close board 1
 ```
 
+<a name="osm"></a>
 ## Open Street Map Configuration
 
 Now create an Open Street Map server by following the steps on [switch2osm](https://www.switch2osm.org/) for Ubuntu 22.04.
