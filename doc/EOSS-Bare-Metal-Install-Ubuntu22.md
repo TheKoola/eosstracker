@@ -26,9 +26,11 @@ sudo reboot
 ### Install/remove packages
 
 First we need to install network manager.
+
 `sudo apt install network-manager`
 
 Now also remove the modemmanager (it used to mess up GPSD)
+
 `sudo apt remove --purge modemmanager`
 
 Edit the netplan file to point to NetworkManager
@@ -43,9 +45,11 @@ network:
 ### Then stop all services that are using networkd:
 
 Get a list of those services that are using `networkd`:
+
 `sudo systemctl | grep networkd`
 
 Now mask all of those services so they don't start by using a command like this:
+
 `sudo systemctl mask <service>`
 
 ### Now have netplan configure NetworkManager by running these commands:
@@ -85,6 +89,7 @@ sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-p
 ## Edit `/etc/resolv.conf`
 
 First, edit the file:
+
 `sudo vi /etc/resolv.conf`
 
 Then change the "search" line at the bottom to look like:
@@ -100,14 +105,17 @@ Create a new file in `/etc` that contains an entry for `eosstracker.local` using
 ### An additional hosts file
 
 Edit this file
+
 `sudo vi /etc/hosts.dnsmasq`
 
 Place these lines therein and save:
+
 `10.42.0.1  eosstracker.local  eosstracker`
 
 ### NetworkManager dnsmasq conf file
 
 Now edit this file:
+
 `sudo vi /etc/NetworkManager/dnsmasq-shared.d/eoss.conf`
 
 Place these lines therein and save:
@@ -121,6 +129,7 @@ dhcp-option=option:ntp-server,10.42.0.1
 ### Reboot to test
 
 You'll likely need to reboot to test all of this:
+
 `sudo reboot`
 
 ## Continued Configuration
@@ -178,6 +187,7 @@ sudo ./setupnewhome.bash
 ## Setup the Database
 
 ### Switch to the Postgres user:
+
 `sudo su - postgres`
 
 ### Create the `eosstracker` database user and update the password:
@@ -199,7 +209,7 @@ createdb aprs -O eosstracker
 echo "create extension postgis;" | psql -d aprs
 ```
 
->>> Log off as the postgres user. <<<
+>>> Log off as the postgres user.
 
 ### Create The Database Schema
 
@@ -212,70 +222,66 @@ psql -d aprs -f ./eoss_specifics.sql
 
 ## Update sudo
 
-Edit the /etc/sudoers file by running the "visudo" command.  Paste in the following lines at the end of that file, then press CTRL-X and answer 'y' to save changes:
+Edit the `/etc/sudoers` file by running the `visudo` command.  Paste in the following lines at the end of that file, then press `CTRL-X` and answer `y` to save changes:
 
-sudo visudo
+`sudo visudo`
 
---------- paste in these following three lines (but not this one) ----------
-
+Then paste in these lines at the end of that file:
+```
 #### These are for the eosstracker and www-data web user
-
 eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
-
 www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
+```
 
----------------------- end of paste.  do not paste in this line -------------------
+## Switch Apache to use SSL
 
-Switch Apache to use SSL:
+### Apache modules and configuration
 
 Apache needs to be configured to use SSL and to redirect all non-encrypted traffic (ex. http://...) to the SSL equivalent page (ex. Https://...)
 
+```
 sudo a2enmod ssl
-
 sudo a2enmod rewrite
-
 sudo systemctl restart apache2
+```
 
 Now enable the SSL virtual host:
-
+```
 sudo a2ensite default-ssl
-
 sudo systemctl restart apache2
+```
 
-Now edit the /etc/apache2/sites-enabled/000-default.conf file to add a "redirect" statement that will cause apache to redirect unencrypted traffic to the encrypted virtual host (i.e. the default-ssl.conf file).
+Now edit the `/etc/apache2/sites-enabled/000-default.conf` file to add a `redirect` statement that will cause apache to redirect unencrypted traffic to the encrypted virtual host (i.e. `the default-ssl.conf` file).
 
-sudo vi /etc/apache2/sites-enabled/000-default.conf
+`sudo vi /etc/apache2/sites-enabled/000-default.conf`
 
-After the "ServerAdmin..." line, paste in the following 4 lines and save your changes:
-
-### this is so unencrypted web connections are redirected to the SSL URL
-
+After the `ServerAdmin...` line, paste in the following 4 lines and save your changes:
+```
 RewriteEngine On
-
 RewriteCond %{HTTPS} off
-
 RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
+```
 
 While still editing that file, change the DocumentRoot to the following.  Then save your changes and exit the vi editor.
 
-DocumentRoot /eosstracker/www
+`DocumentRoot /eosstracker/www`
 
 Now edit the SSL apache file and change the DocumentRoot to the following:
 
-sudo vi /etc/apache2/sites-enabled/default-ssl.conf
+`sudo vi /etc/apache2/sites-enabled/default-ssl.conf`
 
 ...change the DocumentRoot to be the following:
 
-DocumentRoot /eosstracker/www
-
-Once finished with edits, restart apache one last time:
-
-sudo systemctl restart apache2
+`DocumentRoot /eosstracker/www`
 
 Update Apache Configuration
 
-The /etc/apache2/apache2.conf file needs to be updated to add the following lines:
+The `/etc/apache2/apache2.conf` file:
 
+`sudo vi /etc/apache2/apache2.conf`
+
+Then paste in these lines:
+```
 <Directory /eosstracker/www/>
 
     Options Indexes FollowSymLinks
@@ -285,412 +291,348 @@ The /etc/apache2/apache2.conf file needs to be updated to add the following line
     Require all granted
 
 </Directory>
+```
 
-Run this to edit the file:
+### Finally, restart apache:
 
-sudo vi /etc/apache2/apache2.conf
+`sudo systemctl restart apache2`
 
-Once finished adding the lines above, restart apache2:
 
-sudo systemctl restart apache2
+## Update GPS
 
-Update GPS
+### Update configuration
+One will need to update the `/etc/default/gpsd` configuration file so that this line contains the `-n -G` options:
 
-One will need to update the /etc/default/gpsd configuration file so that this line contains the "-n -G" options:
+`GPSD_OPTIONS="-n -G"`
 
-GPSD_OPTIONS="-n -G"
-
-Modify the /lib/systemd/system/gpsd.socket service to allow connections to GPSD from systems external to the local system:
-
+Modify the `/lib/systemd/system/gpsd.socket` service to allow connections to GPSD from systems external to the local system:
+```
 [Unit]
-
 Description=GPS (Global Positioning System) Daemon Sockets
 
 [Socket]
-
 ListenStream=/run/gpsd.sock
-
 ListenStream=[::1]:2947
-
 #ListenStream=127.0.0.1:2947
-
 # To allow gpsd remote access, start gpsd with the -G option and
-
 # uncomment the next two lines:
-
 # ListenStream=[::]:2947
-
 ListenStream=0.0.0.0:2947
-
 SocketMode=0600
-
 BindIPv6Only=yes
 
 [Install]
-
 WantedBy=sockets.target
+```
 
-Then restart the services:
-
+### Then restart the services:
+```
 sudo systemctl daemon-reload
-
 sudo systemctl restart gpsd.service
-
 sudo systemctl restart gpsd.socket
+```
 
-One should then be able to run the "cgps" command to observe the daemon obtain a position fix from satellites.
-
-cgps
-
-Verification of GPS
+### Verification of GPS
 
 Then check that GPSD is communicating with the GPS puck.  You should see in the upper left hand box the status of the GPS as either "NO FIX" or hopefully "3D FIX".  In the top, righthand box there should be a list of satellites listed.  The point being if you see data flying by, things are working.
 
 Run this command to check the GPS:
 
-cgps
+`cgps`
 
 Here is an example screen shot:
 
-![Screen Shot 2019-01-28 at 11.38.41 AM.png](blob:https://linux.local/83086a62-3297-405f-ad62-289ac7dcde2a)
+insert screen shot
 
-Timezones
+## Timezones
 
+### Set the operating system timezone
 Set the Timezone for the OS and the database:
 
-sudo timedatectl set-timezone America/Denver
+`sudo timedatectl set-timezone America/Denver`
 
-Edit the /etc/postgresql/14/main/postgresql.conf file and update these two lines with the correct Timezone (ex. 'America/Denver'):
+### Update the PostgresQL timezone
 
-sudo su - postgres
+Edit the `/etc/postgresql/14/main/postgresql.conf` file and update these two lines with the correct Timezone (ex. `America/Denver`):
 
-vi /etc/postgresql/14/main/postgresql.conf
+`sudo su - postgres`
+
+`vi /etc/postgresql/14/main/postgresql.conf`
 
 Change these two lines to correctly specify the default timezone for postgresql:
-
-log_timezone = 'America/Denver'
-
+```
+log_timezone = 'America/Denver
 timezone = 'America/Denver'
+```
 
-Save your changes to the postgresql.conf file, then log off as the Postgres user:
+Save your changes to the `postgresql.conf` file, then log off as the `postgres` user:
 
 >>> Log off as the postgres user.
 
 Now restart the database for these changes to take effect:
 
-sudo systemctl restart postgresql
+`sudo systemctl restart postgresql`
 
-Firewall
 
-Update the firewall configuration:
+## Firewall
 
-sudo ufw status
+### Update the firewall configuration:
+
+Check status of the firewall
+
+`sudo ufw status`
 
 Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode):
-
+```
 sudo ufw allow Apache
-
 sudo ufw allow "Apache Secure"
-
 sudo ufw allow OpenSSH
-
 sudo ufw allow 14501
-
 sudo ufw allow 14580
-
 sudo ufw allow gpsd
-
 sudo ufw allow 53
-
 sudo ufw allow 67
+```
 
-Now enable the firewall
-
+### Now enable the firewall
+```
 sudo ufw enable
-
 sudo ufw reload
-
 sudo ufw status
+```
 
-Time Server Configuration
+## Time Server Configuration
 
-Edit the time configuration configuration file:
+### Edit the time configuration configuration file:
 
-sudo vi /etc/chrony/chrony.conf
+`sudo vi /etc/chrony/chrony.conf`
 
 Add these lines at the bottom of the file:
-
+```
 # set larger delay to allow the NMEA source to overlap with
-
 # the other sources and avoid the falseticker status
-
 refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
-
 refclock SHM 1 refid PPS precision 1e-9
 
 # Allow access from NTP clients
-
 allow
+```
 
-Now reboot the system for the chrony changes to take effect:
+### Now reboot the system for the chrony changes to take effect:
 
-sudo reboot
+`sudo reboot`
 
-Verification of Time
+### Verification of Time
 
 Now check that chrony (the time service on Ubuntu) is connecting to the GPS.  Using the following command should list all of the time sources (GPS included) that chrony has contacted to evaluate as a potential time sync source:
 
-chronyc sources
+`chronyc sources`
 
-An example of a system that is connect to the internet.  Notice the "GPS" line and that in the far right column there is an offset value "200ms".  You should see some non-zero number there.
-
+An example of a system that is connect to the internet.  Notice the `GPS` line and that in the far right column there is an offset value `200ms`.  You should see some non-zero number there.
+```
 210 Number of sources = 10
-
 MS Name/IP address         Stratum Poll Reach LastRx Last sample               
-
 ===============================================================================
-
 #? GPS                           0   4     1    15    +43ms[  +43ms] +/-  200ms
-
 #? PPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
-
 ^+ alphyn.canonical.com          2   6    17    14  -2746us[-1023us] +/-   83ms
-
 ^- golem.canonical.com           2   6    17    12  -5068us[-5068us] +/-   95ms
-
 ^- pugot.canonical.com           2   6    17    13  -4846us[-4846us] +/-   87ms
-
 ^- chilipepper.canonical.com     2   6    17    13  -5460us[-5460us] +/-   97ms
-
 ^+ lithium.constant.com          2   6    17    14  -3792us[-2069us] +/-   75ms
-
 ^- ec2-34-198-67-116.comput>     3   6    17    13  -5748us[-5748us] +/-  103ms
-
 ^* i.will.not.be.extorted.o>     2   6    17    14  +7708us[+9431us] +/-   42ms
-
 ^+ fry.gwi.net                   2   6    17    15  -7847us[  -48ms] +/-   76ms
+```
 
 Secondly one can run this command that shows time data coming from the GPS assuming the GPS has a FIX on some satellites.  One has to be root to run this command:
 
-sudo ntpshmmon -n 5
+`sudo ntpshmmon -n 5`
 
 Example output:
-
+```
 ntpshmmon version 1
-
 #      Name Seen@                Clock                Real                 L Prec
-
 sample NTP0 1548699816.644704781 1548699816.643714859 1548699815.640000104 0 -20
-
 sample NTP0 1548699820.717288106 1548699820.716170449 1548699819.640000104 0 -20
-
 sample NTP0 1548699821.088285007 1548699821.087243473 1548699819.740000009 0 -20
-
 sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
-
 sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
+```
 
-Creating rc.local
+## Creating rc.local
 
-Edit or create the /etc/rc.local file and place the following contents therein.  
+Edit or create the `/etc/rc.local` file and place the following contents therein.  
 
-sudo vi /etc/rc.local
+`sudo vi /etc/rc.local`
 
-============= rc.local contents (don't paste in this line) ===========
-
+Then paste in these lines
+```
 #!/bin/bash
 
 #
-
 # Added by JTS and JED on 2019-01-28
-
 # Updated by JTS on 2019-09-07
-
 # Autogenerated by EOSS to set up aprsc >= 2.1.5 chroot environment
-
 #
-
 BASEDIR=/opt/aprsc
-
 DIRNAME=aprsc
 
-# Fixing network on boot
-
-#nmcli con up Hotspot
-
 # Grab the hotspot SSID and put that into the WWW home directory for display on the main web page
-
 if [ -f /etc/NetworkManager/system-connections/Hotspot ]; then
-
     awk -F"=" '/^ssid=/ {print $2;}' /etc/NetworkManager/system-connections/Hotspot > /eosstracker/www/nodeid.txt
-
     chmod 444 /eosstracker/www/nodeid.txt
-
 else
-
     rm -f /eosstracker/www/nodeid.txt
-
 fi
 
 # Check and add necessary directories and mount points for aprsc >= 2.1.5
-
 if [ ! -d $BASEDIR/etc ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/etc
-
 fi
 
 if [ ! -d $BASEDIR/dev ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/dev
-
 fi
 
 if [ ! -d $BASEDIR/lib ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/lib
-
 fi
 
 if [ ! -d $BASEDIR/lib64 ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/lib64
-
 fi
 
 if [ ! -d $BASEDIR/usr/lib ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/usr/lib
-
 fi
 
 if [ ! -d $BASEDIR/usr/lib64 ]; then
-
         /bin/mkdir -p -m 755 $BASEDIR/usr/lib64
-
 fi
 
 # Copy files and special devices for aprsc >= 2.1.5 chroot environment
-
 if [ ! -e $BASEDIR/etc/gai.conf ]; then
-
         /bin/cp -p /etc/resolv.conf /etc/nsswitch.conf /etc/hosts /etc/gai.conf $BASEDIR/etc/
-
 fi
 
 if [ ! -e $BASEDIR/dev/random ]; then
-
         /bin/cp -pa /dev/urandom /dev/random /dev/null /dev/zero $BASEDIR/dev/
-
 fi
 
 # Mount libraries read-only for aprsc >= 2.1.5 chroot environment
-
 grep -q "$DIRNAME/lib " /proc/mounts || ( mount --bind /lib $BASEDIR/lib && mount -o remount,ro,bind $BASEDIR/lib )
-
 if [ -e /lib64 ]; then
-
         grep -q "$DIRNAME/lib64 " /proc/mounts || ( mount --bind /lib64 $BASEDIR/lib64 && mount -o remount,ro,bind $BASEDIR/lib64 )
-
 fi
 
 grep -q "$DIRNAME/usr/lib " /proc/mounts || ( mount --bind /usr/lib $BASEDIR/usr/lib && mount -o remount,ro,bind $BASEDIR/usr/lib )
-
 if [ -e /usr/lib64 ]; then
-
         grep -q "$DIRNAME/usr/lib64 " /proc/mounts || ( mount --bind /usr/lib64 $BASEDIR/usr/lib64 && mount -o remount,ro,bind $BASEDIR/usr/lib64 )
-
 fi
 
 exit 0
-
-================ end of rc.local contents (don't paste in this line) ==============
+```
 
 After editing this file, change the permissions on it and reboot to test.
-
+```
 sudo chmod 755 /etc/rc.local
-
 sudo reboot
+```
 
 Once the system comes back online, check that the following directory structure exists:
-
+```
 eosstracker@eosstracker:~$ ls -l /opt/aprsc
-
 total 20
-
 drwxr-xr-x   2 root root 4096 Nov 19 18:53 dev
-
 drwxr-xr-x   2 root root 4096 Nov 19 18:53 etc
-
 drwxr-xr-x 103 root root 4096 Nov 19 18:14 lib
-
 drwxr-xr-x   2 root root 4096 Nov 19 18:53 lib64
-
 drwxr-xr-x   4 root root 4096 Nov 19 18:53 usr
-
 eosstracker@eosstracker:~$
+```
 
-Building direwolf 
+## Building direwolf 
 
-For direwolf, this will need to be built from source and installed (from here:  <https://github.com/wb2osz/direwolf>).  This is using the "dev" branch - I've not tested this with the production branch, 'master', yet.
+### Cloning the direwolf repo from github
+For direwolf, this will need to be built from source and installed (from here:  [github]<https://github.com/wb2osz/direwolf>).  Change the the home directory for the `eosstracker` user:
 
-cd ~
+`cd ~`
 
-git clone https://www.github.com/wb2osz/direwolf
+Then clone the direwolf repo:
 
-cd direwolf
+`git clone https://www.github.com/wb2osz/direwolf`
 
-Edit direwolf.h
+### Next edit direwolf source configuration
+Next edit the direwolf source files to increase the limits for use with SDR sources.  Change to the direwolf directory (created from the `git clone` command above):
 
-Now edit the ./src/direwolf.h file so that the number of audio devices is 8 instead of 3 (line ):
+`cd direwolf/src`
+
+Edit `direwolf.h`
+
+`vi direwolf.h`
+
+Now change the number of audio devices is 8 instead of 3:
 
 Change this:
 
-    #define MAX_ADEVS 3
+`    #define MAX_ADEVS 3`
 
 To this:
 
-    #define MAX_ADEVS 8
+`    #define MAX_ADEVS 8`
+
 
 Edit rrbb.c
 
-Now edit the ./src/rrbb.c file so that the number of memory buffers used for checking leaks is higher (line 100):
+`vi rrbb.c`
+
+Change the number of memory buffers used for checking leaks is higher:
 
 Change this:
 
-        if (new_count > delete_count + 100) {
+`        if (new_count > delete_count + 100) {`
 
 To this:
 
-        if (new_count > delete_count + 500) {
+`        if (new_count > delete_count + 500) {`
 
 Edit fsk_demod_state.h
 
-Now edit the ./src/fsk_demod_state.c file so that the number of memory buffers used for checking leaks is higher (line 100):
+`vi fsk_demod_state.h`
+
+Change the number of memory buffers used for checking leaks is higher (line 100):
 
 Change this:
 
-#define MAX_FILTER_SIZE 320
+`#define MAX_FILTER_SIZE 320`
 
 To this:
 
-#define MAX_FILTER_SIZE   500
+`#define MAX_FILTER_SIZE   500`
 
-Compiling
+
+### Compiling
 
 Now build direwolf and install it.
 
+```
 cd ~/direwolf
-
 mkdir build && cd build
-
 cmake ..
-
 make -j4
+```
 
-sudo make install
+Assuming the compile worked without errors then install direwolf with the following command:
 
-Building aprsc
+`sudo make install`
+
+You can then test this by trying to run direwolf:
+
+`direwolf --help`
+
+
+## Building aprsc
 
 For aprsc, this will need to be built from source and installed (from here:  <https://github.com/hessu/aprsc>).  Reference this document for build instructions, if needed:  <http://he.fi/aprsc/BUILDING.html>.
 
