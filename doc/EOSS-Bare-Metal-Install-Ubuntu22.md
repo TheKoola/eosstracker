@@ -600,7 +600,7 @@ Next edit the direwolf source files to increase the limits for use with SDR sour
 
 `cd direwolf/src`
 
-Edit `direwolf.h`
+### Edit `direwolf.h`
 
 `vi direwolf.h`
 
@@ -615,7 +615,7 @@ To this:
 `    #define MAX_ADEVS 8`
 
 
-Edit rrbb.c
+### Edit `rrbb.c`
 
 `vi rrbb.c`
 
@@ -629,7 +629,7 @@ To this:
 
 `        if (new_count > delete_count + 500) {`
 
-Edit fsk_demod_state.h
+### Edit `fsk_demod_state.h`
 
 `vi fsk_demod_state.h`
 
@@ -659,7 +659,7 @@ Assuming the compile worked without errors then install direwolf with the follow
 
 `sudo make install`
 
-You can then test this by trying to run direwolf:
+### You can then test this by trying to run direwolf:
 
 `direwolf --help`
 
@@ -674,6 +674,7 @@ This will build the EOSS fork of aprsc that includes ability to filter upstream 
 
 `cd ~`
 
+### Create the `aprsc` user
 Then create a user, `aprsc`, that the aprsc software will run under:
 
 `sudo adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc`
@@ -682,6 +683,7 @@ Clone the EOSS aprsc fork:
 
 `git clone https://github.com/edgeofspace/aprsc.git`
 
+### Configure and build
 Now configure the aprsc software and build
 
 ```
@@ -690,17 +692,19 @@ cd aprsc/src
 make
 ```
 
+### Install
 Assuming that build was successful, then install the aprsc software with this command:
 
 `sudo make install`
 
+### Adjust directory and file permissions
 Now adjust the permissions on the `/opt/aprc/etc` directory so the eosstracker user can place configuration files therein:
 ```
 sudo chmod 774 /opt/aprsc/etc
 sudo chown aprsc:eosstracker /opt/aprsc/etc
 ```
 
-And finally fix up the ownership on the files under `/opt/aprsc`
+Fix up the ownership on the files under `/opt/aprsc`
 ```
 sudo chown aprsc:aprsc /opt/aprsc/logs /opt/aprsc/web /opt/aprsc/sbin /opt/aprsc/data
 ```
@@ -715,7 +719,7 @@ The existing dump1090-fa repo under Edgeofspace on GitHub needs to be brought up
 
 In the odd chance that the airspy rules are not installed, you'll need to create a file under `/etc/udev/rules.d/` so that any airspy SDR devices attached to the system are usable by non-root users.
 
-Edit this file:
+### Edit or create airspy rules file
 
 `sudo vi /etc/udev/rules.d/52-airspy.rules`
 
@@ -723,6 +727,7 @@ Then add this line to the file and save
 
 `ATTR{idVendor}=="1d50", ATTR{idProduct}=="60a1", SYMLINK+="airspy-%k", MODE="660", GROUP="plugdev"`
 
+### `plugdev` group membership
 Make sure that the `eosstracker` user is a member of the `plugdev` group.  For example:
 
 ```
@@ -730,6 +735,7 @@ eosstracker@eosstracker:~$ id
 uid=1000(eosstracker) gid=1000(eosstracker) groups=1000(eosstracker),4(adm),20(dialout),24(cdrom),27(sudo),29(audio),30(dip),46(plugdev),110(lxd)
 ```
 
+### Testing
 If you have an airspy device, you can test things are working with this command after attaching the airspy sdr device to the system:
 
 ```
