@@ -86,7 +86,7 @@ nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security
 sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
 ```
 
-## Edit `/etc/resolv.conf`
+### Edit `/etc/resolv.conf`
 
 First, edit the file:
 
@@ -126,11 +126,46 @@ domain=local
 dhcp-option=option:ntp-server,10.42.0.1
 ```
 
+### Fix Issues connecting to system's hotspot wifi network
+
+This issue has to do with the new wpasupplicant package 2.10 that comes with Ubuntu 22.  This needs to be downgraded to 2.9.  Otherwise, one can view the hotspot SSID from another device, but attempts to joint the hotspot network fail without error (i.e. very frustrating).
+
+Follow this link for howto
+
+[can't connect to ubuntu 22.04 hotspot]<https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot>
+
+First you have to edit the /etc/apt/sources.list file:
+
+`sudo vi /etc/apt/sources.list`
+
+Then add these lines at the bottom:
+```
+deb http://old-releases.ubuntu.com/ubuntu/ impish main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ impish-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ impish-security main restricted universe multiverse
+```
+
+Then you need to run an update
+
+`sudo apt update`
+
+Next install the downgraded `wpasupplicant` package:
+
+`sudo apt --allow-downgrades install wpasupplicant=2:2.9.0-21build1`
+
+Then finally mark the `wpasupplicant` package as something to avoide upgrading during normal `apt` software updates/upgrades:
+
+`sudo apt-mark hold wpasupplicant`
+
+The hotspot NetworkManager connection should then accept incoming join requests from other wireless devices.
+
+
 ### Reboot to test
 
 You'll likely need to reboot to test all of this:
 
 `sudo reboot`
+
 
 ## Continued Configuration
 
@@ -636,206 +671,84 @@ You can then test this by trying to run direwolf:
 
 For aprsc, this will need to be built from source and installed (from here:  <https://github.com/hessu/aprsc>).  Reference this document for build instructions, if needed:  <http://he.fi/aprsc/BUILDING.html>.
 
-NOTE:  If you haven't already created the /etc/rc.local file and rebooted the system, then do that first before proceeding with the build of aprsc.
+NOTE:  If you haven't already created the `/etc/rc.local` file and rebooted the system, then do that first before proceeding with the build of aprsc.
 
 This will build the EOSS fork of aprsc that includes ability to filter upstream connections to APRS-IS servers that reduces bandwidth requirements.
 
-cd ~
+`cd ~`
 
-sudo adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc
+Then create a user, `aprsc`, that the aprsc software will run under:
 
-git clone https://github.com/edgeofspace/aprsc.git
+`sudo adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc`
 
+Clone the EOSS aprsc fork:
+
+`git clone https://github.com/edgeofspace/aprsc.git`
+
+Now configure the aprsc software and build
+
+```
 cd aprsc/src
-
 ./configure --prefix /opt/aprsc
-
 make
+```
 
-sudo make install
+Assuming that build was successful, then install the aprsc software with this command:
 
-Now adjust the permissions on the /opt/aprc/etc directory so the eosstracker user can place configuration files therein:
+`sudo make install`
 
+Now adjust the permissions on the `/opt/aprc/etc` directory so the eosstracker user can place configuration files therein:
+```
 sudo chmod 774 /opt/aprsc/etc
-
 sudo chown aprsc:eosstracker /opt/aprsc/etc
+```
 
-And finally fix up the ownership on the files under /opt/aprsc
-
+And finally fix up the ownership on the files under `/opt/aprsc`
+```
 sudo chown aprsc:aprsc /opt/aprsc/logs /opt/aprsc/web /opt/aprsc/sbin /opt/aprsc/data
+```
 
-Building Dump1090-fa
+## Building Dump1090-fa
 
-<TBD>
+TBD
 
 The existing dump1090-fa repo under Edgeofspace on GitHub needs to be brought up to current levels of the main dump1090-fa repo.  There seem to be a lot of changes/fixes/feature updates since we created the 'eoss' branch.  Likely means reapplying those brick specific changes to the latest code in the 'master' branch.
 
-Fixing Airspy Udev Rules
+## Fixing Airspy Udev Rules
 
-In the odd chance that the airspy rules are not installed, you'll need to create a file under /etc/udev/rules.d/ so that any airspy SDR devices attached to the system are usable by non-root users.
+In the odd chance that the airspy rules are not installed, you'll need to create a file under `/etc/udev/rules.d/` so that any airspy SDR devices attached to the system are usable by non-root users.
 
 Edit this file:
 
-sudo vi /etc/udev/rules.d/52-airspy.rules
+`sudo vi /etc/udev/rules.d/52-airspy.rules`
 
-Then add this line to the file and save:
+Then add this line to the file and save
 
-ATTR{idVendor}=="1d50", ATTR{idProduct}=="60a1", SYMLINK+="airspy-%k", MODE="660", GROUP="plugdev"
+`ATTR{idVendor}=="1d50", ATTR{idProduct}=="60a1", SYMLINK+="airspy-%k", MODE="660", GROUP="plugdev"`
 
-Make sure that the eosstracker user is a member of the "plugdev" group.  For example:
+Make sure that the `eosstracker` user is a member of the `plugdev` group.  For example:
 
+```
 eosstracker@eosstracker:~$ id
-
 uid=1000(eosstracker) gid=1000(eosstracker) groups=1000(eosstracker),4(adm),20(dialout),24(cdrom),27(sudo),29(audio),30(dip),46(plugdev),110(lxd)
+```
 
 If you have an airspy device, you can test things are working with this command after attaching the airspy sdr device to the system:
 
+```
 eosstracker@eosstracker:/etc/udev$ airspy_info
-
 airspy_lib_version: 1.0.11
-
 Found AirSpy board 1
-
 Board ID Number: 0 (AIRSPY)
-
 Firmware Version: AirSpy NOS v1.0.0-rc10-3-g7120e77 2018-04-28
-
 Part ID Number: 0x6906002B 0x00000030
-
 Serial Number: 0x910865C8254DB0C3
-
 Supported sample rates:
-
         10.000000 MSPS
-
         2.500000 MSPS
-
 Close board 1
+```
 
-Open Street Map Configuration (INCOMPLETE)
+## Open Street Map Configuration
 
-Initial Prerequisites
-
-Install these packages (a number of them are likely already installed):
-
-sudo apt install screen locate libapache2-mod-tile renderd git tar unzip wget bzip2 apache2 lua5.1 mapnik-utils python3-mapnik python3-psycopg2 python3-yaml gdal-bin npm fonts-noto-cjk fonts-noto-hinted fonts-noto-unhinted fonts-unifont fonts-hanazono postgresql postgresql-contrib postgis postgresql-14-postgis-3 postgresql-14-postgis-3-scripts osm2pgsql net-tools curl
-
-Database Updates and Extensions
-
-First create a new user for map rendering and create a database for OSM map data:
-
-sudo su - postgres
-
-createuser _renderd
-
-created _E UTF8 -O _renderd gis
-
-Now run psql (still as the Postgres user) and execute these SQL commands:
-
-psql -d gis
-
-CREATE EXTENSION postgis;
-
-CREATE EXTENSION hstore;
-
-ALTER TABLE geometry_columns OWNER TO _renderd;
-
-ALTER TABLE spatial_ref_sys OWNER TO _renderd;
-
-\q
-
-exit
-
-Download Stylesheet and Configure
-
-Create a directory for saving/building some of the map configuration info and sources:
-
-mkdir /eosstracker/maps
-
-cd /eosstracker/maps
-
-git clone <https://github.com/gravitystorm/openstreetmap-carto>
-
-Now configure carto and create a mapnik stylesheet
-
-cd openstreetmap-carto
-
-sudo npm install -g carto
-
-carto project.mml > mapnik.xml
-
-Shapefile
-
-Download the shapefile:
-
-cd /eosstracker/maps/openstreetmap-carto
-
-mkdir data
-
-sudo chown _renderd data
-
-sudo -u _renderd scripts/get-external-data.py
-
-Install Fonts
-
-cd /eosstracker/maps/openstreetmap-carto/
-
-scripts/get-fonts.sh
-
-Update the Renderd Apache Configuration
-
-The "Directory" path within the /etc/apache2/conf-available/renderd.conf file needs to be updated to reflect the new tiles location.  
-
-sudo vi /etc/apache2/conf-available/renderd.conf
-
-At the top of the file, update the "<Directory ...>" line to be:
-
-<Directory /eosstracker/maps/tiles>
-
-Then modify the ModTileTileDir directive to reflect the same directory.  Change it to look like:
-
-ModTileTileDir /eosstracker/maps/tiles
-
-Save the file, then restart renderd and apache2:
-
-sudo systemctl restart renderd
-
-sudo systemctl restart apache2
-
-Issues connecting to hotspot from brick
-
-Issue has to do with the new wpasupplicant package 2.10 that comes with Ubuntu 22.  This needs to be downgraded to 2.9.
-
-Follow this link for howto:
-
-[](https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot)
-
-<https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot>
-
-Then the hotspot works as intended.
-
-First you have to edit the /etc/apt/sources.list file:
-
-sudo vi /etc/apt/sources.list
-
-Then add these lines at the bottom:
-
-deb http://old-releases.ubuntu.com/ubuntu/ impish main restricted universe multiverse
-
-deb http://old-releases.ubuntu.com/ubuntu/ impish-updates main restricted universe multiverse
-
-deb http://old-releases.ubuntu.com/ubuntu/ impish-security main restricted universe multiverse
-
-Then you need to run (the brick will need to be on a network w/ Internet somewhere for this to work):
-
-sudo apt update
-
-Then install the downgraded wpasupplicant package:
-
-sudo apt --allow-downgrades install wpasupplicant=2:2.9.0-21build1
-
-Then mark the wpasupplicant package as something to "not upgrade":
-
-sudo apt-mark hold wpasupplicant
-
-The hotspot NetworkManager connection should then accept incoming join requests from other wireless devices.
+Now create an Open Street Map server by following the steps on [switch2osm]<https://www.switch2osm.org/> for Ubuntu 22.04.
