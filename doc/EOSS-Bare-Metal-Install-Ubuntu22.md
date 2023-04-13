@@ -3,12 +3,30 @@
 Last update:  04/12/2023
 
 ## High Level Steps
+
+### Basic System Functionality
 1. [Install Ubuntu 22.04 LTS](#installos)
 2. [Configure Networking](#networking)
 3. [Convenience Settings](#convenience)
+
+### EOSSTracker
 4. [Install & Configure EOSSTracker Software](#eosstracker)
 5. [Setup PostgresQL Database](#database)
-6. 
+6. [Creating the rc.local File](#rclocal)
+7. [Building and Installing Direwolf](#direwolf)
+8. [Building and Installing APRSC](#aprsc)
+9. [Airspy udev Rules](#airspy)
+
+### Necessary System Services
+10. [Configure Sudo](#sudo)
+11. [Configure Apache](#apache)
+12. [GPSD Configuration](#gps)
+13. [Timezones](#timezones)
+14. [UFW Firewall](#firewall)
+15. [Network Time](#time)
+
+### Maps
+16. [Creating an OpenStreetMap Server](#osm)
 
 <a name="installos"></a>
 ## Install the base OS
