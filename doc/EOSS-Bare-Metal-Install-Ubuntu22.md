@@ -5,36 +5,35 @@ Last update:  04/12/2023
 ## Install the base OS
 
 Start with a clean install of Ubuntu 22.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
-
-```User Name:  EOSS Tracker
+```
+User Name:  EOSS Tracker
 Computer name:  eosstracker
 username:  eosstracker
-Password:  <insert standard password>```
+Password:  <insert standard password>
+```
 
 ## Update software
 
 Log in as the `eosstracker` user created during the install, then run these commands:
-
-```sudo apt update
+```
+sudo apt update
 sudo apt upgrade
-sudo reboot```
+sudo reboot
+```
 
 ## Networking Configuration
 
 ### Install/remove packages
 
 First we need to install network manager.
-
 `sudo apt install network-manager`
 
 Now also remove the modemmanager (it used to mess up GPSD)
-
 `sudo apt remove --purge modemmanager`
 
 Edit the netplan file to point to NetworkManager
 
 Edit the `/etc/netplan/00-installer-config.yaml` file such that it only contains these lines:  
-
 ```
 network:
   version: 2
@@ -43,21 +42,19 @@ network:
 
 ### Then stop all services that are using networkd:
 
+Get a list of those services that are using `networkd`:
 `sudo systemctl | grep networkd`
 
 Now mask all of those services so they don't start by using a command like this:
-
 `sudo systemctl mask <service>`
 
 ### Now have netplan configure NetworkManager by running these commands:
-
 ```
 sudo netplan apply
 sudo netplan generate
 ```
 
 You should now have a functioning NetworkManager environment:
-
 ```
 sudo nmcli c show
 
@@ -67,7 +64,6 @@ Wired connection 2  bcb06b9a-9be7-353b-b3d3-7424c2065ead  ethernet  --
 ```
 
 ### Add in your home Wi-Fi (if applicable)
-
 ```
 sudo nmcli c add type wifi con-name Home-wifi ifname wlp2s0 ssid 'myssid'
 sudo nmcli c modify Home-wifi wifi-sec.key-mgmt wpa-psk wifi-sec.psk 'xxxxxxxx'
@@ -77,14 +73,12 @@ nmcli c show
 ```
 
 ### You can try to reboot to verify that everything is working:
-
 `sudo reboot`
 
 ### Add in the hotspot wifi configuration
-
 ```
 nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
-nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password'
+nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
 sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
 ```
 
@@ -97,7 +91,6 @@ Then change the "search" line at the bottom to look like:
 ```
 ..
 search local
-..
 ```
 
 ## Dnsmasq configuration
@@ -118,7 +111,6 @@ Now edit this file:
 `sudo vi /etc/NetworkManager/dnsmasq-shared.d/eoss.conf`
 
 Place these lines therein and save:
-
 ```
 interface=wlp2s0
 addn-hosts=/etc/hosts.dnsmasq
@@ -136,7 +128,6 @@ You'll likely need to reboot to test all of this:
 ### Convenience Stuff
 
 Add this to the eosstracker's `~/.vimrc` file:
-
 ```
 filetype plugin indent on
 syntax on
@@ -149,14 +140,12 @@ endif
 ```
 
 Add this to the end of the eosstracker's `~/.bashrc` file:
-
 ```
 export PGDATABASE=aprs
 set -o vi
 ```
 
 Create the `~/.bash_aliases` file with the following contents:
-
 ```
 alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker-daemon|gpswss" | grep -v grep'
 alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
@@ -165,71 +154,63 @@ alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 
 ## Clone the eosstracker repo to `/tmp`, install packages, and setup `/eosstracker`
 
-First we need to clone the eosstracker repo to /tmp so we can get the list of packages to install (i.e. to support build steps further down).
-
+First we need to clone the eosstracker repo to `/tmp` so we can get the list of packages to install (i.e. to support build steps further down).
+```
 cd /tmp
-
 git clone <https://www.github.com/thekoola/eosstracker>
-
 cd /tmp/eosstracker
-
 git pull
-
 git checkout brickv2
+```
 
-Switch to the sbin directory and run the installation script to get the vast majority of packages installed.
-
+Switch to the `sbin` subdirectory and run the installation script to get the vast majority of packages installed.
+```
 cd /tmp/eosstracker/sbin
-
 sudo ./install-packages.sh
+```
 
-Now run the setupnewhome.bash script to create the /eosstracker directory and clone the eosstracker GitHub repo to it.
-
+Now run the `setupnewhome.bash` script to create the /eosstracker directory and clone the `eosstracker` GitHub repo to it.
+```
 cd /tmp/eosstracker
-
 sudo ./setupnewhome.bash
+```
 
-Setup the Database
+## Setup the Database
 
-Switch to the Postgres user:
+### Switch to the Postgres user:
+`sudo su - postgres`
 
-sudo su - postgres
-
-Create the eosstracker database user and update the password:
-
+### Create the `eosstracker` database user and update the password:
+```
 postgres@eosstracker:~$ createuser eosstracker
-
 postgres@eosstracker:~$ psql
 
 psql (14.5 (Ubuntu 14.5-0ubuntu0.22.04.1))
 
 Type "help" for help.
-
-postgres=# alter user eosstracker with encrypted password 'Thisisthedatabasepassword!';
-
+postgres=# alter user eosstracker with encrypted password '<insert database password>';
 ALTER ROLE
-
 postgres=#
+```
 
-Create a new database:
-
+### Create a new database:
+```
 createdb aprs -O eosstracker
-
 echo "create extension postgis;" | psql -d aprs
+```
 
->>> Log off as the postgres user.
+>>> Log off as the postgres user. <<<
 
-Create The Database Schema
+### Create The Database Schema
 
-As the eosstracker user, create the database schema for the aprs database.
-
+As the `eosstracker` user, create the database schema for the `aprs` database.
+```
 cd /eosstracker/sql
-
 psql -d aprs -f ./aprs-database.v2.sql 
-
 psql -d aprs -f ./eoss_specifics.sql
+```
 
-Update sudo
+## Update sudo
 
 Edit the /etc/sudoers file by running the "visudo" command.  Paste in the following lines at the end of that file, then press CTRL-X and answer 'y' to save changes:
 
