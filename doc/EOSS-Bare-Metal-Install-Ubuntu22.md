@@ -6,22 +6,18 @@ Last update:  04/12/2023
 
 Start with a clean install of Ubuntu 22.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
 
-```
-User Name:  EOSS Tracker
+```User Name:  EOSS Tracker
 Computer name:  eosstracker
 username:  eosstracker
-Password:  <insert standard password>
-```
+Password:  <insert standard password>```
 
 ## Update software
 
 Log in as the `eosstracker` user created during the install, then run these commands:
 
-```
-sudo apt update
+```sudo apt update
 sudo apt upgrade
-sudo reboot
-```
+sudo reboot```
 
 ## Networking Configuration
 
