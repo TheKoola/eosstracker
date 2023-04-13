@@ -1,180 +1,173 @@
-#EOSS Brick Build Notes - Ubuntu 22
+# EOSS Brick Build Notes - Ubuntu 22
 
-Last update:  03/21/2023
+Last update:  04/12/2023
 
-##Install the base OS
+## Install the base OS
 
 Start with a clean install of Ubuntu 22.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
 
+```
 User Name:  EOSS Tracker
 Computer name:  eosstracker
 username:  eosstracker
-
 Password:  <insert standard password>
+```
 
-Update software
+## Update software
 
-Log in as the "eosstracker" user created during the install, then run these commands:
+Log in as the `eosstracker` user created during the install, then run these commands:
 
+```
 sudo apt update
-
 sudo apt upgrade
-
 sudo reboot
+```
 
-Networking Configuration
+## Networking Configuration
 
-Install/remove packages
+### Install/remove packages
 
 First we need to install network manager.
 
-sudo apt install network-manager
+`sudo apt install network-manager`
 
 Now also remove the modemmanager (it used to mess up GPSD)
 
-sudo apt remove --purge modemmanager
+`sudo apt remove --purge modemmanager`
 
 Edit the netplan file to point to NetworkManager
 
-Edit the /etc/netplan/00-installer-config.yaml file such that it only contains these lines:  
+Edit the `/etc/netplan/00-installer-config.yaml` file such that it only contains these lines:  
 
+```
 network:
-
   version: 2
-
   renderer: NetworkManager
+```
 
-Then stop all services that are using networkd:
+### Then stop all services that are using networkd:
 
-sudo systemctl | grep networkd
+`sudo systemctl | grep networkd`
 
 Now mask all of those services so they don't start by using a command like this:
 
-sudo systemctl mask <service>
+`sudo systemctl mask <service>`
 
-Now have netplan configure NetworkManager by running these commands:
+### Now have netplan configure NetworkManager by running these commands:
 
+```
 sudo netplan apply
-
 sudo netplan generate
+```
 
 You should now have a functioning NetworkManager environment:
 
-# sudo nmcli c show
+```
+sudo nmcli c show
 
 NAME                UUID                                  TYPE      DEVICE 
-
 Wired connection 1  fb1b7644-c634-3452-9ea8-1e5e6fc166c6  ethernet  --     
-
 Wired connection 2  bcb06b9a-9be7-353b-b3d3-7424c2065ead  ethernet  --
+```
 
-Add in your home Wi-Fi (if applicable)
+### Add in your home Wi-Fi (if applicable)
 
+```
 sudo nmcli c add type wifi con-name Home-wifi ifname wlp2s0 ssid 'myssid'
-
 sudo nmcli c modify Home-wifi wifi-sec.key-mgmt wpa-psk wifi-sec.psk 'xxxxxxxx'
-
 sudo nmcli c modify Home-wifi connection.autoconnect true connection.autoconnect-priority 40
 
 nmcli c show
+```
 
-You can try to reboot to verify that everything is working:
+### You can try to reboot to verify that everything is working:
 
-sudo reboot
+`sudo reboot`
 
-Add in the hotspot wifi configuration
+### Add in the hotspot wifi configuration
 
+```
 nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
-
-nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk 'HAB2Space!'
-
+nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password'
 sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
+```
 
-Edit /etc/resolv.conf
+## Edit `/etc/resolv.conf`
 
-Edit the file:
-
-sudo vi /etc/resolv.conf
+First, edit the file:
+`sudo vi /etc/resolv.conf`
 
 Then change the "search" line at the bottom to look like:
-
+```
+..
 search local
+..
+```
 
-Dnsmasq configuration
+## Dnsmasq configuration
 
-Create a new file in /etc that contains an entry for eosstracker.local using the IP address that NetworkManager+dnsmasq uses when in hotspot mode.
+Create a new file in `/etc` that contains an entry for `eosstracker.local` using the IP address that NetworkManager+dnsmasq uses when in hotspot mode.
 
-An additional hosts file
+### An additional hosts file
 
 Edit this file
-
-sudo vi /etc/hosts.dnsmasq
+`sudo vi /etc/hosts.dnsmasq`
 
 Place these lines therein and save:
+`10.42.0.1  eosstracker.local  eosstracker`
 
-10.42.0.1  eosstracker.local  eosstracker
-
-NetworkManager dnsmasq conf file
+### NetworkManager dnsmasq conf file
 
 Now edit this file:
-
-sudo vi /etc/NetworkManager/dnsmasq-shared.d/eoss.conf
+`sudo vi /etc/NetworkManager/dnsmasq-shared.d/eoss.conf`
 
 Place these lines therein and save:
 
+```
 interface=wlp2s0
-
 addn-hosts=/etc/hosts.dnsmasq
-
 domain=local
-
 dhcp-option=option:ntp-server,10.42.0.1
+```
 
-Reboot to test
+### Reboot to test
 
 You'll likely need to reboot to test all of this:
+`sudo reboot`
 
-sudo reboot
+## Continued Configuration
 
-Continued Configuration
+### Convenience Stuff
 
-Convenience Stuff
+Add this to the eosstracker's `~/.vimrc` file:
 
-Add this to the eosstracker's ~/.vimrc file:
-
+```
 filetype plugin indent on
-
 syntax on
-
 set tabstop=4
-
 set shiftwidth=4
-
 set expandtab
-
 if has("autocmd")
-
   au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
-
 endif
+```
 
-Add this to the end of the eosstracker's ~/.bashrc file:
+Add this to the end of the eosstracker's `~/.bashrc` file:
 
-### Postgresql default database
-
+```
 export PGDATABASE=aprs
-
 set -o vi
+```
 
-Create the ~/.bash_aliases file with the following contents:
+Create the `~/.bash_aliases` file with the following contents:
 
+```
 alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker-daemon|gpswss" | grep -v grep'
-
 alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
-
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
+```
 
-Clone the eosstracker repo to /tmp, install packages, and setup /eosstracker
+## Clone the eosstracker repo to `/tmp`, install packages, and setup `/eosstracker`
 
 First we need to clone the eosstracker repo to /tmp so we can get the list of packages to install (i.e. to support build steps further down).
 
