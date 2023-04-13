@@ -288,261 +288,6 @@ psql -d aprs -f ./aprs-database.v2.sql 
 psql -d aprs -f ./eoss_specifics.sql
 ```
 
-<a name="sudo"></a>
-## Update sudo
-
-Edit the `/etc/sudoers` file by running the `visudo` command.  Paste in the following lines at the end of that file, then press `CTRL-X` and answer `y` to save changes:
-
-`sudo visudo`
-
-Then paste in these lines at the end of that file:
-```
-#### These are for the eosstracker and www-data web user
-eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
-www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
-```
-
-# Necessary System Services
-<a name="apache"></a>
-## Switch Apache to use SSL
-
-### Apache modules and configuration
-
-Apache needs to be configured to use SSL and to redirect all non-encrypted traffic (ex. http://...) to the SSL equivalent page (ex. Https://...)
-
-```
-sudo a2enmod ssl
-sudo a2enmod rewrite
-sudo systemctl restart apache2
-```
-
-Now enable the SSL virtual host:
-```
-sudo a2ensite default-ssl
-sudo systemctl restart apache2
-```
-
-### Edit `000-default.conf`
-
-#### Rewrite rules
-Now edit the `/etc/apache2/sites-enabled/000-default.conf` file to add a `redirect` statement that will cause apache to redirect unencrypted traffic to the encrypted virtual host (i.e. `the default-ssl.conf` file).
-
-`sudo vi /etc/apache2/sites-enabled/000-default.conf`
-
-After the `ServerAdmin...` line, paste in the following 4 lines and save your changes:
-```
-RewriteEngine On
-RewriteCond %{HTTPS} off
-RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
-```
-
-#### Set DocumentRoot
-While still editing that file, change the DocumentRoot to the following.  Then save your changes and exit the vi editor.
-
-`DocumentRoot /eosstracker/www`
-
-### Edit `default-ssl.conf`
-Now edit the SSL apache file and change the DocumentRoot to the following:
-
-`sudo vi /etc/apache2/sites-enabled/default-ssl.conf`
-
-...change the DocumentRoot to be the following:
-
-`DocumentRoot /eosstracker/www`
-
-
-### Edit `apache2.conf`
-Update Apache Configuration
-
-The `/etc/apache2/apache2.conf` file:
-
-`sudo vi /etc/apache2/apache2.conf`
-
-Then paste in these lines:
-```
-<Directory /eosstracker/www/>
-
-    Options Indexes FollowSymLinks
-
-    AllowOverride None
-
-    Require all granted
-
-</Directory>
-```
-
-### Finally, restart apache:
-
-`sudo systemctl restart apache2`
-
-
-<a name="gps"></a>
-## Update GPS
-
-### Update configuration
-One will need to update the `/etc/default/gpsd` configuration file so that this line contains the `-n -G` options:
-
-`GPSD_OPTIONS="-n -G"`
-
-Modify the `/lib/systemd/system/gpsd.socket` service to allow connections to GPSD from systems external to the local system:
-```
-[Unit]
-Description=GPS (Global Positioning System) Daemon Sockets
-
-[Socket]
-ListenStream=/run/gpsd.sock
-ListenStream=[::1]:2947
-#ListenStream=127.0.0.1:2947
-# To allow gpsd remote access, start gpsd with the -G option and
-# uncomment the next two lines:
-# ListenStream=[::]:2947
-ListenStream=0.0.0.0:2947
-SocketMode=0600
-BindIPv6Only=yes
-
-[Install]
-WantedBy=sockets.target
-```
-
-### Then restart the services:
-```
-sudo systemctl daemon-reload
-sudo systemctl restart gpsd.service
-sudo systemctl restart gpsd.socket
-```
-
-### Verification of GPS
-
-Then check that GPSD is communicating with the GPS puck.  You should see in the upper left hand box the status of the GPS as either "NO FIX" or hopefully "3D FIX".  In the top, righthand box there should be a list of satellites listed.  The point being if you see data flying by, things are working.
-
-Run this command to check the GPS:
-
-`cgps`
-
-Here is an example screen shot:
-
-insert screen shot
-
-<a name="timezones"></a>
-## Timezones
-
-### Set the operating system timezone
-Set the Timezone for the OS and the database:
-
-`sudo timedatectl set-timezone America/Denver`
-
-### Update the PostgresQL timezone
-
-Edit the `/etc/postgresql/14/main/postgresql.conf` file and update these two lines with the correct Timezone (ex. `America/Denver`):
-
-`sudo su - postgres`
-
-`vi /etc/postgresql/14/main/postgresql.conf`
-
-Change these two lines to correctly specify the default timezone for postgresql:
-```
-log_timezone = 'America/Denver
-timezone = 'America/Denver'
-```
-
-Save your changes to the `postgresql.conf` file, then log off as the `postgres` user:
-
->>> Log off as the postgres user.
-
-### Restart the database
-Now restart the database for these changes to take effect:
-
-`sudo systemctl restart postgresql`
-
-<a name="firewall"></a>
-## Firewall
-
-### Check status
-Check status of the firewall
-
-`sudo ufw status`
-
-### Update the firewall configuration:
-Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode):
-```
-sudo ufw allow Apache
-sudo ufw allow "Apache Secure"
-sudo ufw allow OpenSSH
-sudo ufw allow 14501
-sudo ufw allow 14580
-sudo ufw allow gpsd
-sudo ufw allow 53
-sudo ufw allow 67
-```
-
-### Now enable the firewall
-```
-sudo ufw enable
-sudo ufw reload
-sudo ufw status
-```
-
-<a name="time"></a>
-## Time Server Configuration
-
-### Edit the time configuration configuration file:
-
-`sudo vi /etc/chrony/chrony.conf`
-
-Add these lines at the bottom of the file:
-```
-# set larger delay to allow the NMEA source to overlap with
-# the other sources and avoid the falseticker status
-refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
-refclock SHM 1 refid PPS precision 1e-9
-
-# Allow access from NTP clients
-allow
-```
-
-### Now reboot the system for the chrony changes to take effect:
-
-`sudo reboot`
-
-### Verification of Time
-
-Now check that chrony (the time service on Ubuntu) is connecting to the GPS.  Using the following command should list all of the time sources (GPS included) that chrony has contacted to evaluate as a potential time sync source:
-
-`chronyc sources`
-
-An example of a system that is connect to the internet.  Notice the `GPS` line and that in the far right column there is an offset value `200ms`.  You should see some non-zero number there.
-```
-210 Number of sources = 10
-MS Name/IP address         Stratum Poll Reach LastRx Last sample               
-===============================================================================
-#? GPS                           0   4     1    15    +43ms[  +43ms] +/-  200ms
-#? PPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
-^+ alphyn.canonical.com          2   6    17    14  -2746us[-1023us] +/-   83ms
-^- golem.canonical.com           2   6    17    12  -5068us[-5068us] +/-   95ms
-^- pugot.canonical.com           2   6    17    13  -4846us[-4846us] +/-   87ms
-^- chilipepper.canonical.com     2   6    17    13  -5460us[-5460us] +/-   97ms
-^+ lithium.constant.com          2   6    17    14  -3792us[-2069us] +/-   75ms
-^- ec2-34-198-67-116.comput>     3   6    17    13  -5748us[-5748us] +/-  103ms
-^* i.will.not.be.extorted.o>     2   6    17    14  +7708us[+9431us] +/-   42ms
-^+ fry.gwi.net                   2   6    17    15  -7847us[  -48ms] +/-   76ms
-```
-
-### Alternative checks
-Secondly one can run this command that shows time data coming from the GPS assuming the GPS has a FIX on some satellites.  One has to be root to run this command:
-
-`sudo ntpshmmon -n 5`
-
-Example output:
-```
-ntpshmmon version 1
-#      Name Seen@                Clock                Real                 L Prec
-sample NTP0 1548699816.644704781 1548699816.643714859 1548699815.640000104 0 -20
-sample NTP0 1548699820.717288106 1548699820.716170449 1548699819.640000104 0 -20
-sample NTP0 1548699821.088285007 1548699821.087243473 1548699819.740000009 0 -20
-sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
-sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
-```
-
 <a name="rclocal"></a>
 ## Creating rc.local
 
@@ -811,6 +556,264 @@ Supported sample rates:
         10.000000 MSPS
         2.500000 MSPS
 Close board 1
+```
+
+
+
+
+<a name="sudo"></a>
+## Update sudo
+
+Edit the `/etc/sudoers` file by running the `visudo` command.  Paste in the following lines at the end of that file, then press `CTRL-X` and answer `y` to save changes:
+
+`sudo visudo`
+
+Then paste in these lines at the end of that file:
+```
+#### These are for the eosstracker and www-data web user
+eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
+www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
+```
+
+# Necessary System Services
+<a name="apache"></a>
+## Switch Apache to use SSL
+
+### Apache modules and configuration
+
+Apache needs to be configured to use SSL and to redirect all non-encrypted traffic (ex. http://...) to the SSL equivalent page (ex. Https://...)
+
+```
+sudo a2enmod ssl
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+```
+
+Now enable the SSL virtual host:
+```
+sudo a2ensite default-ssl
+sudo systemctl restart apache2
+```
+
+### Edit `000-default.conf`
+
+#### Rewrite rules
+Now edit the `/etc/apache2/sites-enabled/000-default.conf` file to add a `redirect` statement that will cause apache to redirect unencrypted traffic to the encrypted virtual host (i.e. `the default-ssl.conf` file).
+
+`sudo vi /etc/apache2/sites-enabled/000-default.conf`
+
+After the `ServerAdmin...` line, paste in the following 4 lines and save your changes:
+```
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
+```
+
+#### Set DocumentRoot
+While still editing that file, change the DocumentRoot to the following.  Then save your changes and exit the vi editor.
+
+`DocumentRoot /eosstracker/www`
+
+### Edit `default-ssl.conf`
+Now edit the SSL apache file and change the DocumentRoot to the following:
+
+`sudo vi /etc/apache2/sites-enabled/default-ssl.conf`
+
+...change the DocumentRoot to be the following:
+
+`DocumentRoot /eosstracker/www`
+
+
+### Edit `apache2.conf`
+Update Apache Configuration
+
+The `/etc/apache2/apache2.conf` file:
+
+`sudo vi /etc/apache2/apache2.conf`
+
+Then paste in these lines:
+```
+<Directory /eosstracker/www/>
+
+    Options Indexes FollowSymLinks
+
+    AllowOverride None
+
+    Require all granted
+
+</Directory>
+```
+
+### Finally, restart apache:
+
+`sudo systemctl restart apache2`
+
+
+<a name="gps"></a>
+## Update GPS
+
+### Update configuration
+One will need to update the `/etc/default/gpsd` configuration file so that this line contains the `-n -G` options:
+
+`GPSD_OPTIONS="-n -G"`
+
+Modify the `/lib/systemd/system/gpsd.socket` service to allow connections to GPSD from systems external to the local system:
+```
+[Unit]
+Description=GPS (Global Positioning System) Daemon Sockets
+
+[Socket]
+ListenStream=/run/gpsd.sock
+ListenStream=[::1]:2947
+#ListenStream=127.0.0.1:2947
+# To allow gpsd remote access, start gpsd with the -G option and
+# uncomment the next two lines:
+# ListenStream=[::]:2947
+ListenStream=0.0.0.0:2947
+SocketMode=0600
+BindIPv6Only=yes
+
+[Install]
+WantedBy=sockets.target
+```
+
+### Then restart the services:
+```
+sudo systemctl daemon-reload
+sudo systemctl restart gpsd.service
+sudo systemctl restart gpsd.socket
+```
+
+### Verification of GPS
+
+Then check that GPSD is communicating with the GPS puck.  You should see in the upper left hand box the status of the GPS as either "NO FIX" or hopefully "3D FIX".  In the top, righthand box there should be a list of satellites listed.  The point being if you see data flying by, things are working.
+
+Run this command to check the GPS:
+
+`cgps`
+
+Here is an example screen shot:
+
+insert screen shot
+
+<a name="timezones"></a>
+## Timezones
+
+### Set the operating system timezone
+Set the Timezone for the OS and the database:
+
+`sudo timedatectl set-timezone America/Denver`
+
+### Update the PostgresQL timezone
+
+Edit the `/etc/postgresql/14/main/postgresql.conf` file and update these two lines with the correct Timezone (ex. `America/Denver`):
+
+`sudo su - postgres`
+
+`vi /etc/postgresql/14/main/postgresql.conf`
+
+Change these two lines to correctly specify the default timezone for postgresql:
+```
+log_timezone = 'America/Denver
+timezone = 'America/Denver'
+```
+
+Save your changes to the `postgresql.conf` file, then log off as the `postgres` user:
+
+>>> Log off as the postgres user.
+
+### Restart the database
+Now restart the database for these changes to take effect:
+
+`sudo systemctl restart postgresql`
+
+<a name="firewall"></a>
+## Firewall
+
+### Check status
+Check status of the firewall
+
+`sudo ufw status`
+
+### Update the firewall configuration:
+Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode):
+```
+sudo ufw allow Apache
+sudo ufw allow "Apache Secure"
+sudo ufw allow OpenSSH
+sudo ufw allow 14501
+sudo ufw allow 14580
+sudo ufw allow gpsd
+sudo ufw allow 53
+sudo ufw allow 67
+```
+
+### Now enable the firewall
+```
+sudo ufw enable
+sudo ufw reload
+sudo ufw status
+```
+
+<a name="time"></a>
+## Time Server Configuration
+
+### Edit the time configuration configuration file:
+
+`sudo vi /etc/chrony/chrony.conf`
+
+Add these lines at the bottom of the file:
+```
+# set larger delay to allow the NMEA source to overlap with
+# the other sources and avoid the falseticker status
+refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
+refclock SHM 1 refid PPS precision 1e-9
+
+# Allow access from NTP clients
+allow
+```
+
+### Now reboot the system for the chrony changes to take effect:
+
+`sudo reboot`
+
+### Verification of Time
+
+Now check that chrony (the time service on Ubuntu) is connecting to the GPS.  Using the following command should list all of the time sources (GPS included) that chrony has contacted to evaluate as a potential time sync source:
+
+`chronyc sources`
+
+An example of a system that is connect to the internet.  Notice the `GPS` line and that in the far right column there is an offset value `200ms`.  You should see some non-zero number there.
+```
+210 Number of sources = 10
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+#? GPS                           0   4     1    15    +43ms[  +43ms] +/-  200ms
+#? PPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
+^+ alphyn.canonical.com          2   6    17    14  -2746us[-1023us] +/-   83ms
+^- golem.canonical.com           2   6    17    12  -5068us[-5068us] +/-   95ms
+^- pugot.canonical.com           2   6    17    13  -4846us[-4846us] +/-   87ms
+^- chilipepper.canonical.com     2   6    17    13  -5460us[-5460us] +/-   97ms
+^+ lithium.constant.com          2   6    17    14  -3792us[-2069us] +/-   75ms
+^- ec2-34-198-67-116.comput>     3   6    17    13  -5748us[-5748us] +/-  103ms
+^* i.will.not.be.extorted.o>     2   6    17    14  +7708us[+9431us] +/-   42ms
+^+ fry.gwi.net                   2   6    17    15  -7847us[  -48ms] +/-   76ms
+```
+
+### Alternative checks
+Secondly one can run this command that shows time data coming from the GPS assuming the GPS has a FIX on some satellites.  One has to be root to run this command:
+
+`sudo ntpshmmon -n 5`
+
+Example output:
+```
+ntpshmmon version 1
+#      Name Seen@                Clock                Real                 L Prec
+sample NTP0 1548699816.644704781 1548699816.643714859 1548699815.640000104 0 -20
+sample NTP0 1548699820.717288106 1548699820.716170449 1548699819.640000104 0 -20
+sample NTP0 1548699821.088285007 1548699821.087243473 1548699819.740000009 0 -20
+sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
+sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
 ```
 
 <a name="osm"></a>
