@@ -127,10 +127,10 @@ dhcp-option=option:ntp-server,10.42.0.1
 
 This issue has to do with the new wpasupplicant package 2.10 that comes with Ubuntu 22.  This needs to be downgraded to 2.9.  Otherwise, one can view the hotspot SSID from another device, but attempts to joint the hotspot network fail without error (i.e. very frustrating).
 
-Follow this link for howto
-
+Follow this link for howto:
 [can't connect to ubuntu 22.04 hotspot](https://askubuntu.com/questions/1406149/cant-connect-to-ubuntu-22-04-hotspot)
 
+#### Edit the `apt` sources list file
 First you have to edit the /etc/apt/sources.list file:
 
 `sudo vi /etc/apt/sources.list`
@@ -142,10 +142,12 @@ deb http://old-releases.ubuntu.com/ubuntu/ impish-updates main restricted univer
 deb http://old-releases.ubuntu.com/ubuntu/ impish-security main restricted universe multiverse
 ```
 
+#### Software configuration
 Then you need to run an update
 
 `sudo apt update`
 
+#### Downgrade `wpasupplicant`
 Next install the downgraded `wpasupplicant` package:
 
 `sudo apt --allow-downgrades install wpasupplicant=2:2.9.0-21build1`
