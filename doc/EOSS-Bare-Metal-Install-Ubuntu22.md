@@ -9,7 +9,7 @@ Last update:  04/12/2023
 2. [Configure Networking](#networking)
 3. [Convenience Settings](#convenience)
 
-### EOSSTracker
+### EOSSTracker Software and Dependencies
 4. [Install & Configure EOSSTracker Software](#eosstracker)
 5. [Setup PostgresQL Database](#database)
 6. [Creating the rc.local File](#rclocal)
@@ -28,6 +28,7 @@ Last update:  04/12/2023
 ### Maps
 16. [Creating an OpenStreetMap Server](#osm)
 
+# Basic System Functionality
 <a name="installos"></a>
 ## Install the base OS
 
@@ -223,6 +224,7 @@ alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 ```
 
+# EOSSTracker Software and Dependencies
 <a name="eosstracker"></a>
 ## EOSSTracker Software Setup
 
@@ -300,6 +302,7 @@ eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
 www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
 ```
 
+# Necessary System Services
 <a name="apache"></a>
 ## Switch Apache to use SSL
 
