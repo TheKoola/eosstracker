@@ -285,6 +285,9 @@ sudo a2ensite default-ssl
 sudo systemctl restart apache2
 ```
 
+### Edit `000-default.conf`
+
+#### Rewrite rules
 Now edit the `/etc/apache2/sites-enabled/000-default.conf` file to add a `redirect` statement that will cause apache to redirect unencrypted traffic to the encrypted virtual host (i.e. `the default-ssl.conf` file).
 
 `sudo vi /etc/apache2/sites-enabled/000-default.conf`
@@ -296,10 +299,12 @@ RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
 ```
 
+#### Set DocumentRoot
 While still editing that file, change the DocumentRoot to the following.  Then save your changes and exit the vi editor.
 
 `DocumentRoot /eosstracker/www`
 
+### Edit `default-ssl.conf`
 Now edit the SSL apache file and change the DocumentRoot to the following:
 
 `sudo vi /etc/apache2/sites-enabled/default-ssl.conf`
@@ -308,6 +313,8 @@ Now edit the SSL apache file and change the DocumentRoot to the following:
 
 `DocumentRoot /eosstracker/www`
 
+
+### Edit `apache2.conf`
 Update Apache Configuration
 
 The `/etc/apache2/apache2.conf` file:
@@ -403,6 +410,7 @@ Save your changes to the `postgresql.conf` file, then log off as the `postgres` 
 
 >>> Log off as the postgres user.
 
+### Restart the database
 Now restart the database for these changes to take effect:
 
 `sudo systemctl restart postgresql`
@@ -410,12 +418,12 @@ Now restart the database for these changes to take effect:
 
 ## Firewall
 
-### Update the firewall configuration:
-
+### Check status
 Check status of the firewall
 
 `sudo ufw status`
 
+### Update the firewall configuration:
 Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode):
 ```
 sudo ufw allow Apache
@@ -479,6 +487,7 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample      �
 ^+ fry.gwi.net                   2   6    17    15  -7847us[  -48ms] +/-   76ms
 ```
 
+### Alternative checks
 Secondly one can run this command that shows time data coming from the GPS assuming the GPS has a FIX on some satellites.  One has to be root to run this command:
 
 `sudo ntpshmmon -n 5`
@@ -585,6 +594,13 @@ drwxr-xr-x   2 root root 4096 Nov 19 18:53 lib64
 drwxr-xr-x   4 root root 4096 Nov 19 18:53 usr
 eosstracker@eosstracker:~$
 ```
+
+### Reboot
+
+Reboot the system for the `rc.local` changes to take effect:
+
+`sudo reboot`
+
 
 ## Building direwolf 
 
