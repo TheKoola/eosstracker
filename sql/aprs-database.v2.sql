@@ -453,13 +453,15 @@ end
 $BODY$;
 
 
-CREATE or REPLACE TRIGGER after_new_position_v1
+DROP TRIGGER IF EXISTS after_new_position_v1 ON gpsposition;
+CREATE TRIGGER after_new_position_v1
     AFTER INSERT
     ON gpsposition
     FOR EACH ROW
     EXECUTE PROCEDURE notify_v1('new_position');
 
-CREATE or REPLACE TRIGGER after_new_packet_v1
+DROP TRIGGER IF EXISTS after_new_packet_v1 ON packets;
+CREATE TRIGGER after_new_packet_v1
     AFTER INSERT
     ON packets
     FOR EACH ROW

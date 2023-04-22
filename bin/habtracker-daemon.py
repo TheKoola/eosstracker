@@ -420,12 +420,12 @@ def databaseUpdates():
                             return null;
                         end
                         $BODY$;"""
-        sql_trigger_newpacket = """CREATE or REPLACE TRIGGER after_new_packet_v1
+        sql_trigger_newpacket = """CREATE TRIGGER after_new_packet_v1
                         AFTER INSERT
                         ON packets
                         FOR EACH ROW
                         EXECUTE PROCEDURE notify_v1('new_packet');"""
-        sql_trigger_newposition = """CREATE or REPLACE TRIGGER after_new_position_v1
+        sql_trigger_newposition = """CREATE TRIGGER after_new_position_v1
                         AFTER INSERT
                         ON gpsposition
                         FOR EACH ROW
@@ -454,6 +454,17 @@ def databaseUpdates():
             sys.stdout.flush()
             debugmsg("Adding after_new_packet_v1 trigger to the packets table.")
             dbcur.execute(sql_trigger_newpacket)
+            dbconn.commit()
+
+        # check if the gpsposition trigger exists already
+        dbcur.execute(sql_checktrigger_position)
+        rows = dbcur.fetchall()
+        if len(rows) <= 0:
+            # Add the trigger since it doesn't exist
+            print("Adding after_new_position_v1 trigger to the packets table.")
+            sys.stdout.flush()
+            debugmsg("Adding after_new_position_v1 trigger to the packets table.")
+            dbcur.execute(sql_trigger_newposition)
             dbconn.commit()
 
         #------------------- triggers and notifications ------------------#
