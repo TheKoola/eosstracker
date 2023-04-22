@@ -76,6 +76,23 @@ Get a list of those services that are using `networkd`:
 
 `sudo systemctl | grep networkd`
 
+For example:
+```
+sudo systemctl | grep networkd
+  networkd-dispatcher.service                                                               loaded    active running   Dispatcher daemon for systemd-networkd
+● systemd-networkd-wait-online.service                                                      loaded    failed failed    Wait for Network to be Configured
+  systemd-networkd.service                                                                  loaded    active running   Network Configuration
+  systemd-networkd.socket  
+```
+
+Then stop each of those services:
+```
+sudo systemctl stop networkd-dispatcher.service   
+sudo systemctl stop systemd-networkd-wait-online.service
+sudo systemctl stop systemd-networkd.service
+sudo systemctl stop systemd-networkd.socket  
+```
+
 Now mask all of those services so they don't start by using a command like this:
 
 `sudo systemctl mask <service>`
