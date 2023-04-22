@@ -260,7 +260,7 @@ git checkout brickv2
 Switch to the `sbin` subdirectory and run the installation script to get the vast majority of packages installed.
 ```
 cd /tmp/eosstracker/sbin
-sudo ./install-packages.sh
+sudo ./install-packages.bash
 ```
 
 ### Create and configure `/eosstracker`
