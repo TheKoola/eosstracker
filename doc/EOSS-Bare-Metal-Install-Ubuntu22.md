@@ -250,7 +250,7 @@ alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 First we need to clone the eosstracker repo to `/tmp` so we can get the list of packages to install (i.e. to support build steps further down).
 ```
 cd /tmp
-git clone <https://www.github.com/thekoola/eosstracker>
+git clone https://www.github.com/thekoola/eosstracker
 cd /tmp/eosstracker
 git pull
 git checkout brickv2
