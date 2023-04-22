@@ -50,6 +50,7 @@ sudo reboot
 ```
 <a name="networking"></a>
 ## Networking Configuration
+When working with the networking subsystem and in particular the commands in this section, it is highly advisable to have a monitor and keyboard directly attached to the system as network connectivity will be interrupted.  
 
 ### Install/remove packages
 
