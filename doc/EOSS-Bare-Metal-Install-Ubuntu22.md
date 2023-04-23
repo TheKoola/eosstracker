@@ -204,6 +204,15 @@ Then finally mark the `wpasupplicant` package as something to avoide upgrading d
 
 The hotspot NetworkManager connection should then accept incoming join requests from other wireless devices.
 
+#### Comment out `/etc/apt/sources.list` lines
+This is very important, but after downgrading the `wpasupplicant` package, you must edit the `/etc/apt/sources.list` file and comment out the lines that were added prior.  For example:
+```
+# these were temporarily added in order to downgrade wpasupplicant
+# deb http://old-releases.ubuntu.com/ubuntu/ impish main restricted universe multiverse
+# deb http://old-releases.ubuntu.com/ubuntu/ impish-updates main restricted universe multiverse
+# deb http://old-releases.ubuntu.com/ubuntu/ impish-security main restricted universe multiverse
+```
+
 
 ### Reboot to test
 
