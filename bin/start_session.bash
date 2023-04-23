@@ -47,12 +47,15 @@ STDERR=${LOGFILE}.stderr
 # a tremendous amount of processing load when the user zooms/pans the map as the backend will happily serve the tile without trying to re-render it.
 MAPSDIR=/eosstracker/maps
 ALTMAPSDIR=/var/lib/mod_tile
+ALTMAPSDIR2=/eosstracker/maps/tiles
 PLANETFILE=planet-import-complete
 
 if [ -d ${MAPSDIR}/maps ]; then
     touch -t 200001010000 ${MAPSDIR}/${PLANETFILE}
 elif [ -d ${ALTMAPSDIR}/maps ]; then
     touch -t 200001010000 ${ALTMAPSDIR}/${PLANETFILE}
+elif [ -d ${ALTMAPSDIR2}/maps ]; then
+    touch -t 200001010000 ${ALTMAPSDIR2}/${PLANETFILE}
 fi
 
 # Check if things are running:
