@@ -1976,7 +1976,7 @@ function getTrackers() {
         // create the tile layer referencing the local system as the url (i.e. "/maps/....")
         var osmUrl='/maps/{z}/{x}/{y}.png';
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-        tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 20, attribution: osmAttrib});
+        tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 19, attribution: osmAttrib});
 
         osmbright = L.mapboxGL({
             style: '/tileserver/styles/osm-bright/style.json',
@@ -1995,7 +1995,7 @@ function getTrackers() {
             preferCanvas:  true,
             zoomControloption: false,
             minZoom: 4,
-            maxZoom: 20
+            maxZoom: 19
         });
 
         // Add additional locations (ex. center-top and center-bottom) for control elements 
