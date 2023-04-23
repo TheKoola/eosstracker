@@ -45,7 +45,7 @@ STDERR=${LOGFILE}.stderr
 
 # Location of the planet time file.  Setting this file to an "old" date will prevent the apache module, mod_tile, from re-rendering the tile.  This removes
 # a tremendous amount of processing load when the user zooms/pans the map as the backend will happily serve the tile without trying to re-render it.
-MAPSDIR=/eosstracker/maps/tiles
+MAPSDIR=/eosstracker/maps
 ALTMAPSDIR=/var/lib/mod_tile
 PLANETFILE=planet-import-complete
 
