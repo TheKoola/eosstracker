@@ -43,6 +43,17 @@ HABTRACKERCMD=${BINDIR}/habtracker-daemon.py
 LOGFILE=${LOGDIR}/start_session.log
 STDERR=${LOGFILE}.stderr
 
+# Location of the planet time file.  Setting this file to an "old" date will prevent the apache module, mod_tile, from re-rendering the tile.  This removes
+# a tremendous amount of processing load when the user zooms/pans the map as the backend will happily serve the tile without trying to re-render it.
+MAPSDIR=/eosstracker/maps/tiles
+ALTMAPSDIR=/var/lib/mod_tile
+PLANETFILE=planet-import-complete
+
+if [ -d ${MAPSDIR}/maps ]; then
+    touch -t 200001010000 ${MAPSDIR}/${PLANETFILE}
+elif [ -d ${ALTMAPSDIR}/maps ]; then
+    touch -t 200001010000 ${ALTMAPSDIR}/${PLANETFILE}
+fi
 
 # Check if things are running:
 let num_procs=$(${BINDIR}/procstatus.py  | python -m json.tool | awk '/\"status\":/ { s+=$2;} END {print s}')
