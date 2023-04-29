@@ -31,14 +31,7 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    // Check the flightid HTML GET variable
-    $get_flightid = "";
-    $whereclause = "";
-    if (isset($_GET["flightid"])) 
-        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") 
-            $whereclause = " and t.flightid = $1 ";
- 
-    
+
     function fetchTrackers() {
 
         ## Connect to the database
