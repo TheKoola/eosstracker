@@ -124,9 +124,13 @@
 
     try {
 
+	//phpinfo();
+
         // create a new memcache object and connect to the backend daemon
         $memcache = new Memcache;
-        $memcache->connect('localhost', 11211) or throw new Exception("memcache fail");
+	$connectionresult = $memcache->connect('localhost', 11211);
+	if (!$connectionresult) 
+	    throw new Exception("memcache fail");
 
         // attempt to get the tracker_definitions key from memcache
         $getresult = $memcache->get('tracker_definitions');
