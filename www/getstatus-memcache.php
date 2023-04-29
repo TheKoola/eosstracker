@@ -65,7 +65,7 @@
             $js = getStatus();
 
             // now add this to memcache with a TTL of 300 seconds
-            $memcache->set('process_status', json_encode($js), false, 300);
+            $memcache->set('process_status', json_encode($js), false, 500);
         }
     } catch (Exception $e) {
         // Connect to the backend and run the python script to determine process status

@@ -135,7 +135,7 @@
             $js = fetchTrackers();
 
             // now add this to memcache with a TTL of 300 seconds
-            $memcache->set('tracker_definitions', json_encode($js), false, 300);
+            $memcache->set('tracker_definitions', json_encode($js), false, 310);
         }
     } catch (Exception $e) {
         // Connect to the database and get the tracker definition list

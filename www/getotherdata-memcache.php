@@ -293,7 +293,7 @@
             $js = getTrackerFeatures($config["lookbackperiod"]);
 
             // now add this to memcache with a TTL of 300 seconds
-            $memcache->set('getotherdata', json_encode($js), false, 300);
+            $memcache->set('getotherdata', json_encode($js), false, 290);
         }
     } catch (Exception $e) {
         // Connect to the backend and run the python script to determine process status
