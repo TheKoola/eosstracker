@@ -274,7 +274,7 @@
                         (typeof(feature.properties.temperature) == "undefined" ? "" : (feature.properties.temperature != "" ? "<br><font class=\"commentstyle\">Temperature:  " + (Math.round(feature.properties.temperature * 100) / 100).toFixed(2) + "&deg; F</font>" : "")) + 
                         (typeof(feature.properties.pressure) == "undefined" ? "" : (feature.properties.pressure != "" ? "<br><font class=\"commentstyle\">Pressure:  " + (Math.round(feature.properties.pressure * 10000) / 10000).toFixed(4) + " atm</font>" : "")) + 
 		                (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + 
+		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency + 
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                         "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -425,7 +425,7 @@
                 (typeof(item.properties.temperature) == "undefined" ? "" : (item.properties.temperature != "" ? "<br><font class=\"commentstyle\">Temperature:  " + (Math.round(item.properties.temperature * 100) / 100).toFixed(2) + "&deg; F</font>" : "")) + 
                 (typeof(item.properties.pressure) == "undefined" ? "" : (item.properties.pressure != "" ? "<br><font class=\"commentstyle\">Pressure:  " + (Math.round(item.properties.pressure * 10000) / 10000).toFixed(4) + " atm</font>" : "")) + 
                 (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-                (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency +
+                (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency +
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -703,7 +703,7 @@
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
 	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency + 
+		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency + 
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -789,7 +789,7 @@
             html = "<strong>" + item.properties.callsign + "</strong>";
 	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + 
+		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -888,7 +888,7 @@
 		            html = "<strong>" + feature.properties.callsign + "</strong>";
         		    html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
 	  		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br>Heard on: " + feature.properties.frequency +
+			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency +
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 
 			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
@@ -988,7 +988,7 @@
             html = "<strong>" + item.properties.callsign + "</strong>";
 	    html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br>Heard on: " + item.properties.frequency + 
+		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
                   "<br>Coords: <span id=\"" + id + "-coords\">"
@@ -1067,7 +1067,7 @@
                         "<strong>" + feature.properties.callsign + "</strong></a>";
                         html = html + (typeof(feature.properties.comment) == "undefined" ? "" : (feature.properties.comment != "" ? "<br><font class=\"commentstyle\">" + feature.properties.comment + "</font>" : "")) + 
                         (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency  +
+                        (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null  ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency  +
                             (feature.properties.frequency == "ext radio" || feature.properties.frequency == "TCPIP" ? "" : "MHz") +
                         (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? " via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
                         (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
@@ -1186,7 +1186,7 @@
 
 	        html = html + (typeof(item.properties.comment) == "undefined" ? "" : (item.properties.comment != "" ? "<br><font class=\"commentstyle\">" + item.properties.comment + "</font>" : "")) + 
 		          (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
-		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + 
+		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" || item.properties.frequency == "TCPIP" ? "" : "MHz") +
                       (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? " via " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
 			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
@@ -1425,8 +1425,10 @@
     * ...then will create the table for displaying the tracking teams
     ***********/
 function getTrackers() {
-    $.get("gettrackers.php", function(data) {
-        var trackerJson = JSON.parse(data);
+    //$.get("gettrackers.php", function(data) {
+    $.get("gettrackers-memcache.php", function(data) {
+        //var trackerJson = JSON.parse(data);
+        var trackerJson = data;
         var keys = Object.keys(trackerJson);
         var i; 
         var j;
@@ -1674,7 +1676,8 @@ function getTrackers() {
     * This function queries the status of processes
     ***********/
     function getProcessStatus() {
-      $.get("getstatus.php", function(data) {
+      //$.get("getstatus.php", function(data) {
+      $.get("getstatus-memcache.php", function(data) {
           var statusJson = data;
           var keys = Object.keys(statusJson.processes);
           var i = 0;
@@ -1714,7 +1717,6 @@ function getTrackers() {
             style: '/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
-
 
         // Create a map object. 
 	    map = new L.Map('map', {
@@ -2085,28 +2087,14 @@ function getTrackers() {
     ***********/
     function initialize_layers() {
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        var allstations = L.markerClusterGroup();
-        var wxstations = L.markerClusterGroup();
-        //var allstations = L.layerGroup();
-        //var wxstations = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
-        allStationsLayer = createRealtimeLayer("", false, allstations, 5 * 1000, mapStyle);
-        if (showallstations == 1) {
-            allStationsLayer.addTo(map); 
-        }
-
-        //var b = createRealtimeLayer("getmystation.php", true, mystation, 5 * 1000, mapStyle);
-        //var c = createRealtimeLayer("gettrackerstations.php", true, trackersatlarge, 5 * 1000, mapStyle);
         trackersAtLargeLayer = createRealtimeLayer("", false, trackersatlarge, 5 * 1000, mapStyle);
-        weatherStationsLayer = createRealtimeLayer("", false, wxstations, 5 * 1000, mapStyle);
         trackersAtLargeLayer.addTo(map);
 
         layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
-        layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
-        layerControl.addOverlay(allstations, "All Other Stations", "Other Stations");
 
         // Get an update from the all, rf, and weather stations
         setTimeout( function() {
@@ -3091,11 +3079,42 @@ function getTrackers() {
                                                 }
                                             });
 
+					    // Now loop through the incoming beacon json features, masking off all balloonmarkers that we've already seen.
+					    // ...as there's no need to update a balloon marker's position, etc. since they're static.
+					    var bm;
+					    var newlist = [];
+					    for (bm in beacon_json.features) {
+
+						// This is the individual balloon feature.  
+						var thefeature = beacon_json.features[bm];
+
+						// Does this feature have the objecttype key AND is that key set to 'balloonmarker' (or not)
+						if (thefeature.properties.objecttype && thefeature.properties.objecttype != 'balloonmarker')
+
+						    // for all non-balloonmarker features, we add them to the newlist
+						    newlist.push(thefeature);
+
+						else if (thefeature.properties.objecttype && thefeature.properties.objecttype == 'balloonmarker') {
+
+						    // check if this balloonmarker is already on the map
+						    var onthemap = f.getFeature(thefeature.properties.id);
+
+						    // If this balloonmarker is new, then we add it to our list
+						    if (!onthemap) 
+							newlist.push(thefeature);
+						}
+					    }
+
                                             // replace the existing JSON for this beacon
                                             flight.beacons[h].json = beacon_json;
 
                                             // now update the realtime layer with this incoming json
-                                            f.update(beacon_json);
+                                            //f.update(beacon_json);
+					    if (newlist.length > 0) {
+						//console.log("new list");
+						//console.log(newlist);
+						f.update(newlist);
+					    }
                                             
                                             // prune off any layers that are older than the cutoff.
                                             pruneRealtimeLayer(f, cutoff);
@@ -3147,7 +3166,7 @@ function getTrackers() {
     function updateOtherStations(fullupdate) {
 
         // The URL for getting all, RF, and weather station data
-        var url = "getotherdata.php";
+        var url = "getotherdata-memcache.php";
 
         // Check when the last time we got an update and append the URL to account for that.
         if (lastUpdateTime > 0 && updateType == "regular" && fullupdate != "full") 
@@ -3161,13 +3180,6 @@ function getTrackers() {
         $.get(url, function(data) {
             var is_incremental = (this.url.indexOf("starttime") !== -1);
 
-            if (typeof(data.inetstations) != "undefined") {
-                if (data.inetstations.features.length > 0) {
-                    allStationsLayer.update(data.inetstations);
-                }
-            }
-            if (typeof(data.weatherstations) != "undefined")
-                weatherStationsLayer.update(data.weatherstations);
             if (typeof(data.trackerstations) != "undefined") {
                 if (data.trackerstations.features.length > 0) {
                     var x;
@@ -3191,7 +3203,7 @@ function getTrackers() {
 
             // Prune off any RF, inet, or weather stations
             var cutoff = new Date(Date.now() - lookbackPeriod * 60000);
-            var layers = [allStationsLayer, weatherStationsLayer, trackersAtLargeLayer];
+            var layers = [trackersAtLargeLayer];
 
             layers.forEach( function(l) {
                 pruneRealtimeLayer(l, cutoff);
@@ -3367,7 +3379,9 @@ function getTrackers() {
     function updateAllItems(fullupdate, fromFocus) {
 
         // Update process status
-        setTimeout(function() { getProcessStatus(); }, 20);
+	if (fullupdate) {
+	    setTimeout(function() { getProcessStatus(); }, 20);
+	}
 
         // Update all, rf, and weather stations
         updateOtherStations(fullupdate);
@@ -3376,9 +3390,11 @@ function getTrackers() {
         updateFlightData(fullupdate);
 
         // Update the tracker list only if this is a full update
-        setTimeout (function() {
-            getTrackers();
-        }, 10);
+	if (fullupdate) {
+	    setTimeout (function() {
+		getTrackers();
+	    }, 10);
+	}
 
         // ...the idea being that ever so often, we should try a special update
         if (globalUpdateCounter > 20) {
