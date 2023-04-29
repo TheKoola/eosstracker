@@ -252,16 +252,33 @@
                 "name" => "Tracker Stations"
             );
 
-            // the feature collection 
+            // Check of the list of features is null
+            if (!$js->features) {
+                $js->features = array();
+            }
+
+            // assemble the feature collection 
             $featurecollection = array(
                 "trackerstations" => $js
             );
 
         }
+        else {
+
+            // no rows were returned so we build a blank feature collection
+            $featurecollection = array(
+                "trackerstations" => array(
+                    "properties" => array(
+                        "name" => "Tracker Stations"
+                    ),
+                    "type" => "FeatureCollection",
+                    "features" => array()
+                )
+            );
+        }
 
         // close the database connection
         sql_close($link);
-
 
         return $featurecollection;
     }
@@ -285,6 +302,7 @@
         // attempt to get the process_status key from memcache
         $getresult = $memcache->get('getotherdata');
 
+        // If the key was found in memcache, then we'll just use that.
         if ($getresult) {
             $js = json_decode($getresult);
         }
