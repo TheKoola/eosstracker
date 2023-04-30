@@ -262,7 +262,7 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
     $hrefs = getHrefs("https://www.eoss.org/predict");
     $hrefskiosk = getHrefs("https://track.eoss.org/predictiondata");
 
-    // An array for translating the launchs site location names to the abbreviations used with the RAW predict filename
+    // An array for translating the launch site location names to the abbreviations used with the RAW predict filename
     $sites = [
         "Crow Valley" => "bgdco", 
         "Deer Trail" => "dtrco", 
@@ -271,7 +271,8 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
         "Wiggins" => "iggco",
         "Limon" => "licco",
         "NWS" => "nwsco",
-        "Windsor" => "wsrco"
+        "Windsor" => "wsrco",
+        "Coors Field" => "crfco"
     ];
 
     printf ("[");
