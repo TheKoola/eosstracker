@@ -56,18 +56,14 @@
          trackers tm
        
          where
-         tm.tactical = t.tactical " .
-         ($get_flightid == "" ? "" : " and t.flightid = $1 ")  .
+         tm.tactical = t.tactical
 
-         "order by 
+         order by 
          t.tactical asc,
          tm.callsign asc
          ;";
 
-        if ($get_flightid == "")
-            $result = sql_query($query);
-        else 
-            $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
+        $result = sql_query($query);
 
         if (!$result) {
             db_error(sql_last_error());
