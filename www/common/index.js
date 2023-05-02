@@ -97,7 +97,7 @@ function startUpProcesses() {
 * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
 ***********/
 function shutDownProcesses() {
-    if (processInTransition == 0 && numProcessesRunning > 1) {
+    if (processInTransition == 0 && numProcessesRunning > 0) {
         processInTransition = 2;
         var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
         $("#antenna-data").html(stoppinghtml);
@@ -136,14 +136,14 @@ function getrecentdata() {
       var donehtml = "<p><mark class=\"marginal\">Not running...</mark></p>";
       if (processInTransition == 1) {    // we're starting up...
           //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
-          if (procs >= keys.length - 1)
+          if (procs >= 1)
               processInTransition = 0;
           $("#direwolferror").html("");
           return;
       }
       else if (processInTransition == 2) {     // we're shutting down...
           //document.getElementById("debug").innerHTML = "shutting down still...processInTransition: " + processInTransition;
-          if (procs <= 1)
+          if (procs < 1)
               processInTransition = 0; 
           $("#direwolferror").html("");
           return;
@@ -152,7 +152,7 @@ function getrecentdata() {
           //document.getElementById("debug").innerHTML = "not in transistion....processInTransition: " + processInTransition;
           if (statusJson.rf_mode == 1 && procs >= keys.length)   // We're running in RF mode...i.e. SDRs are attached to the system
               donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
-          if (statusJson.rf_mode == 0 && procs >= keys.length-1)   // We're running in online mode...i.e. SDRs are not attached to the system
+          if (statusJson.rf_mode == 0 && procs >= 1)   // We're running in online mode...i.e. SDRs are not attached to the system
               donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
       }
       $("#antenna-data").html(donehtml);
