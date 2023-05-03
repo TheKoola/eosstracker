@@ -61,33 +61,11 @@ include $documentroot . '/common/header.php';
         </div>
     </div>
 
-    <!-- GPS state -->
-    <div class="div-table" style="float: left;">
-        <div class="table-row">
-            <div class="table-cell header toprow" style="text-align: center;">GPS Status</div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;"><span id="gpsdata">n/a</span></div>
-        </div>
-    </div>
-
     <!-- System processes -->
     <div class="div-table" style="float: left;">
         <div class="table-row">
             <div class="table-cell header toprow">Process</div>
             <div class="table-cell header toprow" style="border-left: none; text-align: center;">Status</div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">direwolf</div>
-            <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolferror"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">aprsc</div>
-            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="notokay">Not okay</mark></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">gpsd</div>
-            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
         <div class="table-row">
             <div class="table-cell">backend daemon</div>
@@ -111,20 +89,8 @@ include $documentroot . '/common/header.php';
             <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><?php if (is_readable("nodeid.txt")) echo file_get_contents("nodeid.txt"); ?></div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Callsign and SSID:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><span id="callsign"></span><span id="ssid"></span></div>
-        </div>
-        <div class="table-row">
             <div class="table-cell" style="border-top: none;">Timezone:</div>
             <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="timezone"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Igating:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="igating"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Beaconing:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="beaconing"></span></div>
         </div>
     </div>
 
@@ -146,10 +112,6 @@ include $documentroot . '/common/header.php';
     <pre class="packetdata"><span id="logfile"></span></pre>
     <p class="packetdata-header">Stderr</p>
     <pre class="packetdata" ><span id="errfile"></span></pre>
-    <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
-    <pre class="packetdata" ><span id="beacons"></span></pre>
-    <p class="packetdata-header">Direwolf output (limited to the first 100 lines)</p>
-    <pre class="packetdata" ><span id="direwolf"></span></pre>
     <p><span id="debug"></span></p>
 </div>
 
