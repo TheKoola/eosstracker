@@ -798,10 +798,10 @@ class APRSIS(object):
                 # Sleep for delta seconds
                 e.wait(delta)
 
-            print "APRS-IS watchdog thread ended"
+            print "APRS-IS watchdog thread ended:  %s" % self.server
 
         except (StopIteration, KeyboardInterrupt, SystemExit): 
-            print "APRS-IS watchdog thread ended"
+            print "APRS-IS watchdog thread ended:  %s" % self.server
 
 
     ##################################################
@@ -825,10 +825,10 @@ class APRSIS(object):
                 # Put this filter into effect
                 self.ais.set_filter(filterstring)
 
-            print "APRS-IS filter thread ended"
+            print "APRS-IS filter thread ended:  %s" % self.server
 
-        except (StopIteration, KeyboardInterrupt, SystemExit): 
-            print "APRS-IS filter thread ended"
+        except Exception as e:
+            print "APRS-IS filter thread ended:  %s" % self.server
 
 
     ##################################################
