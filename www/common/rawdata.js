@@ -880,6 +880,7 @@
 	        // blank out the list of flightids for the prediction form
             $("#data_type_selection").html("");
             $("#data_type_selection").append($("<option></option>").val("gps").html("GPS Position Log"));
+            $("#data_type_selection").append($("<option></option>").val("allrfdata").html("All RF Packets"));
 
             // loop through the list of return flights creating a radio button for each one
             for (f in flightsJson) {
