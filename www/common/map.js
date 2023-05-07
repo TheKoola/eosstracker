@@ -2899,8 +2899,6 @@ function getTrackers() {
                     var predictJSON = x.predict;
                     var trackersJSON = x.trackers;
                     var packetlist = x.packetlist;
-                    var altchart = x.altitudechart;
-                    var vertchart = x.verticalchart;
                     var b = x.beacons;
                     var b_keys = Object.keys(b);
 
@@ -3027,18 +3025,6 @@ function getTrackers() {
                                 updateStatusPackets(packetlist.statuspackets);
                             }
 
-                            //if (packetlist.lastpacketpath) {
-                            //    updateReceivePath(fid, packetlist.lastpacketpath);
-                            //}
-
-                            if (altchart.chartdata) {
-                                updateAltitudeChart(altchart);
-                            }
-
-                            if (vertchart.chartdata) {
-                                updateVerticalChart(vertchart);
-                            }
-
                             // Loop through each incoming beacon
                             var i = 0;
                             for (i = 0; i < b_keys.length; i++) {
@@ -3079,43 +3065,100 @@ function getTrackers() {
                                                 }
                                             });
 
-					    // Now loop through the incoming beacon json features, masking off all balloonmarkers that we've already seen.
-					    // ...as there's no need to update a balloon marker's position, etc. since they're static.
-					    var bm;
-					    var newlist = [];
-					    for (bm in beacon_json.features) {
+                                            // Now loop through the incoming beacon json features, masking off all balloonmarkers that we've already seen.
+                                            // ...as there's no need to update a balloon marker's position, etc. since they're static.  
+                                            //
+                                            // Also, we want to build the chart data for each beacon while in this loop.  ;)
+                                            var bm;
+                                            var newlist = [];
+                                            var yaxis = "tm-" + incoming_callsign;
+                                            var verticalchart = {
+                                                [incoming_callsign]: [],
+                                                [yaxis]: []
+                                            };
+                                            var altitudechart = {
+                                                [incoming_callsign]: [],
+                                                [yaxis]: []
+                                            };
+                                            var lastvalues = null;
 
-						// This is the individual balloon feature.  
-						var thefeature = beacon_json.features[bm];
+                                            // Now loop through each feature for this individual beacon
+                                            for (bm in beacon_json.features) {
 
-						// Does this feature have the objecttype key AND is that key set to 'balloonmarker' (or not)
-						if (thefeature.properties.objecttype && thefeature.properties.objecttype != 'balloonmarker')
+                                                // This is the individual balloon feature.  
+                                                var thefeature = beacon_json.features[bm];
 
-						    // for all non-balloonmarker features, we add them to the newlist
-						    newlist.push(thefeature);
+                                                // Determine the object type for this feature (ex. the balloon itself, a balloonmarker, the flight path, etc.)
+                                                var objecttype = thefeature.properties.objecttype;
 
-						else if (thefeature.properties.objecttype && thefeature.properties.objecttype == 'balloonmarker') {
+                                                // Does this feature have the objecttype key AND is that key set to 'balloonmarker' (or not)
+                                                if (objecttype && objecttype != 'balloonmarker') {
 
-						    // check if this balloonmarker is already on the map
-						    var onthemap = f.getFeature(thefeature.properties.id);
+                                                    // for all non-balloonmarker features, we add them to the newlist
+                                                    newlist.push(thefeature);
 
-						    // If this balloonmarker is new, then we add it to our list
-						    if (!onthemap) 
-							newlist.push(thefeature);
-						}
-					    }
+                                                    if (objecttype == "balloon") {
+
+                                                        // Only if the time and vertical rate properties exist
+                                                        if (thefeature.properties.time && thefeature.properties.packet_time && thefeature.properties.verticalrate && thefeature.properties.altitude) {
+                                                            var tmstring = thefeature.properties.time.split(" ")[0] + " " + thefeature.properties.packet_time;
+                                                            lastvalues = {
+                                                                "verticalrate": Math.trunc(thefeature.properties.verticalrate * 1.0),
+                                                                "altitude": Math.trunc(thefeature.properties.altitude * 1.0),
+                                                                "yaxis": tmstring
+                                                            };
+                                                        }
+                                                    }
+                                                }
+                                                else if (objecttype && objecttype == 'balloonmarker') {
+
+                                                    // check if this balloonmarker is already on the map
+                                                    var onthemap = f.getFeature(thefeature.properties.id);
+
+                                                    // If this balloonmarker is new, then we add it to our list
+                                                    if (!onthemap) 
+                                                    newlist.push(thefeature);
+
+                                                    // Only if the time and vertical rate properties exist
+                                                    if (thefeature.properties.time && thefeature.properties.packet_time && thefeature.properties.verticalrate && thefeature.properties.altitude) {
+                                                        var tmstring = thefeature.properties.time.split(" ")[0] + " " + thefeature.properties.packet_time;
+                                                        verticalchart[incoming_callsign].push(Math.trunc(thefeature.properties.verticalrate * 1.0));
+                                                        verticalchart[yaxis].push(tmstring);
+
+                                                        altitudechart[incoming_callsign].push(Math.trunc(thefeature.properties.altitude * 1.0));
+                                                        altitudechart[yaxis].push(tmstring);
+                                                    }
+                                                }
+                                            }
+
+                                            // Append the most recent chart data
+                                            if (lastvalues) {
+                                                altitudechart[incoming_callsign].push(lastvalues.altitude);
+                                                altitudechart[yaxis].push(lastvalues.yaxis);
+                                                verticalchart[incoming_callsign].push(lastvalues.verticalrate);
+                                                verticalchart[yaxis].push(lastvalues.yaxis);
+                                            }
+
+                                            // Update the altitude chart
+                                            if (altitudechart[incoming_callsign].length > 0)
+                                                updateAltitudeChart({ "chartdata": altitudechart, "flightid": fid});
+
+                                            // Update the vertical chart
+                                            if (verticalchart[incoming_callsign].length > 0)
+                                                updateVerticalChart({ "chartdata": verticalchart, "flightid": fid});
 
                                             // replace the existing JSON for this beacon
                                             flight.beacons[h].json = beacon_json;
 
                                             // now update the realtime layer with this incoming json
                                             //f.update(beacon_json);
-					    if (newlist.length > 0) {
-						//console.log("new list");
-						//console.log(newlist);
-						f.update(newlist);
-					    }
-                                            
+                                                                
+                                            if (newlist.length > 0) {
+                                                //console.log("new list");
+                                                //console.log(newlist);
+                                                f.update(newlist);
+                                            }
+                                                                
                                             // prune off any layers that are older than the cutoff.
                                             pruneRealtimeLayer(f, cutoff);
                                         }
