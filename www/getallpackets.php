@@ -110,7 +110,11 @@
             select distinct 
             date_trunc('second', a.tm)::timestamp without time zone as timestamp, 
             a.callsign,
-            date_trunc('second', a.tm)::time without time zone || ', ' || a.raw as packet
+            case when a.frequency is null then 
+                date_trunc('second', a.tm)::time without time zone || ', inet, ' || a.raw
+            else
+                date_trunc('second', a.tm)::time without time zone || ', ' || round(a.frequency / 1000000,3) || 'MHz, ' || a.raw 
+            end as packet
 
             from 
             packets a 
@@ -131,7 +135,11 @@
             select distinct 
             date_trunc('second', a.tm)::timestamp without time zone as timestamp, 
             a.callsign,
-            date_trunc('second', a.tm)::time without time zone || ', ' || a.raw as packet
+            case when a.frequency is null then 
+                date_trunc('second', a.tm)::time without time zone || ', inet, ' || a.raw 
+            else
+                date_trunc('second', a.tm)::time without time zone || ', ' || round(a.frequency / 1000000,3) || 'MHz, ' || a.raw 
+            end as packet
 
             from 
             packets a
@@ -147,7 +155,11 @@
             select distinct 
             date_trunc('second', a.tm)::timestamp without time zone as timestamp, 
             a.callsign,
-            date_trunc('second', a.tm)::time without time zone || ', ' || a.raw as packet
+            case when a.frequency is null then 
+                date_trunc('second', a.tm)::time without time zone || ', inet, ' || a.raw
+            else
+                date_trunc('second', a.tm)::time without time zone || ', ' || round(a.frequency / 1000000,3) || 'MHz, ' || a.raw 
+            end as packet
 
             from 
             packets a 

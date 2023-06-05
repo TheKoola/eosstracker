@@ -245,7 +245,7 @@
         $tactical = $row['tactical'];
         $speed_mph = $row['speed_mph'];
         $heardfrom = $row['heardfrom'];
-        if ($row["source"] == 'direwolf')
+        if ($row["source"] == 'direwolf' || $source["ka9q-radio"])
             $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
         else
             $frequency = "TCPIP";

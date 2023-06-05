@@ -29,12 +29,14 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    header("Content-type: text/plain;");
-    $logfile = "/eosstracker/logs/start_session.log";
+    //header("Content-type: text/plain;");
+    header("Content-type: application/json;");
+    $logfile = "/eosstracker/logs/habtracker.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
     $direwolffile = "/eosstracker/logs/direwolf.out";
     if (is_readable($logfile)) {
-        $log = file($logfile);
+        //$log = file($logfile);
+        $log = shell_exec('tail -30 ' . $logfile);
         if ($log === false)
             $log = "Not available.";
     }
@@ -51,7 +53,7 @@
     $beacons = [];
     $matches = [];
     if (is_readable($direwolffile)) {
-        $dw = shell_exec('tail -50 ' . $direwolffile);
+        $dw = shell_exec('tail -30 ' . $direwolffile);
         $dw_beacons = shell_exec("awk '/(^\[ig\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})|(\[[0-9]+L [0-9]{1,2}\/[0-9]{1,2}\/[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}\] [A-Z]{1,2}[0-9]{1}[A-Z]{1,3})/' " . $direwolffile);
         $p = preg_match_all('/^(\[[0-9]+L [0-9]{1,2}\/[0-9]{1,2}\/[0-9]{1,2} [0-9]{1,2}:[0-9]{2}:[0-9]{2}\]|\[ig\]) .*$/m', $dw_beacons, $matches);
    	    if ($p) {

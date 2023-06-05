@@ -105,7 +105,6 @@
                date_trunc('day', a.tm)::date as thedate, 
                date_trunc('hour', a.tm)::time as thehour,
                date_trunc('minute', a.tm)::time as theminute, 
-               a.channel,
                a.frequency,
                count(a.*)
 
@@ -115,10 +114,10 @@
                where 
                a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
                and a.tm > $2
-               and a.source = 'direwolf'
+               and (a.source = 'direwolf' or a.source = 'ka9q-radio')
 
-               group by 1,2,3,4,5
-               order by 1,2,3,4,5
+               group by 1,2,3,4
+               order by 1,2,3,4
         ;";
         $result = pg_query_params($link, $query, array(
             sql_escape_string($config["lookbackperiod"] . " minute"), 
@@ -130,7 +129,6 @@
                date_trunc('day', a.tm)::date as thedate, 
                date_trunc('hour', a.tm)::time as thehour,
                date_trunc('minute', a.tm)::time as theminute, 
-               a.channel,
                a.frequency,
                count(a.*)
 
@@ -140,10 +138,10 @@
                where 
                a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
                and a.tm > to_timestamp($2)::timestamp at time zone $3
-               and a.source = 'direwolf'
+               and (a.source = 'direwolf' or a.source='ka9q-radio')
 
-               group by 1,2,3,4,5
-               order by 1,2,3,4,5;";
+               group by 1,2,3,4
+               order by 1,2,3,4;";
 
         $result = pg_query_params($link, $query, array(
             sql_escape_string($config["lookbackperiod"] . " minute"), 
@@ -167,8 +165,8 @@
         $freq_text = round($row["frequency"] / 1000000, 3) . "MHz";
         if ($row["frequency"] <= 0)
             $freq_text = "ext-radio";
-        $tdata["ch" . $row['channel'] . "_" . $freq_text ][] = $row['thedate'] . " " . $row['theminute'];
-        $rfdata["ch" . $row['channel'] . "_" . $freq_text ][] = $row['count'];
+        $tdata[$freq_text][] = $row['thedate'] . " " . $row['theminute'];
+        $rfdata[$freq_text][] = $row['count'];
     }    
 
     if (sql_num_rows($result) > 0) {

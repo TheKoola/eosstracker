@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2023 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 *
  */
 
-var numProcessesRunning = 0;
+var checkcount = 0;
 var processInTransition = 0;
 var interval;
 
@@ -74,173 +74,155 @@ function getConfiguration() {
 
 
 /***********
-* startUpProcesses
-*
-* This function will submit a request to the backend web system to start the various daemons for the system.
-***********/
-function startUpProcesses() {
-    if (processInTransition == 0 && numProcessesRunning < 2) {
-        processInTransition = 1;
-        var startinghtml = "<p><mark class=\"marginal\">Starting...</mark></p>";
-        $("#antenna-data").html(startinghtml);
-        $.get("startup.php", function(data) { 
-            getrecentdata(); 
-        });
-    }
-
-    return false;
-}
-
-
-/***********
-* shutDownProcesses
-*
-* This function will submit a request to the backend web system to kill/stop the various daemons for the system.
-***********/
-function shutDownProcesses() {
-    if (processInTransition == 0 && numProcessesRunning > 1) {
-        processInTransition = 2;
-        var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
-        $("#antenna-data").html(stoppinghtml);
-        $.get("shutdown.php", function(data) {
-            getrecentdata();
-        });
-    }
-
-    return false;
-}
-
-
-/***********
 * getrecentdata
 *
 * This function will fetch current status of processes, system status, SDR info, logs, etc. and populate the web page as needed.
 ***********/
 function getrecentdata() {
-  $.get("getstatus.php", function(data) { 
-      var statusJson = data;
-      var keys = Object.keys(statusJson.processes);
-      var antennas = statusJson.antennas
-      var i = 0;
-      var procs = 0;
 
-   /* Loop through the processes and update their status */
-  for (i = 0; i < keys.length; i++) {
-      document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-          (statusJson.processes[i].status > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-          procs += statusJson.processes[i].status; 
-      }
+    $.get("getstatus.php", function(data) { 
+        var statusJson = data;
+        var keys = Object.keys(statusJson.processes);
 
-      numProcessesRunning = procs;
+        var processtable = document.getElementById("processtable");
+        for (proc in statusJson.processes) {
 
-      // find out what state we're in...
-      var donehtml = "<p><mark class=\"marginal\">Not running...</mark></p>";
-      if (processInTransition == 1) {    // we're starting up...
-          //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
-          if (procs >= keys.length - 1)
-              processInTransition = 0;
-          $("#direwolferror").html("");
-          return;
-      }
-      else if (processInTransition == 2) {     // we're shutting down...
-          //document.getElementById("debug").innerHTML = "shutting down still...processInTransition: " + processInTransition;
-          if (procs <= 1)
-              processInTransition = 0; 
-          $("#direwolferror").html("");
-          return;
-      }
-      else {   // we're either up or shutdown, but we're NOT in transition
-          //document.getElementById("debug").innerHTML = "not in transistion....processInTransition: " + processInTransition;
-          if (statusJson.rf_mode == 1 && procs >= keys.length)   // We're running in RF mode...i.e. SDRs are attached to the system
-              donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
-          if (statusJson.rf_mode == 0 && procs >= keys.length-1)   // We're running in online mode...i.e. SDRs are not attached to the system
-              donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
-      }
-      $("#antenna-data").html(donehtml);
-     
+            var theproc = statusJson.processes[proc].process;
+            var thestatus = statusJson.processes[proc].status;
+            var procElement = document.getElementById(theproc);
 
-    //var antenna_html = "<table class=\"presentation-area\" cellpadding=0 cellspacing=0 border=0><tr>";
-    var antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
-    if (!statusJson.antennas) {
-        $("#antenna-data").html("<p><mark class=\"marginal\">Not running...</mark></p>");
-        $("#direwolferror").html("");
-        return;
-    }
-    for (i = 0; i < antennas.length; i++) {
-        var frequencies = antennas[i].frequencies;  
-        var rtl_id = antennas[i].rtl_id;
-        var k = 0;
-        var freqhtml = "";
-        var callsign_html = "";
-        //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
-        //
+            // If the element exists, then udpate the process status
+            if (procElement) {
+                procElement.setAttribute("class", (thestatus > 0 ? "okay" : "notokay"));
+                procElement.innerHTML = (thestatus > 0 ? "[okay]" : "[not okay]");
+                procElement.dataset.lastupdate = Math.floor(Date.now() / 1000.0);
+                procElement.dataset.status = thestatus;
+            }
 
-        var product_name_lower = antennas[i].rtl_product.toLowerCase();
-        var instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
+            // if the element doesn't exist, then we need to add a row the process table.
+            else {
 
-        for (k = 0; k < frequencies.length; k++) 
-            freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
+                // Create the div row
+                var row = document.createElement("DIV");
+                row.setAttribute("class", "table-row");
+                row.setAttribute("id", theproc + "-row");
 
-        antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
-            + "<div class=\"antenna-table\">"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
-            + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Frequencies</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">GnuRadio Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">SDR Information</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Igating Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (statusJson.igating == "true" ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Beaconing Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (statusJson.beaconing == "true" ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-            + "</div>"
-            + "</div>"
-            + "</div>";
-    }
+                // Create the left-hand cell
+                var left = document.createElement("DIV");
+                left.setAttribute("class", "table-cell");
+                left.setAttribute("style", "border-top: none;");
+                left.innerHTML = theproc;
+                row.appendChild(left);
 
-    if (antennas.length == 0 || (antennas.length > 0 && procs < keys.length-1)) 
-          antenna_html = donehtml;
-    $("#antenna-data").html(antenna_html);
-  
-  });
+                // Create the right-hand cell
+                var right = document.createElement("DIV");
+                right.setAttribute("class", "table-cell");
+                right.setAttribute("style", "text-align: right;");
+                row.appendChild(right);
 
-  $.get("getlogs.php", function(data) {
-      var logsJson = JSON.parse(data);
-      
-      $("#logfile").html("");
-  for (a in logsJson.log) 
-          $("#logfile").append(escapeHtml(logsJson.log[a]));
+                // Create the marker element
+                var marker = document.createElement("MARK");
+                marker.setAttribute("id", theproc);
+                marker.setAttribute("class", (thestatus > 0 ? "okay" : "notokay"));
+                marker.innerHTML = (thestatus > 0 ? "[okay]" : "[not okay]");
+                marker.dataset.process = "true";
+                marker.dataset.status = thestatus;
+                marker.dataset.lastupdate = Math.floor(Date.now() / 1000.0);
+                marker.dataset.row = row;
+                right.appendChild(marker);
 
-      $("#errfile").html("");
-  for (a in logsJson.err) 
-          $("#errfile").append(escapeHtml(logsJson.err[a]));
+                // Add the row to the div table
+                processtable.appendChild(row);
+            }
+        }
 
-  $("#beacons").html("");
-  for (a in logsJson.beacons) 
-          $("#beacons").append(escapeHtml(logsJson.beacons[a]));
+        // Now loop through all process elements removing those that haven't seen an update in > 5mins
+        var procs = document.querySelectorAll('[data-process="true"]');
+        procs.forEach(function checkproc(elem) {
+            var lastupdate = elem.dataset.lastupdate;
+            var now = Math.floor(Date.now() / 1000.0);
 
-      $("#direwolf").html("");
-  for (a in logsJson.direwolf) 
-          $("#direwolf").append(escapeHtml(logsJson.direwolf[a]));
+            if (lastupdate && now - lastupdate > 300) {
+                var tbl = document.getElementById("processtable");
+                var rowelem = elem.dataset.row;
 
-  if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
-          $("#direwolferror").html(" &nbsp; <mark class=\"notokay\">[ audio error ]</mark>");
-  else
-          $("#direwolferror").html("");
+                if (tbl && rowelem)
+                    tbl.removeChild(rowelem);
+            }
+        });
 
+        // get the state of the habtracker daemon
+        var state = isRunning();
+
+        // check the state of what we're doing (i.e. starting, stopping, started, stopped, etc.)
+        switch (processInTransition) {
+
+            // We're either stopped or started, but not in transition
+            case 0:
+                checkcount = 0;
+                setStatus((state ? "Running" : "Not running"), state);
+                break;
+
+            case 1: // we're starting up...
+            case 2: // we're shutting down...
+
+                if ((state && processInTransition == 1) || (!state && processInTransition == 2)) {
+                    processInTransition = 0;
+                    checkcount = 0;
+                    setStatus((state ? "Running" : "Not running"), state);
+                }
+                else {
+                    checkcount += 1;
+
+                    if (checkcount > 5) {
+                        processInTransition = 0;
+                        checkcount = 0;
+                    }
+                }
+
+                break;
+
+            // shouldn't get here
+            default:
+                break;
+        }
+
+    });
+
+    $.get("getlogs.php", function(data) {
+        var logsJson = data;
+        var logfile = document.getElementById("logfile");
+        var errfile = document.getElementById("errfile");
+        var beacons = document.getElementById("beacons");
+        var direwolf = document.getElementById("direwolflog");
+        
+        logfile.innerHTML = "";
+        for (a in logsJson.log) 
+            //logfile.append(escapeHtml(logsJson.log[a]));
+            logfile.append(logsJson.log[a]);
+
+        errfile.innerHTML = "";
+        for (a in logsJson.err) 
+            errfile.append(escapeHtml(logsJson.err[a]));
+
+        beacons.innerHTML = "";
+        for (a in logsJson.beacons) 
+            beacons.append(escapeHtml(logsJson.beacons[a]));
+
+        direwolf.innerHTML = "";
+        if (typeof(logsJson.direwolf) == "string") {
+            direwolf.innerHTML = logsJson.direwolf;
+        }
+        else if (Array.isArray(logsJson.direwolf)) {
+            if (logsJson.direwolf.indexOf("Could not open audio device") >= 0)
+                direwolf.innerHTML = " &nbsp; <mark class=\"notokay\">[ audio error ]</mark>";
+            else {
+                for (a in logsJson.direwolf) 
+                    direwolf.append(escapeHtml(logsJson.direwolf[a]));
+            }
+        }
+        else 
+            direwolf.innerHTML = logsJson.direwolf;
   });
 }
 
@@ -377,6 +359,101 @@ $(document).ready(function () {
         updateMapLink();
         getrecentdata();
         getgps();
+        getConfiguration();
+    }, 5000);
+});
+
+
+
+/***********
+* isrunning
+*
+* This function will get the running data element of the HTML element that represents the habtracker daemon backend process
+***********/
+function isRunning() {
+    var habtracker = document.getElementById("habtracker-d");
+    return (habtracker && habtracker.dataset.status ? habtracker.dataset.status * 1 : 0);
+}
+
+/***********
+* setStatus
+*
+* This function post the status message, with the particular severity (1 - okay (green), 0 - not okay (yellow))
+***********/
+function setStatus(text, severity) {
+    var elem = document.getElementById("antenna-data");
+    var marker = elem.querySelector("MARK");
+
+    if (elem) {
+        if (marker) {
+            marker.setAttribute("class", (severity ? "okay" : "marginal"));
+            marker.innerHTML = text;
+        }
+        else {
+            // create a paragraph element
+            var p = document.createElement("P");
+            p.setAttribute("class", "normal-noborders");
+            elem.appendChild(p);
+
+            // Create the marker element
+            var m = document.createElement("MARK");
+            m.setAttribute("class", (severity ? "okay" : "marginal"));
+            m.innerHTML = text;
+            p.appendChild(m);
+        }
+    }
+}
+
+
+/***********
+* startUpProcesses
+*
+* This function will submit a request to the backend web system to start the various daemons for the system.
+***********/
+function startUpProcesses() {
+    if (processInTransition == 0 && !isRunning()) {
+        processInTransition = 1;
+        setStatus("Starting...", false);
+        $.get("startup.php", function(data) { 
+            getrecentdata(); 
+        });
+    }
+
+    return false;
+}
+
+
+/***********
+* shutDownProcesses
+*
+* This function will submit a request to the backend web system to kill/stop the various daemons for the system.
+***********/
+function shutDownProcesses() {
+    if (processInTransition == 0 && isRunning()) {
+        processInTransition = 2;
+        var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
+        setStatus("Shutting down...", false);
+        document.getElementById("antenna-data").innerHTML = stoppinghtml;
+        $.get("shutdown.php", function(data) {
+            getrecentdata();
+        });
+    }
+
+    return false;
+}
+
+
+/***********
+* ready
+*
+* This function is only called once the web page is fully loaded.
+***********/
+$(document).ready(function () {
+
+    getrecentdata();
+    getConfiguration();
+    setInterval(function() {
+        getrecentdata();
         getConfiguration();
     }, 5000);
 });

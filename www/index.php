@@ -75,26 +75,10 @@ include $documentroot . '/common/header.php';
     </div>
 
     <!-- System processes -->
-    <div class="div-table" style="float: left;">
+    <div class="div-table" id="processtable" style="float: left;">
         <div class="table-row">
             <div class="table-cell header toprow">Process</div>
             <div class="table-cell header toprow" style="border-left: none; text-align: center;">Status</div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">direwolf</div>
-            <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolferror"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">aprsc</div>
-            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="notokay">Not okay</mark></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">gpsd</div>
-            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="notokay">Not okay</mark></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">backend daemon</div>
-            <div class="table-cell" style="text-align: right;"><span id="habtracker-d-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
     </div>
 
@@ -143,16 +127,18 @@ include $documentroot . '/common/header.php';
     <!-- System log output -->
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-        System Logs
+        System Logs 
     </p>
+    <p class="normal-italic" style="margin-bottom: 10px;">Limited to last 30 lines.  <a target="_blank" href="/logs/habtracker.log">Download Full Habtracker Log</a></p>
     <p class="packetdata-header">Stdout</p>
     <pre class="packetdata"><span id="logfile"></span></pre>
     <p class="packetdata-header">Stderr</p>
     <pre class="packetdata" ><span id="errfile"></span></pre>
     <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
     <pre class="packetdata" ><span id="beacons"></span></pre>
+    <p class="normal-italic" style="margin-bottom: 10px;">Limited to last 30 lines.  <a target="_blank" href="/logs/direwolf.out">Download Full Direwolf Log</a></p>
     <p class="packetdata-header">Direwolf Output</p>
-    <pre class="packetdata" ><span id="direwolf"></span></pre>
+    <pre class="packetdata" ><span id="direwolflog"></span></pre>
     <p><span id="debug"></span></p>
 </div>
 

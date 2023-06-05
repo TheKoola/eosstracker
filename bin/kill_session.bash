@@ -47,10 +47,10 @@ if [ $? -eq 0 ]; then
     leadproc=$(ps -ef | grep "habtracker-daemon" | grep -v grep | awk 'BEGIN {s = 999999} { if ($2 < s) s=$2;} END {print s}')
     kill $leadproc >> ${LOGFILE}
 
-    # wait for 12 seconds looping each time to see if there are any remaining processes
+    # wait for 20 seconds looping each time to see if there are any remaining processes
     let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)
     let i=0
-    while [ $num_procs -gt 0 ] && [ $i -lt 12 ]
+    while [ $num_procs -gt 0 ] && [ $i -lt 20 ]
     do
         echo "Waiting/checking for habtracker-daemon processes to die...${i}" >> ${LOGFILE}
         let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)

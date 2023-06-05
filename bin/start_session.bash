@@ -58,20 +58,12 @@ elif [ -d ${ALTMAPSDIR2}/maps ]; then
     touch -t 200001010000 ${ALTMAPSDIR2}/${PLANETFILE}
 fi
 
-# Check if things are running:
-let num_procs=$(${BINDIR}/procstatus.py  | python3 -m json.tool | awk '/"status":/ { s+=$2;} END {print s}')
+# Check if habtracker daemon is already running
+let habtracker=$(${BINDIR}/procstatus.py | jq '.processes[] | select(.process | contains("habtracker")) | .status')
 
-# Check if it's just GPSD that is still running
-if [ $num_procs -eq 1 ]; then
-    ps -ef | grep gpsd | grep -v grep > /dev/null
-    if [ $? -gt 0 ]; then
-        exit 
-    fi
-fi
-
-# if more then one process is running then we abort
-if [ $num_procs -gt 1 ]; then
-    exit
+# If habtracker daemon is already running then we just exit
+if [ $habtracker -eq 1 ]; then
+    exit 
 fi
 
 echo > ${LOGFILE}

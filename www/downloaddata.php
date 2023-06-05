@@ -236,7 +236,7 @@ include_once $documentroot . '/common/functions.php';
                   left outer join symbols s on (p.symbol = s.symbol)
 
                   where
-                  p.source = 'direwolf'
+                  (p.source = 'direwolf' or p.source = 'ka9q-radio')
                   and p.tm >= $1
                   and p.tm <= $2
 

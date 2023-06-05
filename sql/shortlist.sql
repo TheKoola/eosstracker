@@ -31,8 +31,6 @@ else
     f.sourcename
 end as heardfrom,
 f.comment,
-f.speed_mph,
-f.bearing,
 f.alt_ft,
 f.coords,
 f.freq_mhz,

@@ -32,7 +32,7 @@ listOfProcesses = list()
 
 habproc = "habtracker-d"
 
-procs = ["direwolf", "aprsc", "gpsd", habproc]
+procs = ["direwolf", "aprsc", "gpsd", habproc, "airspyd", "radiod", "packetd"]
 procstatus = []
 for p in procs:
     procstatus.append({"process": p, "status": 0})
