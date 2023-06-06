@@ -416,10 +416,10 @@ class PacketStream:
         """
 
         # point at which we no longer add packets to the queue (i.e. these packets are dropped)
-        q_low_watermark = 10
+        q_low_watermark = 25
 
         # point at which we clear the queue.  Presumably because there's no catching up...because the downstream consumers aren't working this queue.
-        q_high_watermark = 30
+        q_high_watermark = 50
 
         # loop through each packet handler
         for ph in self.readhandlers:
@@ -567,7 +567,6 @@ class PacketStream:
                         # close our connection
                         self.disconnect()
                         self.okay.set()
-                        raise ServerConnectionError()
 
                     else:
                         # append whatever data was read to the bigbuffer
@@ -594,13 +593,6 @@ class PacketStream:
                 if "Resource temporarily unavailable" in str(e):
                     self.disconnect()
                     self.okay.set()
-
-            #except (KeyboardInterrupt, SystemExit, ServerConnectionError) as e:
-            #    self.logger.debug(f"{self.server.nickname} readline, got signal to end: {e}")
-            #    # we were signaled to shutdown so close things down
-            #    self.disconnect()
-            #    self.okay.set()
-
 
         self.logger.debug(f"{self.server.nickname} readline, ending thread.")
         return None
@@ -674,13 +666,6 @@ class PacketStream:
                     self.disconnect()
                     self.okay.set()
 
-            #except (KeyboardInterrupt, SystemExit, ServerConnectionError) as e:
-#
-#                self.logger.debug(f"{self.server.nickname} read_thread, got signal to end: {e}")
-#                # we were signaled to shutdown so close things down
-#                self.disconnect()
-#                self.okay.set()
-
         self.logger.debug(f"{self.server.nickname} read_thread ended")
 
         return None
@@ -737,8 +722,8 @@ class PacketStream:
 
                 # something happened during the connection attempt
                 if not online and self.okay.is_set():
-                    self.logger.debug(f"{self.server.nickname} run():  something happened during connection attempt, raising signal")
-                    raise ServerConnectionError()
+                    self.logger.debug(f"{self.server.nickname} run():  something happened during connection attempt")
+                    #raise ServerConnectionError()
 
                 while online and not self.stopevent.is_set() and not self.okay.is_set():
 
@@ -756,7 +741,6 @@ class PacketStream:
                     for t in threadlist:
                         t.start()
 
-                    #try:
                     self.logger.debug(f"{self.server.nickname} threads running...waiting")
                     # Now wait on the threads...this should never end (aka it'll block) until this process is killed
                     for t in threadlist:
@@ -768,19 +752,6 @@ class PacketStream:
                     online = False
 
                     self.logger.debug(f"{self.server.nickname} run().  Done with threads")
-
-                    #except (KeyboardInterrupt, SystemExit) as e:
-                    #    self.disconnect()
-                    #    self.okay.set()
-                    #    online = False
-
-                    #    self.logger.debug(f"{self.server.nickname} run().  got interrupt.  waiting on threads to finish: {e}")
-                    #    # wait for the threads to finish
-                    #    for t in threadlist:
-                    #        t.join()
-
-                        # Hit the eject button...
-                    #    raise ServerConnectionError()
 
                 if not self.stopevent.is_set():
 
@@ -799,13 +770,9 @@ class PacketStream:
                     self.logger.debug(f"{self.server.nickname} run loop: {retry_delay=}, {trycount=}")
 
                     # wait before retrying to connect
-                    self.okay.wait(retry_delay)
+                    self.stopevent.wait(retry_delay)
 
                     self.logger.info(f"{self.server.nickname} run loop:  Reconnecting")
-
-                    #except (KeyboardInterrupt, SystemExit) as e:
-                    #    self.disconnect()
-                    #    self.okay.set()
 
         except (ServerConnectionError) as e:
             self.logger.debug(f"{self.server.nickname} run():  Ending run loop...{e}")
@@ -910,7 +877,6 @@ class RTPStream(MulticastPacketStream):
                     # close our connection
                     self.disconnect()
                     self.okay.set()
-                    raise ServerConnectionError()
 
                 else:
                     #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
@@ -927,12 +893,6 @@ class RTPStream(MulticastPacketStream):
                 if "Resource temporarily unavailable" in str(e):
                     self.disconnect()
                     self.okay.set()
-
-            #except (KeyboardInterrupt, SystemExit, ServerConnectionError) as e:
-            #    self.logger.debug(f"{self.server.nickname} RTPStream readline: got signal to end {e}")
-            #    # we were signaled to shutdown so close things down
-            #    self.disconnect()
-            #    self.okay.set()
 
         self.logger.debug(f"{self.server.nickname} RTPStream readline thread ended.")
         return None
@@ -984,12 +944,6 @@ class RTPStream(MulticastPacketStream):
                 if "Resource temporarily unavailable" in str(e):
                     self.disconnect()
                     self.okay.set()
-
-            #except (KeyboardInterrupt, SystemExit, ServerConnectionError) as e:
-            #    self.logger.debug(f"{self.server.nickname} RTPStream read_thread: got signal to end {e}")
-            #    # we were signaled to shutdown so close things down
-            #    self.disconnect()
-            #    self.okay.set()
 
         self.logger.debug(f"{self.server.nickname} RTPStream read_thread ended.")
         return None
@@ -1075,7 +1029,7 @@ class AprsisStream(PacketStream):
 
             else:
                 # Something went wrong with readline()
-                self.logger.debug(f"{self.server.nickname} aprs-connect: got null back from readline.")
+                self.logger.debug(f"{self.server.nickname} aprs-connect: got null back from readline #1.")
                 self.okay.set()
                 return False
 
@@ -1090,7 +1044,7 @@ class AprsisStream(PacketStream):
 
             else:
                 # Something went wrong with readline()
-                self.logger.debug(f"{self.server.nickname} aprs-connect: got null back from readline.")
+                self.logger.debug(f"{self.server.nickname} aprs-connect: got null back from readline #2.")
                 self.okay.set()
                 return False
 
