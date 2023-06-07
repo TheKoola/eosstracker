@@ -952,7 +952,7 @@ def getPredictFile(dbconn = None, flightid = None, launchsite = None, logger = N
 ################################
 # Test function for connecting to the database
 ################################
-def connectToDatabase(dbstring = None, logger = None):
+def connectToDatabase(db_connection_string = None, logger = None):
 
     # if no logger was supplied then we create one
     if logger == None:
@@ -960,7 +960,7 @@ def connectToDatabase(dbstring = None, logger = None):
         logger.setLevel(logging.INFO)
 
     if db_connection_string:
-        dbstring = dbstring
+        dbstring = db_connection_string
     else:
         dbstring = habconfig.dbConnectionString
 
