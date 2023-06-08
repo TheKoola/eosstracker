@@ -2092,7 +2092,6 @@ function getTrackers() {
             getgps(true);
         }, 10);
 
-        console.log("adding to the map");
         baselayer = { "Basic": basic, "OSM Bright": osmbright };
 
         basic.addTo(map);
