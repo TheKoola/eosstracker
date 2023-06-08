@@ -212,7 +212,7 @@ class CredentialSet:
 
     @property
     def loginstring(self)->str:
-        return f"user {self.callsign} {' pass ' + self.passcode if self.passcode else ''} {'vers ' + self.name + ' ' + self.version if self.name else ''}"
+        return f"user {self.callsign} {' pass ' + self.passcode if self.passcode else ' pass -1 '} {'vers ' + self.name + ' ' + self.version if self.name else ''}"
 
 
     def setCallsign(self, callsign: str, passcode: str = '')->None:
