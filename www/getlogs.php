@@ -31,7 +31,7 @@
 
     //header("Content-type: text/plain;");
     header("Content-type: application/json;");
-    $logfile = "/eosstracker/logs/habtracker.log";
+    $logfile = "/eosstracker/logs/start_session.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
     $direwolffile = "/eosstracker/logs/direwolf.out";
     if (is_readable($logfile)) {

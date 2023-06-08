@@ -129,7 +129,7 @@ include $documentroot . '/common/header.php';
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         System Logs 
     </p>
-    <p class="normal-italic" style="margin-bottom: 10px;">Limited to last 30 lines.  <a target="_blank" href="/logs/habtracker.log">Download Full Habtracker Log</a></p>
+    <p class="normal-italic" style="margin-bottom: 10px;">Limited to last 30 lines.  <a target="_blank" href="/logs/start_session.log">Download Full Habtracker Log</a></p>
     <p class="packetdata-header">Stdout</p>
     <pre class="packetdata"><span id="logfile"></span></pre>
     <p class="packetdata-header">Stderr</p>
