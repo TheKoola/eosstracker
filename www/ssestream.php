@@ -41,6 +41,26 @@
         return 0;
     }
 
+    ##################
+    # function to send an event to the client
+    ##################
+    function sendtoclient($ev, $id, $data) {
+
+        // echo this SSE event to the browser session
+        echo "event: " . $ev . "\n";
+        if ($id)
+            echo "id: " . $id . "\n";
+        echo "data: " . $data . "\n\n";
+
+        // flush any output to the browser
+        flush(); 
+    }
+
+
+    ################################
+    # Main code
+    ################################
+
     // start listening for postgresql NOTIFY events
     pg_query($link, "LISTEN new_packet; LISTEN new_position;");
 
@@ -50,6 +70,13 @@
     // counter to increment upon each result sent to the browser
     $inc = 0;
 
+    // keepalive threshold in secs
+    $keepalive_threshold = 20;
+
+    // current timestamp (secs since epoch)
+    $last = time();
+
+    // Loop until the client aborts the connection (ex. closed the page)
     while (!connection_aborted()) {
 
         // The result from our postgresql LISTEN command.
@@ -65,19 +92,29 @@
             $payload = $result["payload"];
 
             // Send the SSE event to the browser
-            echo "event: $event\n";
-            echo "id: $inc\n";
-            echo "data: " . $payload . "\n\n";
-
-            // flush any output to the browser
-            flush(); 
+            sendtoclient($event, $inc, $payload);
 
             // Increment our counter
             $inc++;
-        }
 
-        // wait this long before checking for any incoming packets
-        sleep(1); 
+            // update the timestamp
+            $last = time();
+        }
+        else {
+            // check how long it's been since we sent anything to the client
+            $delta = time() - $last;
+            if ($delta > $keepalive_threshold) {
+
+                // if it's been too long, then send a 'keepalive' event to the client
+                sendtoclient("keepalive", Null, "keepalive");
+
+                // update the timestamp
+                $last = time();
+            }
+
+            // wait this long before checking for any incoming packets
+            sleep(1); 
+        }
     }
 
     // done.
