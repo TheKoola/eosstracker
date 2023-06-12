@@ -416,10 +416,10 @@ class PacketStream:
         """
 
         # point at which we no longer add packets to the queue (i.e. these packets are dropped)
-        q_low_watermark = 25
+        q_low_watermark = 100
 
         # point at which we clear the queue.  Presumably because there's no catching up...because the downstream consumers aren't working this queue.
-        q_high_watermark = 50
+        q_high_watermark = 150
 
         # loop through each packet handler
         for ph in self.readhandlers:
@@ -440,10 +440,11 @@ class PacketStream:
 
                             # check the size of the queue to determine if we should add another packet on top.
                             if size < q_low_watermark:
-                                self.logger.debug(f"{self.server.nickname}  placing packet on {qname}:  [{q.qsize()}]  {packetobj=}")
+                                self.logger.debug(f"{self.server.nickname}  placing packet on {qname}:  [{q.qsize()}]  {packetobj}")
                                 q.put(packetobj)  
 
                             elif size > q_high_watermark:
+                                # Above the high_watermark.  Assumed at this point that we can't catch up, so we clear the queue
                                 self.logger.warn(f"{self.server.nickname}  clearing {qname}...over high water mark.  qsize={size}") 
 
                                 # Attempt to clear the queue
@@ -452,12 +453,12 @@ class PacketStream:
                                         q.get(block=False)
                                     except Empty:
                                         continue
-                                    q.task_done()
 
                                 self.logger.warn(f"{self.server.nickname}  {qname} cleared.  qsize={q.qsize()}") 
 
                             else:
-                                self.logger.info(f"{self.server.nickname} putPacketOnQueue.  qsize={size}.  Not adding packet to {qname} over low water mark.")
+                                # queue is > than the low_watermark, but < high_watermark.  We do nothing hopefully giving time for the queue to drain.
+                                self.logger.warn(f"{self.server.nickname}.putPacketOnQueue. qsize={size}. Not added: {packetobj}")
 
                         except (Full) as e:
                             # the queue was full, but we don't care...go check the next packet handle queue.
@@ -467,7 +468,7 @@ class PacketStream:
 
     def send_thread(self)->None:
         """
-        This will read from the incoming queues, sending packets to the socket connection to the until stopped (i.e. the stopevent) or killed
+        This will read from the incoming queues, sending packets to the socket connection until stopped (i.e. the stopevent) or killed
         """
 
         # can't continue without a valid socket
