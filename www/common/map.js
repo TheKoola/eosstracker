@@ -1634,7 +1634,7 @@
     ***********/
 function getTrackers() {
     $.get("gettrackers.php", function(data) {
-        var trackerJson = JSON.parse(data);
+        var trackerJson = data;
         var keys = Object.keys(trackerJson);
         var i; 
         var j;

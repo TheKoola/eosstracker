@@ -123,7 +123,7 @@
     ***********/
 function getTrackers() {
     $.get("getflights.php", function(fdata) {
-        var flightids = JSON.parse(fdata)
+        var flightids = fdata;
         var f;
 
         $.get("getteams.php", function(data) {
@@ -139,7 +139,7 @@ function getTrackers() {
  
 
             $.get("gettrackers.php", function(data) {
-                var trackerJson = JSON.parse(data);
+                var trackerJson = data;
                 var keys = Object.keys(trackerJson);
                 var i; 
                 var j;

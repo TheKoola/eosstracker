@@ -875,7 +875,8 @@
     function initializeDataSelection() {
         // query the backend for a list of active flights
         $.get("getflights.php", function(data) {
-            var flightsJson = JSON.parse(data);
+            //var flightsJson = JSON.parse(data);
+            var flightsJson = data;
 
 	        // blank out the list of flightids for the prediction form
             $("#data_type_selection").html("");

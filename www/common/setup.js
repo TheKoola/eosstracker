@@ -468,8 +468,8 @@
         if (retVal == true)
             $.get("deleteflight.php?flightid=" + flightid, function(data) {
                 getFlights();
-		getPredictions();
-		getTrackers();
+                getPredictions();
+                getTrackers();
                 document.getElementById("newflighterror").innerHTML = "";
                 document.getElementById("addnewbeaconerror").innerHTML = "";
             });
@@ -590,7 +590,7 @@
             }
 
             $.get("getflights.php", function(data) {
-                var flightsJson = JSON.parse(data);
+                var flightsJson = data;
                 var keys = Object.keys(flightsJson);
 
                 //document.getElementById("errors").innerHTML = JSON.stringify(keys);
@@ -860,7 +860,7 @@
             }
 
             $.get("getflights.php", function(data) {
-                var flightsJson = JSON.parse(data);
+                var flightsJson = data;
                 var flights = [];
                 var f;
 
