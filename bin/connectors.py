@@ -262,6 +262,9 @@ class PacketStream:
     def __post_init__(self)->None:
         self.sock = None
 
+        # we save the IP address we're connected to
+        self.peername = None
+
         # setup logging
         self.logger = logging.getLogger(f"{__name__}.{__class__}")
         self.logger.setLevel(logging.INFO)
@@ -303,6 +306,9 @@ class PacketStream:
         if self.sock:
             self.sock.close()
             self.sock = None
+
+        self.peername = None
+
         self.logger.debug(f"{self.server.nickname} disconnected.")
 
 
@@ -316,6 +322,7 @@ class PacketStream:
             self.sock = socket.create_connection((self.server.hostname, self.server.portnum) , timeout = 2)
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             self.sock.setblocking(0)
+            self.peername = self.sock.getpeername()[0]
 
             # clear the internal flag (if set)
             self.okay.clear()
@@ -531,7 +538,7 @@ class PacketStream:
 #                    self.okay.set()
 
         # loop ended.
-        self.logger.info(f"{self.server.nickname}: send_thread now ended.")
+        self.logger.debug(f"{self.server.nickname}: send_thread now ended.")
 
         return None
 
@@ -728,7 +735,7 @@ class PacketStream:
 
                 while online and not self.stopevent.is_set() and not self.okay.is_set():
 
-                    self.logger.info(f"{self.server.nickname} connected to {self.server.hostname}:{self.server.portnum}")
+                    self.logger.info(f"{self.server.nickname} connected to [{self.server.hostname}] {self.peername}:{self.server.portnum}")
                     threadlist = []
 
                     # set our retry count back to 0 since we just connected
@@ -801,6 +808,7 @@ class MulticastPacketStream(PacketStream):
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
             self.sock.setblocking(1)
             self.sock.settimeout(5)
+            self.peername = self.server.hostname
 
             # clear the internal flag (if set)
             self.okay.clear()
@@ -1007,9 +1015,11 @@ class AprsisStream(PacketStream):
         elif self.taptype == 'aprs':
             self.logger.info(f"{self.server.nickname} APRS-IS beaconing disabled for {self.server.hostname}:{self.server.portnum}")
 
-
         # default aprsis filter:  200km around Denver, CO USA
         self.aprsfilter = AprsFilter(['r/39.739281/-104.984894/200']) 
+
+        # this is only used when igating and we're a fixed station (i.e. not mobile), but we set it to None to be sure.
+        self.stationLocation = None
 
         self.logger.debug(f"{self.server.nickname} initial aprs filter string: {self.aprsfilter.filterstring}")
 
@@ -1246,13 +1256,30 @@ class AprsisStream(PacketStream):
         """
         Construct the byte string to send to the APRS-IS server that contains an APRS position packet for this station
         """
-        # get our GPS position
-        gpsposition = self.getPosition()
+
+        # is this a mobile or stationary station?
+        is_mobile = True if self.configuration["mobilestation"] == "true" else False
+
+        # if this is the first time we're trying to transmit AND this is a stationary station, then we save the GPS position and just reuse that
+        # every time we need to transmit/beacon our position.
+        gpsposition = None
+        if not is_mobile:
+            if self.stationLocation:
+                if self.stationLocation["isvalid"]:
+                    gpsposition = self.stationLocation
+
+        # get our GPS position if we don't already have it
+        if not gpsposition:
+            gpsposition = self.getPosition()
 
         # if the gps position isn't valid, then just return
         if not gpsposition["isvalid"]:
             self.logger.warning(f"{self.server.nickname} getPositionPacket.  GPS position was not valid.")
             return None
+
+        # if this is a stationary station, then save this gpsposition as our "location" if we haven't already
+        if not is_mobile and not self.stationLocation:
+            self.stationLocation = gpsposition
 
         # convert the lat/lon to degrees, decimal minutes
         lat_d = int(gpsposition["latitude"])
@@ -1305,7 +1332,6 @@ class AprsisStream(PacketStream):
         info = '/' + timestamp + latitude + symchar_first + longitude + symchar_second 
 
         # if this is a mobile station, then we need to add in course and speed if available
-        is_mobile = True if self.configuration["mobilestation"] == "true" else False
         if is_mobile:
             # get course (degrees) and speed (knots)
             if float(gpsposition["speed_mph"]) >= 1:
