@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2023 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@
         return 0;
     }
 
-    ## query packets from stations from the past 3hrs...
+    ## get any packets from active flights over the past several hours.
     $query = "
         select 
             st_asgeojson(p.*, 'location2d')::jsonb as output  
@@ -53,7 +53,7 @@
             flightmap fm
 
         where
-            p.tm > now() - interval '03:00:00'
+            p.tm > now() - interval '06:00:00'
             and p.raw != ''
             and fm.flightid = f.flightid
             and p.callsign = fm.callsign
@@ -67,14 +67,12 @@
 
     if (!$result) {
         printf("[]");
-        //db_error(sql_last_error());
         sql_close($link);
         return 0;
     }
 
     $numrows = sql_num_rows($result);
 
-    //printf("[ { \"numrows\": \"%d\" }, ", $numrows);
     printf("[");
     $i = 0;
     while ($row = sql_fetch_array($result)) {
@@ -85,17 +83,6 @@
         $i++;
     }
     printf("]");
-    /*if (sql_num_rows($result) > 0) {
-        $data = sql_fetch_all($result);
-        if ($data) 
-            printf ("%s", $data);
-        else
-            printf("[]");
-    }
-    else
-        printf ("[]");
-     */
-
     sql_close($link);
 
 ?>

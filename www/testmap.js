@@ -28,40 +28,159 @@
 ************/
 
 // The map object and default starting location
-var map;
-var starting_location = { "lat": 39.739, "lon": -104.984, "zoom": 7 };
+let map;
+let starting_location = { "lat": 39.739, "lon": -104.984, "zoom": 7 };
 
 // The layercontrol object
-var layercontrol;
+let layercontrol;
 
 // the status message box
-var statusbox;
+let statusbox;
 
 // The catchall stations layer
-var stations;
+let stations;
 
 // The active trackers list
-var trackerslist = {};
+let trackerslist = {};
 
 // The active flight list
-var flightlist = {};
+let flightlist = {};
 
 // my location layer and position source preference
-var mylocation;
-var useGeoLocation = false; // we assume false here unless the user is connected to the EOSS kiosk website (e.g. track.eoss.org)
+let mylocation;
+let useGeoLocation = false; // we assume false here unless the user is connected to the EOSS kiosk website (e.g. track.eoss.org)
 
 // The hostname of the EOSS kiosk system
-var kiosk_hostname = "track.eoss.org";
-//var kiosk_hostname = "linux.local";
+let kiosk_hostname = "track.eoss.org";
+//let kiosk_hostname = "linux.local";
 
 // event source object for incoming packets
-var packetsource;
+let packetsource;
 
 // The list of packets we've heard from the backend.  This is treated like a FIFO list.
-var packetlist = [];
+let packetlist = [];
 
 // age limit in seconds for keeping packets in the packetlist.  i.e. when to "shift" out the first element
-var agelimit = 3600 * 3;
+let agelimit = 3600 * 3;
+
+// global color map for flight paths and the breadcrumbs within them.
+// The global color index (so that each new flight gets a new color set)
+let colorindex = 0;
+let colorMap = {};
+let ascending_colorsets = [
+    { color : 'hotpink', markerColor: 'deeppink'},
+    { color : 'green', markerColor: 'darkgreen'},
+    { color : 'chocolate', markerColor: 'saddlebrown'},
+    { color : 'olivedrab', markerColor: 'darkolivegreen'},
+    { color : 'red', markerColor: 'darkred'},
+    { color : '#00e600',   markerColor: '#009900'}
+];
+let descending_colorsets = [
+    { color : 'cadetblue', markerColor: 'steelblue'},
+    { color : 'darkorchid', markerColor : 'purple'},
+    { color : 'slateblue', markerColor: 'darkslateblue'},
+    { color : 'mediumpurple', markerColor : 'indigo'},
+    { color : 'blue',       markerColor: 'darkblue'},
+    { color : 'royalblue',   markerColor: 'blue'}
+];
+
+function getColorSet(flightname) {
+    return colorMap[flightname];
+}
+
+function initializeColorSet(flightname) {
+    if (!colorMap[flightname]) {
+        colorMap[flightname] = {};
+    }
+
+    if (colorindex > ascending_colorsets.length - 1)
+        colorindex = 0;
+
+    let colors = { "ascending": ascending_colorsets[colorindex], "descending": descending_colorsets[colorindex] };
+    colorMap[flightname] = colors;
+    colorindex += 1;
+
+    return colors;
+};
+
+// helper function to determine if the flight is ascending based on a (altitude) and v (velocity)
+const isAscending = function(a, v) { return (v >= 5 || (v >= 0 && a > 10000) ? true : false); };
+
+// helper function to determine if the flight is descending based on a (altitude) and v (velocity)
+const isDescending = function(a, v) { return (v <= -5 || (v > -5 && v < 0 && a > 10000) ? true : false); };
+
+// helper function to determine if the flight is on the ground based on a (altitude) and v (velocity)
+const isOnGround = function(a, v) { return (v > -5 && v < 5 && a < 10000 ? true : false); };
+
+// Function to copy text from an element to the clipboard 
+function copyToClipboard (elem) {
+    var range = document.createRange();
+    var e = document.getElementById(elem);
+
+    range.selectNode(e);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand("Copy");
+    window.getSelection().removeAllRanges();
+    e.setAttribute("class", "blueToWhite");
+}
+
+// helper function to craft an HTML string with lat/lon coordinates with a "copy to clipboard" clickable icon for a geojson Point object.
+function createCoordsHTML(geojson) {
+    if (!geojson || !geojson.geometry || !geojson.geometry.type || geojson.geometry.type != "Point")
+        return false;
+
+    // construct a random ID the copyToClipboard function can use to identify the coords string.
+    let id = (Math.random() + 1).toString(36).split(".")[1].toUpperCase();
+
+    let html = "<br>Coords: <span id=\"" + id + "-coords\">"
+        + (geojson.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (geojson.geometry.coordinates[0] * 10 / 10).toFixed(4)
+        + "</span>"
+        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">";
+
+    return html;
+}
+
+// helper function to create an HTML string for the speed, bearing, and altitude of a geojson Point object.
+function createSpeedHTML(geojson) {
+    if (!geojson || !geojson.geometry || !geojson.geometry.type || geojson.geometry.type != "Point" || !geojson.properties)
+        return false;
+
+    // Lots to check for a valid speed & bearing result...we don't report speed for a stationary object.
+    // speed_mph is > 0 && < 300
+    // bearing is a number and >= 0
+    // altitude is not 0
+    //
+    // by default we assume that the speed value should not be reported.
+    let speedValid = false;
+    if (geojson.properties.speed_mph && geojson.properties.bearing && geojson.properties.altitude) {
+        if (geojson.properties.speed_mph > 0 && geojson.properties.speed_mph < 300 && geojson.properties.bearing >= 0 && geojson.properties.altitude != 0)
+            speedValid = true;
+    }
+
+    let html = "<font style=\"text-align: left; clear: right; float: left;\">" + (typeof(geojson.properties.altitude) == "undefined" ? "" : (geojson.properties.altitude != 0 && geojson.properties.altitude != "" ? "<br>Alt: " + (geojson.properties.altitude * 10 / 10).toLocaleString() + "ft" : ""));
+    html += (speedValid ? " &nbsp; " + (geojson.properties.speed_mph * 10 / 10).toFixed(0) + " MPH &nbsp; @ " + (geojson.properties.bearing * 10 / 10).toFixed(0) + "&deg;" : "") + "</font>";
+
+    return html;
+}
+
+    // the frequency / heardfrom string
+// help function to create an HTML string with the "heardfrom" and frequency of where this packet came from (i.e. who transmitted it).
+function createHeardfromHTML(geojson) {
+    if (!geojson || !geojson.properties)
+        return false;
+
+    let heardfrom = (typeof(geojson.properties.frequency) == "undefined" ? "" : (geojson.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + (geojson.properties.frequency / 1000000)  + 
+        (geojson.properties.frequency == "ext radio" || geojson.properties.frequency == "TCPIP" ? "" : "MHz") 
+        + (typeof(geojson.properties.heardfrom) == "undefined" ? "" : (geojson.properties.heardfrom != "" ? " via " + geojson.properties.heardfrom : "" )) + "</font>" : "" )); 
+
+    if (typeof(geojson.properties.source) != "undefined") {
+        if (geojson.properties.source != "direwolf" && geojson.properties.source != "ka9q-radio") 
+            heardfrom = "<br><font class=\"pathstyle\">Heard from TCPIP</font>";
+    }
+
+    return heardfrom;
+}
 
 
 /***********
@@ -71,18 +190,15 @@ var agelimit = 3600 * 3;
 *
 * By default it only keeps the latest packet heard for each station.
 ***********/
-AprsStations = L.GeoJSON.extend({
+let AprsStations = L.GeoJSON.extend({
 
     options: {
 
         // This is called for each feature added 
         onEachFeature:  function (feature, layer) {
 
-            // create this layer's popup content
-            updatePopupContent(feature, layer);
-
-            // create this layer's tooltip
-            updateTooltipContent(feature, layer);
+            // create this layer's popup and/or tooltip content
+            updateAprsObject(feature, layer);
 
         }, // onEachFeature
             
@@ -91,20 +207,20 @@ AprsStations = L.GeoJSON.extend({
         pointToLayer: function (feature, latlon) {
 
             // get the filename and rotation for the PNG for this APRS object
-            var file_and_rotation = getFilenameAndRotation(feature);
+            let file_and_rotation = getFilenameAndRotation(feature);
             if (file_and_rotation) {
                     
                 // iconsize
-                var iconsize = 24;
+                let iconsize = 24;
 
                 // icon center
-                var iconsize_center = Math.trunc(iconsize/2);
+                let iconsize_center = Math.trunc(iconsize/2);
              
                 // move the tooltip anchor location down just a little
-                var tipanchor = iconsize_center + 10;
+                let tipanchor = iconsize_center + 10;
 
                 // new icon for this object
-                var myIcon = L.icon({
+                let myIcon = L.icon({
                     iconUrl: file_and_rotation.filename,
                     iconSize: [iconsize, iconsize],
                     iconAnchor: [iconsize_center, iconsize_center],
@@ -117,7 +233,7 @@ AprsStations = L.GeoJSON.extend({
             }
 
             // What to do with a point that doesn't have a symbol?  Just return a dumb circle.
-            return L.circleMarker(latlon, { radius: 8, riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
+            return L.circleMarker(latlon, { radius: 3, riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
         }, // pointToLayer
         
@@ -129,13 +245,13 @@ AprsStations = L.GeoJSON.extend({
             if (!newjson || !layer)
                 return null;
 
-            console.log({"w": "updating data", "callsign": newjson.properties.callsign, "tm": newjson.properties.tm, "heardfrom": newjson.properties.heardfrom, "f": newjson});
+            //console.log({"w": "updating data", "callsign": newjson.properties.callsign, "tm": newjson.properties.tm, "heardfrom": newjson.properties.heardfrom, "f": newjson});
 
             // The incoming geometry type
-            var type = newjson.geometry.type;
+            let type = newjson.geometry.type;
 
             // The incoming coordinates
-            var coordinates = newjson.geometry.coordinates;
+            let coordinates = newjson.geometry.coordinates;
 
             // change the coordinates for this layer (so it moves on the map)
             switch (type) {
@@ -155,10 +271,7 @@ AprsStations = L.GeoJSON.extend({
             }
 
             // Update the popup content
-            updatePopupContent(newjson, layer);
-
-            // Update the tooltip content
-            updateTooltipContent(newjson, layer);
+            updateAprsObject(newjson, layer);
 
             // Update the icon for this object
             updateIcon(newjson, layer);
@@ -171,9 +284,9 @@ AprsStations = L.GeoJSON.extend({
         filter:  function(geojson) {
 
             // Determine what type of station this is
-            var t = isTracker(geojson);
-            var f = isFlight(geojson);
-            var l = (geojson.properties.callsign && geojson.properties.callsign == "My Location" ? true : false);
+            let t = isTracker(geojson);
+            let f = isFlight(geojson);
+            let l = (geojson.properties.callsign && geojson.properties.callsign == "My Location" ? true : false);
 
             // Check this callsign against the flightlist and trackerlist and "My Location"
             if (t || f || l)
@@ -181,35 +294,73 @@ AprsStations = L.GeoJSON.extend({
 
             // by default return false.
             return false;
-        }
+        },
+
+
     }, // options
     
+    // Override the parent initialize function so we can set the "name" and options for this class
+    initialize: function(name, options) {
+        L.GeoJSON.prototype.initialize.call(this);
+        this.name = name;
+        L.setOptions(this, options);
+    },
 
     // override the parent AddData function so we can check if a feature has already been added to this layer group.
     addData: function(geojson) {
 
-        // normalize the incoming geojson, just in case
-        var f = L.GeoJSON.asFeature(geojson);
+        if (!geojson)
+            return this;
+
+        // what type of feature is this?
+        let isFeature = geojson.type && geojson.type == "Feature";
+        let isFeatureCollection = geojson.type && geojson.type == "FeatureCollection";
+
+        // if this geosjon isn't a feature or a featurecollection then eject.
+        if (!isFeature && !isFeatureCollection)
+            return this;
+
+        // if this is a feature collection, then add each feature, in turn, to this layer.
+        if (isFeatureCollection && geojson.features) {
+            for (feature in geojson.features) 
+                this.addData(geojson.features[feature]);
+            return this;
+        }
+
+        //
+        //
+        // we're handling an individual feature if we're at this point.
+        //
+        //
 
         // must be properly formed
-        if (!f.properties || !f.properties.callsign || !f.geometry || !f.geometry.type)
+        if (!geojson.properties || !geojson.properties.callsign) {
+            //console.log(this.name + ": no callsign: ", geojson);
             return this;
+        }
 
+        if (!geojson.geometry || !geojson.geometry.type) {
+            //console.log(this.name + " [" + geojson.properties.callsign + "]: no geom: " + geojson.properties.raw);
+            return this;
+        }
 
         // check if this incoming geojson passes our filter
-        if (this.options.filter && !this.options.filter(geojson)) 
+        if (this.options.filter && !this.options.filter(geojson)) {
+            //console.log(this.name + " [" + geojson.properties.callsign + "]: filtered out: " + geojson.properties.raw);
             return this;
+        }
 
+        //console.log(this.name + " [" + geojson.properties.callsign + ", " + geojson.properties.tm + "]: adding packet: " + (geojson.properties.raw ? geojson.properties.raw : JSON.stringify(geojson.properties)));
 
         // Try and determine who we heard this packet from
-        var heardfrom = getPacketSource(f);
+        let heardfrom = getPacketSource(geojson);
         if (heardfrom) {
-            f.properties.heardfrom = heardfrom;
+            geojson.properties.heardfrom = heardfrom;
         }
 
         // check if this feature is already in our list
-        var existing_f = this.getFeature(f.properties.callsign);
-        var oldlayer = this.getFeatureLayer(f.properties.callsign);
+        let existing_f = this.getFeature(geojson.properties.callsign);
+        let oldlayer = this.getFeatureLayer(geojson.properties.callsign);
 
         // determine if this is new data or updates to a station we're already tracking
         if (existing_f) {
@@ -218,36 +369,42 @@ AprsStations = L.GeoJSON.extend({
             if (!this.isduplicate(geojson, existing_f)) {
 
                 // not duplicate...so we update the geojson feature for this APRS object
-                this._features[existing_f.properties.callsign].feature = geojson;
+                this._features[existing_f.properties.callsign].feature = structuredClone(geojson);
 
                 // now update this feature's popup, tooltip, etc., etc.
-                return this.options.updateFeature(f, oldlayer);
+                return this.options.updateFeature(geojson, oldlayer);
             }
-            else 
+            else  
                 return this;
         }
+
+        // this is a new object
         else {
-            console.log({"w": "new data", "callsign": f.properties.callsign, "tm": f.properties.tm, "heardfrom": f.properties.heardfrom, "f": f});
 
             // this is new data so create a layer from the geojson.  This will automatically call the pointToLayer function within our options.
-            layer = L.GeoJSON.geometryToLayer(f, this.options);
+            let layer = L.GeoJSON.geometryToLayer(geojson, this.options);
 
             // if unable to create a layer from the geojson, then return.
             if (!layer) {
-                return;
+                return this;
             }
 
             // Add this new feature to our list.
-            this.addFeature(f, layer);
+            this.addFeature(geojson, layer);
+
+            // style vector layers
+            if (layer.setStyle) 
+                layer.setStyle(this.options.style(geojson));
 
             // call the onEachFeature function for styling, etc.
-            this.options.onEachFeature(f, layer);
+            this.options.onEachFeature(geojson, layer);
 
             // add this new layer 
             return this.addLayer(layer);
         }
 
     }, // addData
+
 
     // compare geojson features.  returns true if the newjson represents duplicate data.
     isduplicate: function(newjson, oldjson) {
@@ -256,18 +413,22 @@ AprsStations = L.GeoJSON.extend({
         if (!newjson || !oldjson) 
             return false;
 
-        // timestamps from new and old JSON features
-        var olddate = new Date(oldjson.properties.tm);
-        var newdate = new Date(newjson.properties.tm);
-        var timediff_secs = (newdate - olddate);
+        // for point objects (i.e. APRS objects)
+        if (newjson.geometry && newjson.geometry.type && newjson.geometry.type == "Point") {
+            // timestamps from new and old JSON features
+            let olddate = new Date(oldjson.properties.tm);
+            let newdate = new Date(newjson.properties.tm);
+            let timediff_secs = (newdate - olddate);
 
-        // if this new data was heard < 10secs from the prior packet AND the "heardfrom" station was not "direct", and the MD5 hashs between old & new are identical..
-        // ...then we assume this is a duplicate packet and return.
-        if (timediff_secs < 10000 && newjson.properties.heardfrom != "direct" && newjson.properties.hash == oldjson.properties.hash) {
-            console.log({"w": "duplicate", "callsign": newjson.properties.callsign, "delta": timediff_secs, "heardfrom": newjson.properties.heardfrom, "f" : newjson});
-            return true;
+            // if this new data was heard < 10secs from the prior packet AND the "heardfrom" station was not "direct" AND the MD5 hashs between old & new are identical...
+            // ...then we assume this is a duplicate packet and return.
+            if (timediff_secs < 10000 && newjson.properties.heardfrom != "direct" && newjson.properties.hash == oldjson.properties.hash) 
+                return true;
         }
+
+        // for everything else we just return false as this appears to be new data
         return false;
+
     }, // isduplicate
 
     // The list of features we're maintaining
@@ -296,6 +457,446 @@ function aprsStations(name, options) {
 
 
 
+/*******************************************************
+* FlightLayer class
+*
+* An extension of the GeoJSON class so we have a way to track which APRS stations are on the map, etc..
+*
+* By default it only keeps the latest packet heard for each station.
+********************************************************/
+let FlightLayer = AprsStations.extend({
+
+    options: {
+        // This will filter out geojson objects we don't want added.  It should return true/false.
+        // By default, we're only interested in tracker, flight, or "My Location" packets.  All other stations we want to ignore.
+        filter:  function(geojson) {
+
+            // Determine what type of station this is
+            let t = isTracker(geojson);
+            let f = isFlight(geojson);
+            let b = isBreadcrumb(geojson);
+            let p = isFlightPath(geojson);
+            let l = (geojson.properties.callsign && geojson.properties.callsign == "My Location" ? true : false);
+
+            // Check this callsign against the flightlist and trackerlist and "My Location"
+            if (t || f || l || b || p)
+                return true;
+
+            // by default return false.
+            return false;
+        },
+
+        // style function 
+        style:  function(geojson) {
+
+            if (!geojson || !geojson.properties)
+                return {};
+
+            // default style (if all else fails, this is the color of vector layers)
+            let default_color = "gray";
+
+            // get the color map
+            let colormap = (getColorSet(geojson.properties.flightid) ? getColorSet(geojson.properties.flightid) : 
+                { 
+                    "ascending": { color : 'blue', markerColor: 'darkblue'},
+                    "descending":{ color : 'gray', markerColor: 'darkgray'} 
+                }
+            );
+
+            // the style
+            style = { 
+                "color": (geojson.properties.ascending ? colormap.ascending.color : (geojson.properties.descending ? colormap.descending.color : default_color)),
+                "fillColor": (geojson.properties.ascending ? colormap.ascending.color : (geojson.properties.descending ? colormap.descending.color : default_color)),
+                "weight": 2
+            };
+
+            return style;
+        }
+    },
+
+    // for checking duplicate packets for an indivdual beacon
+    addToBeaconList: function(geojson) {
+
+        // just in case
+        if (!geojson || !geojson.properties || !geojson.properties.callsign)
+            return false;
+
+        // which beacon list?
+        let beacon = this.options.beacons[geojson.properties.callsign];
+        if (!beacon)
+            return false;
+
+        // The packetlist for this beacon
+        let beaconlist = beacon.packetlist;
+
+        // Get the last 5 packets from this beacon
+        let lastfive = beaconlist.slice(Math.max(beaconlist.length - 5, 0)).reverse();
+
+        // check the last several packets in case this is duplicate data
+        for (p in lastfive) {
+            if (this.isduplicate(lastfive[p], geojson))
+                return false;
+        }
+
+        // add this geojson (i.e. packet) to the list of position packets for this beacon
+        beaconlist.push(geojson);
+
+        return true;
+    },
+
+    // used to compute x,y,z physics for a given geojson feature (i.e. an APRS packet from an individual beacon), and add those results to the overall physics array for this flight.
+    computePhysics:  function(geojson) {
+        
+        // just in case
+        if (!geojson || !geojson.properties || !geojson.properties.callsign || !geojson.geometry || !geojson.geometry.type || geojson.geometry.type != "Point" || !geojson.geometry.coordinates) 
+            return false;
+
+        // which beacon list?
+        let beacon = this.options.beacons[geojson.properties.callsign];
+        if (!beacon)
+            return false;
+
+        // get time/date from a packet
+        const gettime = function(p) {
+            if (!p || !p.properties)
+                return false;
+
+            if (p.properties.raw)
+                return getPacketTimestamp(p);
+            else if (p.properties.tm)
+                return new Date(p.properties.tm);
+            else
+                return false;
+        };
+
+        // default values
+        let x=0, xv=0, xa=0;
+        let y=0, yv=0, ya=0;
+        let z=0, zv=0, za=0;
+        let timediff_secs=0;
+
+        // get the last data point from this beacon and the time delta
+        let lastpoint = beacon.physics[beacon.physics.length - 1];
+        let thedate = gettime(geojson);
+        if (lastpoint) {
+            let olddate = lastpoint.tm;
+            if (thedate) 
+                timediff_secs = (thedate - olddate) / 1000;
+
+            // check if we've encountered burst/cutdown
+            if (!lastpoint.burst && !this.burst) {
+                let burst = (geojson.properties.altitude ? (geojson.properties.altitude * 1.0 < lastpoint.z ? true : false) : false);
+                if (burst) {
+                    lastpoint.burst = burst;
+                    this.burst = lastpoint.z;
+
+                    if (!this.options.descending_linestring)
+                        this.options.descending_linestring = [[lastpoint.x, lastpoint.y]];
+                    else
+                        this.options.descending_linestring.unshift([lastpoint.x, lastpoint.y]);
+
+                }
+            }
+                
+
+        }
+        
+
+        // x-dimension (longitude).  Units are in degrees and /sec
+        x = (geojson.geometry.coordinates[0] ? geojson.geometry.coordinates[0] * 1.0 : 0);
+        xv = (timediff_secs ? (x - lastpoint.x) / timediff_secs : 0);
+        xa = (timediff_secs ? (xv - lastpoint.x_velocity) / timediff_secs : 0);
+
+        // y-dimension (latitude).  Units are in degrees and /sec
+        y = (geojson.geometry.coordinates[1] ? geojson.geometry.coordinates[1] * 1.0 : 0);
+        yv = (timediff_secs ? (y - lastpoint.y) / timediff_secs : 0);
+        ya = (timediff_secs ? (yv - lastpoint.y_velocity) / timediff_secs : 0);
+
+        // z-dimension (altitude).  Units are in ft and sec.
+        z = (geojson.properties.altitude ? geojson.properties.altitude * 1.0 : 0);
+        zv = (timediff_secs ? (z - lastpoint.z) / timediff_secs : 0);
+        za = (timediff_secs ? (zv - lastpoint.z_velocity) / timediff_secs : 0);
+
+        let newpoint = {
+            "tm" : thedate,
+            "id": (this.options.flightphysics ? this.options.flightphysics.length : 0),
+            "source": geojson.properties.callsign, 
+            "delta": timediff_secs,
+            "x": x,
+            "x_velocity": xv,
+            "x_acceleration": xa,
+            "y": y,
+            "y_velocity": yv,
+            "y_acceleration": ya,
+            "z": z,
+            "z_velocity": zv,
+            "z_acceleration": za,
+            "burst": false,
+
+            // include these values as it might be useful for presentation purposes
+            "speed_mph": geojson.properties.speed_mph,
+            "altitude": geojson.properties.altitude,
+            "bearing": geojson.properties.bearing
+        };
+
+        // If the physics array doesn't exist, then create a blank one.   This is used to hold various physical telemetry from the beacon
+        if (!beacon.physics) 
+            beacon["physics"] = [];
+
+        // Add this data point to the individual array for this beacon and sort it
+        beacon.physics.push(newpoint);
+        beacon.physics.sort(function(a, b) { return a.tm - b.tm; });
+
+        // if the overall physics array for the flight doesn't exist, then create it.
+        if (!this.options.flightphysics)
+            this.options["flightphysics"] = [];
+
+        // save this point to the array of coordinates for the ascending geojson linestring
+        if (isAscending(newpoint.z, newpoint.z_velocity)) {
+            if (!this.options.ascending_linestring)
+                this.options["ascending_linestring"] = [];
+            this.options.ascending_linestring.push([newpoint.x, newpoint.y]);
+        }
+
+        // save this point to the array of coordinates for the descending geojson linestring
+        else if (isDescending(newpoint.z, newpoint.z_velocity)) {
+            if (!this.options.descending_linestring) 
+                    this.options["descending_linestring"] = [];
+            this.options.descending_linestring.push([newpoint.x, newpoint.y]);
+        }
+
+        // we're assuming the flight is on the ground.
+        //else
+        
+        // Add this data point to the overall array for this flight and sort it
+        this.options.flightphysics.push(newpoint);
+        this.options.flightphysics.sort(function(a, b) { return a.tm - b.tm; });
+
+        return newpoint;
+    },
+
+    // this will reform some of the elements of this feature to so that a single "flight" feature is tracked (on the map).
+    reformGeoJson: function(geojson) {
+
+        // just in case
+        if (!geojson || !geojson.properties)
+            return false;
+
+        // check if this callsign is in our beacon list.  If it is, then we rename the callsign for this feature to be the flight name.
+        let isbeacon = this.options.beacons[geojson.properties.callsign];
+        let newjson = structuredClone(geojson);
+        if (isbeacon) {
+            newjson.properties.callsign = isbeacon.flightid;
+            newjson.properties.flightid = isbeacon.flightid;
+        }
+
+        return newjson;
+    },
+
+
+    // override the parent AddData function so we can handle packets from beacons on this flight
+    addData: function(geojson) {
+
+        // call underlying method to get this feature added to this layer.
+        let layer = AprsStations.prototype.addData.call(this, this.reformGeoJson(geojson));
+
+        // add this packet to the list for each beacon.  If successful, then compute the physics for this most recent packet.
+        if (layer && this.addToBeaconList(geojson)) {
+
+            // update the physics lists for beacons and the flight overall.  
+            let latestpoint = this.computePhysics(geojson); 
+
+            // get the list of paths, breadcrumbs, and other synthetic objects for this flight and add them to this layer.
+            AprsStations.prototype.addData.call(this, this.updatePaths(latestpoint));
+        }
+
+        return layer;
+    }, // addData
+    
+    // function to create the geojson that represents the paths a flight has taken (ex. ascent, descent).  It accepts an array of "physics point" objects that represent 
+    // the x,y,z location the flight has taken.
+    updatePaths: function(latestpoint) {
+
+        // sanity check (we check this because we only want to go to the trouble of updating the path IF the path has actually changed)
+        if (!latestpoint)
+            return false;
+
+        // helper function to create geojson feature for a "path"
+        const createPathFeature = function(fid, name, coords) {
+            if (!coords || coords.length == 0)
+                return false;
+
+            return {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": (coords ? coords : [])
+                },
+                "properties": {
+                    "flightid": fid,
+                    "tm": new Date(Date.now()),
+                    "callsign":  fid + "_" + name + "_path",
+                    "ascending": (name == "ascent" ? true : false),
+                    "descending": (name == "descent" ? true : false),
+                    "objecttype": name + "path"
+                }
+            };
+        };
+
+        // helper function to create the geojson point feature that serves as the breadcrumb within the flight path (on the map)
+        const createBreadcrumb = function(fid, physicspoint) {
+            if (!physicspoint)
+                return false;
+
+            return {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [physicspoint.x, physicspoint.y]
+                },
+                "properties": {
+                    "flightid": fid,
+                    "tm": physicspoint.tm,
+                    "point": physicspoint,
+                    "callsign":  fid + "_" + physicspoint.id + "_breadcrumb",
+                    "ascending": isAscending(physicspoint.z, physicspoint.z_velocity),
+                    "descending": isDescending(physicspoint.z, physicspoint.z_velocity),
+                    "objecttype": name + "breadcrumb",
+                    "speed_mph": physicspoint.speed_mph,
+                    "altitude": physicspoint.altitude,
+                    "bearing": physicspoint.bearing
+                }
+            };
+        };
+
+
+        // helper function to create a geojson feature collection from an array of features
+        const createFeatureCollection = function(features) {
+            return {
+                "type": "FeatureCollection",
+                "features": (features ? features : [])
+            };
+        };
+
+        let features = [];
+        let ascentFeature = createPathFeature(this.name, "ascent", this.options.ascending_linestring);
+        let descentFeature = createPathFeature(this.name, "descent", this.options.descending_linestring);
+        if (ascentFeature)
+            features.push(ascentFeature);
+        if (descentFeature)
+            features.push(descentFeature);
+
+        // breadcrumbs
+        for (i in this.options.flightphysics) {
+            let point = this.options.flightphysics[i];
+            if (point.burst) {
+                // create burst feature
+            }
+            else
+                features.push(createBreadcrumb(this.name, point));
+        }
+
+        if (features.length > 0)
+            return createFeatureCollection(features);
+        else
+            return false;
+        
+    } // updatePaths
+});
+
+
+// This runs immediately after the base class initialize function.
+FlightLayer.addInitHook(function() {
+
+    // setup packet buckets for each beacon on this flight
+    let beacons = this.options.beacons;
+    let b;
+    for (b in beacons) {
+        beacons[b]["packetlist"] = [];
+
+        // store individual beacon telemetry here (ex. timestamp, altitude, velocity, acceleration, etc.)
+        beacons[b]["physics"] = [];
+    }
+
+    // store overall flight telemetry data here (ex. timestamp, altitude, velocity, acceleration, etc.)
+    this.options["flightphysics"] = [];
+
+    // set this flight's color set for ascent, descent, etc. paths and breadcrumbs
+    initializeColorSet(this.name);
+
+    // burst has yet to be encountered.
+    this.burst;
+
+});
+
+
+// FlightLayer factory function
+function flightLayer(name, options) {
+    return new FlightLayer(name, options);
+}
+
+
+
+
+// take a raw APRS packet and extract the timestamp if present
+function getPacketTimestamp(packet) {
+
+    if (!packet || !packet.properties || !packet.properties.raw) 
+        return null;
+
+    // example position packet:  KC0D-14>APZEOS,EOSS,WIDE2-1,qAO,N0NDM-6:/122130h4013.60N/10404.68WO000/000/A=004553 203T8619P 'EOSS Balloon'
+    // example object packet: N2XGL-6>APRARX,TCPIP*,qAC,T2SJC:;RSONDE-CR*012152h4....
+
+    // Split off the information part of the packet
+    let raw = packet.properties.raw;
+    let info = raw.split(":").slice(1).join();
+    let datetime = null;
+    if (info) {
+
+
+        // position packets with a timestamp (always in UTC time)
+        if (info[0] == "/") {
+            let h_char = info.search("h");
+            if (h_char) {
+                let timestring = info.substring(1, h_char).replace(/(.{2})/g,"$1:").split(":");
+
+                // current datetime
+                datetime = new Date(Date.now());
+
+                // offset from UTC/GMT/zulu
+                let offset = datetime.getHours() - datetime.getUTCHours(); 
+
+                datetime.setHours(timestring[0] * 1.0 + offset);
+                datetime.setMinutes(timestring[1] * 1.0);
+                datetime.setSeconds(timestring[2] * 1.0);
+                datetime.setMilliseconds(0);
+            }
+        }
+
+        // object packets with a timestamp (always in UTC time)
+        else if (info[0] == ";") {
+            let star_char = info.search("\\*");
+            let h_char = info.search("h");
+            if (h_char) {
+                let timestring = info.substring(star_char + 1, h_char).replace(/(.{2})/g,"$1:").split(":");
+
+                // current datetime
+                datetime = new Date(Date.now());
+
+                // offset from UTC/GMT/zulu
+                let offset = datetime.getHours() - datetime.getUTCHours(); 
+
+                datetime.setHours(timestring[0] * 1.0 + offset);
+                datetime.setMinutes(timestring[1] * 1.0);
+                datetime.setSeconds(timestring[2] * 1.0);
+                datetime.setMilliseconds(0);
+            }
+        }
+    }
+
+    return datetime;
+}
+
 // this will determine the PNG filename that represents this APRS symbol and it's correct rotation (to reflect its current bearing).
 function getFilenameAndRotation(geojson) {
 
@@ -303,10 +904,10 @@ function getFilenameAndRotation(geojson) {
     if (geojson.properties.symbol) {
 
         // Determine the file path to the PNG icon that represents this symbol
-        var filename = null;
+        let filename = null;
 
         // by default we don't rotate the icon
-        var rotation = 0;
+        let rotation = 0;
 
         // check the symbol and determine the correct PNG filename that represents this APRS symbol
         if (geojson.properties.symbol.startsWith('\\') || geojson.properties.symbol.startsWith('\/') || geojson.properties.symbol.startsWith('1x')) 
@@ -316,7 +917,7 @@ function getFilenameAndRotation(geojson) {
 
         // Determine if a bearing was provided ...AND... this symbol is one that we "should" rotate (ex. it's a vehicle, etc.)
         if (typeof(geojson.properties.bearing) != "undefined" && typeof(symbolRotation[geojson.properties.symbol.charAt(1)]) != "undefined") {
-            var clear_to_rotate = false;
+            let clear_to_rotate = false;
 
             // Is this is an alternate APRS symbol?
             if (geojson.properties.symbol.charAt(0) == "\\" || geojson.properties.symbol.match(/^[0-9a-zA-Z]/)) {
@@ -359,24 +960,24 @@ function updateIcon(geojson, layer) {
         return null;
 
     // the callsign of the existing feature
-    var callsign = geojson.properties.callsign;
+    let callsign = geojson.properties.callsign;
 
     // An iconsize of 24px is about optimal.
-    var iconsize = 24;
+    let iconsize = 24;
 
     // determine the icon center
-    var iconsize_center = Math.trunc(iconsize/2);
+    let iconsize_center = Math.trunc(iconsize/2);
 
     // Place the anchor point for the tooltip just a smidge lower, vertically, than center.  (i.e. the label underneath the icon)
-    var tipanchor = iconsize_center + 10;
+    let tipanchor = iconsize_center + 10;
 
     // get the appropriate filename for the PNG and any appropriate rotation
-    var file_and_rotation = getFilenameAndRotation(geojson);
+    let file_and_rotation = getFilenameAndRotation(geojson);
 
     // Create a new icon (we do this because the APRS station might have changed it's symbol)
     // ...but only if there is a valid filename/symbol for this station.  Otherwise, we don't create a custom icon for this layer.
     if (file_and_rotation) {
-        var myIcon = L.icon({
+        let myIcon = L.icon({
             iconUrl: file_and_rotation.filename,
             iconSize: [iconsize, iconsize],
             iconAnchor: [iconsize_center, iconsize_center], 
@@ -397,9 +998,9 @@ function updateIcon(geojson, layer) {
 } // updateIcon
 
 
-
-// this will update/create a feature's popup content with the newly supplied geojson
-function updatePopupContent(geojson, layer) {
+// This is the primary function for creating/updating an APRS objects's popup, label (aka tooltip).  It will call various "helper" functions to create HTML
+// content from a geojson feature's properties based on the type of APRS object (ex. balloon, vehicle, breadcrumb, etc.).
+function updateAprsObject(geojson, layer) {
 
     // sanity check...
     if (!geojson || !layer)
@@ -410,91 +1011,194 @@ function updatePopupContent(geojson, layer) {
         return null;
 
     // the callsign of the existing feature
-    var callsign = geojson.properties.callsign;
+    let callsign = geojson.properties.callsign;
 
-    // we only want to update the popup content for POINT objects.
+    // we only want to update the popup and tooltip content for POINT objects.
     if (geojson.geometry.type && geojson.geometry.type == "Point") {
-        var mapcenter = map.getCenter();
-        var mapzoom = map.getZoom();
 
+        // helper function to update an existing or bind a new popup to this layer
+        const popup = function(content, l) {
+            let existing = l.getPopup();
+            if (existing)
+                l.setPopupContent(content, { className: 'myPopupStyle' });
+            else 
+                l.bindPopup(content, {className:  'myPopupStyle'} );
+            return l;
+        };
 
-        //lots to check for a valid speed & bearing figure...we don't report speed for a stationary object.
-        // speed_mph is > 0 && < 300
-        // bearing is a number and >= 0
-        // altitude is not 0
-        //
-        // by default we assume that the speed value should not be reported.
-        var speedValid = false;
-        if (geojson.properties.speed_mph && geojson.properties.bearing && geojson.properties.altitude) {
-            if (geojson.properties.speed_mph > 0 && geojson.properties.speed_mph < 300 && geojson.properties.bearing >= 0 && geojson.properties.altitude != 0)
-                speedValid = true;
+        // helper function to update an existing or create a new tooltip for this layer (i.e. label underneath object)
+        const tooltip = function(label, l) {
+            let tooltip = l.getTooltip();
+            if (tooltip) 
+                l.setTooltipContent(label);
+            else
+                l.bindTooltip(label, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9 }).openTooltip();
+            return l;
         }
 
-        // the frequency / heardfrom string
-        var default_heardfrom = (typeof(geojson.properties.frequency) == "undefined" ? "" : (geojson.properties.frequency != "" ? "<br><font class=\"pathstyle\">Heard on: " + (geojson.properties.frequency / 1000000)  + (geojson.properties.frequency == "ext radio" || geojson.properties.frequency == "TCPIP" ? "" : "MHz") + (typeof(geojson.properties.heardfrom) == "undefined" ? "" : (geojson.properties.heardfrom != "" ? " via " + geojson.properties.heardfrom : "" )) + "</font>" : "" )); 
-        var heardfrom = default_heardfrom;
-        if (typeof(geojson.properties.source) != "undefined") {
-            if (geojson.properties.source != "direwolf") 
-                heardfrom = "<br><font class=\"pathstyle\">Heard from TCPIP</font>";
+
+
+        // check what sort of object this is and call the appropriate content generator
+        if (isFlight(geojson)) {
+            popup(stationPopup(geojson), layer);
+            tooltip(stationTooltip(geojson), layer);
         }
-
-        // The followme link
-        html = "<font style=\"float:left; margin:0; padding:0;\"><a target=\"_blank\" href=\"testmap.php" +
-            "?followfeatureid=" + callsign +
-            "&latitude=" + geojson.geometry.coordinates[1] +
-            "&longitude=" + geojson.geometry.coordinates[0] +
-            "&zoom=" + mapzoom +
-            "&showallstations=1\">" +
-            "<strong>" + callsign + "</strong></a></font>";
-        // The time
-        html = html + (typeof(geojson.properties.tm) == "undefined" ? "" : (geojson.properties.tm != "" ? "<font style=\"float:right; margin:0; padding:0;\">" + geojson.properties.tm.split('T')[1].split('.')[0].split("-")[0] + "</font>" : "")) +
-
-        // The comment
-        (typeof(geojson.properties.comment) == "undefined" ? "" : (geojson.properties.comment != "" ? "<br><font class=\"commentstyle\">" + geojson.properties.comment + "</font>" : "")) +
-
-        // the speed, bearing, & altitude
-        (typeof(geojson.properties.altitude) == "undefined" ? "" : (geojson.properties.altitude != 0 && geojson.properties.altitude != "" ? "<br>Alt: " + (geojson.properties.altitude * 10 / 10).toLocaleString() + "ft" : "")) +
-        (speedValid ? " &nbsp; " + (geojson.properties.speed_mph * 10 / 10).toFixed(0) + " MPH &nbsp; @ " + (geojson.properties.bearing * 10 / 10).toFixed(0) + "&deg;" : "") + 
-
-        // the frequency and where packet was heard from
-        heardfrom + 
-
-        // The lat, lon coordinates along with cut/paste icon
-        (typeof(geojson.geometry.coordinates) == "undefined" ? "" :
-        "<br>Coords: <span id=\"" + callsign + "-coords\">"
-        + (geojson.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (geojson.geometry.coordinates[0] * 10 / 10).toFixed(4)
-        + "</span>"
-        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + callsign + "-coords')\">" );
-
-
-
-        // is there already a popup created for this layer?
-        var popup = layer.getPopup();
-        if (popup) {
-
-            // Update the popup content
-            layer.setPopupContent(html, { className: 'myPopupStyle' });
+        else if (isTracker(geojson)) {
+            popup(stationPopup(geojson), layer);
+            tooltip(stationTooltip(geojson), layer);
+        }
+        else if (isBreadcrumb(geojson)) {
+            popup(breadcrumbPopup(geojson), layer);
+        }
+        else if (isMyLocation(geojson)) {
+            popup(stationPopup(geojson), layer);
         }
         else {
-
-            // no popup yet exists for this layer so we create one and bind it to the layer. 
-            layer.bindPopup(html, {className:  'myPopupStyle'} );
+            // everything else
+            popup(stationPopup(geojson), layer);
+            tooltip(stationTooltip(geojson), layer);
         }
-
-        return layer;
     }
-} // updatePopupContent
+
+    // otherwise return nothing
+    return layer;
+
+} // updateAprsObject
 
 
-// This will update/create the tooltip (ex. label underneath the marker on the map) with the supplied geojson
-function updateTooltipContent(geojson, layer) {
+// create the html popup content for breadcrumbs within a flight's path.
+function breadcrumbPopup(geojson) {
 
-    // sanity check...
-    if (!geojson || !layer)
-        return null;
+    if (!geojson || !geojson.properties)
+        return false;
 
     // the callsign of the existing feature
-    var callsign = geojson.properties.callsign;
+    let callsign = geojson.properties.callsign;
+
+
+    // example json of a breadcrumb
+    //{
+    //    "type": "Feature",
+    //    "geometry": {
+    //    "type": "Point",
+    //    "coordinates": [physicspoint.x, physicspoint.y]
+    //},
+    //    "properties": {
+    //    "flightid": fid,
+    //    "tm": physicspoint.tm,
+    //    "point": physicspoint,
+    //    "callsign":  fid + "_" + physicspoint.id + "_breadcrumb",
+    //    "ascending": isAscending(physicspoint.z, physicspoint.z_velocity),
+    //    "descending": isDescending(physicspoint.z, physicspoint.z_velocity),
+    //    "objecttype": name + "breadcrumb"
+    //}
+
+
+    // Example of json from a physicspoint
+    //{
+    //    "tm" : packettime,
+    //    "id": (this.options.flightphysics ? this.options.flightphysics.length : 0),
+    //    "source": geojson.properties.callsign, 
+    //    "delta": timediff_secs,
+    //    "x": x,
+    //    "x_velocity": xv,
+    //    "x_acceleration": xa,
+    //    "y": y,
+    //    "y_velocity": yv,
+    //    "y_acceleration": ya,
+    //    "z": z,
+    //    "z_velocity": zv,
+    //    "z_acceleration": za
+    //}
+    
+    // the flight name
+    let fid = (typeof(geojson.properties.flightid) != "undefined" ? geojson.properties.flightid : "breadcrumb");
+
+    // The time
+    let thetime = new Date(geojson.properties.tm);
+    let timestring;
+    if (thetime) 
+        // if we're able to decode the time string into an actual Date object then construct a 24hr time representation.
+        timestring = thetime.toLocaleTimeString("en-us", {hour12: false});
+
+
+    // The HTML string for the popup content.
+    let html = "<font style=\"float:left; margin:0; padding:0;\"><strong>" + fid + "</strong></font>";
+
+    // build the rest of the HTML string
+    html += (timestring ? "<font style=\"float:right; margin:0; padding:0;\">" + timestring + "</font>" : "");
+
+    // the speed, bearing, altitude
+    html += createSpeedHTML(geojson);
+
+    // vertical rate (ft/min)
+    let vrate = Math.round(geojson.properties.point.z_velocity * 60);
+    html += "<br>Vert Rate: " + vrate.toLocaleString() + " ft/min";
+
+    // the lat/lon HTML string
+    html += createCoordsHTML(geojson);
+
+    return html;
+
+}
+
+
+// this is a helper function to create the html for the popup content for an individual feature based on its geojson.properties.xxx values.  This should be called
+// for "regular" APRS stations (ex. vehicles, objects, etc.).  
+function stationPopup(geojson) {
+
+    if (!geojson || !geojson.properties)
+        return false;
+
+    // the callsign of the existing feature
+    let callsign = geojson.properties.callsign;
+
+    // The followme link
+    let html = "<font style=\"float:left; margin:0; padding:0;\"><a target=\"_blank\" href=\"testmap.php" +
+        "?followfeatureid=" + callsign +
+        "&latitude=" + geojson.geometry.coordinates[1] +
+        "&longitude=" + geojson.geometry.coordinates[0] +
+        "&zoom=" + map.getZoom() +
+        "&showallstations=1\">" +
+        "<strong>" + callsign + "</strong></a></font>";
+
+    // The time
+    let thetime = new Date(geojson.properties.tm);
+    let timestring;
+    if (thetime) 
+        // if we're able to decode the time string into an actual Date object then construct a 24hr time representation.
+        timestring = thetime.toLocaleTimeString("en-us", {hour12: false});
+
+    // build the rest of the HTML string
+    html = html + (timestring ? "<font style=\"float:right; margin:0; padding:0;\">" + timestring + "</font>" : "") +
+
+    // The comment
+    (typeof(geojson.properties.comment) == "undefined" ? "" : (geojson.properties.comment != "" ? "<br><font class=\"commentstyle\">" + geojson.properties.comment + "</font>" : "")) +
+
+    // the speed, bearing, altitude
+    createSpeedHTML(geojson) +
+
+    // the frequency and where packet was heard from
+    createHeardfromHTML(geojson) + 
+
+    // the lat/lon HTML string
+    createCoordsHTML(geojson);
+
+    // return the html
+    return html;
+
+} // createStationPopupContent
+
+
+// This will create the tooltip (ex. label underneath the marker on the map) with the supplied geojson
+function stationTooltip(geojson) {
+
+    // sanity check...
+    if (!geojson)
+        return false;
+
+    // the callsign of the existing feature
+    let callsign = geojson.properties.callsign;
 
     // display different content for trackers and flights
     // ...
@@ -505,34 +1209,20 @@ function updateTooltipContent(geojson, layer) {
     if (!callsign || callsign == "My Location") 
         return null;
 
-
     // the tool tip content.  By default it only consists of the station's callsign.
-    var content = callsign;
+    let content = callsign;
 
     // is this a tracker?
-    var t = isTracker(geojson);
+    let t = isTracker(geojson);
     if (t) 
         content = t.tactical.toUpperCase();
 
     // is this a flight beacon?
-    var f = isFlight(geojson);
+    let f = isFlight(geojson);
     if (f)
         content = callsign + (geojson.properties.altitude && geojson.properties.altitude > 0 ? "<br>" + (geojson.properties.altitude * 1.0).toFixed(0).toLocaleString() + "ft" : "");
 
-    // does a Tooltip for this layer already exist?
-    var tooltip = layer.getTooltip();
-    if (tooltip) {
-        
-        // Update the tooltip's content 
-        layer.setTooltipContent(content);
-    }
-    else {
-
-        // a tooltip doesn't exist yet, so create a new tooltip and bind it to this layer.
-        layer.bindTooltip(content, { className:  "myTooltipLabelStyle", permanent:true, direction: "center", opacity: .9 }).openTooltip();
-    }
-
-    return layer;
+    return content;
 } // updateTooltipContent
 
 
@@ -545,10 +1235,15 @@ function updateTooltipContent(geojson, layer) {
 ***********/
 function setupMap() {
 
-    // create the tile layer referencing the local system as the url (i.e. "/maps/....")
-    var osmUrl='/maps/{z}/{x}/{y}.png';
-    var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
-    var tilelayer = L.tileLayer(osmUrl, {minZoom: 3, maxZoom: 19, attribution: osmAttrib});
+    osmbright = L.maplibreGL({
+        style: '/tileserver/osm-bright/style.json',
+        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    });
+
+    basic = L.maplibreGL({
+        style: '/tileserver/basic/style.json',
+        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+    });
 
     // Create a map object. 
     map = new L.Map('map', {
@@ -562,13 +1257,10 @@ function setupMap() {
     // Set the center of the map and starting zoom level
     map.setView(new L.latLng(starting_location.lat, starting_location.lon), starting_location.zoom);
 
-    // Add the map as the default base layer
-    tilelayer.addTo(map);
-
 
     /**************** zoom level display box ****************/
     // Create a small box in the top right hand corner to display the map zoom level
-    var zoomLevelBox = L.control.gpsbox().addTo(map);
+    let zoomLevelBox = L.control.gpsbox().addTo(map);
     zoomLevelBox.show("Zoom Level: " + map.getZoom());
 
     // change the text within the top lefthand box with the zoom level everytime it changes
@@ -584,17 +1276,18 @@ function setupMap() {
     statusbox.show("Loading map...");
 
     // Add a GeoJSON layer to hold heard stations (this is the catchall)
-    stations = new AprsStations().addTo(map);
+    stations = aprsStations("stations").addTo(map);
 
     // Add a GeoJSON layer for the end user's position
-    mylocation = new AprsStations().addTo(map);
+    mylocation = aprsStations("mylocation").addTo(map);
 
     /************************ layer selection control ***********/
     // Add our OSM map as the "base map" layer.
-    var baselayer = { "Base Map": tilelayer };
+    let baselayer = { "Basic": basic, "OSM Bright": osmbright };
+    basic.addTo(map);
 
     // Overlay layers
-    var overlays = { "My Location": mylocation, "Other Stations": stations };
+    let overlays = { "My Location": mylocation, "Other Stations": stations };
 
     // Add the layer control to the map
     layercontrol = L.control.layers(baselayer, overlays).addTo(map);
@@ -612,10 +1305,62 @@ function setupMap() {
     }
 
     // Add a zoom control to the map.  We do this last so that it's below the other controls in the top righthand corner of the map.:w
-    var zoom = L.control.zoom({ "position": "topright" }).addTo(map);
+    let zoom = L.control.zoom({ "position": "topright" }).addTo(map);
 
     // Update status message
     statusbox.show("Map loaded");
+
+    return map;
+}
+
+
+/***********
+* isBreadcrumb
+*
+* This will check the incoming geojson.properties.callsign for a substring, 'breadcrumb'.
+* returns the tracker json if this callsign represents a tracker, otherwise false/null/undefined.
+***********/
+function isBreadcrumb(geojson) {
+
+    // make sure this geojson has a callsign property
+    if (!geojson || !geojson.properties || !geojson.properties.callsign)
+        return false;
+
+    let result = geojson.properties.callsign.indexOf("breadcrumb") !== -1;
+    return (result ? geojson : false);
+}
+
+/***********
+* isMyLocation
+*
+* This will check the incoming geojson.properties.callsign for a substring, 'My Location"
+* returns the json if this callsign represents a the location of the end user.
+***********/
+function isMyLocation(geojson) {
+
+    // make sure this geojson has a callsign property
+    if (!geojson || !geojson.properties || !geojson.properties.callsign)
+        return false;
+
+    let result = geojson.properties.callsign.indexOf("My Location") !== -1;
+    return (result ? geojson : false);
+}
+
+
+/***********
+* isFlightPath
+*
+* This will check the incoming geojson.properties.callsign for a substring, '_path'.
+* returns the tracker json if this callsign represents a tracker, otherwise false/null/undefined.
+***********/
+function isFlightPath(geojson) {
+
+    // make sure this geojson has a callsign property
+    if (!geojson || !geojson.properties || !geojson.properties.callsign)
+        return false;
+
+    let result = geojson.properties.callsign.indexOf("_path") !== -1;
+    return (result ? geojson : false);
 }
 
 
@@ -628,36 +1373,16 @@ function setupMap() {
 function isTracker(geojson) {
 
     // make sure this geojson has a callsign property
-    if (!geojson.properties || !geojson.properties.callsign)
+    if (!geojson || !geojson.properties || !geojson.properties.callsign)
         return false;
 
-    // we have to check if the incoming callsign matches the trackerlist callsign with/without an SSID
-    var t;
-    for (t in trackerslist) {
-        
-        // split out the trackerlist callsign from its SSID (ex. call-XX)
-        var pieces = t.split("-");
-        var callsign = pieces[0];
-        var ssid = (pieces[1] ? pieces[1] : null);
+    // split out the incoming callsign from its SSID (ex. call-XX)
+    let pieces = geojson.properties.callsign.split("-");
+    let callsign = pieces[0];
+    let ssid = (pieces[1] ? pieces[1] : null);
 
-        // Check if the incoming geojson matches the callsign-ssid or the callsign of the trackerlist entry
-        //var match = ssid ? geojson.properties.callsign == t) ? true : (geojson.properties.callsign.startsWith(callsign.toUpperCase()));
-        var match = (call, ssid, callssid, incomingcall) => {
-            //console.log("call:  " + call + ", ssid: " + ssid + ", callssid: " + callssid + ", incomingcall: " + incomingcall);
-            if (ssid) 
-                return incomingcall == callssid;
-            else 
-                return incomingcall.startsWith(call.toUpperCase());
-        };
-
-        // If there was a match, then return the trackerlist entry it matches.
-        if (match(callsign, ssid, t, geojson.properties.callsign)) {
-            //console.log(geojson.properties.callsign + " Matches tracker entry: " + JSON.stringify(trackerslist[t]));
-            return trackerslist[t];
-        }
-    }
-
-    return false;
+    let result = (trackerslist[geojson.properties.callsign] ? trackerslist[geojson.properties.callsign]  : (trackerslist[callsign] ? trackerslist[callsign] : null));
+    return result;
 }
 
 /***********
@@ -669,15 +1394,19 @@ function isTracker(geojson) {
 function isFlight(geojson) {
 
     // make sure this geojson has a callsign property
-    if (!geojson.properties || !geojson.properties.callsign)
+    if (!geojson || !geojson.properties || !geojson.properties.callsign)
         return false;
 
     // cycle through the list of flights to determine if this packet belongs to a flight
-    var f;
+    let f;
     for (f in flightlist) {
 
+        // if the callsign is the name of the flight
+        if (f == geojson.properties.callsign)
+            return true;
+
         // now loop through each callsign (i.e. beacon) assigned to this flight comparing it to our test case
-        var c;
+        let c;
         for (c in flightlist[f]) {
             if (c == geojson.properties.callsign) {
                 return flightlist[f];
@@ -691,44 +1420,25 @@ function isFlight(geojson) {
 /***********
 * packetRouter
 *
-* This function return the correct GeoJSON layer that a packet should be added too
+* This function returns the correct GeoJSON layer that a packet should be added too
 ***********/
 function packetRouter(p) {
-    var layer = stations;
+    let defaultlayer = stations;
 
     // check if this station is in the flight list or is a tracker "assigned" to a flight (i.e. not "At Large")
     if (p.properties.callsign) {
 
-        // cycle through the list of flights to determine if this packet belongs to a flight
-        var f;
-        for (f in flightlist) {
+        // if this is a tracker station then return the 'stations' layer
+        if (isTracker(p))
+            return defaultlayer;
 
-            // now loop through each callsign (i.e. beacon) assigned to this flight 
-            var c;
-            for (c in flightlist[f]) {
-                if (c == p.properties.callsign) {
-                    return flightlist[f]["layer"];
-                }
-            }
-
-            // if this is not a balloon beacon, then check the tracker list for if this callsign is assigned to this flight.
-            var tracker = isTracker(p);
-
-            //console.log("packetRouter[" + f + "]: " + JSON.stringify(tracker));
-            if (tracker && tracker.flightid == f) {
-                console.log("Matches " + f);
-                return flightlist[f]["layer"];
-            }
-            //if (trackerslist[p.properties.callsign]) {
-            //    if (trackerslist[p.properties.callsign].flightid == f) {
-            //        return flightlist[f]["layer"];
-            //    }
-            //}
-
-        }
+        let l = isFlight(p);
+        if (l)
+            return l.layer;
     }
 
-    return layer;
+    // For everything else we return the 'stations' layer
+    return defaultlayer;
 }   
 
 
@@ -747,7 +1457,7 @@ function setupSSE(backendurl) {
         packetsource.addEventListener("new_packet", function(event) {
 
             // Parse the incoming json
-            var geojson = JSON.parse(event.data);
+            let geojson = JSON.parse(event.data);
 
             // Add a function here to determine if the incoming packet belongs to a flight layer (ex. balloon, tracker, etc.),
             // other stations layers, etc..  Perhaps a single function here, will then direct data
@@ -756,7 +1466,7 @@ function setupSSE(backendurl) {
             if (geojson) {
 
                 // Determine which map layer this packet belongs too
-                var layer = packetRouter(geojson);
+                let layer = packetRouter(geojson);
                 
                 if (layer) {
 
@@ -764,7 +1474,7 @@ function setupSSE(backendurl) {
                     layer.addData(geojson);
 
                     if (statusbox)
-                        statusbox.show("Packet from:  " + (geojson.properties.callsign ? geojson.properties.callsign : "no callsign"));
+                        statusbox.show("Packet from:  <pre style=\"font-size: .9em;\">" + (geojson.properties.callsign ? geojson.properties.callsign : "no callsign") + ":  " + geojson.properties.raw + "</pre>");
                 }
             }    
         });
@@ -773,9 +1483,9 @@ function setupSSE(backendurl) {
         packetsource.addEventListener("new_position", function(event) {
 
             // Parse the incoming json
-            var gpsjson = JSON.parse(event.data);
+            let gpsjson = JSON.parse(event.data);
 
-            console.log(gpsjson);
+            //console.log(gpsjson);
             
             // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
             if (gpsjson && gpsjson.properties && !useGeoLocation) {
@@ -785,18 +1495,10 @@ function setupSSE(backendurl) {
                 gpsjson.properties.altitude = gpsjson.properties.altitude_ft;
                 gpsjson.properties.speed_mph = (gpsjson.properties.speed_math ? Math.floor(gpsjson.properties.speed_mph) : 0);
                 gpsjson.properties.bearing = (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 );
-                console.log(gpsjson);
+                //console.log(gpsjson);
 
                 // add this data to the mylocation layer group
                 mylocation.addData(gpsjson);
-
-                // Check if the mylocation layer is on the map
-                if (!map.hasLayer(mylocation))
-                    mylocation.addTo(map);
-
-                // Check if the mylocation layer group is added to the layer control widget
-                //layercontrol.hasLayer(mylocation);
-
             }
         });
 
@@ -804,7 +1506,7 @@ function setupSSE(backendurl) {
         packetsource.addEventListener("tracker_change", function(event) {
 
             // Parse the incoming json
-            var js = JSON.parse(event.data);
+            let js = JSON.parse(event.data);
 
             console.log(js);
 
@@ -815,7 +1517,7 @@ function setupSSE(backendurl) {
         packetsource.addEventListener("flight_change", function(event) {
 
             // Parse the incoming json
-            var js = JSON.parse(event.data);
+            let js = JSON.parse(event.data);
 
             console.log(js);
 
@@ -826,6 +1528,7 @@ function setupSSE(backendurl) {
         // if there was an error display an alert.  NEED TO UPDATE THIS TO BE USER FRIENDLY. 
         packetsource.addEventListener("error", function(e) {
             console.log("SSE Error");
+            setupSSE(backendurl);
         });
 
         return true;
@@ -848,23 +1551,23 @@ function getPacketSource(packet) {
     }
 
     // the raw APRS packet
-    var raw = packet.properties.raw;
+    let raw = packet.properties.raw;
 
     // split the packet into the address and information parts
-    var address_part = raw.split(":");
+    let address_part = raw.split(":");
 
     if (address_part && address_part.length > 1) {
 
         // split the address portion into the source and VIA path list
-        var path = address_part[0].split(">")[1];
+        let path = address_part[0].split(">")[1];
 
         if (path && path.length > 1) {
 
             // create an array listing each stations within the path (minus the first entry).
-            var stations = path.replace(/WIDE[0-9]*[-]*[0-9]*|\*/gi, "").replace(/,+$/, "").split(",").slice(1);
+            let stations = path.replace(/WIDE[0-9]*[-]*[0-9]*|\*/gi, "").replace(/,+$/, "").split(",").slice(1);
 
             // Return the last entry in our path list.  This should be the last station to transmit this packet (i.e. who we heard the packet from).
-            var heardfrom = null;
+            let heardfrom = null;
             if (stations.length == 0)
                 heardfrom = "direct";
             else
@@ -887,17 +1590,17 @@ function getPacketSource(packet) {
 function trim_packetlist() {
 
     // The current date/time
-    var currenttime = Date.now() / 1000;
+    let currenttime = Date.now() / 1000;
 
     // Loop through the packetlist array stopping on the first packet that is younger than the agelimit.
-    var sliceidx = packetlist.find(function(elem) {
+    let sliceidx = packetlist.find(function(elem) {
 
         // the time/date object from the packet
         // time format example:  2023-03-11T14:22:02-07:00
-        var elemdate = new Date(elem.properties.tm);
+        let elemdate = new Date(elem.properties.tm);
 
         // the difference in seconds between the current date and the packets date/time
-        var delta_secs = Math.floor((currenttime - elemdate) / 1000);
+        let delta_secs = Math.floor((currenttime - elemdate) / 1000);
         
         // if the packet is < the agelimit then return true.
         return delta_secs < agelimit; 
@@ -928,12 +1631,12 @@ function setupMyLocation() {
         useGeoLocation = false;
 
         // get backend position from gpslocation.php.
-        var xhttp = new XMLHttpRequest();
+        let xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
 
                 // Parse the returned json 
-                var js = JSON.parse(this.responseText);
+                let js = JSON.parse(this.responseText);
 
                 // Send this geojson object to the "mylocation" layer for display on the map.  Ongoing position updates will come from the backend as part of the SSE connection.
                 // so we don't need to do anything here except to get the initial position.
@@ -952,7 +1655,7 @@ function setupMyLocation() {
 
 
     // location options for using the end user's device as the source for location information
-    var position_options = {
+    let position_options = {
         enableHighAccuracy: true,
         timeout: 5000,
         maximumAge: 0
@@ -993,7 +1696,7 @@ function setupMyLocation() {
 function updateMyLocation(position) {
 
     // where we'll construct our new GeoJSON object.
-    var geojson = {};
+    let geojson = {};
 
     // This is a geojson feature
     geojson.type = "Feature";
@@ -1008,19 +1711,19 @@ function updateMyLocation(position) {
     geojson.properties.geolocationdata = position.coords;
 
     // construct time string
-    var tm = new Date(Date.now());
+    let tm = new Date(Date.now());
 
     // get the timezone offset in minutes
-    var timezonemins = tm.getTimezoneOffset();
+    let timezonemins = tm.getTimezoneOffset();
 
     // calcualte the hours in the timezone offset
-    var offsetHours = Math.floor(timezonemins / 60);
+    let offsetHours = Math.floor(timezonemins / 60);
 
     // calculate the mins in the timezone mins
-    var offsetMins = Math.floor(timezonemins - (offsetHours * 60));
+    let offsetMins = Math.floor(timezonemins - (offsetHours * 60));
 
     // Create a time/date string similar to: 2023-03-20T10:33:09-06:00
-    var date = tm.getFullYear() + "-" + 
+    let date = tm.getFullYear() + "-" + 
         ('0' + (tm.getMonth() + 1)).slice(-2) + "-" + 
         ('0' + tm.getDate()).slice(-2) + "T" + 
         ('0' + tm.getHours()).slice(-2) + ":" + 
@@ -1047,44 +1750,38 @@ function updateMyLocation(position) {
 *
 * This function will query the backend for the list of trackers
 ***********/
-function getTrackers() {
+async function getTrackers() {
 
+    console.log("in getTrackers");
     // get the list of trackers
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
+    let response = await fetch("gettrackers.php");
 
-            // Parse the returned json 
-            var js = JSON.parse(this.responseText);
-            var key, i;
-            
-            // Loop through each tracker team
-            for (key in js) {
-                var tactical = js[key].tactical;
-                var flightid = js[key].flightid;
-                var trackers = js[key].trackers;
-                if (trackers && tactical != 'ZZ-Not Active') {
-                    var t;
 
-                    // Loop through each tracker assigned to this team
-                    for (t in trackers) {
+    // Parse the returned json 
+    let js = await response.json();
+    let key, i;
+    
+    console.log("in getTrackers, got response");
+    // Loop through each tracker team
+    for (key in js) {
+        let tactical = js[key].tactical;
+        let flightid = js[key].flightid;
+        let trackers = js[key].trackers;
+        if (trackers && tactical != 'ZZ-Not Active') {
+            let t;
 
-                        // Add this tracker to the tracker list
-                        trackerslist[trackers[t].callsign] = trackers[t];
+            // Loop through each tracker assigned to this team
+            for (t in trackers) {
 
-                        // Add the flightid to this tracker in the list.  That way we know what flightid a tracker is ultimately assigned to (through their tactical team)
-                        trackerslist[trackers[t].callsign]["flightid"] = flightid;
-                    }
-                }
+                // Add this tracker to the tracker list
+                trackerslist[trackers[t].callsign] = trackers[t];
+
+                // Add the flightid to this tracker in the list.  That way we know what flightid a tracker is ultimately assigned to (through their tactical team)
+                trackerslist[trackers[t].callsign]["flightid"] = flightid;
             }
         }
-    };
-
-    // Connect to the backend server
-    xhttp.open("GET", "gettrackers.php", true);
-
-    // Send our request
-    xhttp.send();
+    }
+    return true;
 }
 
 /***********
@@ -1092,106 +1789,104 @@ function getTrackers() {
 *
 * This function will query the backend for the list of active Flights
 ***********/
-function getFlights() {
+async function getFlights() {
+
+    console.log("in getFlights");
 
     // get the list of flights
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
+    let response = await fetch("getflights.php");
 
-            // Parse the returned json 
-            var js = JSON.parse(this.responseText);
-            var key, i;
-            
-            // Loop through each flight
-            for (key in js) {
-                var flight = js[key].flight;
-                var desc = js[key].description;
-                var active = js[key].active;
-                if (active == 't') {
-                    var beacons = js[key].beacons;
-                    var b;
+    // Parse the returned json 
+    let js = await response.json();
+    let key, i;
+    console.log("in getFlights, got response");
+    
+    // Loop through each flight
+    for (key in js) {
+        let flight = js[key].flight;
+        let desc = js[key].description;
+        let active = js[key].active;
+        if (active == 't') {
+            let beacons = js[key].beacons;
+            let b;
 
-                    // loop through each beacon listed on this flight.
-                    for (b in beacons) {
-                        var callsign = beacons[b].callsign;
-                        if (flightlist[flight])
-                            flightlist[flight][callsign] = beacons[b];
-                        else {
-                            flightlist[flight] = {};
-                            flightlist[flight][callsign] = beacons[b];
-                        }
-                    }
+            // loop through each beacon listed on this flight.
+            for (b in beacons) {
+                let callsign = beacons[b].callsign;
+                if (flightlist[flight])
+                    flightlist[flight][callsign] = beacons[b];
+                else {
+                    flightlist[flight] = {};
+                    flightlist[flight][callsign] = beacons[b];
                 }
             }
-
-            // now create map layers for each flight
-            var f;
-            for (f in flightlist) {
-
-                // new GeoJSON layer for this flight
-                flightlist[f]["layer"] = new AprsStations().addTo(map);
-
-                // Add this flight to the list of layers that can be toggled on/off the map
-                layercontrol.addOverlay(flightlist[f]["layer"], f);
-
-            }
-
         }
-    };
+    }
 
-    // Connect to the backend server
-    xhttp.open("GET", "getflights.php", true);
+    // now create map layers for each flight
+    let f;
+    let b;
+    let beaconlist = {};
+    for (f in flightlist) {
 
-    // Send our request
-    xhttp.send();
+        // the beacons specific for this flight only.
+        for (b in flightlist[f]) {
+            if (flightlist[f][b].callsign) {
+                beaconlist[b] = structuredClone(flightlist[f][b]);
+                beaconlist[b]["flightid"] = f;
+            }
+        }
+
+        // new GeoJSON layer for this flight
+        flightlist[f]["layer"] = flightLayer(f, {"beacons" : beaconlist}).addTo(map);
+        //flightlist[f]["layer"] = new AprsStations().addTo(map);
+
+        // Add this flight to the list of layers that can be toggled on/off the map
+        layercontrol.addOverlay(flightlist[f]["layer"], f);
+    }
+
+    return true;
 }
 
 /***********
 * getFlightPackets
 *
-* This request all packets from the prior 3hrs for all active flights.  We don't really care about packets from the past for any other station - they
-* will come in as the transmit.  For flights, however, we need prior packets in order to plot paths, compute landing predictions, etc..
+* This will request all packets from the prior 3hrs for all active flights.  We don't really care about packets from the past for any other station - they
+* will come in as they transmit.  For flights, however, we need prior packets in order to plot paths, compute landing predictions, etc..
 ***********/
-function getFlightPackets() {
+async function getFlightPackets() {
+    console.log("in getFlightPackets");
 
     // get the list of flights
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
+    let response = await fetch("getpackets2.php");
 
-            // Parse the returned json 
-            var js = JSON.parse(this.responseText);
-            var key, i;
-            var num = Object.keys(js).length;
+    // Parse the returned json 
+    let js = await response.json();
+    let key, i;
+    let num = Object.keys(js).length;
+    console.log("in getFlightPackets, got response");
 
-            if (num > 0)
-                statusbox.show("Loading " + num + " flight packets...");
-            //statusbox.show("Loading packets...");
+    if (num > 0)
+        statusbox.show("Loading " + num + " flight packets...");
+    //statusbox.show("Loading packets...");
+    
+    // Loop through each geojson packet
+    for (key in js) {
+        let geojson = js[key];
+
+        if (geojson) {
+            let layer = packetRouter(geojson);
             
-            // Loop through each geojson packet
-            for (key in js) {
-                var geojson = js[key];
-
-                if (geojson) {
-                    var layer = packetRouter(geojson);
-                    
-                    if (layer)
-                        layer.addData(geojson);
-                }
-            }
-
-            // If there were packets to load, then report that we're done
-            if (num > 0)
-                statusbox.show("Finished loading flight packets.");
+            if (layer) 
+                layer.addData(geojson);
         }
-    };
+    }
 
-    // Connect to the backend server
-    xhttp.open("GET", "getpackets2.php", true);
+    // If there were packets to load, then report that we're done
+    if (num > 0)
+        statusbox.show("Finished loading flight packets.");
 
-    // Send our request
-    xhttp.send();
+    return js.length;
 }
 
 
@@ -1202,23 +1897,25 @@ function getFlightPackets() {
 ***********/
 function startup() {
 
-    // get the current trackers list
-    getTrackers();
-
-    // get the current list of flights 
-    getFlights();
-
-    // Get prior packets
-    getFlightPackets();
-
+    // *********** THIS IS A MESS...NEED TO FIX *************
+    
     // setup the map
     setupMap();
 
     // setup our location source
     setupMyLocation();
 
-    // startup SSE operations.
-    setupSSE("testsse.php");
+    // get the current trackers list
+    getTrackers().then(function() {
+        // get the current list of flights 
+        getFlights();
+    }).then(function() {
+        // Get prior packets
+        getFlightPackets();
+    }).finally( function() {
+        // startup SSE operations.
+        setupSSE("ssestream.php");
+    });
 }
 
 
