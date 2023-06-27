@@ -38,6 +38,7 @@ from logging.handlers import QueueHandler, QueueListener
 
 from decoders import parse_RTP_AX25
 from packet import Packet
+import habconfig
 import queries
 
 
@@ -1257,29 +1258,16 @@ class AprsisStream(PacketStream):
         Construct the byte string to send to the APRS-IS server that contains an APRS position packet for this station
         """
 
-        # is this a mobile or stationary station?
-        is_mobile = True if self.configuration["mobilestation"] == "true" else False
-
-        # if this is the first time we're trying to transmit AND this is a stationary station, then we save the GPS position and just reuse that
-        # every time we need to transmit/beacon our position.
-        gpsposition = None
-        if not is_mobile:
-            if self.stationLocation:
-                if self.stationLocation["isvalid"]:
-                    gpsposition = self.stationLocation
-
-        # get our GPS position if we don't already have it
-        if not gpsposition:
-            gpsposition = self.getPosition()
+        # get our GPS position
+        gpsposition = self.getPosition()
 
         # if the gps position isn't valid, then just return
         if not gpsposition["isvalid"]:
             self.logger.warning(f"{self.server.nickname} getPositionPacket.  GPS position was not valid.")
             return None
 
-        # if this is a stationary station, then save this gpsposition as our "location" if we haven't already
-        if not is_mobile and not self.stationLocation:
-            self.stationLocation = gpsposition
+        # is this a mobile or stationary station?
+        is_mobile = True if self.configuration["mobilestation"] == "true" else False
 
         # convert the lat/lon to degrees, decimal minutes
         lat_d = int(gpsposition["latitude"])
@@ -1404,6 +1392,9 @@ class AprsisStream(PacketStream):
 
         # get our GPS position
         gpsposition = self.getPosition()
+        if not gpsposition["isvalid"]:
+            self.logger.warning(f"{self.server.nickname} getAprsFilter.  GPS position was not valid.")
+            return None;
 
         if self.taptype == 'aprs':
             # our location
@@ -1470,6 +1461,16 @@ class AprsisStream(PacketStream):
                 "speed_mph" : 0.0,
                 "isvalid" : False
                 }
+
+
+        # is this a mobile or stationary station?
+        is_mobile = True if self.configuration["mobilestation"] == "true" else False
+
+        # if stationary, then check (and potentially reuse) our prior determined location.
+        if not is_mobile:
+            if self.stationLocation:
+                if self.stationLocation["isvalid"]:
+                    return self.stationLocation
 
         # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
         nofix = True
@@ -1539,6 +1540,12 @@ class AprsisStream(PacketStream):
             #    self.okay.set()
             #    if dbconn is not None:
             #        dbconn.close()
+
+        # set this station's location
+        if not is_mobile and gpsposition["isvalid"]:
+            self.stationLocation = gpsposition
+        else:
+            self.stationLocation = None
 
         # return the gpsposition object
         return gpsposition
