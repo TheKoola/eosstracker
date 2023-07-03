@@ -641,7 +641,6 @@ class PacketStream:
                         # close our connection
                         self.disconnect()
                         self.okay.set()
-                        raise ServerConnectionError()
 
                     else:
                         #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
@@ -732,7 +731,6 @@ class PacketStream:
                 # something happened during the connection attempt
                 if not online and self.okay.is_set():
                     self.logger.debug(f"{self.server.nickname} run():  something happened during connection attempt")
-                    #raise ServerConnectionError()
 
                 while online and not self.stopevent.is_set() and not self.okay.is_set():
 
@@ -935,7 +933,6 @@ class RTPStream(MulticastPacketStream):
                     # close our connection
                     self.disconnect()
                     self.okay.set()
-                    raise ServerConnectionError()
 
                 else:
                     #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
