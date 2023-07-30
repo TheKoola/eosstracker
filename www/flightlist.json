@@ -1,0 +1,471 @@
+[
+    { 
+        "flight": "EOSS-345",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-13"
+        ],
+        "day": "2023-07-29"
+    },
+    { 
+        "flight": "EOSS-344",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-13"
+        ],
+        "day": "2023-07-22"
+    },
+    { 
+        "flight": "EOSS-343",
+        "beacons": [
+            "KC0D-12",
+            "AE0SS-9",
+            "WB0URW-12"
+        ],
+        "day": "2023-07-17"
+    },
+    { 
+        "flight": "EOSS-342",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-07-03"
+    },
+    { 
+        "flight": "EOSS-342",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-07-03"
+    },
+    { 
+        "flight": "EOSS-341",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-05-04"
+    },
+    { 
+        "flight": "EOSS-340",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-04-22"
+    },
+    { 
+        "flight": "EOSS-339",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-04-22"
+    },
+    { 
+        "flight": "EOSS-338",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-04-15"
+    },
+    { 
+        "flight": "EOSS-337",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-04-01"
+    },
+    { 
+        "flight": "EOSS-336",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-04-01"
+    },
+    { 
+        "flight": "EOSS-335",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "AE0SS-13"
+        ],
+        "day": "2023-03-25"
+    },
+    { 
+        "flight": "EOSS-334",
+        "beacons": [
+            "KE0BMV-11",
+            "AE0SS-9"
+        ],
+        "day": "2023-01-14"
+    },
+    { 
+        "flight": "EOSS-333",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-01-14"
+    },
+    { 
+        "flight": "EOSS-332",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2023-01-14"
+    },
+    {
+        "flight": "EOSS-331",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2022-11-05"
+    },
+    {
+        "flight": "EOSS-330",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-12"
+        ],
+        "day": "2022-10-29"
+    },
+    {
+        "flight": "EOSS-329",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "AE0SS-13"
+        ],
+        "day": "2022-10-15"
+    },
+    {
+        "flight": "EOSS-328",
+        "beacons": [
+            "KE0BMV-11",
+            "KC0D-3",
+            "KC0D-15"
+        ],
+        "day": "2022-07-30"
+    },
+    {
+        "flight": "EOSS-327",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-12"
+        ],
+        "day": "2022-07-30"
+    },
+    {
+        "flight": "EOSS-326",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-13"
+        ],
+        "day": "2022-07-30"
+    },
+    {
+        "flight": "EOSS-325",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-12"
+        ],
+        "day": "2022-04-24"
+    },
+    {
+        "flight": "EOSS-324",
+        "beacons": [
+            "KE0BMV-11",
+            "KC0D-15"
+        ],
+        "day": "2022-04-09"
+    },
+    {
+        "flight": "EOSS-323",
+        "beacons": [
+            "AE0SS-13",
+            "KC0D-14"
+        ],
+        "day": "2022-04-09"
+    },
+    {
+        "flight": "EOSS-322",
+        "beacons": [
+            "AE0SS-12",
+            "KC0D-1"
+        ],
+        "day": "2022-04-09"
+    },
+    {
+        "flight": "EOSS-321",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2022-04-02"
+    },
+    {
+        "flight": "EOSS-320",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2022-01-28"
+    },
+    {
+        "flight": "EOSS-319",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2022-01-28"
+    },
+    {
+        "flight": "EOSS-318",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2021-11-06"
+    },
+    {
+        "flight": "EOSS-317",
+        "beacons": [
+            "KC0D-14",
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2021-10-30"
+    },
+    {
+        "flight": "EOSS-316",
+        "beacons": [
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2021-10-10"
+    },
+    {
+        "flight": "EOSS-315",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-13"
+        ],
+        "day": "2021-10-10"
+    },
+    {
+        "flight": "EOSS-314",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-13"
+        ],
+        "day": "2021-08-01"
+    },
+    {
+        "flight": "EOSS-313",
+        "beacons": [
+            "KC0D-1",
+            "K0SCC-14"
+        ],
+        "day": "2021-08-01"
+    },
+    {
+        "flight": "EOSS-312",
+        "beacons": [
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2021-08-01"
+    },
+    {
+        "flight": "EOSS-311",
+        "beacons": [
+            "KC0D-3",
+            "KC0D-2",
+            "AE0SS-12"
+        ],
+        "day": "2021-07-24"
+    },
+    {
+        "flight": "EOSS-310",
+        "beacons": [
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2021-04-18"
+    },
+    {
+        "flight": "EOSS-309",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-13"
+        ],
+        "day": "2021-04-10"
+    },
+    {
+        "flight": "EOSS-308",
+        "beacons": [
+            "KC0D-3",
+            "AE0SS-12"
+        ],
+        "day": "2021-04-03"
+    },
+    {
+        "flight": "EOSS-307",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12",
+            "KC0D-2",
+            "AE0SS-13"
+        ],
+        "day": "2021-03-20"
+    },
+    {
+        "flight": "EOSS-306",
+        "beacons": [
+            "KC0D-3",
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2021-01-16"
+    },
+    {
+        "flight": "EOSS-305",
+        "beacons": [
+            "KC0D-1",
+            "K0SCC-14"
+        ],
+        "day": "2020-11-07"
+    },
+    {
+        "flight": "EOSS-304",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-13"
+        ],
+        "day": "2020-11-07"
+    },
+    {
+        "flight": "EOSS-303",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "K0SCC-14"
+        ],
+        "day": "2020-11-01"
+    },
+    {
+        "flight": "EOSS-302",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2020-10-03"
+    },
+    {
+        "flight": "EOSS-301",
+        "beacons": [
+            "KC0D-14",
+            "KC0D-1",
+            "KC0D-3",
+            "AE0SS-12",
+            "K0SCC-14"
+        ],
+        "day": "2020-08-01"
+    },
+    {
+        "flight": "EOSS-300",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3",
+            "KC0D-2",
+            "AE0SS-13"
+        ],
+        "day": "2020-07-11"
+    },
+    {
+        "flight": "EOSS-299",
+        "beacons": [
+            "KC0D-12",
+            "AE0SS-12"
+        ],
+        "day": "2020-05-30"
+    },
+    {
+        "flight": "EOSS-298",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-12"
+        ],
+        "day": "2020-03-15"
+    },
+    {
+        "flight": "EOSS-297",
+        "beacons": [
+            "KC0D-2",
+            "K0SCC-14"
+        ],
+        "day": "2020-03-15"
+    },
+    {
+        "flight": "EOSS-296",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-12"
+        ],
+        "day": "2019-11-09"
+    },
+    {
+        "flight": "EOSS-295",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2019-11-09"
+    },
+    {
+        "flight": "EOSS-294",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-12"
+        ],
+        "day": "2019-11-02"
+    },
+    {
+        "flight": "EOSS-293",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2019-10-12"
+    },
+    {
+        "flight": "EOSS-292",
+        "beacons": [
+            "KC0D-15",
+            "AE0SS-12",
+            "AE0SS-13"
+        ],
+        "day": "2019-07-27"
+    },
+    {
+        "flight": "EOSS-291",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-12"
+        ],
+        "day": "2019-07-13"
+    }
+]
+
+
+   
