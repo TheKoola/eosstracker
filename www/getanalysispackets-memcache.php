@@ -50,187 +50,42 @@
 
         ## get any packets from active flights over the past several hours.
         $query = "select 
-                array_to_json(array_agg(k)) as json
+            array_to_json(array_agg(k)) as json
 
-            from (
-            select 
+        from (
+
+            select distinct on (h.info)
+                h.info,
                 h.thetime as tm,
                 h.callsign,
-                h.info,
                 h.raw
 
             from (
-            select distinct on (y.info)
-                y.info,
-                y.thetime,
-                y.packet_time,
-                y.callsign,
-                y.source,
-                y.raw
+                select
+                    date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
+                    a.callsign,
+                    substring(a.raw from position(':' in a.raw)+1) as info,
+                    a.raw
 
                 from 
-                (
-                    select
-                        c.thetime,
-                        c.packet_time,
-                        c.callsign,
-                        c.altitude,
-                        c.comment,
-                        c.symbol,
-                        c.speed_mph,
-                        c.bearing,
-                        c.location2d,
-                        c.lat,
-                        c.lon,
-                        c.temperature_k,
-                        c.pressure_pa,
-                        c.ptype, 
-                        c.hash,
-                        substring(c.raw from position(':' in c.raw)+1) as info,
-                        c.raw,
-                        lag(c.altitude, 1) over(order by c.packet_time)  as previous_altitude,
-                        lag(c.lat, 1) over (order by c.packet_time) as previous_lat,
-                        lag(c.lon, 1) over (order by c.packet_time) as previous_lon,
-                        extract ('epoch' from (c.packet_time - lag(c.packet_time, 1) over (order by c.packet_time))) as delta_secs,
-                        extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
-                        c.sourcename,
-                        case when array_length(c.path, 1) > 0 then
-                            c.path[array_length(c.path, 1)]
-                        else
-                            c.sourcename
-                        end as heardfrom,
-                        c.freq,
-                        c.channel,
-                        c.source
+                    packets a
 
-                        from (
-                                select 
-                                date_trunc('milliseconds', a.tm)::timestamp without time zone as thetime,
-                                case
-                                    when a.raw similar to '%[0-9]{6}h%' then
-                                        date_trunc('milliseconds', ((to_timestamp(now()::date || ' ' || substring(a.raw from position('h' in a.raw) - 6 for 6), 'YYYY-MM-DD HH24MISS')::timestamp at time zone 'UTC') at time zone 'America/Denver')::time)::time without time zone
-                                    else
-                                        date_trunc('milliseconds', a.tm)::time without time zone
-                                end as packet_time,
-                                a.callsign, 
-                                a.altitude,
-                                a.comment, 
-                                a.symbol, 
-                                a.speed_mph,
-                                a.bearing,
-                                a.location2d,
-                                cast(ST_Y(a.location2d) as numeric) as lat,
-                                cast(ST_X(a.location2d) as numeric) as lon,
-                                case when a.raw similar to '[0-9A-Za-z]*[\-]*[0-9]*>%%' then
-                                    split_part(a.raw, '>', 1)
-                                else
-                                    NULL
-                                end as sourcename,
-                                round(a.frequency / 1000000.0,3) as freq, 
-                                a.channel,
-
-                                -- The temperature (if available) from any KC0D packets
-                                case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                    round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
-                                else
-                                    NULL
-                                end as temperature_k,
-
-                                -- The pressure (if available) from any KC0D packets
-                                case
-                                    when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
-                                        round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
-                                    else
-                                        NULL
-                                end as pressure_pa,
-                                a.ptype,
-                                a.hash,
-                                a.raw,
-                                a.source,
-                                dense_rank () over (partition by 
-                                    a.hash,
-                                    date_trunc('minute', a.tm)
-
-                                    order by 
-                                    a.tm asc,
-                                    cast(
-                                        cardinality(
-                                            (
-                                                array_remove(
-                                                string_to_array(
-                                                    regexp_replace(
-                                                        split_part(
-                                                            split_part(a.raw, ':', 1),
-                                                            '>',
-                                                            2),
-                                                        ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
-                                                        '',
-                                                        'g'),
-                                                    ',',''),
-                                                NULL)
-                                            )[2:]
-                                    ) as int) asc,
-                                    a.channel desc
-                                ),
-                                case when a.raw similar to '%>%:%' then
-                                    (array_remove(string_to_array(regexp_replace(
-                                                    split_part(
-                                                        split_part(a.raw, ':', 1),
-                                                        '>',
-                                                        2),
-                                                    ',(WIDE[0-9]*[\-]*[0-9]*)|(qA[A-Z])|(TCPIP\*)',
-                                                    '',
-                                                    'g'),
-                                                ',',''), NULL))[2:]
-                                else
-                                    NULL
-                                end as path
-
-                                from 
-                                packets a
-
-                                where 
-                                a.location2d != '' 
-                                and a.tm > $1 and a.tm < $2
-                                and a.altitude > 0
-                                and a.callsign = any ($3)
-
-                                order by a.tm asc
-
-                        ) as c
-
-                        where
-                        c.dense_rank = 1
-                        and abs(extract('epoch' from (c.thetime::time - c.packet_time::time))) < 120
-
-                    ) as y
                 where 
-                    case when y.delta_secs > 0 then
-                        abs((y.altitude - y.previous_altitude) / y.delta_secs)
-                    else
-                        0
-                    end < 1000
-                    and case when y.delta_secs > 0 then
-                        abs((y.lat - y.previous_lat) / y.delta_secs)
-                    else
-                        0
-                    end < .04
-                    and case when y.delta_secs > 0 then
-                        abs((y.lon - y.previous_lon) / y.delta_secs)
-                    else
-                        0
-                    end < .04
-
-                order by
-                    y.info
-                ) as h
+                    a.location2d != '' 
+                    and a.tm > $1 and a.tm < $2
+                    and a.altitude > 0
+                    and a.callsign = any ($3)
 
                 order by 
-                h.thetime asc
-            ) as k
+                    a.tm asc
+                ) as h
 
-            ;
-        "; 
+            order by 
+                h.info
+
+            ) as k
+        ;"
+        ;
 
         $json_result = [];
 
@@ -292,7 +147,7 @@
             $js = getAnalysisPackets();
 
             // now add this to memcache with a TTL of 300 seconds
-            $memcache->set('analysispackets', json_encode($js), false, 290);
+            $memcache->set('analysispackets', json_encode($js), false, 10);
         }
     } catch (Exception $e) {
         // Connect to the backend and run the python script to determine process status
