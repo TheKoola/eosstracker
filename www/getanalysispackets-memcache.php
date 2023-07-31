@@ -105,7 +105,7 @@
             if ($numrows > 0) {
                 $rows = sql_fetch_all($result);
 
-                $json_result[$flightid] = array(
+                $json_result[] = array(
                     "flightname" => $flightname,
                     "flightid" => $flightid,
                     "packets" => json_decode($rows[0]["json"])
@@ -146,8 +146,8 @@
             // cache miss.  Now get the status of the backend processes
             $js = getAnalysisPackets();
 
-            // now add this to memcache with a TTL of 300 seconds
-            $memcache->set('analysispackets', json_encode($js), false, 10);
+            // now add this to memcache with a TTL of 3600 seconds (i.e. 1 hour)
+            $memcache->set('analysispackets', json_encode($js), false, 3600);
         }
     } catch (Exception $e) {
         // Connect to the backend and run the python script to determine process status
