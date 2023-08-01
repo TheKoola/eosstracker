@@ -32,14 +32,6 @@
         "day": "2023-06-03"
     },
     { 
-        "flight": "EOSS-342",
-        "beacons": [
-            "KC0D-14",
-            "AE0SS-12"
-        ],
-        "day": "2023-06-03"
-    },
-    { 
         "flight": "EOSS-341",
         "beacons": [
             "KC0D-14",
