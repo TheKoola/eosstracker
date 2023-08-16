@@ -1238,7 +1238,7 @@ class AprsisStream(PacketStream):
             posit = self.getPositionPacket()
 
             if posit:
-                self.logger.info(f"{self.server.nickname} Beaconing to APRS-IS: {posit}")
+                self.logger.debug(f"{self.server.nickname} Beaconing to APRS-IS: {posit}")
 
                 # send the bytestring for the position packet to the APRS-IS server
                 self.send(posit)
