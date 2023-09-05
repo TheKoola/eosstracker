@@ -386,7 +386,7 @@ class Direwolf:
 
         # sanity checks
         if self.beaconing == False:
-            self.logger.info("Unable to run Direwolf, beaconing is disabled.")
+            self.logger.info("Beaconing is disabled, not running Direwolf.")
             return False
 
         # (re)create the direwolf configuration file without database support
