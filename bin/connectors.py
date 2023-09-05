@@ -424,10 +424,10 @@ class PacketStream:
         """
 
         # point at which we no longer add packets to the queue (i.e. these packets are dropped)
-        q_low_watermark = 100
+        q_low_watermark = 500
 
         # point at which we clear the queue.  Presumably because there's no catching up...because the downstream consumers aren't working this queue.
-        q_high_watermark = 150
+        q_high_watermark = 550
 
         # loop through each packet handler
         for ph in self.readhandlers:
@@ -570,14 +570,15 @@ class PacketStream:
                     data = self.sock.recv(4096)
 
                     # sock.recv returns empty if the connection drops
-                    if not data:
-                        self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty while trying to read one line")
+                    #if not data:
+                    #    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty while trying to read one line")
 
                         # close our connection
-                        self.disconnect()
-                        self.okay.set()
+                    #    self.disconnect()
+                    #    self.okay.set()
 
-                    else:
+                    #else:
+                    if data:
                         # append whatever data was read to the bigbuffer
                         bigbuffer += data
 
@@ -634,17 +635,18 @@ class PacketStream:
                     # Try to read at most 4096 bytes from the socket
                     data = self.sock.recv(4096)
 
-                    if not data:
+                    #if not data:
                         # sock.recv returns empty if the connection drops
-                        self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
+                    #    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
 
                         # close our connection
-                        self.disconnect()
-                        self.okay.set()
+                    #    self.disconnect()
+                    #    self.okay.set()
 
-                    else:
+                    #else:
                         #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
 
+                    if data:
                         # append whatever data was read to the bigbuffer
                         bigbuffer += data
 
@@ -870,6 +872,8 @@ class RTPStream(MulticastPacketStream):
 
         self.logger.debug(f"{self.server.nickname} readline: starting socket read loop")
 
+        data = None
+
         # loop continuously unless our connection fails or the stopevent is set
         while not self.stopevent.is_set() and not self.okay.is_set():
 
@@ -878,17 +882,17 @@ class RTPStream(MulticastPacketStream):
                 # Try to read at most 4096 bytes from the socket
                 data = self.sock.recv(4096)
 
-                if not data:
+                #if not data:
                     # sock.recv returns empty if the connection drops
-                    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
+                #    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
 
                     # close our connection
-                    self.disconnect()
-                    self.okay.set()
+                #    self.disconnect()
+                #    self.okay.set()
 
-                else:
+                #else:
                     #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
-                    return data
+                #    return data
 
             except (TimeoutError) as e:
                 self.logger.debug(f"{self.server.nickname} timeout error")
@@ -903,7 +907,7 @@ class RTPStream(MulticastPacketStream):
                     self.okay.set()
 
         self.logger.debug(f"{self.server.nickname} RTPStream readline thread ended.")
-        return None
+        return data
 
 
     def read_thread(self)->None:
@@ -926,18 +930,19 @@ class RTPStream(MulticastPacketStream):
                 # Try to read at most 4096 bytes from the socket
                 data = self.sock.recv(4096)
 
-                if not data:
+                #if not data:
                     # sock.recv returns empty if the connection drops
-                    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
+                #    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty")
 
                     # close our connection
-                    self.disconnect()
-                    self.okay.set()
+                #    self.disconnect()
+                #    self.okay.set()
 
-                else:
+                #else:
                     #self.logger.debug(f"{self.server.nickname}  read_thread data: {data}")
 
                     # send packet to read handlers
+                if data:
                     self.putPacketOnQueue(data)
 
             except (TimeoutError) as e:
