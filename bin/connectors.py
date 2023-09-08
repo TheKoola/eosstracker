@@ -371,6 +371,12 @@ class PacketStream:
                 #    self.disconnect()
                 #    self.okay.set()
 
+            else:
+                # socket isn't available for writing???  
+                self.logger.error(f"{self.server.nickname} aborting send as the socket wasn't ready")
+                self.disconnect()
+                self.okay.set()
+
         self.logger.debug(f"{self.server.nickname} send: ended")
 
 
@@ -424,10 +430,10 @@ class PacketStream:
         """
 
         # point at which we no longer add packets to the queue (i.e. these packets are dropped)
-        q_low_watermark = 500
+        q_low_watermark = 100
 
         # point at which we clear the queue.  Presumably because there's no catching up...because the downstream consumers aren't working this queue.
-        q_high_watermark = 550
+        q_high_watermark = 150
 
         # loop through each packet handler
         for ph in self.readhandlers:
@@ -448,12 +454,12 @@ class PacketStream:
 
                             # check the size of the queue to determine if we should add another packet on top.
                             if size < q_low_watermark:
-                                self.logger.debug(f"{self.server.nickname}  placing packet on {qname}:  [{q.qsize()}]  {packetobj}")
+                                self.logger.debug(f"{self.server.nickname}  placing packet on {qname}[{size}]:  {packetobj}")
                                 q.put(packetobj)  
 
                             elif size > q_high_watermark:
                                 # Above the high_watermark.  Assumed at this point that we can't catch up, so we clear the queue
-                                self.logger.warn(f"{self.server.nickname}  clearing {qname}...over high water mark.  qsize={size}") 
+                                self.logger.warn(f"{self.server.nickname} clearing {qname}[{size}] [above high water mark]") 
 
                                 # Attempt to clear the queue
                                 while not q.empty():
@@ -462,11 +468,17 @@ class PacketStream:
                                     except Empty:
                                         continue
 
-                                self.logger.warn(f"{self.server.nickname}  {qname} cleared.  qsize={q.qsize()}") 
+                                self.logger.warn(f"{self.server.nickname} {qname} cleared. qsize={q.qsize()}") 
+
+                                # with the queue cleared, add this most recent packet to the queue.
+                                q.put(packetobj)  
 
                             else:
-                                # queue is > than the low_watermark, but < high_watermark.  We do nothing hopefully giving time for the queue to drain.
-                                self.logger.warn(f"{self.server.nickname}.putPacketOnQueue. qsize={size}. Not added: {packetobj}")
+                                # queue is > than the low_watermark, but < high_watermark.  
+                                self.logger.warn(f"{self.server.nickname} placing packet on {qname}[{size}] [above low water mark]: {packetobj}")
+
+                                # Finally, go ahead and place the new packet on the queue
+                                q.put(packetobj)  
 
                         except (Full) as e:
                             # the queue was full, but we don't care...go check the next packet handle queue.
