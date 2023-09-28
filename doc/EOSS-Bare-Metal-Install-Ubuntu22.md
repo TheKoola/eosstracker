@@ -341,10 +341,10 @@ DIRNAME=aprsc
 
 # Grab the hotspot SSID and put that into the WWW home directory for display on the main web page
 if [ -f /etc/NetworkManager/system-connections/Hotspot ]; then
-    awk -F"=" '/^ssid=/ {print $2;}' /etc/NetworkManager/system-connections/Hotspot > /eosstracker/www/nodeid.txt
-    chmod 444 /eosstracker/www/nodeid.txt
+    /bin/awk -F"=" '/^ssid=/ {print $2;}' /etc/NetworkManager/system-connections/Hotspot > /eosstracker/www/nodeid.txt
+    /bin/chmod 444 /eosstracker/www/nodeid.txt
 else
-    rm -f /eosstracker/www/nodeid.txt
+    /bin/rm -f /eosstracker/www/nodeid.txt
 fi
 
 # Check and add necessary directories and mount points for aprsc >= 2.1.5
@@ -382,14 +382,14 @@ if [ ! -e $BASEDIR/dev/random ]; then
 fi
 
 # Mount libraries read-only for aprsc >= 2.1.5 chroot environment
-grep -q "$DIRNAME/lib " /proc/mounts || ( mount --bind /lib $BASEDIR/lib && mount -o remount,ro,bind $BASEDIR/lib )
+/bin/grep -q "$DIRNAME/lib " /proc/mounts || ( /bin/mount --bind /lib $BASEDIR/lib && /bin/mount -o remount,ro,bind $BASEDIR/lib )
 if [ -e /lib64 ]; then
-        grep -q "$DIRNAME/lib64 " /proc/mounts || ( mount --bind /lib64 $BASEDIR/lib64 && mount -o remount,ro,bind $BASEDIR/lib64 )
+        /bin/grep -q "$DIRNAME/lib64 " /proc/mounts || ( /bin/mount --bind /lib64 $BASEDIR/lib64 && /bin/mount -o remount,ro,bind $BASEDIR/lib64 )
 fi
 
-grep -q "$DIRNAME/usr/lib " /proc/mounts || ( mount --bind /usr/lib $BASEDIR/usr/lib && mount -o remount,ro,bind $BASEDIR/usr/lib )
+/bin/grep -q "$DIRNAME/usr/lib " /proc/mounts || ( /bin/mount --bind /usr/lib $BASEDIR/usr/lib && /bin/mount -o remount,ro,bind $BASEDIR/usr/lib )
 if [ -e /usr/lib64 ]; then
-        grep -q "$DIRNAME/usr/lib64 " /proc/mounts || ( mount --bind /usr/lib64 $BASEDIR/usr/lib64 && mount -o remount,ro,bind $BASEDIR/usr/lib64 )
+        /bin/grep -q "$DIRNAME/usr/lib64 " /proc/mounts || ( /bin/mount --bind /usr/lib64 $BASEDIR/usr/lib64 && /bin/mount -o remount,ro,bind $BASEDIR/usr/lib64 )
 fi
 
 exit 0
