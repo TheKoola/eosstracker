@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # This script will automagically install all the required packages from a bare metal
-# Ubuntu 18.04 LTS required for the EOSS tracker software.
+# Ubuntu 22.04 LTS required for the EOSS tracker software.
 # 
 # Run this as the root user:
 # 
@@ -70,7 +70,7 @@ echo ""
 
 sleep 1
 echo "Installing some additional packages..."
-apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony
+apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony avahi-daemon avahi-utils
 echo ""
 
 sleep 1
