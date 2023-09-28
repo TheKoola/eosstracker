@@ -113,6 +113,11 @@ Wired connection 1  fb1b7644-c634-3452-9ea8-1e5e6fc166c6  ethernet  --  �
 Wired connection 2  bcb06b9a-9be7-353b-b3d3-7424c2065ead  ethernet  --
 ```
 
+If you don't see any output (like above) from the nmcli command, the a reboot is likely the next course of action:
+```
+sudo reboot
+```
+
 ### Add in your home Wi-Fi (if applicable)
 ```
 sudo nmcli c add type wifi con-name Home-wifi ifname wlp2s0 ssid 'myssid'
@@ -124,8 +129,8 @@ nmcli c show
 
 ### Add in the hotspot wifi configuration
 ```
-nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
-nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
+sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
+sudo nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
 sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
 ```
 
