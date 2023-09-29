@@ -329,11 +329,11 @@ class KISS(object):
                 pass
             elif f_fesc:
                 if a == int_tfesc:
-                    tmp += bytes([KISS_FESC])
+                    tmp += KISS_FESC
                 elif a == int_tfend:
-                    tmp += bytes([KISS_FEND])
+                    tmp += KISS_FEND
                 else:
-                    tmp += bytes([KISS_FESC])
+                    tmp += KISS_FESC
                     tmp += bytes([a])
 
                 f_fesc = False
@@ -365,7 +365,7 @@ class KISS(object):
         ssid = (addr[6] >> 1) & 0xf     
         ext = addr[6] & 0x1
 
-        debugmsg("decode: {}, h: {}, ssid: {}, ext: {}".format(addr, h, ssid, ext))
+        debugmsg("decode: {}, h: {}, ssid: {}, ext: {}, type(addr): {}, type(addr[0]): {}".format(addr, h, ssid, ext, type(addr), type(addr[0])))
         #converted_addr = ''.join([chr(ord(a) >> 1) for a in addr[0:6]])
         converted_addr = b''.join([bytes([a >> 1]) for a in addr[0:6]])
         address = converted_addr.decode("UTF-8", "ignore")
