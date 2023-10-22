@@ -1634,7 +1634,8 @@
     ***********/
 function getTrackers() {
     $.get("gettrackers.php", function(data) {
-        var trackerJson = JSON.parse(data);
+        //var trackerJson = JSON.parse(data);
+        var trackerJson = data;
         var keys = Object.keys(trackerJson);
         var i; 
         var j;
@@ -1978,13 +1979,13 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 19, attribution: osmAttrib});
 
-        osmbright = L.mapboxGL({
-            style: '/tileserver/styles/osm-bright/style.json',
+        osmbright = L.maplibreGL({
+            style: '/tileserver/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
-        basic = L.mapboxGL({
-            style: '/tileserver/styles/klokantech-basic/style.json',
+        basic = L.maplibreGL({
+            style: '/tileserver/basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
@@ -2058,33 +2059,13 @@ function getTrackers() {
             getgps(true);
         }, 10);
 
-        baselayer = { "Base Map (raster)" : tilelayer };
- 
+
+        // set the base layers for the map
+        baselayer = { "Basic": basic, "OSM Bright": osmbright };
+        basic.addTo(map);
+
         // use the grouped layers plugin so the layer selection widget shows layers categorized
-        layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
-
-        // Add the raster map as the default base layer
-        tilelayer.addTo(map);
-
-        // Add vector maps as base layers if available.
-        $.get(basic.options.style, function(data, textStatus, xhr) {
-
-            // Add the basic vector layer to the map as the default base map layer
-            layerControl.addBaseLayer(basic, "Basic (vector)");
-
-            // Also add the osmbright vector map...if it exists.
-            $.get(osmbright.options.style, function(data, textStatus, xhr) {
-                layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
-            });
-        }).fail(function(data, textStatus, xhr) {
-            // Try to add the osmbright vector map...if it exists...and add it as the default base map layer
-            $.get(osmbright.options.style, function(data, textStatus, xhr) {
-
-                // Add the osmbright vector layer to the map as the default base map layer
-                layerControl.addBaseLayer(osmbright, "OSM Bright (vector)");
-            });
-        });
-
+        layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map);
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {

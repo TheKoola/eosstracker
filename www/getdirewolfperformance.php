@@ -115,7 +115,7 @@
                where 
                a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
                and a.tm > $2
-               and a.source = 'direwolf'
+               and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                group by 1,2,3,4,5
                order by 1,2,3,4,5
@@ -140,7 +140,7 @@
                where 
                a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
                and a.tm > to_timestamp($2)::timestamp at time zone $3
-               and a.source = 'direwolf'
+               and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                group by 1,2,3,4,5
                order by 1,2,3,4,5;";

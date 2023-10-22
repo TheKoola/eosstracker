@@ -80,11 +80,11 @@ else
 <script src="/common/leaflet-box.js"></script>
 
 <!-- Mapbox GL JS -->
-<script src="/common/mapbox-gl.js"></script>
-<link href="/common/mapbox-gl.css" rel="stylesheet">
+<script src="/common/maplibre-gl.js"></script>
+<link href="/common/maplibre-gl.css" rel="stylesheet">
 
-<!-- Leaflet shim for mapbox -->
-<script src="/common/leaflet-mapbox-gl.js"></script>
+<!-- Leaflet shim for maplibre -->
+<script src="/common/leaflet-maplibre-gl.js"></script>
 
 
 </head>

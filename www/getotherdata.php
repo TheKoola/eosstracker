@@ -144,7 +144,7 @@
                     z.location2d != '' 
                     and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
                     and z.tm > (to_timestamp($2)::timestamp)
-                    and z.source = 'other'
+                    and (z.source not like 'direwolf%' and z.source not like 'ka9q-radio%')
 
                     group by
                     z.hash,
@@ -163,7 +163,7 @@
                 and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                 and a.tm > (to_timestamp($4)::timestamp)
                 and a.symbol != '/_'
-                and a.source = 'direwolf'
+                and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                 order by 
                 a.hash,
@@ -546,7 +546,7 @@
                 z.location2d != '' 
                 and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
                 and z.tm > (to_timestamp($2)::timestamp)
-                and z.source = 'direwolf'
+                and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
 
                 group by
                 z.hash,
@@ -565,7 +565,7 @@
             and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
             and a.tm > (to_timestamp($4)::timestamp)
             and a.symbol != '/_'
-            and a.source = 'other'
+            and (a.source not like 'direwolf%' and a.source not like 'ka9q-radio%')
 
             order by 
             thetime asc,
@@ -818,7 +818,7 @@
         $tactical = $row['tactical'];
         $speed_mph = $row['speed_mph'];
         $heardfrom = $row['heardfrom'];
-        if ($row["source"] == 'direwolf')
+        if (str_starts_with($row["source"], 'direwolf'))
             $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
         else
             $frequency = "TCPIP";
@@ -942,7 +942,7 @@
                 b.callsign is null
                 and a.tm > now()::date
                 and a.ptype = ':'
-                and a.source = 'direwolf'
+                and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
                 and a.raw not like ('%:PARM.%')
                 and a.raw not like ('%:UNIT.%')
                 and a.raw not like ('%:EQNS.%')

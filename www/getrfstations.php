@@ -145,7 +145,7 @@
                     z.location2d != '' 
                     and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
                     and z.tm > (to_timestamp($2)::timestamp)
-                    and z.source = 'other'
+                    and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
 
                     group by
                     z.hash,
@@ -164,7 +164,7 @@
                 and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                 and a.tm > (to_timestamp($4)::timestamp)
                 and a.symbol != '/_'
-                and a.source = 'direwolf'
+                and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                 order by 
                 a.hash,

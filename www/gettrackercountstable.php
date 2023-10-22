@@ -116,7 +116,7 @@
                 where
                     a.tm > date_trunc('minute', (now() - (to_char(($1)::interval, 'HH24:MI:SS')::time)))::timestamp
                     and a.tm > $2
-                    and a.source = 'direwolf'
+                    and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                 order by
                     a.tm,

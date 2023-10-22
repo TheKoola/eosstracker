@@ -235,7 +235,7 @@
                             z.location2d != '' 
                             and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
                             and z.tm > to_timestamp(cast($8 as bigint))
-                            and z.source = 'direwolf'
+                            and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
 
                             group by
                             z.hash,
@@ -252,7 +252,7 @@
                         and dw.hash is null
                         and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                         and a.tm > to_timestamp(cast($9 as bigint))
-                        and a.source = 'other'
+                        and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
                         and fm.flightid = f.flightid
                         and f.active = 'y'
                         and a.callsign = fm.callsign
@@ -367,7 +367,7 @@
                                 z.location2d != '' 
                                 and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
                                 and z.tm > to_timestamp(cast($10 as bigint))
-                                and z.source = 'other'
+                                and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
 
                                 group by
                                 z.hash,
@@ -387,7 +387,7 @@
                             and fm.flightid = f.flightid
                             and f.active = 'y'
                             and a.callsign = fm.callsign
-                            and a.source = 'direwolf'
+                            and (a.source like 'direwolf%' a.source like 'ka9q-radio%')
 
                             order by 
                             a.hash,
