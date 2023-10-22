@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2020,2023 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 ##################################################
 
 import multiprocessing as mp
+from queue import Empty
 import subprocess as sb
 import time
 import datetime 
 import psycopg2 as pg
 import aprslib
-import logging
 import threading as th
 import socket
 import sys
@@ -32,303 +32,261 @@ import signal
 import random
 from inspect import getframeinfo, stack
 import string
+from dataclasses import dataclass
+import logging
+from logging.handlers import QueueHandler, QueueListener, TimedRotatingFileHandler
 
 #import local configuration items
 import habconfig 
-import kiss
-
-#logging.basicConfig(level=0)
+from packet import Packet
 
 
 #####################################
-## Set this to "True" to have debugging text output when running
-debug = False
+# database error class
 #####################################
-
-
-#####################################
-# Function for printing out debug info
-def debugmsg(message):
-    if debug:
-        caller = getframeinfo(stack()[1][0])
-        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
-        sys.stdout.flush()
+@dataclass
+class DBError(Exception):
+    """
+    Raised when there was some sort of database error.  Allows for a custom message to be set.
+    """
+    message: str = None
 
 
 #####################################
-# base class for connecting to APRS-IS systems
+# base class for writing packets to the database
 #####################################
-class kissTap(object):
-    def __init__(self, connectionRetryLimit = None, timezone = None, dbConnectionString = None, stopevent = None, freqmap = None):
-        # The database connection string
-        self.dbstring = habconfig.dbConnectionString
-        if dbConnectionString:
-            self.dbstring = str(dbConnectionString)
+@dataclass
+class databaseWriter(object):
 
-        # The database connection object
-        self.kissconn = None
+    # The database connection string
+    dbstring: str = habconfig.dbConnectionString
 
-        # The timezone
-        self.timezone = 'America\Denver'
-        if timezone:
-            self.timezone = str(timezone)
+    # The database connection object
+    dbconn: pg.extensions.connection = None
 
-        # the connection attempt limit and timeout per try
-        self.timeout = 5
-        self.long_timeout = 30
+    # The queue where incoming packets are stored
+    packetqueue: mp.Queue = None
 
-        # by default, the connectionRetryLimit is set to None, which will cause the run() function to loop forever.
-        self.connectionRetryLimit = None
-        if connectionRetryLimit:
-            self.connectionRetryLimit = connectionRetryLimit
+    # The timezone
+    timezone: str = 'America\Denver'
 
-        # Placeholder for multiprocessing event from run() function
-        if stopevent:
-            self.stopevent = stopevent
-        else:
-            self.stopevent = mp.Event()
+    # Placeholder for multiprocessing event from run() function
+    stopevent: mp.Event = mp.Event()
 
-        # Last time a packet was ingested/handled. 
-        self.ts = datetime.datetime.now()
+    # Last time a packet was ingested/handled. 
+    ts: datetime.datetime = datetime.datetime.now()
 
-        # Default channel-to-frequency map
-        if freqmap:
-            self.freqmap = freqmap
-        else:
-            self.freqmap = [ [0, 144390000] ]
+    # the logging queue
+    loggingqueue: mp.Queue = None
 
-        debugmsg("kissTap Instance Created:")
-        debugmsg("    dbstring:       %s" % self.dbstring)
-        debugmsg("    timezone:       %s" % self.timezone)
-        debugmsg("    timeout:        %s" % self.timeout)
-        debugmsg("    long_timeout:   %s" % self.long_timeout)
+    #####################################
+    # the post init constructor
+    #####################################
+    def __post_init__(self)->None:
 
+        # setup logging
+        self.logger = logging.getLogger(f"{__name__}.{__class__}")
+        self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False
+
+        # check if a logging queue was supplied
+        if self.loggingqueue is not None:
+
+            # a queue was supplied so we setup a queuehandler
+            handler = QueueHandler(self.loggingqueue)
+            self.logger.addHandler(handler)
+
+        self.logger.debug("databaseWriter Instance Created:")
+        self.logger.debug(f"    dbstring: {self.dbstring}")
+        self.logger.debug(f"    timezone: {self.timezone}")
 
 
     ################################
-    # 
-    # This function will save the channel to frequency map
-    def setFreqMap(self, fmap):
-        self.freqmap = fmap
-
-
+    # This function will block until the stopevent is triggered
     ################################
-    # 
-    # This function will block until the connection try limit is reached or the stopevent is triggered
     def run(self):
 
-        try:
+        # The number of times we've tried to connect to the database
+        trycount = 0
 
-            # Check the database connection
-            if not self.connectToDatabase():
-                return
+        # timeout between tries
+        timeout = 5
 
-            # set the connection retry loop limit
-            if self.connectionRetryLimit:
-                trylimit = self.connectionRetryLimit
-            else:
-                trylimit = 999999999
+        # long timeout
+        long_timeout = timeout * 12
 
-            debugmsg("Connection retry loop limit set to: %s" % trylimit)
+        # This will attempt a connection multiples times (ie. the following while loop), waiting a few seconds in between tries.
+        while not self.stopevent.is_set():
 
-            # Create a KISS object
-            k = kiss.KISS(stopevent = self.stopevent)
+                # wait before trying to connect, but as the number of attempts grows larger, slow down...
+                if trycount > 18:
+                    self.logger.debug(f"Waiting for {long_timeout} seconds")
+                    self.stopevent.wait(long_timeout)
+                elif trycount > 0:
+                    self.logger.debug(f"Waiting for {timeout} seconds")
+                    self.stopevent.wait(timeout)
 
-            # This will attempt a connection multiples times (ie. the following while loop), waiting self.timemout seconds in between tries.
-            trycount = 0
-            while trycount < trylimit and not self.stopevent.is_set():
+                # Try and connect to the database
+                connected = self.connectToDatabase()
 
-                    # wait before trying to connect, but if the number or attempts grows larger, slow down...
-                    if trycount > 18:
-                        debugmsg("Waiting for %d seconds" % self.long_timeout)
-                        self.stopevent.wait(self.long_timeout)
-                    elif trycount > 0:
-                        debugmsg("Waiting for %d seconds" % self.timeout)
-                        self.stopevent.wait(self.timeout)
+                self.logger.debug(f"connection to the database:  {connected}")
 
-                    debugmsg("Running KISS read function....")
+                # if the connection was successful, then we set the trycount back to zero
+                if connected:
+                    trycount = 0
+
+                # Now loop, checking the incoming queue for packets that need to be written to the database
+                while connected and not self.stopevent.is_set():
 
                     # Update the last timestamp
                     self.ts = datetime.datetime.now()
 
-                    # The read function runs forever...
-                    if not k.read(self.writeToDatabase):
-                        debugmsg("Kiss read function returned FALSE.  Exiting...")
-                        self.close()
-                        return False
+                    try: 
+                        # attempt to read a packet from the queue
+                        packet = self.packetqueue.get_nowait()
 
-                    debugmsg("Kiss read function returned.")
+                        # if a packet was returned from the queue, then write it to the database
+                        if packet is not None:
 
-                    # Increment trycount each time through the loop
-                    trycount += 1
+                            self.logger.debug(f"Packet from queue:  {packet}")
 
-            print("Ending KISS-tap process.")
-            self.close()
+                            # write this packet to the database
+                            self.writeToDatabase(packet)
 
-        except (KeyboardInterrupt, SystemExit) as err:
-            debugmsg("Caught interrupt event, exiting run() function:  {}".format(err))
-            self.close()
+                    except (Empty, ValueError) as e:
+
+                        self.logger.debug(f"Packetqueue was empty: {e}")
+
+                        # if the queue was empty, then wait for a second before retrying
+                        self.stopevent.wait(1)
+
+                    except (DBError) as e:
+
+                        self.logger.debug("DBError: {e}")
+
+                        # something happened with the database write attempt, break out of this inner loop
+                        break
+
+                # Close our database connection
+                self.close()
+
+                # Increment trycount each time through the loop
+                trycount += 1
+
+        self.logger.info("Ending databasewriter process.")
+        self.close()
+
+        #except (KeyboardInterrupt, SystemExit) as err:
+        #    self.logger.debug(f"Caught interrupt event, exiting run() function:  {err}")
+        #    self.close()
 
 
 
-    ################################
+    ##################################################
     # destructor
+    ##################################################
     def __del__(self):
-        debugmsg("__del__: calling close()")
+        self.logger.debug("__del__: calling close()")
         self.close()
 
 
-    ################################
+    ##################################################
     # Function for closing all connections
+    ##################################################
     def close(self):
         try:
 
-            if self.kissconn:
-                if not self.kissconn.closed:
-                    debugmsg("closing database connection")
-                    self.kissconn.close()
+            if self.dbconn:
+                if not self.dbconn.closed:
+                    self.logger.debug("closing database connection")
+                    self.dbconn.close()
                 else:
-                    debugmsg("Databse connection was already closed")
+                    self.logger.debug("Databse connection was already closed")
             else:
-                debugmsg("Database connection not created.")
+                self.logger.debug("Database connection not created.")
         except pg.DatabaseError as error:
-            print(error)
+            self.logger.error(f"Database error: {error}")
 
 
-    ################################
+    ##################################################
     # Set the database connection string
+    ##################################################
     def setDBConnection(self, dbstring = None):
         # Set the database connection 
         if dbstring:
-            debugmsg("Setting databse connection string to: %s" % dbstring)
+            self.logger.debug(f"Setting databse connection string to: {dbstring}")
             self.dbstring = dbstring
 
 
-    ################################
+    ##################################################
     # Function for connecting to the database
+    ##################################################
     def connectToDatabase(self, dbstring = None):
         if dbstring:
             self.dbstring = dbstring
 
         if not self.dbstring:
-            debugmsg("Database connection string not set.")
+            self.logger.debug("Database connection string not set.")
             return False
 
         try:
 
             # If not already connected to the database, then try to connect
-            if not self.kissconn:
-                debugmsg("Connecting to the database: %s" % self.dbstring)
+            if not self.dbconn:
+                self.logger.debug(f"Connecting to the database: {self.dbstring}")
 
                 # Connect to the database
-                self.kissconn = pg.connect (self.dbstring)
+                self.dbconn = pg.connect (self.dbstring)
 
                 # Set autocommit to on
-                self.kissconn.set_session(autocommit=True)
+                self.dbconn.set_session(autocommit=True)
 
             return True
 
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            print(error)
+            self.logger.error(f"Database error: {error}")
             return False
 
 
 
-    ################################
-    # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
-    def getGPSPosition(self):
-        # We want to determine our last known position (from the GPS) 
-        gps_sql = """select 
-            tm::timestamp without time zone as time, 
-            round(speed_mph) as speed_mph, 
-            bearing, 
-            round(altitude_ft) as altitude_ft, 
-            round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
-            round(cast(ST_X(location2d) as numeric), 6) as longitude 
-           
-            from 
-            gpsposition 
-          
-            order by 
-            tm desc 
-            limit 1;"""
-
-
-        gpsposition = {
-                "altitude" : 0.0,
-                "latitude" : 0.0,
-                "longitude" : 0.0,
-                "isvalid" : False
-                }
-        try:
-
-            # Check if we're connected to the database or not.
-            if not self.connectToDatabase():
-                return gpsposition
-
-            # Execute the SQL statment and get all rows returned
-            gpscur = self.kissconn.cursor()
-            gpscur.execute(gps_sql)
-            gpsrows = gpscur.fetchall()
-            gpscur.close()
-
-            # There should only be one row returned from the above query, but just in case we loop through each row saving our 
-            # last altitude, latitude, and longitude
-            if len(gpsrows) > 0:
-                for gpsrow in gpsrows:
-                    my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
-                    my_lat = gpsrow[4]
-                    my_lon = gpsrow[5]
-
-                gpsposition = {
-                        "altitude" : float(my_alt),
-                        "latitude" : float(my_lat),
-                        "longitude" : float(my_lon),
-                        "isvalid" : True
-                        }
-
-                debugmsg("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))
-
-            return gpsposition
-
-        except pg.DatabaseError as error:
-            # If there was a connection error, then close these, just in case they're open
-            gpscur.close()
-            self.close()
-            print(error)
-            return gpsposition
-
-
     ##################################################
     # Write an incoming packet to the database
-    def writeToDatabase(self, x, channel = 0):
+    ##################################################
+    def writeToDatabase(self, p: Packet):
+        """
+        this will write the incoming packet (p) to the database. 
+        """
+
+        
 
         # If packet is None then just return
-        if not x:
-            debugmsg("writeToDatabase: packet is None.")
-            return
+        if not p:
+            self.logger.debug("writeToDatabase: packet is None.")
+            return None
 
         try:
 
-            debugmsg("writeToDatabase.  x (%s): %s, channel: %d" % (type(x), x, channel))
+            # The raw APRS packet (this is already converted to UTF-8 text)
+            x = p.text
+
+            # the frequency
+            frequency = p.frequency
+
+            # this is no longer used, so we just set it to 0 because the database packets table still uses this.
+            channel = 0
+
+            self.logger.debug(f"writeToDatabase.  x({type(x)}): {x}, frequency: {frequency}")
 
             # Create a database cursor
-            tapcur = self.kissconn.cursor()
+            tapcur = self.dbconn.cursor()
 
             # Update the watchdog timer
             self.ts = datetime.datetime.now()
 
-            # The source (i.e. we're listening to packets from Direwolf's KISS port)
-            source = "direwolf"
-
-            # Determine the frequency (ex. 144390000, 145645000, etc.) from the channel
-            frequency = [i[1] for i in self.freqmap if i[0] == channel]
-            if len(frequency) > 0:
-                frequency = frequency[0]
-            else:
-                frequency = -1
+            # The source (i.e. we're listening to packets from Direwolf's KISS port, the ka9q-radio, etc.)
+            packetsource = p.source  # "ka9q-radio", "direwolf", etc.
 
             # Parse the raw APRS packet
             packet = aprslib.parse(x)
@@ -386,7 +344,7 @@ class kissTap(object):
                 packet["from"] = packet["object_name"]
 
 
-            debugmsg("checking if a posit packet...")
+            self.logger.debug("checking if a posit packet...")
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
             if packet["latitude"] == "" or packet["longitude"] == "":
                 # SQL insert statement for packets that DO NOT contain a location (i.e. lat/lon)
@@ -394,7 +352,7 @@ class kissTap(object):
                     now()::timestamp with time zone, 
                     %s,
                     %s::numeric,
-                    %s::numeric,
+                    %s::numeric, 
                     %s, 
                     %s, 
                     round((%s::numeric) * 0.6213712), 
@@ -409,8 +367,8 @@ class kissTap(object):
                 );"""
 
                 # Execute the SQL statement
-                debugmsg("Packet SQL: " + sql % (
-                    source,
+                self.logger.debug("Packet SQL: " + sql % (
+                    packetsource,
                     channel,
                     frequency,
                     packet["from"], 
@@ -424,7 +382,7 @@ class kissTap(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    source,
+                    packetsource,
                     channel,
                     frequency,
                     packet["from"].strip(), 
@@ -459,8 +417,8 @@ class kissTap(object):
                 );"""
 
                 # Execute the SQL statement
-                debugmsg("Packet SQL: " + sql % (
-                    source,
+                self.logger.debug("Packet SQL: " + sql % (
+                    packetsource,
                     channel,
                     frequency,
                     packet["from"], 
@@ -479,7 +437,7 @@ class kissTap(object):
                     info)
                     )
                 tapcur.execute(sql, [
-                    source,
+                    packetsource,
                     channel,
                     frequency,
                     packet["from"].strip(), 
@@ -499,26 +457,25 @@ class kissTap(object):
                 ])
 
             # Commit the insert to the database
-            self.kissconn.commit()
+            self.dbconn.commit()
 
             # Close the database cursor
             tapcur.close()
 
-             
 
-        except (ValueError, UnicodeEncodeError) as error:
-            #ts = datetime.datetime.now()
-            #thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            #print thetime, "Skipping DB insert for packet(", x, "):  ", error
-            #sys.stdout.flush()
-            pass
+        except (NameError, ValueError, UnicodeEncodeError) as error:
+            self.logger.warning(f"Error parsing packet({x}): {error}")
 
         except pg.DatabaseError as error:
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-            print(thetime, "Database error with packet(", x, "):  ", error)
+            self.logger.error(f"{thetime}: Database error with packet(\"{x}\"): {error}")
             tapcur.close()
             self.close()
+
+            # raise an error that something happened with the database
+            raise DBError(f"Attempting to add packet to database: {error}")
+
 
         except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
             # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
@@ -552,7 +509,7 @@ class kissTap(object):
                 info = x[s+1:]
 
                 if info.find(chr(0x00)) >= 0:
-                    print("unable to parse. null character, info:  ", info)
+                    self.logger.info(f"Unable to parse. null character, info: {info}")
 
                 # remvove nul chars from info
                 info = info.replace(chr(0x00), '')
@@ -562,7 +519,7 @@ class kissTap(object):
                     info = info.decode("UTF-8", "ignore")
 
                 if info.find(chr(0x00)) >= 0:
-                    print("unable to parse again. null character, info:  ", info)
+                    self.logger.info(f"unable to parse again. null character, info: {info}")
 
 
             # if we've been able to parse the packet then proceed, otherwise, we skip
@@ -583,8 +540,8 @@ class kissTap(object):
                 );"""
 
                 # Execute the SQL statement
-                debugmsg("Packet SQL: " + sql % (
-                    source,
+                self.logger.debug("Packet SQL: " + sql % (
+                    packetsource,
                     channel,
                     frequency,
                     callsign.strip(),
@@ -594,7 +551,7 @@ class kissTap(object):
                     ))
                 try: 
                     tapcur.execute(sql, [
-                        source,
+                        packetsource,
                         channel,
                         frequency,
                         callsign.strip(), 
@@ -605,39 +562,54 @@ class kissTap(object):
                 except pg.DatabaseError as error:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print(thetime, "Database error with packet(", x, "):  ", error)
+                    self.logger.error(f"{thetime}: Database error with packet(\"{x}\"): {error}")
                     tapcur.close()
+
+                    # Raise the database error
+                    raise DBError("A database error occured during 2nd attempt: {}".format(error))
                     
                 except ValueError as e:
                     ts = datetime.datetime.now()
                     thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
-                    print(thetime, "kisstap. Error adding packet(", x, "): ", e)
+                    self.logger.warning(f"{thetime}: Databasewriter. Error adding packet(\"{x}\": {e}")
                     tapcur.close()
 
 
-        except (StopIteration, KeyboardInterrupt, SystemExit): 
+        except (StopIteration):
             tapcur.close()
             self.close()
 
+        return True
+
 
 ##################################################
-# runKissTap process
+# runDatabaseWriter
 ##################################################
-def runKissTap(schedule, e, config, freqmap):
+def runDatabaseWriter(config):
     try:
 
-        # Create a new kissTap object
-        debugmsg("Starting KISS Tap process.")
-        k = kissTap(timezone = config["timezone"], freqmap = freqmap, stopevent = e)
+        # setup logging
+        logger = logging.getLogger(__name__)
+        qh = QueueHandler(config["loggingqueue"])
+        logger.addHandler(qh)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
 
-        # Loop through continuing to try and connect/run the tap, waiting 'schedule' seconds between attempts
-        debugmsg("Waiting %d seconds before running kissTap.run()." % schedule)
-        e.wait(schedule)
+        # configure logging for the aprslib module
+        logging.getLogger("aprslib").addHandler(qh)
 
-        debugmsg("Running kissTap.run()...")
+        # Create a new database writer object
+        logger.info("Starting databasewriter process.")
+        k = databaseWriter(timezone = config["timezone"], stopevent = config["stopevent"], packetqueue = config["databasequeue"])
+
+        logger.debug(f"databasewriter: {k}")
+        logger.debug("Running databaseWriter.run()...")
         k.run()
 
     except (KeyboardInterrupt, SystemExit): 
+        logger.debug(f"runDatabaseWriter caught keyboardinterrupt")
+        config["stopevent"].set()
         k.close()
-        print("kissTap ended")
+
+    logging.info("databaseWriter ended")
 

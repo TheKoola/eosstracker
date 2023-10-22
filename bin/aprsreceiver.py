@@ -34,6 +34,10 @@ import signal
 import time
 import math
 
+import multiprocessing as mp
+import logging
+from logging.handlers import QueueHandler
+
 
 ##################################################
 # gcd
@@ -98,7 +102,6 @@ def getResamplerFactors(sample_rate, spread, audio_rate):
 # getRTLSampleRate
 #    This inputs a given sample rate and the direwolf audio rate and outputs a new rate that is a multiple of the direwolf audio rate
 ##################################################
-
 def getRTLSampleRate(samplerate, audiorate):
 
     # get the multiple vs. the direwolf audio rate
@@ -116,8 +119,24 @@ def getRTLSampleRate(samplerate, audiorate):
 #    This is the process that listens on various frequencies
 ##################################################
 class aprs_receiver(gr.top_block):
-    def __init__(self, freqlist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip = '127.0.0.1', samplerate = 48000):
+    def __init__(self, freqlist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip = '127.0.0.1', samplerate = 48000, loggingqueue = None):
         gr.top_block.__init__(self, "APRS Receiver for Multiple Frequencies")
+
+        # the logging queue
+        self.loggingqueue = loggingqueue
+
+        # setup logging
+        self.logger = logging.getLogger(f"{__name__}.{__class__}")
+        self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False
+
+        # check if a logging queue was supplied
+        if self.loggingqueue is not None:
+
+            # a queue was supplied so we setup a queuehandler
+            handler = QueueHandler(self.loggingqueue)
+            self.logger.addHandler(handler)
+
 
         self.Frequencies = freqlist
 
@@ -125,7 +144,6 @@ class aprs_receiver(gr.top_block):
         self.rtl_id = prefix + "=" + str(rtl)
 
         # MTU size for the size of packets we'll end up sending over UDP to direwolf
-        #self.mtusize = 9000
         self.mtusize = 1472
 
         # FM deviation.  Setting this to 5kHz because we can't "assume".  ;)
@@ -217,14 +235,21 @@ class aprs_receiver(gr.top_block):
             self.osmosdr_source_0.set_gain(12, 'MIX', 0)
             self.osmosdr_source_0.set_gain(13,  'IF',  0)
 
-            # We need to calculate a sample rate which is a multiple of the direwolf audio rate, from there we can then determine the numerator & denominator for the resampler
-            numerator, denominator, n = getResamplerFactors(self.samp_rate, spread, self.direwolf_audio_rate)
+            if self.samp_rate % self.direwolf_audio_rate:
 
-            # The downstream sample rate (i.e. used by blocks south of the rational resampler)
-            self.downstream_samp_rate = self.direwolf_audio_rate * n
+                # We need to calculate a sample rate which is a multiple of the direwolf audio rate, from there we can then determine the numerator & denominator for the resampler
+                numerator, denominator, n = getResamplerFactors(self.samp_rate, spread, self.direwolf_audio_rate)
 
-            # resampler to get the sample rate down to something that will fit nicely with the audio rate to direwolf
-            self.rational_resampler = filter.rational_resampler_ccc(interpolation=numerator, decimation=denominator)
+                # The downstream sample rate (i.e. used by blocks south of the rational resampler)
+                self.downstream_samp_rate = self.direwolf_audio_rate * n
+
+                # resampler to get the sample rate down to something that will fit nicely with the audio rate to direwolf
+                self.rational_resampler = filter.rational_resampler_ccc(interpolation=numerator, decimation=denominator)
+
+            else:
+
+                # the direwolf audio rate is already a multiple of the airspy sample rate, so we can get by without using a rational_resampler.
+                self.downstream_samp_rate = self.samp_rate
 
         # Not an airspy device...so we set sample rates and parameters as multiples direwolf audio rate
         else: 
@@ -268,6 +293,11 @@ class aprs_receiver(gr.top_block):
         if self.channel_cutoff_freq < 2200 + self.max_deviation:
             self.channel_cutoff_freq = 2200 + self.max_deviation
 
+        ########################### testing ########################
+        self.channel_cutoff_freq = (2200 + self.max_deviation) / 2
+        self.channel_transition_width = (self.channel_width / 2) - self.channel_cutoff_freq
+        ########################### testing ########################
+
         # FM channel low pass filter taps
         self.channel_lowpass_taps = firdes.low_pass(1, self.downstream_samp_rate, self.channel_cutoff_freq, self.channel_transition_width, fft.window.WIN_HANN, 6.76)
 
@@ -293,13 +323,19 @@ class aprs_receiver(gr.top_block):
         if prefix == "airspy" and self.rational_resampler:
             self.connect((self.osmosdr_source_0, 0), (self.rational_resampler, 0))
 
+        # string we'll use to create the list of frequencies this SDR device will be listening too
+        freq_string = ""
+
+        # the sdr device serialno string
+        rtlsn_string = ""
+
         # Now construct a seperate processing chain for each frequency we're listening to.
         # processing chain:
         #    osmosdr_source ---> xlating_fir_filter ---> quad_demod ---> audio_lowpass_filter ---> agc ---> float_to_short ---> UDP_sink
         #
-        for freq,port,p,sn in self.Frequencies:
-            #print "   channel:  [%d] %dMHz" % (port, freq)
-            #print "   quadrate:  %d" % (self.quadrate)
+        for freq,port,p,sn,idx in self.Frequencies:
+            self.logger.debug(f"    channel: [{port}] {freq}MHz")
+            self.logger.debug(f"    quadrate: {self.quadrate}")
             freq_xlating_fir_filter = filter.freq_xlating_fir_filter_ccf(self.decimation, self.channel_lowpass_taps, float(freq)-float(self.center_freq), float(self.downstream_samp_rate))
             blocks_udp_sink = network.udp_sink(gr.sizeof_short*1, 1, ip, port, 0, self.mtusize, True)
             blocks_float_to_short = blocks.float_to_short(1, self.scale)
@@ -326,37 +362,48 @@ class aprs_receiver(gr.top_block):
             self.connect((analog_agc, 0), (blocks_float_to_short, 0))
             self.connect((blocks_float_to_short, 0), (blocks_udp_sink, 0))
 
-        print("==== GnuRadio parameters ====")
+            # append our frequency list string
+            freq_string += " " + str(freq)
+
+            # the SDR device serial number
+            rtlsn_string = str(sn)
+
+        self.logger.info("==== GnuRadio parameters ====")
         instance_string = "    " + str(self.rtl_id) + ":  "
         if prefix == "airspy": 
-            print("    Processing chain:")
-            print("        osmosdr_source (" + self.rtl_id + ") --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod -->")
-            print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
+            self.logger.info("    Processing chain:")
+            self.logger.info(f"        osmosdr_source ({self.rtl_id}) --> rational_resampler --> xlating_fir_filter (channel taps) --> quad_demod -->")
+            self.logger.info("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
         else:
-            print("    Processing chain:")
-            print("        osmosdr_source (" + self.rtl_id + ") --> xlating_fir_filter (channel taps) --> quad_demod -->")
-            print("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
-        print(instance_string, "len(channel taps):   ", len(self.channel_lowpass_taps))
-        print(instance_string, "len(audio taps):     ", len(self.audio_taps))
-        print(instance_string, "Source sample rate:  ", self.samp_rate)
-        print(instance_string, "Downstrm samp rate:  ", self.downstream_samp_rate)
-        print(instance_string, "Channel width (Hz):  ", self.channel_width)
-        print(instance_string, "Dwolf audio rate:    ", self.direwolf_audio_rate)
-        print(instance_string, "Quadrature rate:     ", self.quadrate)
-        print(instance_string, "Frequency spread:    ", spread)
-        print(instance_string, "Center frequency:    ", self.center_freq)
-        print(instance_string, "Xlating decimation:  ", self.decimation)
+            self.logger.info("    Processing chain:")
+            self.logger.info(f"        osmosdr_source ({self.rtl_id}) --> xlating_fir_filter (channel taps) --> quad_demod -->")
+            self.logger.info("        audio_lowpass_filter (audio taps) --> agc --> float_to_short --> UDP_sink")
+
+        self.logger.info(f"{instance_string} Frequency list:      {freq_string}")
+        self.logger.info(f"{instance_string} Device serial no:     {rtlsn_string}")
+        self.logger.info(f"{instance_string} len(channel taps):    {len(self.channel_lowpass_taps)}")
+        self.logger.info(f"{instance_string} Channel width (Hz):   {self.channel_width}")
+        self.logger.info(f"{instance_string} Channel cutoff freq:  {self.channel_cutoff_freq}")
+        self.logger.info(f"{instance_string} Channel trans width:  {self.channel_transition_width}")
+        self.logger.info(f"{instance_string} len(audio taps):      {len(self.audio_taps)}")
+        self.logger.info(f"{instance_string} Source sample rate:   {self.samp_rate}")
+        self.logger.info(f"{instance_string} Downstrm samp rate:   {self.downstream_samp_rate}")
+        self.logger.info(f"{instance_string} Dwolf audio rate:     {self.direwolf_audio_rate}")
+        self.logger.info(f"{instance_string} Quadrature rate:      {self.quadrate}")
+        self.logger.info(f"{instance_string} Frequency spread:     {spread}")
+        self.logger.info(f"{instance_string} Center frequency:     {self.center_freq}")
+        self.logger.info(f"{instance_string} Xlating decimation:   {self.decimation}")
 
         if prefix == "airspy":
-            print(instance_string, "Airspy LNA Gain:     ", self.osmosdr_source_0.get_gain("LNA"))
-            print(instance_string, "Airspy MIX Gain:     ", self.osmosdr_source_0.get_gain("MIX"))
-            print(instance_string, "Airspy VGA Gain:     ", self.osmosdr_source_0.get_gain("IF"))
-            print(instance_string, airspy_rates_string)
-            print(instance_string, "Airspy source sample rate set to:  ", self.samp_rate)
+            self.logger.info(f"{instance_string} Airspy LNA Gain:     {self.osmosdr_source_0.get_gain('LNA')}")
+            self.logger.info(f"{instance_string} Airspy MIX Gain:     {self.osmosdr_source_0.get_gain('MIX')}")
+            self.logger.info(f"{instance_string} Airspy VGA Gain:     {self.osmosdr_source_0.get_gain('IF')}")
+            self.logger.info(f"{instance_string} {airspy_rates_string}")
+            self.logger.info(f"{instance_string} Airspy source sample rate set to:  {self.samp_rate}")
         else:
-            print(instance_string, "Gain mode:           ", "automatic")
+            self.logger.info(f"{instance_string} Gain mode:           automatic")
 
-        print("=============================")
+        self.logger.info("=============================")
 
         sys.stdout.flush()
 
@@ -364,23 +411,39 @@ class aprs_receiver(gr.top_block):
 # GRProcess:
 #    - Then starts up an instance of the aprs_receiver class
 ##################################################
-def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip_dest = '127.0.0.1', rate = 48000, e = None):
+#def GRProcess(flist=[[144390000, 12000, "rtl", "n/a"]], rtl=0, prefix="rtl", ip_dest = '127.0.0.1', rate = 48000, e = None):
+def GRProcess(config, flist, prefix, serialno, index):
+
+    # name of this SDR device
+    rtl = prefix + str(index) + "[" + str(serialno) + "]"
+
     try:
 
-        #print("GR [%d], listening on: " % rtl, flist)
+        # setup logging
+        logger = logging.getLogger(__name__)
+        qh = QueueHandler(config["loggingqueue"])
+        logger.addHandler(qh)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+
+        e = config["stopevent"]
+
+        logger.info(f"{rtl}:  Starting GnuRadio process for SDR")
 
         # create an instance of the aprs receiver class
-        tb = aprs_receiver(freqlist=flist, rtl=rtl, prefix=prefix, ip=ip_dest, samplerate=rate)
+        tb = aprs_receiver(freqlist=flist, rtl=index, prefix=prefix, ip=config["direwolfserver"], samplerate=config["direwolfaudiorate"], loggingqueue = config["loggingqueue"])
 
         # call its "run" method...this blocks until done
         tb.start()
         e.wait()
-        print("Stopping GnuRadio...")
+        logger.info(f"{rtl}:  Stopping GnuRadio")
         tb.stop()
-        print("GnuRadio ended")
+        logger.info(f"{rtl}:  GnuRadio ended")
 
     except (KeyboardInterrupt, SystemExit):
+        logger.debug(f"GRProcess caught keyboardinterrupt")
+        config["stopevent"].set()
         tb.stop()
-        print("GnuRadio ended")
+        logger.info(f"{rtl}:  GnuRadio ended on interrupt")
 
 

@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -26,12 +27,13 @@
 # 
 # All of these functions require a valid and open connection the postgresql database.
 #
-# def getFlights(dbconn):
-# def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins = 20):
-# def getSurfaceWinds(dbconn, flightid):
-# def getLandingElevation(dbconn, balloon_callsign, distance):
-# def getGPSPosition(dbconn):
-# def getPredictFile(dbconn, flightid = '', launchsite = ''):
+#def getFlights(dbconn = None, logger = None):
+#def getLatestPackets(dbconn = None, callsign = None, timezone = None, cutoff = 20, logger = None):
+#def getSurfaceWinds(dbconn = None, flightid = None, logger = None):
+#def getLandingElevation(dbconn = None, callsign = None, distance = None, logger = None):
+#def getGPSPosition(dbconn = None, logger = None):
+#def getPredictFile(dbconn = None, flightid = None, launchsite = None, logger = None):
+#def test_connectToDatabase(db_connection_string = None, logger = None):
 ##################################################
 
 import os
@@ -47,32 +49,22 @@ from scipy.interpolate import *
 from scipy.optimize import *
 from inspect import getframeinfo, stack
 import json
+import logging
+from logging.handlers import QueueHandler
 
 #import local configuration items
 import habconfig 
 
 
-
-#####################################
-## Set this to "True" to have debugging text output when running
-debug = False
-#####################################
-
-
-#####################################
-# Function for printing out debug info
-def debugmsg(message):
-    if debug:
-        caller = getframeinfo(stack()[1][0])
-        print("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message))
-        sys.stdout.flush()
-
-
-
 ################################
 # Function for querying the database to get a list of active flightids and the beacon's callsigns assigned to those flights.
 # The resulting list of flights and callsigns is returned
-def getFlights(dbconn):
+def getFlights(dbconn = None, logger = None):
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getFlights")
+        logger.setLevel(logging.INFO)
 
     # SQL for getting active flights and callsigns
     flightids_sql = """
@@ -110,11 +102,10 @@ def getFlights(dbconn):
                 rows = landingcur.fetchall()
                 landingcur.close()
 
-                if debug:
-                    flightlist = ""
-                    for r in rows:
-                        flightlist += " " + r[0] + ":" + r[1]
-                    debugmsg("List of flights[%d]:%s" % (len(rows), flightlist))
+                flightlist = ""
+                for r in rows:
+                    flightlist += " " + r[0] + ":" + r[1]
+                logger.debug("List of flights[%d]:%s" % (len(rows), flightlist))
 
         # columns for returned array:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
         if rows:
@@ -125,7 +116,7 @@ def getFlights(dbconn):
     except pg.DatabaseError as error:
         # If there was a connection/database error
         landingcur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return np.array([])
     
@@ -134,7 +125,7 @@ def getFlights(dbconn):
 # Function for querying the database to get a list of latest packets for the provided callsign
 # The resulting list of packets is returned if no callsign is given then an empty list is returned
 # columns returned in the list:  altitude, latitude, longitude, altitude_change_rate, latitude_change_rate, longitude_change_rate
-def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins = 20):
+def getLatestPackets(dbconn = None, callsign = None, timezone = None, cutoff = 20, logger = None):
 
     # if a callsign wasn't provided, then return a empty numpy array
     if not dbconn or not callsign or not timezone:
@@ -143,6 +134,11 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
     # if the db connection isn't valid then return 
     if dbconn.closed:
         return []
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getLatestPackets")
+        logger.setLevel(logging.INFO)
 
     # Check latest packets query.  We want to run this query first as it is much lower cost to be repeatedly running.  The 
     # idea being that we quickly check if there are any recent (< 20mins ago) packets for this callsign, if there are then continue
@@ -171,8 +167,8 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
     if len(checkrows) > 0:
         elapsed_mins = float(checkrows[-1][0]) / 60.0
         # If the last heard packet is > xx mins old, return zero rows.  We don't want to process a landing prediction for a flight that is over/stale/lost/etc.
-        if elapsed_mins > timecutoff_mins:
-            debugmsg("Last packet for %s is > %dmins old: %dmins." % (callsign, timecutoff_mins, elapsed_mins))
+        if elapsed_mins > cutoff:
+            logger.debug("Last packet for %s is > %dmins old: %dmins." % (callsign, cutoff, elapsed_mins))
             return []
     else:
         return []
@@ -353,8 +349,8 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
 
         if len(rows) > 0:
             # If the last heard packet is > xx mins old, return zero rows....because we don't want to process a landing prediction for a flight that is over/stale/lost/etc.
-            if rows[-1][7] > timecutoff_mins:
-                debugmsg("Last packet for %s is > %dmins old: %dmins." % (callsign, timecutoff_mins, rows[-1][7]))
+            if rows[-1][7] > cutoff:
+                logger.debug("Last packet for %s is > %dmins old: %dmins." % (callsign, cutoff, rows[-1][7]))
                 return []
 
         return rows
@@ -362,7 +358,7 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
     except pg.DatabaseError as error:
         # If there was a connection/database error
         landingcur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return []
 
@@ -373,11 +369,16 @@ def getLatestPackets(dbconn, callsign = None, timezone = None, timecutoff_mins =
 # This will return a list containing two surface wind values:
 #    returned tuple:  [ lat_wind_rate, lon_wind_rate ], validity
 #
-def getSurfaceWinds(dbconn, flightid):
+def getSurfaceWinds(dbconn = None, flightid = None, logger = None):
 
     # Check if we're connected to the database then return
     if not dbconn or flightid is None:
         return ([], False)
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getSurfaceWinds")
+        logger.setLevel(logging.INFO)
 
     try: 
         validity = False
@@ -567,7 +568,7 @@ def getSurfaceWinds(dbconn, flightid):
                 if wxrows[0][0] is not None and wxrows[0][1] is not None and wxrows[0][3] is not None and wxrows[0][4] is not None and wxrows[0][5] is not None:
                     windrates = [ float(wxrows[0][0]), float(wxrows[0][1]), float(wxrows[0][3]), float(wxrows[0][4]), float(wxrows[0][5]) ]
                     validity = True
-                    debugmsg("windrates[0]: %f, windrates[1]: %f " % (windrates[0], windrates[1]))
+                    logger.debug("windrates[0]: %f, windrates[1]: %f " % (windrates[0], windrates[1]))
                 else:
                     windrates = []
                     validity = False
@@ -578,7 +579,7 @@ def getSurfaceWinds(dbconn, flightid):
     except pg.DatabaseError as error:
         # If there was a connection error, then close these, just in case they're open
         wxcur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return ([], False)
 
@@ -586,14 +587,20 @@ def getSurfaceWinds(dbconn, flightid):
 ################################
 # Function to query the database for those stations nearest to a predicted landing location (ranked by distance), 
 # and compute a weighted average of the estimated elevation at the predicted landing 
-def getLandingElevation(dbconn, balloon_callsign, distance):
+def getLandingElevation(dbconn = None, callsign = None, distance = None, logger = None):
 
     # Check if we're connected to the database or not.
-    if not dbconn or balloon_callsign is None or distance is None: 
+    if not dbconn or callsign is None or distance is None: 
         return 0.0
 
     if distance <= 0:
         return 0.0
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getLandingElevation")
+        logger.setLevel(logging.INFO)
+
 
     try: 
         # database cursor
@@ -739,15 +746,14 @@ def getLandingElevation(dbconn, balloon_callsign, distance):
 
         # Execute the SQL query
         # Parameters:  balloon callsign, maximum distance a station can be from the predicted landing to be computed in the estimated elevation
-        debugmsg("Executing nearby station query with balloon_callsign=%s and distance=%f" % (balloon_callsign, distance))
-        #debugmsg("Nearby station query" + elevation_sql % (balloon_callsign, str(distance)))
-        elev_cur.execute(elevation_sql, [ balloon_callsign, distance ])
+        logger.debug("Executing nearby station query with _callsign=%s and distance=%f" % (callsign, distance))
+        #logger.debug("Nearby station query" + elevation_sql % (callsign, str(distance)))
+        elev_cur.execute(elevation_sql, [ callsign, distance ])
 
         # fetch all the rows returned
         rows = elev_cur.fetchall()
         
-        if debug:
-            print("landing elevation rows[", len(rows), "]: ", rows)
+        logger.debug(f"landing elevation rows[{len(rows)}]: {rows}")
 
         # if there were rows returned then proceed to return the estimated elevation near the landing location
         if len(rows) > 0:
@@ -764,14 +770,19 @@ def getLandingElevation(dbconn, balloon_callsign, distance):
     except pg.DatabaseError as error:
         # If there was a connection/db error
         elev_cur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return 0.0
 
 
 ################################
 # Function to query the database for latest GPS position and return an object containing alt, lat, lon.
-def getGPSPosition(dbconn):
+def getGPSPosition(dbconn = None, logger = None):
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getGPSPosition")
+        logger.setLevel(logging.INFO)
 
     # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
     gps_sql = """select 
@@ -823,25 +834,31 @@ def getGPSPosition(dbconn):
                     "isvalid" : True
                     }
 
-            debugmsg("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))
+            logger.debug("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))
 
         return gpsposition
 
     except pg.DatabaseError as error:
         # If there was a connection/db error
         landingcur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return gpsposition
 
 
 ################################
 # Get a list of rows from a predict file, if it was loaded into the database
-def getPredictFile(dbconn, flightid = '', launchsite = ''):
+def getPredictFile(dbconn = None, flightid = None, launchsite = None, logger = None):
 
     # if the flightid or the launchsite wasn't given, then return an empty list
     if not dbconn or not flightid or not launchsite:
         return np.array([])
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.getPredictFile")
+        logger.setLevel(logging.INFO)
+
 
     # SQL to query flight prediction records for the flightid
     prediction_sql = """
@@ -919,25 +936,91 @@ def getPredictFile(dbconn, flightid = '', launchsite = ''):
         rows = landingcur.fetchall()
         landingcur.close()
 
-        debugmsg("Predict file length: %d" % len(rows))
+        logger.debug("Predict file length: %d" % len(rows))
         if len(rows) > 0:
-            debugmsg("Predict file last: %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2]))
+            logger.debug("Predict file last: %f, %f, %f" % (rows[-1][0], rows[-1][1], rows[-1][2]))
 
         return np.array(rows)
 
     except pg.DatabaseError as error:
         # If there was a connection/db error
         landingcur.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return np.array([])
 
 
+##################################################
+# get the list of frequencies that we're supposed to listen too
+##################################################
+def getFrequencies(dbconn = None, logger = None):
+
+    try:
+
+        # if no logger was supplied then we create one
+        if logger == None:
+            logger = logging.getLogger(f"{__name__}.getFrequencies")
+            logger.setLevel(logging.INFO)
+
+        # connect to the database
+        dbcur = dbconn.cursor()
+
+        # SQL query to get a list of active flights and the frequency their beacons will be xmiting on
+        sql = """select distinct
+            cast(fm.freq * 1000000 as integer)
+
+            from
+            flights f,
+            flightmap fm
+
+            where
+            fm.flightid = f.flightid
+            and f.active = 't'
+            and fm.freq <> 144.390
+
+            order by
+            1 asc;
+        """
+ 
+        # Execute the SQL query and fetch the results
+        dbcur.execute(sql)
+        rows = dbcur.fetchall()
+
+        # The frequency list...
+        # Always listen on 144.39MHz and send audio for that frequency on UDP port 12000
+        fl = [144390000]
+ 
+        # Now loop through all frequencies returned from the SQL query above
+        for freq in rows:
+            fl.append(freq[0])
+
+        # Close database connections
+        dbcur.close()
+        dbconn.close()
+
+        logger.debug(f"getFrequencies: {fl}")
+ 
+        # Return our list of frequencies and their cooresponding UDP ports
+        return fl
+
+    except pg.DatabaseError as error:
+        dbcur.close()
+        dbconn.close()
+        logger.error(f"Database error: {error}")
+
+
 ################################
-# Test function for connecting to the database
-def test_connectToDatabase(db_connection_string = None):
+# Function for connecting to the database
+################################
+def connectToDatabase(db_connection_string = None, logger = None):
+
+    # if no logger was supplied then we create one
+    if logger == None:
+        logger = logging.getLogger(f"{__name__}.connectionToDatabase")
+        logger.setLevel(logging.INFO)
+
     if db_connection_string:
-        dbstring = dbstring
+        dbstring = db_connection_string
     else:
         dbstring = habconfig.dbConnectionString
 
@@ -947,7 +1030,7 @@ def test_connectToDatabase(db_connection_string = None):
         dbconn = None
 
         # If not already connected to the database, then try to connect
-        debugmsg("Connecting to the database: %s" % dbstring)
+        logger.debug("Connecting to the database: %s" % dbstring)
         dbconn = pg.connect (dbstring)
         dbconn.set_session(autocommit=True)
 
@@ -956,7 +1039,7 @@ def test_connectToDatabase(db_connection_string = None):
     except pg.DatabaseError as error:
         # If there was a connection error
         dbconn.close()
-        print(error)
+        logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return None
 
@@ -966,7 +1049,7 @@ def test_connectToDatabase(db_connection_string = None):
 def test_queries():
 
     # connect to the postgresql database
-    dbconn = test_connectToDatabase()
+    dbconn = connectToDatabase()
 
     # get the list of active flights
     flights = getFlights(dbconn)
@@ -979,6 +1062,8 @@ def test_queries():
 
     print("======================= Active Flights =======================")
     print(flights)
+    for row in flights:
+        print(f"Active beacon: {row[1]}")
 
     for f in flights:
 
@@ -1013,3 +1098,9 @@ def test_queries():
 
     dbconn.close()
     print("Done.")
+
+
+
+if __name__ == "__main__":
+    test_queries()
+

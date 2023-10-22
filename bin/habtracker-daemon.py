@@ -20,20 +20,25 @@
 #
 ##################################################
 
-from optparse import OptionParser
 import multiprocessing as mp
-import subprocess as sb
+#mp.set_start_method('spawn')
+
+from optparse import OptionParser
+#from queue import Queue, Empty
 import os
-import math
 import time
 import datetime 
 import psycopg2 as pg
 import aprslib
 import logging
+from logging.handlers import QueueListener, TimedRotatingFileHandler
+#logger = logging.getLogger(__name__)
+#logger.propagate = False
+
 import threading as th
 import sys
-sys.stderr.reconfigure(encoding="UTF-8", newline='\r\n')
-sys.stdout.reconfigure(encoding="UTF-8", newline='\r\n')
+#sys.stderr.reconfigure(encoding="UTF-8", newline='\r\n')
+#sys.stdout.reconfigure(encoding="UTF-8", newline='\r\n')
 
 import signal
 import psutil
@@ -44,103 +49,34 @@ from inspect import getframeinfo, stack
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
-import gpspoller
-import aprsis
-import infocmd
-import kisstap
 import searchrtlsdr
 import aprsreceiver
-import aprsc
-import direwolf
-from inspect import getframeinfo, stack
+import gpspoller
+import databasechecks
+import databasewriter
+import subprocesses
+import connectors
+import queries
 
 
-
-#####################################
-## Set this to "True" to have debugging text output when running
-debug = False
-#####################################
-
-
-#####################################
-# Function for printing out debug info
-def debugmsg(message):
-    if debug:
-        caller = getframeinfo(stack()[1][0])
-        print(("%s:%d - %s" % (caller.filename.split("/")[-1], caller.lineno, message)))
-        sys.stdout.flush()
-
-
+##################################################
+# a generic exception that we can raise to signal other processes that they need to end
+##################################################
 class GracefulExit(Exception):
     pass
 
+##################################################
+# signal handler for SIGTERM
+##################################################
 def signal_handler(signum, frame):
-    ts = datetime.datetime.now()
-    thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
     pid = os.getpid()
-    
     caller = getframeinfo(stack()[1][0])
-    print(("{} [{}] Caught signal: {}.  {}:{}".format(thetime, pid, signum, caller.filename.split("/")[-1], caller.lineno)))
-    sys.stdout.flush()
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Caught SIGTERM signal. {pid=}")
+    #raise SystemExit()
     raise GracefulExit()
 
 
-##################################################
-# Determine what frequencies GnuRadio should listen on 
-##################################################
-def getFrequencies():
-
-    try:
-        # connect to the database
-        grconn = pg.connect (habconfig.dbConnectionString)
-        grcur = grconn.cursor()
-
-        # SQL query to get a list of active flights and the frequency their beacons will be xmiting on
-        grsql = """select distinct
-            cast(fm.freq * 1000000 as integer)
-
-            from
-            flights f,
-            flightmap fm
-
-            where
-            fm.flightid = f.flightid
-            and f.active = 't'
-            and fm.freq <> 144.390
-
-            order by
-            1 asc;
-        """
- 
-        # Execute the SQL query and fetch the results
-        grcur.execute(grsql)
-        rows = grcur.fetchall()
-
-        # The frequency list...
-        # Always listen on 144.39MHz and send audio for that frequency on UDP port 12000
-        fl = [144390000]
- 
-        # Now loop through all frequencies returned from the SQL query above
-        for freq in rows:
-            fl.append(freq[0])
-
-        # Close database connections
-        grcur.close()
-        grconn.close()
- 
-        # Return our list of frequencies and their cooresponding UDP ports
-        return fl
-
-    except pg.DatabaseError as error:
-        grcur.close()
-        grconn.close()
-        print(error)
-        return None
-    except (GracefulExit, KeyboardInterrupt, SystemExit): 
-        grcur.close()
-        grconn.close()
-        return None
-    
 
 ##################################################
 # argument_parser function...This will parse through any command line options given and return the options
@@ -188,392 +124,18 @@ def isRunning(myprocname):
     return listOfProcesses
 
 
-
 ##################################################
-# Single function for processing the collection of database/table updates
+# Determine if we need to kill a prior running copy of this program or if we need to exit since it's already running
 ##################################################
-def databaseUpdates():
-    """
-    This function contains a collection of checks and upates to database tables.  As the version of this code advances, 
-    place updates to tables here.
-    """
+def processChecks(myprocname, kill):
 
-    try:
-        # Database connection 
-        dbconn = None
-        dbconn = pg.connect (habconfig.dbConnectionString)
-        dbconn.set_session(autocommit=True)
-        dbcur = dbconn.cursor()
+    logger = logging.getLogger(__name__)
 
-
-        ts = datetime.datetime.now()
-        time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print(("/******* Starting database checks:  ", time_string, " ********/"))
-        sys.stdout.flush()
-
-
-
-        #------------------- tracker stuff ------------------#
-        # SQL to check if the column exists or not
-        check_row_sql = "select * from teams where tactical='ZZ-Not Active';"
-        dbcur.execute(check_row_sql)
-        rows = dbcur.fetchall()
-
-        # If the number of rows returned is zero, then we need to add the row
-        if len(rows) == 0:
-            print("Adding the 'ZZ-Not Active' team to the tracker team list.")
-            sys.stdout.flush()
-            
-            # SQL to add the row
-            insert_sql = "insert into teams (tactical, flightid) values ('ZZ-Not Active', NULL);"
-            dbcur.execute(insert_sql)
-            dbconn.commit()
-        #------------------- tracker stuff ------------------#
-
-
-        #------------------- landingpredictions table ------------------#
-        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-        check_columns = [ ("flightpath", "geometry(LINESTRING, 4326)"), ("ttl", "numeric"), ("patharray", "numeric[][]"), ("winds", "numeric[]") ]
-
-        for column, coltype in check_columns:
-            # SQL to check if the column exists or not
-            check_column_sql = "select column_name from information_schema.columns where table_name='landingpredictions' and column_name=%s;"
-            dbcur.execute(check_column_sql, [ column ])
-            rows = dbcur.fetchall()
-
-            # If the number of rows returned is zero, then we need to create the column
-            if len(rows) == 0:
-                print(("Adding landingpredictions::%s column." % column))
-                sys.stdout.flush()
-                
-                # SQL to alter the "landingpredictions" table and add the "flightpath" column
-                alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype + ";";
-                dbcur.execute(alter_table_sql)
-                dbconn.commit()
-
-        # SQL to add an index on the time column of the landingpredictions table
-        lp_tm_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'landingpredictions' and indexname = 'landingpredictions_tm');"
-        dbcur.execute(lp_tm_exists)
-        rows = dbcur.fetchall()
-        if len(rows) > 0:
-            if rows[0][0] == False:
-                # Add the index since it didn't seem to exist.
-                sql_add = "create index landingpredictions_tm on landingpredictions(tm);"
-                print("Adding landingpredictions_tm index.")
-                sys.stdout.flush()
-                debugmsg("Adding landingpredictions_tm index to the landingpredictions table: %s" % sql_add)
-                dbcur.execute(sql_add)
-                dbconn.commit()
-
-        #------------------- landingpredictions table ------------------#
-
-
-
-        #------------------- packets table ------------------#
-        # SQL to add an index on the time column of the packets table
-        sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
-        dbcur.execute(sql_exists)
-        rows = dbcur.fetchall()
-        if len(rows) > 0:
-            if rows[0][0] == False:
-                # Add the index since it didn't seem to exist.
-                sql_add = "create index packets_tm on packets(tm);"
-                print("Adding packets_tm index.")
-                sys.stdout.flush()
-                debugmsg("Adding packets_tm index to the packets table: %s" % sql_add)
-                dbcur.execute(sql_add)
-                dbconn.commit()
-
-
-        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-        check_columns = [ ("source", "text"), ("channel", "numeric"), ("frequency", "numeric") ]
-
-        made_changes = False
-        for column, coltype in check_columns:
-            # SQL to check if the column exists or not
-            check_column_sql = "select column_name from information_schema.columns where table_name='packets' and column_name=%s;"
-            dbcur.execute(check_column_sql, [ column ])
-            rows = dbcur.fetchall()
-
-            # If the number of rows returned is zero, then we need to create the column
-            if len(rows) == 0:
-                print(("Adding packets::%s column." % column))
-                sys.stdout.flush()
-
-                # SQL to alter the "landingpredictions" table and add the "flightpath" column
-                alter_table_sql = "alter table packets add column " + column + " " + coltype + ";";
-                dbcur.execute(alter_table_sql)
-                dbconn.commit()
-                made_changes = True
-
-
-        if made_changes:
-
-            # SQL to check how many rows are in the packets and landingpredictions tables
-            packets_sql = "select count(*) from packets;"
-            lp_sql = "select count(*) from landingpredictions;"
-
-            print("Checking number of rows in tables...")
-            sys.stdout.flush()
-
-            dbcur.execute(packets_sql)
-            rows = dbcur.fetchall()
-            packets_count = rows[0][0]
-
-            dbcur.execute(lp_sql)
-            rows = dbcur.fetchall()
-            lp_count = rows[0][0]
-
-            print(("Number of rows:  packets={}, landingpredictions={}".format(packets_count, lp_count)))
-            sys.stdout.flush()
-
-
-            # SQL to update the source column to "other" in those cases were it's empty
-            sql_source = "update packets set source='other' where source is null;"
-            print("Updating packets::source column.")
-            sys.stdout.flush()
-            debugmsg("Updating source column: %s" % sql_source);
-            dbcur.execute(sql_source)
-            dbconn.commit()
-
-            # SQL to update the channel column to "-1" in those cases were it's empty
-            sql_channel = "update packets set channel=-1 where channel is null;"
-            print("Updating packets::channel column.")
-            sys.stdout.flush()
-            debugmsg("Updating channel column: %s" % sql_channel);
-            dbcur.execute(sql_channel)
-            dbconn.commit()
-
-            # SQL to drop the primary index if it exists
-            sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_pkey');"
-            dbcur.execute(sql_exists)
-            rows = dbcur.fetchall()
-            if len(rows) > 0:
-                if rows[0][0] == True:
-                    sql_drop = "alter table packets drop constraint packets_pkey;"
-                    debugmsg("Dropping existing primary key: %s" % sql_drop);
-                    print("Dropping primary key from packets table.")
-                    dbcur.execute(sql_drop)
-                    dbconn.commit()
-
-            # Now add back an updated primary index
-            sql_add = "alter table packets add primary key (tm, source, channel, callsign, hash);"
-            print("Adding primary key to packets table.")
-            sys.stdout.flush()
-            debugmsg("Adding new primary key: %s" % sql_add);
-            try:
-                dbcur.execute(sql_add)
-                dbconn.commit()
-            except pg.DatabaseError as e:
-                # We were unable to add this key back to the existing table.  The only path forward from here is to delete all rows...
-                print(("Error updating primary key:  ", e))
-
-                # SQL to truncate rows older than one month.
-                sql_source = "truncate table packets;"
-                print("Unable to create index on packets table, deleteing all rows...sorry, only way.  :(")
-                sys.stdout.flush()
-                debugmsg("Deleting all rows from packets table: %s" % sql_source);
-                dbcur.execute(sql_source)
-                dbconn.commit()
-
-                print("Adding primary key on packets table.")
-                dbcur.execute(sql_add)
-                dbconn.commit()
-
-
-        # SQL to add an index on the tm, source, and ptype columns of the packets table
-        sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm_source_ptype');"
-        dbcur.execute(sql_exists)
-        rows = dbcur.fetchall()
-        if len(rows) > 0:
-            if rows[0][0] == False:
-                # Add the index since it didn't seem to exist.
-                sql_add = "create index packets_tm_source_ptype on packets(tm, source, ptype);"
-                print("Adding packets_tm_source_ptype index.")
-                sys.stdout.flush()
-                debugmsg("Adding packets_tm_source_ptype index to the packets table: %s" % sql_add)
-                dbcur.execute(sql_add)
-                dbconn.commit()
-
-        #------------------- packets table ------------------#
-
-
-
-        #------------------- triggers and notifications ------------------#
-
-        # SQL to add a trigger on inserts into the packets table.  This trigger is then used to call PG_NOTIFY to notify listening clients that a new
-        # packet was added to the table.
-        sql_function = """CREATE or REPLACE FUNCTION notify_v1()
-                            RETURNS trigger
-                             LANGUAGE 'plpgsql'
-                        as $BODY$
-                        declare
-                        begin
-                            if (tg_nargs > 0) then
-                                if (tg_argv[0] != '') then
-                                    if (tg_op = 'INSERT') then
-                                        perform pg_notify(tg_argv[0], (ST_asGeoJSON(NEW)::jsonb)::text);
-                                    end if;
-                                end if;
-                            end if;
-                                 
-                            return null;
-                        end
-                        $BODY$;"""
-        sql_trigger_newpacket = """CREATE TRIGGER after_new_packet_v1
-                        AFTER INSERT
-                        ON packets
-                        FOR EACH ROW
-                        EXECUTE PROCEDURE notify_v1('new_packet');"""
-        sql_trigger_newposition = """CREATE TRIGGER after_new_position_v1
-                        AFTER INSERT
-                        ON gpsposition
-                        FOR EACH ROW
-                        EXECUTE PROCEDURE notify_v1('new_position');"""
-        sql_checkfunction = "select p.proname from pg_proc p where p.proname = 'notify_v1';"
-        sql_checktrigger_packet = "select t.tgname from pg_trigger t where t.tgname = 'after_new_packet_v1';"
-        sql_checktrigger_position = "select t.tgname from pg_trigger t where t.tgname = 'after_new_position_v1';"
-        
-        # check if the function exists already
-        dbcur.execute(sql_checkfunction)
-        rows = dbcur.fetchall()
-        if len(rows) <= 0:
-            # Add the function since it doesn't exist
-            print("Adding notify_v1 function to database.")
-            sys.stdout.flush()
-            debugmsg("Adding notify_v1 function to database.")
-            dbcur.execute(sql_function)
-            dbconn.commit()
-
-        # check if the packet trigger exists already
-        dbcur.execute(sql_checktrigger_packet)
-        rows = dbcur.fetchall()
-        if len(rows) <= 0:
-            # Add the trigger since it doesn't exist
-            print("Adding after_new_packet_v1 trigger to the packets table.")
-            sys.stdout.flush()
-            debugmsg("Adding after_new_packet_v1 trigger to the packets table.")
-            dbcur.execute(sql_trigger_newpacket)
-            dbconn.commit()
-
-        # check if the gpsposition trigger exists already
-        dbcur.execute(sql_checktrigger_position)
-        rows = dbcur.fetchall()
-        if len(rows) <= 0:
-            # Add the trigger since it doesn't exist
-            print("Adding after_new_position_v1 trigger to the packets table.")
-            sys.stdout.flush()
-            debugmsg("Adding after_new_position_v1 trigger to the packets table.")
-            dbcur.execute(sql_trigger_newposition)
-            dbconn.commit()
-
-        #------------------- triggers and notifications ------------------#
-
-        ts = datetime.datetime.now()
-        time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
-        print(("/******* Completed database checks:  ", time_string, "********/"))
-        sys.stdout.flush()
-
-        # Close DB connection
-        dbcur.close()
-        dbconn.close()
-
-
-    except pg.DatabaseError as error:
-        dbcur.close()
-        dbconn.close()
-        print(error)
-
-
-################################
-# Function to query the database for latest GPS position and return an object containing alt, lat, lon.
-def getGPSPosition():
-    # We want to determine our last known position (from the GPS) for determining how close to the balloon/parachute we are.
-    gps_sql = """select 
-        tm::timestamp without time zone as time, 
-        round(speed_mph) as speed_mph, 
-        bearing, 
-        round(altitude_ft / 3.2808399, 2) as altitude_m, 
-        round(cast(ST_Y(location2d) as numeric), 6) as latitude, 
-        round(cast(ST_X(location2d) as numeric), 6) as longitude 
-       
-        from 
-        gpsposition 
-      
-        order by 
-        tm desc 
-        limit 1;"""
-
-
-    gpsposition = {
-            "altitude" : 0.0,
-            "latitude" : 0.0,
-            "longitude" : 0.0,
-            "isvalid" : False
-            }
-
-
-    # Database connection objects
-    dbconn = None
-    dbcur = None
-
-    try:
-
-        # Database connection 
-        dbconn = pg.connect (habconfig.dbConnectionString)
-        dbcur = dbconn.cursor()
-
-        # Execute the SQL statment and get all rows returned
-        dbcur = dbconn.cursor()
-        dbcur.execute(gps_sql)
-        gpsrows = dbcur.fetchall()
-        dbcur.close()
-        dbconn.close()
-
-        # There should only be one row returned from the above query, but just in case we loop through each row saving our 
-        # last altitude, latitude, and longitude
-        if len(gpsrows) > 0:
-            for gpsrow in gpsrows:
-                #my_alt = round(float(gpsrow[3]) / 100.0) * 100.0 - 50.0
-                my_alt = gpsrow[3]
-                my_lat = gpsrow[4]
-                my_lon = gpsrow[5]
-
-            gpsposition = {
-                    "altitude" : float(my_alt),
-                    "latitude" : float(my_lat),
-                    "longitude" : float(my_lon),
-                    "isvalid" : True
-                    }
-
-        return gpsposition
-
-    except pg.DatabaseError as error:
-        # If there was a connection error, then close these, just in case they're open
-        dbcur.close()
-        dbconn.close()
-        print(error)
-        return gpsposition
-
-
-##################################################
-# main function
-##################################################
-def main():
-    
-    # Check the options provided on the command line
-    options, _ = argument_parser().parse_args()
-
-    # lower case name of this script without any extension
-    thisprocname = os.path.basename(sys.argv[0].lower()).split(".")[0]
+    # check if any processes are running
+    proclist = isRunning(myprocname)
 
     # the process id of this script
     mypid = os.getpid()
-
-
-    # --------- this section checks for already running processes --------
-    # check if any processes are running
-    proclist = isRunning(thisprocname)
 
     # This gets us to a consolidated list of pids...minus the pid of this script.  ;)
     pids = []
@@ -583,15 +145,15 @@ def main():
     pids.sort()
  
     # If the kill switch was given the we kill these pids
-    if options.kill:
-        print("Killing processes...")
+    if kill:
+        logger.info("Killing processes...")
         for pid in pids:
     
             try: 
                 # kill this pid
                 os.kill(pid, signal.SIGTERM)
             except Exception as e:
-                print(("Unable to kill %d, %s" % (pid, e)))
+                logger.warning(f"Unable to kill {pid}, {e}")
     
             # we give it a little time to work before going to the next pid
             time.sleep(1)
@@ -610,26 +172,27 @@ def main():
                 # kill this pid
                 os.kill(pid, signal.SIGTERM)
             except Exception as e:
-                print(("Unable to kill %d, %s" % (pid, e)))
+                logger.warning(f"Unable to kill {pid}, {e}")
     
             # we give it a little time to work before going to the next pid
             time.sleep(1)
 
-        # now exit
-        print("Done.")
-        sys.exit()
+        return True
 
     else:  
         # if there are running pids and we didn't get the kill switch, then exit
         if len(pids) > 0:
-            print("Processes are running, exiting.")
-            sys.exit()
+            logger.warning("Processes are already running.")
+            return True
 
-    # --------- end of process checking section ----------
+    return False
 
 
+##################################################
+# Check these directories for 777 permissions so the web-based frontend works correctly
+##################################################
+def checkDirPerms():
 
-    # --------- Start of directory permissions section ----------
     # these directories need to have 777 permissions so the www-data user can write to them
     dirs_to_check = ["/eosstracker/www/audio", "/eosstracker/www/configuration"]
 
@@ -642,68 +205,338 @@ def main():
             # Get the current permissions of the directory
             perms = os.stat(thedir).st_mode
 
+            logger = logging.getLogger(__name__)
+
             # If these permisisons are not 777 then try to set them to 777
             if perms & 0o777 != 0o777:
                 try:
-                    print(("Setting permissions to 777 on:", thedir)) 
+                    logger.info(f"Setting permissions to 777 on: {thedir}") 
                     os.chmod(thedir, 0o777)
                 except OSError as e:
-                    print(("Unable to set permisisons to 777 on,", thedir, ", ", os.strerror(e.errno)))
-
-    # --------- End of directory permissions section ----------
+                    logger.error(f"Unable to set permisisons to 777 on, {thedir}.  {os.strerror(e.errno)}")
 
 
+##################################################
+# read in the JSON configuration file
+##################################################
+def readConfiguration(configfile, options):
 
-    # --------- Add any Database things ----------
-    databaseUpdates()
-
-    # --------- End of database additions----------
-
-
-
-    # --------- Read in the configuration file (if it exists) --------
-    # This is normally in ../www/configuration/config.txt
+    # try to open the configuration file
     try:
         with open('/eosstracker/www/configuration/config.txt') as json_data:
-            configuration = json.load(json_data)
+            conf = json.load(json_data)
     except:
+
         # Otherwise, we assume the callsign from the command line and do NOT perform igating or beaconing
-        configuration = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
+        conf = { "callsign" : options.callsign, "igating" : "false", "beaconing" : "false" }
 
     ## Now check for default values for all of the configuration keys we care about.  Might need to expand this to be more robust/dynamic in the future.
-    defaultkeys = {"timezone":"America/Denver","callsign":"","lookbackperiod":"180","iconsize":"24","plottracks":"off", "ssid" : "2", "igating" : "false", "beaconing" : "false", "passcode" : "", "fastspeed" : "45", "fastrate" : "01:00", "slowspeed" : "5", "slowrate" : "10:00", "beaconlimit" : "00:35", "fastturn" : "20", "slowturn": "60", "audiodev" : "0", "serialport": "none", "serialproto" : "RTS", "comment" : "EOSS Tracker", "includeeoss" : "true", "eoss_string" : "EOSS", "symbol" : "/k", "overlay" : "", "ibeaconrate" : "15:00", "ibeacon" : "false", "customfilter" : "r/39.75/-103.50/400", "objectbeaconing" : "false", "mobilestation" : "true"}
+    defaultkeys = {
+            "timezone":"America/Denver",
+            "callsign":"",
+            "lookbackperiod":"180",
+            "iconsize":"24",
+            "plottracks":"off", 
+            "ssid" : "2", 
+            "igating" : "false", 
+            "beaconing" : "false", 
+            "passcode" : "", 
+            "fastspeed" : "45", 
+            "fastrate" : "01:00", 
+            "slowspeed" : "5", 
+            "slowrate" : "10:00", 
+            "beaconlimit" : "00:35", 
+            "fastturn" : "20", 
+            "slowturn": "60", 
+            "audiodev" : "0", 
+            "serialport": "none", 
+            "serialproto" : "RTS", 
+            "comment" : "EOSS Tracker", 
+            "includeeoss" : "true", 
+            "eoss_string" : "EOSS", 
+            "symbol" : "/k", 
+            "overlay" : "", 
+            "ibeaconrate" : "15:00", 
+            "ibeacon" : "false", 
+            "customfilter" : "r/39.75/-103.50/400", 
+            "objectbeaconing" : "false", 
+            "mobilestation" : "true",
+            "aprsisserver" : "noam.aprs2.net",
+            "cwopserver" : "cwop.aprs.net",
+            "cwopradius" : 200
+    }
 
     for the_key in list(defaultkeys.keys()):
-        if the_key not in configuration:
-            configuration[the_key] = defaultkeys[the_key]
+        if the_key not in conf:
+            conf[the_key] = defaultkeys[the_key]
 
     # If the callsign is empty, we use the default one from the command line.
-    if configuration["callsign"] == "":
-        configuration["callsign"] = options.callsign
+    if conf["callsign"] == "":
+        conf["callsign"] = options.callsign
 
     # If the ssid is empty, we use "2" as the default
-    if configuration["ssid"] == "":
-        configuration["ssid"] = 2
+    if conf["ssid"] == "":
+        conf["ssid"] = 2
 
-    if configuration["igating"] == "true":
-        if str(aprslib.passcode(str(configuration["callsign"]))) != str(configuration["passcode"]):
-            print(("Incorrect passcode, ", str(configuration["passcode"]), " != ", aprslib.passcode(str(configuration["callsign"])), ", provided, igating disabled."))
-            configuration["igating"] = "false"
+    # if igating is enabled, then we need to determine the aprs-is passcode, etc.
+    if conf["igating"] == "true":
+        if str(aprslib.passcode(str(conf["callsign"]))) != str(conf["passcode"]):
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Incorrect passcode. {str(conf['passcode'])}, not equal to, {aprslib.passcode(str(conf['callsign']))}.  igating disabled.")
+            conf["igating"] = "false"
+
+    # Add the aprsisRadius and the algoInterval settings to the configuration from the options settings
+    conf["aprsisradius"] = options.aprsisRadius
+    conf["algointerval"] = options.algoInterval
+
+    # Return the configuration
+    return conf
+
+##################################################
+# create all sub-processes
+##################################################
+def createProcesses(configuration):
+
+    # Our list of processes
+    procs = []
+
+    # Logger
+    logger = logging.getLogger(__name__)
+
+    # This is the GPS position tracker process
+    logger.debug(f"Creating GPS Position Trackersubprocess")
+    gpsprocess = mp.Process(name="GPS Position Tracker", target=gpspoller.runGPSPoller, args=(configuration,))
+    gpsprocess.daemon = True
+    procs.append(gpsprocess)
+
+    # This is the database writer process.  It's job is to insert incoming packets into the database
+    logger.debug(f"Creating Database Writer subprocess")
+    dbwriter = mp.Process(name="Database Writer", target=databasewriter.runDatabaseWriter, args=(configuration,))
+    dbwriter.daemon = True
+    procs.append(dbwriter)
 
 
-    print("Starting HAB Tracker backend daemon")
-    print(("Callsign:  %s" % str(configuration["callsign"])))
 
-    # this holds the list of sub-processes and threads that we want to start/run
-    processes = []
+    # This is the landing predictor process
+    logger.debug(f"Creating Landing Predictor subprocess")
+    landingprocess = mp.Process(name="Landing Predictor", target=lp.runLandingPredictor, args=(configuration,))
+    landingprocess.daemon = True
+    procs.append(landingprocess)
 
-    # signal handler for catching kills
-    signal.signal(signal.SIGTERM, signal_handler)
+    # This is the APRS-IS connection tap.  
+    logger.debug(f"Creating APRS-IS Tap subprocess")
+    aprstap = mp.Process(name="APRS-IS Tap", target=connectors.connectorTap, args=(configuration, "aprs"))
+    aprstap.daemon = True
+    procs.append(aprstap)
 
-    # This is the common event that when set, will cause all the sub-processes to gracefully end
-    stopevent = mp.Event()
+    # This is the CWOP connection tap.  
+    logger.debug(f"Creating CWOP Tap subprocess")
+    cwoptap = mp.Process(name="CWOP Tap", target=connectors.connectorTap, args=(configuration, "cwop"))
+    cwoptap.daemon = True
+    procs.append(cwoptap)
+
+    # This is the GnuRadio aprsreceiver process(es)
+    freqlist = configuration["direwolffreqlist"]
+    if len(freqlist) > 0:
+
+        # Max number of SDR channels we can listen to while staying at or under the max limit for direwolf
+        # We subtract channels from this amount as we loop through the SDR devices.
+        # 
+        # The approach here is to 'waterfall' the available channels across the SDR devices discovered as usable.  We setup (i.e. a gnuradio process) all 
+        # frequencies on the first SDR, if there are any remaining channels we can still use, we're under the max direwolf limit, they get spun up
+        # in a 2nd gnuradio process.  ...and so on until we run out of direwolf channels to use (aka the max channels number is reached).  This will undoubtedly
+        # mean that the first SDR discovered will [usually] be the most heavily used with all/most frequencies being listened too.  It might make sense in the future
+        # to change this so that we try to spread the frequencies more evenly across multiple SDRs (or do an even/odd alloctaion).
+        num_channels = configuration["maxdirewolfchannels"] + (-1 if configuration["beaconing"] else 0)
+
+        # each 'flist' represents an individual SDR device and it's list of frequencies we're wanting it to listen too
+        for flist in freqlist:
+
+            logger.debug(f"{num_channels=}, {flist}")
+
+            # if the number of frequencies is greater than the number of channels we've got available for direwolf, then adjust
+            if num_channels <= 0:
+                logger.debug(f"reached maximum channels for gnuradio processes.  Remaining channels: {num_channels}")
+
+                # we've used up all available channels that we can use with direwolf.  No use in spinning up any more gnuradio processes.
+                break
+
+            # if the number of frequencies is > than the number of direwolf channels we have available, then limit that to the first 'num_channels' amount.
+            elif len(flist) > num_channels:
+                sdr = flist[0:num_channels]
+                logger.debug(f"limiting number of channels for {sdr}.  {num_channels=}")
+
+            # otherwise, we just add all of the frequencies to the list we want to listen too.
+            else:
+                sdr = flist
+                logger.debug(f"adding all channels for {sdr}")
+
+            # subtract this list of channels from the total we're going to have direwolf listen too
+            num_channels -= len(sdr)
+
+            # Get the first element of this list, so we can grab the SDR prefix, serial number, and index number
+            # Example: [144390000, 12010, 'rtl', 'some_string', 1]
+            elem = sdr[0]
+            sdrprefix = elem[2]
+            sdrserialno = elem[3]
+            sdrindex = elem[4]
+
+            logger.debug(f"Creating GnuRadio Receiver subprocess for SDR: {sdrprefix=} {sdrserialno=} {sdrindex=}")
+            aprs = mp.Process(name="GnuRadio Receiver", target=aprsreceiver.GRProcess, args=(configuration, sdr, sdrprefix, sdrserialno, sdrindex))
+            aprs.daemon = True
+            procs.append(aprs)
+
+
+    ####### NO #######
+    # This is the RTP Multicast connection tap.  
+    #rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
+    #rtp.daemon = True
+    #procs.append(rtp)
+    ####### NO #######
+
+    # The direwolf process
+    logger.debug(f"Creating Direwolf subprocess")
+    dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
+    dfprocess.daemon = True
+    procs.append(dfprocess)
+
+    # The aprsc process
+    # Don't need this process as the conectors will perform igating instead.
+    #
+    #logger.debug(f"Creating Aprsc subprocess")
+    #aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
+    #aprscprocess.daemon = True
+    #procs.append(aprscprocess)
+
+    # The direwolf tap process 
+    logger.debug(f"Creating Direwolf Tap subprocess")
+    dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
+    dftapprocess.daemon = True
+    dftapprocess.name = "Direwolf KISS Tap"
+    procs.append(dftapprocess)
+
+    # Return the list of newly created processes
+    return procs
+
+
+##################################################
+# configure logging and return the queuelistener object and multiprocessing queue to be used by other sub-processes for logging.
+##################################################
+def configure_logging()->(QueueListener, mp.Queue):
+
+    # setup logging
+    logger = logging.getLogger(__name__)
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    formatstr = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+    formatter = logging.Formatter(formatstr)
+
+    # logging output to the console (i.e. stdout, stderr) 
+    ch = logging.StreamHandler(stream=sys.stdout)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    # log messages are also sent to the log file
+    logfile = TimedRotatingFileHandler('/eosstracker/logs/habtracker.log', when='midnight', interval=1)
+    logfile.setLevel(logging.INFO)
+    logfile.setFormatter(formatter)
+    logger.addHandler(logfile)
+
+    aprslogger = logging.getLogger("aprslib")
+    aprslogger.addHandler(ch)
+    aprslogger.addHandler(logfile)
+    aprslogger.setLevel(logging.WARNING)
+
+    # setup a queue that will be used the other sub-processes to send their logging to this process
+    loggingqueue = mp.Queue()
+
+    # Now create the QueueListener handler that will ingest logs from other processes
+    qlistener = QueueListener(loggingqueue, ch, logfile)
+    qlistener.start()
+
+    return (qlistener, loggingqueue)
+
+
+##################################################
+# end sub-processes
+##################################################
+def endProcesses(processes = None)->bool:
+
+    # sanity checks
+    if processes == None:
+        return False
+
+    logger = logging.getLogger(__name__)
+
+    # loop through each process in the list
+    for p in processes:
+        logger.info(f"Waiting for [{p.pid}] {p.name} to end...")
+
+        # Join the process, waiting for it to end, but only wait a few seconds
+        p.join(10)
+
+        # check if the process is still alive.  If so, then we need to attempt to terminate it (maybe its hung?)
+        if p.exitcode == None:
+            logger.info(f"Terminating process, [{p.pid}] {p.name}...")
+            p.terminate()
+
+
+    # Loop through the processes once more, if anything is still running then we need to SIGKILL it
+    for p in processes:
+
+        # wait a few seconds for the process to end.
+        p.join(5)
+
+        # if the process still hasn't terminated, then we SIGKILL it
+        if p.exitcode == None:
+
+            logger.info(f"Sending SIGKILL to process, [{p.pid}] {p.name}...")
+            p.kill()
+
+    return True
+
+
+
+##################################################
+# Wrapper function that opens a database connection, then calls the getFrequencies function to query the
+# backend database for the list of frequencies we should be listening too.
+##################################################
+def getFreqList():
+
+    # get the logger
+    logger = logging.getLogger(__name__)
+
+    # list of frequencies
+    freqs = None
 
     try:
+        # Database connection 
+        dbconn = None
+        dbconn = pg.connect (habconfig.dbConnectionString)
+        dbconn.set_session(autocommit=True)
+
+        freqs = queries.getFrequencies(dbconn, logger)
+        logger.debug(f"frequency list: {freqs}")
+
+        dbconn.close()
+
+    except pg.DatabaseError as error:
+        # If there was a connection error
+        dbconn.close()
+        logger.error(f"Database error: {error}")
+
+    return freqs
+
+
+##################################################
+# get the list of frequencies that gnuradio will listen too...and subsequently the UDP ports that direwolf will listen too
+# then construct the freq map that direwolf will use.
+##################################################
+def buildFreqMap(config):
+
+        # get the logger
+        logger = logging.getLogger(__name__)
 
         # A list of frequency lists (i.e. a list of lists) for creating the direwolf configuration file
         direwolfFreqList = []
@@ -718,6 +551,7 @@ def main():
         i = len(sdrs)
  
         print(("Number of usable SDRs: ", i))
+        logger.info(f"Number of usable SDRs: {i}")
 
         #  Online-only mode:  
         #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
@@ -729,21 +563,14 @@ def main():
         #      - we do start GnuRadio processes
         #      - we do start Direwolf and have it connect to the aprsc instance via "localhost" 
 
-       
-        # This is the aprsc process
-        aprscprocess = mp.Process(target=aprsc.aprsc, args=(configuration, stopevent))
-        aprscprocess.daemon = True
-        aprscprocess.name = "aprc"
-        processes.append(aprscprocess) 
-
-        status = {}
+        direwolfstatus = {}
         antennas = []
 
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
 
             # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-            freqs = getFrequencies()
+            freqs = getFreqList()
 
             # For each SDR dongle found, start a separate GnuRadio listening process
             total_freqs = 0
@@ -751,8 +578,8 @@ def main():
             loop_iter = 0
             for k in sdrs:
 
-                print(("Using SDR:  ", k))
-                status["rf_mode"] = 1
+                logger.info(f"Using SDR: {k}")
+                direwolfstatus["rf_mode"] = 1
                 
                 # Append this frequency list to our list for later json output
                 ant = {}
@@ -768,7 +595,7 @@ def main():
                 freqlist = []
                 for freq in freqs:
                     ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
-                    freqlist.append([freq, udpport, k["prefix"], k["serialnumber"]])
+                    freqlist.append([freq, udpport, k["prefix"], k["serialnumber"], k["rtl"]])
                     freqmap.append([chan, freq])
                     chan += 2
                     total_freqs += 1
@@ -781,104 +608,185 @@ def main():
                 # The IP destination for where the GnuRadio UDP network block is to send its audio packets too.  This is hard coded to be the loopback address (for now).
                 ip_dest = "127.0.0.1"
 
-                # The direwolf audio sample rate.  This is hardcoded for now to be 50000 as it makes the math easier for the Resampler blocks within the GnuRadio receiver.
-                # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
-                samplerate = 50000
-
-                # This is the GnuRadio process
-                grprocess = mp.Process(target=aprsreceiver.GRProcess, args=(freqlist, int(k["rtl"]), k["prefix"], ip_dest, samplerate, stopevent))
-                grprocess.daemon = True
-                grprocess.name = "GnuRadio_" + str(k["rtl"])
-                processes.append(grprocess)
-
                 loop_iter += 1
 
 
-            status["direwolfcallsign"] = str(configuration["callsign"]) + "-" + str(configuration["ssid"])
+            # The direwolf audio sample rate.  This is hardcoded for now to be 50000 as it makes the math easier for the Resampler blocks within the GnuRadio receiver.
+            # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
+            samplerate = 50000
+
+            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + "-" + str(config["ssid"])
+            direwolfstatus["direwolffreqlist"] = direwolfFreqList
+            direwolfstatus["direwolffreqmap"] = freqmap
+            direwolfstatus["direwolfaudiorate"] = samplerate
 
             # Get our our current position
-            myposition = getGPSPosition()
+            #myposition = getGPSPosition()
 
             # The direwolf process
-            dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
-            dfprocess.daemon = True
-            dfprocess.name = "Direwolf"
-            processes.append(dfprocess)
+            #dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
+            #dfprocess.daemon = True
+            #dfprocess.name = "Direwolf"
+            #processes.append(dfprocess)
 
             # The direwolf tap process 
-            dftapprocess = mp.Process(target=kisstap.runKissTap, args=(5, stopevent, configuration, freqmap))
-            dftapprocess.daemon = True
-            dftapprocess.name = "Direwolf Tap"
-            processes.append(dftapprocess)
+            #dftapprocess = mp.Process(target=kisstap.runKissTap, args=(5, stopevent, configuration, freqmap))
+            #dftapprocess.daemon = True
+            #dftapprocess.name = "Direwolf Tap"
+            #processes.append(dftapprocess)
 
 
-            if configuration["beaconing"] == "true" and configuration["objectbeaconing"] == "true":
+            direwolfstatus["xmit_channel"] = None
+            if config["beaconing"] == "true":
 
-                configuration["xmit_channel"] = total_freqs * 2
+                direwolfstatus["xmit_channel"] = total_freqs * 2
 
                 # The beaconing process (this is different from the position beacons that direwolf will transmit)
-                print("Starting object beaconing process...")
-                icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
-                icprocess.daemon = True
-                icprocess.name = "Object beaconing"
-                processes.append(icprocess)
+                #print("Starting object beaconing process...")
+
+                #icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
+                #icprocess.daemon = True
+                #icprocess.name = "Object beaconing"
+                #processes.append(icprocess)
 
         else:
-            status["rf_mode"] = 0
-            status["direwolfcallsign"] = ""
+            direwolfstatus["direwolfcallsign"] = ""
            
-        status["antennas"] = antennas 
+        direwolfstatus["antennas"] = antennas 
+
+        return direwolfstatus
+
+
+##################################################
+# main function
+##################################################
+def main():
+
+    # Setup logging 
+    loglistener, loggingqueue = configure_logging()
+    logger = logging.getLogger(__name__)
+
+    # Check the options provided on the command line
+    options, _ = argument_parser().parse_args()
+
+    # lower case name of this script without any extension
+    thisprocname = os.path.basename(sys.argv[0].lower()).split(".")[0]
+
+    # Check if we need to kill an already running copy of this script or if we're already running, then we need to exit.
+    if processChecks(thisprocname, options.kill):
+        logger.info("Done.")
+        sys.exit(1)
+
+    # Print out our starting up message
+    pid = os.getpid()
+    logger.info(f"############## HAB Tracker start, {pid=} #############")
+
+    try:
+
+        # Check the directory permissions of some of the web-based frontend stuff
+        checkDirPerms()
+
+        # Add the Database for any updates or changes needed
+        databasechecks.databaseUpdates(logger)
+
+        # Read in the JSON configuration file
+        configuration = readConfiguration('/eosstracker/www/configuration/config.txt', options)
+
+        # Print out the callsign we're using
+        logger.info(f"Callsign:  {configuration['callsign']}")
+
+        # signal handler for catching kills
+        signal.signal(signal.SIGTERM, signal_handler)
+
+
+        #######################################################
+        ############# these next few items are shared objects amongst sub-processes
+
+        # This is the common event that when set, will cause all the sub-processes to gracefully end
+        stopevent = mp.Event()
+        
+        # Add the stopevent to the our configuration
+        configuration["stopevent"] = stopevent
+
+        # incoming packet queue for database writes.  All sub-processes that ingest packets place packets in this queue.
+        configuration["databasequeue"] = mp.Queue(maxsize = 0)
+
+        # for all packets that we're intending to igate. sub-processes will add packets for igating consideration to this queue
+        configuration["igatingqueue"] = mp.Queue(maxsize = 0)
+
+        # add the logging queue to the configuration sent to sub-processes so their log messages are routed back here
+        configuration["loggingqueue"] = loggingqueue
+
+        # a central, shared location for disimenating latest information from a variety of processes
+        # this is our multi-process manager object (for handling shared dictionaries)
+        manager = mp.Manager()
+
+        # if the manager creation was successful
+        if manager:
+
+            # create a dictionary for storing our position information (gpspoller updates it).  Other processes read this to get latest position details
+            configuration["position"] = manager.dict()
+
+            # Create a list of landing locations for active flights.  this is a list of tuples (i.e. coordinates) for all active flights.  Updated by the 
+            # landing predictor process.  
+            configuration["landinglocations"] = manager.dict()
+
+            # Create a list of all beacon callsigns on active flights.  This is a list of beacon callsigns updated by the landing predictor process.
+            configuration["activebeacons"] = manager.dict()
+
+        else:
+
+            # if we couldn't create a manager object then we set the "position" key to None
+            configuration["position"] = None
+
+
+        #######################################################
+        #######################################################
+
+
+        # where to store our output JSON status information (the web-based frontend reads this to know if the backend is running or not)
+        status = {}
+        antennas = []
+
+        # this holds the list of sub-processes and threads that we want to start/run
+        processes = []
+
+        # Set JSON inital status data
+        status["rf_mode"] = 0
+        status["direwolfcallsign"] = ""
+        status["antennas"] = []
         status["igating"] = configuration["igating"]
         status["beaconing"] = configuration["beaconing"]
         status["active"] = 1
-
         ts = datetime.datetime.now()
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
 
-        # This is the APRS-IS connection tap.  This is the process that is responsible for inserting APRS packets into the database
-        #aprstap = mp.Process(name="APRS-IS Tap", target=aprsis.tapProcess, args=(configuration, "noam.aprs2.net", "aprs", options.aprsisRadius, stopevent))
-        aprstap = mp.Process(name="APRS-IS Tap", target=aprsis.tapProcess, args=(configuration, "127.0.0.1", "aprs", options.aprsisRadius, stopevent))
-        aprstap.daemon = True
-        aprstap.name = "APRS-IS Tap"
-        processes.append(aprstap)
+        # get the frequency, udp mapping (from backend database of active flights) and set various objects.
+        direwolfstatus = buildFreqMap(configuration)
+        configuration["direwolffreqlist"] = direwolfstatus["direwolffreqlist"]
+        configuration["direwolffreqmap"] = direwolfstatus["direwolffreqmap"]
+        configuration["xmit_channel"] = direwolfstatus["xmit_channel"]
+        configuration["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
+        configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"]
+        configuration["maxdirewolfchannels"] = 8
+        status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
+        status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
+        status["antennas"] = direwolfstatus["antennas"]
 
-        # This is the CWOP connection tap.  This is the process that is responsible for inserting CWOP packets into the database
-        cwoptap = mp.Process(name="CWOP Tap", target=aprsis.tapProcess, args=(configuration, "cwop.aprs.net", "cwop", 200, stopevent))
-        cwoptap.daemon = True
-        cwoptap.name = "CWOP Tap"
-        processes.append(cwoptap)
+        # we want to connect to for aprs-is connectivity
+        configuration["aprsisserver"] = "noam.aprs2.net"
 
+        # where the direwolf instance is running
+        configuration["direwolfserver"] = "127.0.0.1"
 
-        ###################
-        # This is the debug connection tap to a locally running aprsc instance...for debug use only.
-        if debug:
-            debugmsg("Starting test aprsc tap");
-            testtap = mp.Process(name="Testing Tap", target=aprsis.tapProcess, args=(configuration, "127.0.0.1", "testing", 500, stopevent))
-            testtap.daemon = True
-            testtap.name = "Testing Tap"
-            processes.append(testtap)
-        ###################
-
-
-        # This is the GPS position tracker process
-        gpsprocess = mp.Process(target=gpspoller.runGPSPoller, args=(stopevent,))
-        gpsprocess.daemon = True
-        gpsprocess.name = "GPS Position Tracker"
-        processes.append(gpsprocess)
-
-        # This is the landing predictor process
-        landingprocess = mp.Process(target=lp.runLandingPredictor, args=(options.algoInterval, stopevent, configuration))
-        landingprocess.daemon = True
-        landingprocess.name = "Landing Predictor"
-        processes.append(landingprocess)
-
+        # Create all of the sub-processes
+        processes = createProcesses(configuration)
 
         # Loop through each process starting it
         for p in processes:
-            #print "Starting:  %s" % p.name
+            logger.info(f"Starting process for {p.name}")
             p.start()
-
 
         # Save the operating mode and status to a JSON file
         jsonStatusFile = "/eosstracker/www/daemonstatus.json"
@@ -887,30 +795,32 @@ def main():
             f.write(json.dumps(status))
         if os.path.isfile(jsonStatusTempFile):
             os.rename(jsonStatusTempFile, jsonStatusFile)
-    
+
         # Join each process (which blocks until the sub-process ends)
         for p in processes:
             p.join()
 
     except (KeyboardInterrupt): 
-        # The KeyboardInterrupt event is caught by all of the individual threads/processes so we just need to wait for them to finish
-        for p in processes:
-            print(("Waiting for [%s] %s to end..." % (p.pid, p.name)))
-            p.join()
+        logger.debug(f"############### MAIN ##############  Caught keyboard interrupt, setting stop event")
+
+        # The KeyboardInterrupt event "should" be caught by all of the individual threads/processes
+        stopevent.set()
+
+        # now end the processes (if they're not already shutdown)
+        endProcesses(processes)
 
     except (GracefulExit, SystemExit) as msg: 
         # Set this event to be as graceful as we can for shutdown...
-        print(("Caught signal: {}, Setting stop event...".format(msg)))
-        sys.stdout.flush()
+        logger.warning(f"Signaling to the application that it's time to shutdown.")
 
+        # set the stop event so that other processes will stop
         stopevent.set()
-        # For catching a kill signal, we need to tell the individual processes to terminate
-        for p in processes:
-            print(("Waiting for [%s] %s to end..." % (p.pid, p.name)))
-            p.join()
-            #print "Sending terminate signal to [%s] %s..." % (p.pid, p.name)
-            #p.terminate()
-            #p.join()
+
+        # now end the processes (if they're not already shutdown)
+        endProcesses(processes)
+
+    # stop the logging listener as all the sub-processes are not stopped
+    loglistener.stop()
 
     # Save the operating mode and status to a JSON file...as basically empty as we're now shutting down
     jsonStatusFile = "/eosstracker/www/daemonstatus.json"
@@ -924,9 +834,7 @@ def main():
     if os.path.isfile(jsonStatusTempFile):
         os.rename(jsonStatusTempFile, jsonStatusFile)
 
-    print("\nDone.")
-
-
+    logger.info("Done.")
 
 if __name__ == '__main__':
     main()

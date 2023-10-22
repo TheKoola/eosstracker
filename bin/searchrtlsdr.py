@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
@@ -118,4 +119,20 @@ def getUSBDevices():
 
                 device_no[sdr["prefix"]] += 1
         return sdrs
+
+def test():
+    sdrlist = getUSBDevices()
+
+    if sdrlist:
+
+        # if there are SDR devices found, then print each one
+        print("USB SDR devices discovered:")
+        for sdr in sdrlist:
+            print(sdr)
+    else:
+        print("No USB SDR devices discovered")
+
+
+if __name__ == "__main__":
+    test()
 

@@ -23,263 +23,561 @@ import multiprocessing as mp
 import subprocess as sb
 import threading as th
 import signal
-import aprslib
 import psutil
 import os
 import sys
+from dataclasses import dataclass
+import logging
+from logging.handlers import QueueHandler
+
+# local imports
+import psycopg2 as pg
+import queries
+import habconfig
+
+
+class GracefulExit(Exception):
+    pass
 
 ##################################################
-# This creates the configuration file for Direwolf
+# signal handler for SIGTERM
 ##################################################
-def createDirewolfConfig(callsign, l, configdata, gpsposition):
+def local_signal_handler(signum, frame):
+    pid = os.getpid()
+    caller = getframeinfo(stack()[1][0])
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Caught SIGTERM signal. {pid=}")
+    raise GracefulExit()
 
-    # Name of the direwolf configuration file
-    filename = "/eosstracker/etc/direwolf.conf"
 
-    # Mapping of direwolf channel to SDR and frequency
-    freqmap = []
+##################################################
+# class to encapculate the direwolf sub-process (sortof)
+##################################################
+@dataclass
+class Direwolf:
+    """
+    This will look to start direwolf to listen to a variety of UDP network ports and optionally to an external radio via an audio interface.
+    * listen to a number of UDP ports for incoming aprs packets (each UDP connection represents a differnet frequency that the gnuradio frontend is listening too)
+    * listen to an external radio (via an audio device)
+    * beacon our position every so often (or use smartbeaconing if this is a mobile station)
+    * igating is performed (if configured to do so...typically to the aprsc instance listening to 127.0.0.1)
+    * no digipeating is performed
+    * the KISS port is using the default 8001 port.
+        + The kisstap.py module will listen to packets that direwolf has heard over the external radio via the KISS port
+        + ..And those packets will be igated if they pass igating criteria (seperate process)
+    """
 
-    # The igating filter string for when using 145.825MHz.  We only want to igate packets heard on 145.815MHz if they were digipeated prior ___or___
-    # they were from one of the satellites themselves
-    satfilter = " IG d/* | b/PSAT*/USNAP*/RS0ISS*/ARISS*/NA1ISS*/DP0ISS*"
+    # The direwolf configuration file
+    config_file: str = "/eosstracker/etc/direwolf.conf"
 
-    try:
+    # the logging queue
+    loggingqueue: mp.Queue = None
 
-        # Create or overwrite the direwolf configuration file.  We don't care if we overwrite it as the configuration is created dynamically each time.
-        with open(filename, "w") as f:
-            f.write("###\n")
-            f.write("# " + filename + "\n")
-            f.write("#\n\n\n")
-            adevice = 0
-            channel = 0
+    # the configuration dictionary
+    configuration: dict = None
 
-            # Loop through the frequency/port lists creating the audio device sections
-            for freqlist in l:
-                f.write("###########################################\n")
-                for freq, port, prefix, sn in freqlist:
-                     # This is the audio device section for this RTL, frequency, and port combination
-                    f.write("# SDR Device: " + prefix + " (s/n: " + sn + ")  Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
-                    f.write("ADEVICE" + str(adevice) + " udp:" + str(port) + " null\n")
+    # Location of the direwolf binary
+    df_binary: str = "/usr/local/bin/direwolf"
 
-                    # Defaulting to an audio rate of 50000.  Fixing this makes it easier on the GnuRadio receiver side when working with resampling.
-                    f.write("ARATE 50000\n")
+    # The location of the direwolf log file
+    df_logfile: str = "/eosstracker/logs/direwolf.out"
 
+
+    #####################################
+    # the post init constructor
+    #####################################
+    def __post_init__(self)->None:
+
+        # setup logging
+        self.logger = logging.getLogger(f"{__name__}.{__class__}")
+        self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False
+
+        # check if a logging queue was supplied
+        if self.configuration["loggingqueue"] is not None:
+
+            # a queue was supplied so we setup a queuehandler
+            handler = QueueHandler(self.configuration["loggingqueue"])
+            self.logger.addHandler(handler)
+
+        # the callsign of the user running this
+        self.callsign = self.configuration["callsign"] + "-" + self.configuration["ssid"]
+
+        # does the configuration indicate we're RF beaconing?
+        self.beaconing = True if self.configuration["beaconing"] == "true" else False
+
+        # the Event object that the main program will signal us with, that we should stop running
+        self.stopevent = self.configuration["stopevent"]
+
+        # the direwolf process
+        self.p = None
+
+        # The igating filter string for when using 145.825MHz.  We only want to igate packets heard on 145.815MHz if they were digipeated prior ___or___
+        # they were from one of the satellites themselves
+        self.satfilter = " IG d/* | b/PSAT*/USNAP*/RS0ISS*/ARISS*/NA1ISS*/DP0ISS*"
+
+        # The default keys for the configuration data
+        self.defaultkeys = {
+                "timezone":"America/Denver",
+                "callsign":"",
+                "lookbackperiod":"180",
+                "iconsize":"24",
+                "plottracks":"off", 
+                "ssid" : "2", 
+                "igating" : "false", 
+                "beaconing" : "false", 
+                "passcode" : "", 
+                "fastspeed" : "45", 
+                "fastrate" : "01:00", 
+                "slowspeed" : "5", 
+                "slowrate" : "10:00", 
+                "beaconlimit" : "00:35", 
+                "fastturn" : "20", 
+                "slowturn": "60", 
+                "audiodev" : "0", 
+                "serialport": "none", 
+                "serialproto" : "RTS", 
+                "comment" : "EOSS Tracker", 
+                "includeeoss" : "true", 
+                "eoss_string" : "EOSS", 
+                "symbol" : "/k", 
+                "overlay" : "", 
+                "ibeaconrate" : "15:00", 
+                "ibeacon" : "false", 
+                "customfilter" : "r/39.75/-103.50/400", 
+                "objectbeaconing" : "false", 
+                "mobilestation" : "true",
+                "aprsisserver" : "noam.aprs2.net",
+                "cwopserver" : "cwop.aprs.net",
+                "cwopradius" : 200
+        }
+
+        # default sample rate in case it's not supplied
+        self.samplerate = int(self.configuration["samplerate"]) if "samplerate" in self.configuration else 50000
+
+        self.logger.debug("Created a direwolf instance")
+
+
+    ##################################################
+    # acquire the location of this station (i.e. GPS coords)
+    ##################################################
+    def getPosition(self)->dict:
+
+        # default position object
+        gpsposition = {
+                "altitude" : 0.0,
+                "latitude" : 0.0,
+                "longitude" : 0.0,
+                "isvalid" : False
+                }
+
+        # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
+        nofix = True
+        trycount = 0
+        while nofix == True and trycount < 30:
+            
+            # This retreives the latest GPS data (assuming GPS Poller process is running)
+            g = self.configuration["position"]
+
+            if "gpsdata" in g: 
+                position = g["gpsdata"]
+
+                if "mode"  in position:
+                    mode = int(position["mode"])
+
+                    if mode == 3:
+                        
+                        # we've got a 3D position fix!!
+                        nofix = False
+                        gpsposition["altitude"] = round(float(position["altitude"]) * .3048,2)  # convert to meters
+                        gpsposition["latitude"] = round(float(position["lat"]),8)
+                        gpsposition["longitude"] = round(float(position["lon"]),8)
+                        gpsposition["isvalid"] = True
+
+            if nofix == True:
+                # we're still waiting on the GPS to obtain a fix so we wait for 1 second
+                self.stopevent.wait(1)
+
+                # increment our try counter
+                trycount += 1
+
+                self.logger.info(f"Waiting on GPS fix: {trycount}s")
+
+
+        # if we still don't have a GPS fix, then we query the database for our last known location
+        if nofix == True:
+
+            self.logger.info("Unable to acqure 3D fix from GPS, querying database for last known location")
+
+            # connect to the database
+            dbconn = queries.connectToDatabase(dbstring = habconfig.dbConnectionString, logger = self.logger)
+
+            # if the connection was successful, then call the GPS position function
+            if dbconn is not None:
+
+                # query the database for our last known location
+                gpsposition = queries.getGPSPosition(dbconn = dbconn, logger = self.logger)
+
+                # close the database connection
+                dbconn.close()
+
+        # return the gpsposition object
+        return gpsposition
+
+
+    ##################################################
+    # This creates the configuration file for Direwolf
+    ##################################################
+    def createDirewolfConfig(self)->bool:
+
+        # If we're not beaconing over RF, then there's no reason to build a direwolf configuration file as we won't start the direwolf process
+        #if self.beaconing == False:
+        #    return False
+
+        # if this is a fixed location station, then we need to determine our location.  Without it we can't continue.
+        if self.configuration["mobilestation"] == "false":
+
+            # get our current location
+            gpsposition = self.getPosition()
+
+            # if we're unable to get GPS coordinates for a fixed station then we can't run direwolf
+            if gpsposition["isvalid"] == False:
+                self.logger.error("Unable to run Direwolf.  Could not obtain station location.")
+                return False
+
+            self.logger.info(f"Station location (meters and decimal degrees): {gpsposition}")
+
+        try:
+
+            # Create or overwrite the direwolf configuration file.  We don't care if we overwrite it as the configuration is created dynamically each time.
+            with open(self.config_file, "w") as f:
+
+                # write some preamble to the file
+                f.write("###\n")
+                f.write("# " + self.config_file + "\n")
+                f.write("#\n\n\n")
+
+                # these are the default direwolf audio and channel device numbers
+                adevice = 0
+                channel = 0
+
+                # Loop through the frequency/port lists creating the audio device sections
+                for freqlist in self.configuration["direwolffreqlist"]:
+                    f.write("###########################################\n")
+                    for freq, port, prefix, sn, idx in freqlist:
+                         # This is the audio device section for this RTL, frequency, and port combination
+                        f.write("# SDR Device: " + prefix + " (s/n: " + sn + ")  Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
+                        f.write("ADEVICE" + str(adevice) + " udp:" + str(port) + " null\n")
+
+                        # Audio sample rate
+                        f.write("ARATE " + str(self.samplerate) + "\n")
+
+                        f.write("ACHANNELS 1\n")
+                        f.write("CHANNEL " + str(channel) + "\n")
+                        f.write("MYCALL " + self.callsign + "\n")
+                        f.write("MODEM 1200\n")
+                        f.write("FIX_BITS 1\n\n")
+
+                        # If listening to the satellite frequency and igating, then only igate if we heard the packet through a digipeater.
+                        # For satellite ops we don't want to igate packets heard directly.
+                        # Note:  buddy list filter is clearly a work in progress...
+                        if freq == 145825000 and self.configuration["igating"] == True:
+                            f.write("FILTER " + str(channel) + self.satfilter + "\n")
+
+                        # Add this channel to the channel-to-frequency mapping
+                        #freqmap.append({ "channel" : channel, "frequency" : freq, "sdr" : prefix + sn })
+
+                        channel = channel + 2
+                        adevice = adevice + 1
+
+                    f.write("###########################################\n\n")
+
+                # when beaconing the user can include the EOSSn string within their VIA path for transmitted packets.  The EOSS payloads will digipeat any 
+                # packet that has this string in its VIA path.
+                if self.configuration["includeeoss"] == "true" and self.configuration["eoss_string"] != "":
+                    eoss = str(self.configuration["eoss_string"]) + ","
+                else:
+                    eoss=""
+
+                # if the symbol for this station includes an overlay
+                if self.configuration["overlay"] != "":
+                    overlay = " overlay=" + str(self.configuration["overlay"])
+                else:
+                    overlay = ""
+
+                # Only if we're beaconing...
+                if self.configuration["beaconing"] == "true":
+
+                    self.logger.info(f"Direwolf configured for beaconing using {channel=} and {self.callsign=}")
+
+                    f.write("###########################################\n\n")
+                    f.write("# This is the external radio connection\n")
+                    f.write("ADEVICE" + str(adevice) + " plughw:" + str(self.configuration["audiodev"]) + ",0\n")
+                    f.write("ARATE 44100\n")
                     f.write("ACHANNELS 1\n")
                     f.write("CHANNEL " + str(channel) + "\n")
-                    f.write("MYCALL " + callsign + "\n")
+                    f.write("MYCALL " + self.callsign + "\n")
                     f.write("MODEM 1200\n")
-                    f.write("FIX_BITS 1\n\n")
 
-                    # If listening to the satellite frequency and igating, then only igate if we heard the packet through a digipeater.
-                    # For satellite ops we don't want to igate packets heard directly.  
-                    # Note:  buddy list filter is clearly a work in progress...
-                    if freq == 145825000 and configdata["igating"] == True:
-                        f.write("FILTER " + str(channel) + satfilter + "\n")
-
-                    # Add this channel to the channel-to-frequency mapping
-                    freqmap.append({ "channel" : channel, "frequency" : freq, "sdr" : prefix + sn })
-
-                    channel = channel + 2
-                    adevice = adevice + 1
-
-                f.write("###########################################\n\n")
-
-            if configdata["includeeoss"] == "true" and configdata["eoss_string"] != "":
-                eoss = str(configdata["eoss_string"]) + ","
-            else:
-                eoss=""
-
-            if configdata["overlay"] != "":
-                overlay = " overlay=" + str(configdata["overlay"])
-            else:
-                overlay = ""
-
-            f.write("GPSD\n\n")
-
-            # Are we connected to an external radio?  And are we wanting to beacon our position over RF?
-            if configdata["beaconing"] == "true":
-                f.write("###########################################\n\n")
-                f.write("# This is the external radio connection\n")
-                f.write("ADEVICE" + str(adevice) + " plughw:" + str(configdata["audiodev"]) + ",0\n")
-                f.write("ARATE 44100\n")
-                f.write("ACHANNELS 1\n")
-                f.write("CHANNEL " + str(channel) + "\n")
-                f.write("MYCALL " + callsign + "\n")
-                f.write("MODEM 1200\n")
-                if configdata["serialport"] != "none":
-                    f.write("PTT " + str(configdata["serialport"]) + " " + str(configdata["serialproto"]) + "\n")
-                f.write("\n\n")
+                    # Specify the serial port for PTT control (if applicable)
+                    if self.configuration["serialport"] != "none":
+                        self.logger.info(f"Setting direwolf to use the serial port, {self.configuration['serialport']}, and protocol, {self.configuration['serialproto']}, for external radio connectivity")
+                        f.write("PTT " + str(self.configuration["serialport"]) + " " + str(self.configuration["serialproto"]) + "\n")
+                    f.write("\n\n")
 
 
-                # If we're using the ARISS pre-pended string with the VIA path for transmitted packets ('cause we're beaconing), 
-                # then we need to assume the external radio is tuned to 145.825MHz.  Therefore, if configured to igate, we don't want to igate anything
-                # from the external radio unless it was digipeated first.
-                if str(configdata["eoss_string"]) == "ARISS" and configdata["igating"] == True:
-                    f.write("FILTER " + str(channel) + satfilter + "\n\n")
+                    f.write("######### beaconing configuration #########\n")
 
-                f.write("######### beaconing configuration #########\n")
-
-                # If this is a mobile station, then we want to turn on "smart" beaconing.
-                viapath = ""
-                if configdata["mobilestation"] == "true":
-
-                    # If we're using AIRSS then we assuming the external radio is transmitting on 145.825MHz and we alter our path to only add WIDE2-1.
-                    if str(configdata["eoss_string"]) == "ARISS":
-                        viapath = " via=" + str(eoss) + "WIDE2-1"
-                    else:
-                        viapath = " via=" + str(eoss) + "WIDE1-1,WIDE2-1"
-
-                    f.write("# This is for a mobile station\n")
-                    f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(configdata["beaconlimit"]) + "  altitude=1 " + viapath + " symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
-                    f.write("SMARTBEACONING " + str(configdata["fastspeed"]) + " " + str(configdata["fastrate"]) + "      " + str(configdata["slowspeed"]) + " " + str(configdata["slowrate"]) + "     " + str(configdata["beaconlimit"]) + "     " + str(configdata["fastturn"]) + " " + str(configdata["slowturn"]) + "\n")
-                
-                # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
-                else:
-                    # Only beacon our position if there is a valid GPS location
-                    viapath = " via=" + str(eoss) + "WIDE2-1"
-                    if gpsposition["isvalid"]:
-                        f.write("# This is for a fixed station\n")
-                        f.write("PBEACON sendto=" + str(channel) + " delay=0:30 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " via=" + str(eoss) + "WIDE2-1  symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
-
-                if configdata["igating"] == "true":
-                    f.write("IBEACON sendto=" + str(channel) + str(viapath) + " delay=0:40 every=" + str(configdata["ibeaconrate"]) + "\n")
-                f.write("###########################################\n\n")
-
-
-            #### Only if we're igating... 
-            if configdata["igating"] == "true":
-                password = configdata["passcode"]
-                f.write("# APRS-IS Info\n")
-                #f.write("IGSERVER noam.aprs2.net\n")
-                f.write("IGSERVER 127.0.0.1\n")
-                f.write("IGLOGIN " + callsign + " " + str(password) + "\n\n")
-                #password = aprslib.passcode(str(callsign))
-
-                # If this station is beaconing directly to APRS-IS...then that can only happen if we have a IGSERVER defined (just above).
-                if configdata["ibeacon"] == "true":
-                    f.write("########## for internet beaconing #########\n");
+                    viapath = ""
 
                     # If this is a mobile station, then we want to turn on "smart" beaconing.
-                    if configdata["mobilestation"] == "true":
+                    if self.configuration["mobilestation"] == "true":
+
+                        self.logger.info(f"Configuring direwolf for a mobile station")
+
+                        # If we're using AIRSS then we assuming the external radio is transmitting on 145.825MHz and we alter our path to only add WIDE2-1.
+                        if str(self.configuration["eoss_string"]) == "ARISS":
+                            viapath = " via=" + str(eoss) + "WIDE2-1"
+                        else:
+                            viapath = " via=" + str(eoss) + "WIDE1-1,WIDE2-1"
+
+                        self.logger.debug(f"VIA path: {viapath}")
+
+                        # Direwolf directives to specify the type of beaconing 
                         f.write("# This is for a mobile station\n")
-                        f.write("TBEACON sendto=IG  delay=0:40 every=" + str(configdata["ibeaconrate"]) + "  altitude=1  symbol=" + str(configdata["symbol"]) + overlay + "    comment=\"" + str(configdata["comment"]) +  "\"\n")
+                        f.write("TBEACON sendto=" + str(channel) + " delay=0:30 every=" + str(self.configuration["beaconlimit"]) + "  altitude=1 " + viapath + " symbol=" + str(self.configuration["symbol"]) + overlay + "    comment=\"" + str(self.configuration["comment"]) +  "\"\n")
+                        f.write("SMARTBEACONING " + str(self.configuration["fastspeed"]) + " " + str(self.configuration["fastrate"]) + "      " + str(self.configuration["slowspeed"]) + " " + str(self.configuration["slowrate"]) + "     " + str(self.configuration["beaconlimit"]) + "     " + str(self.configuration["fastturn"]) + " " + str(self.configuration["slowturn"]) + "\n")
+                    
 
-                    # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
                     else:
-                        # Only beacon our position if there is a valid GPS location
-                        if gpsposition["isvalid"]:
-                            f.write("# This is for a fixed station\n")
-                            f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(configdata["symbol"]) + overlay + " comment=\"" + str(configdata["comment"] + "\"\n"))
+                        # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
+                        self.logger.info(f"Configuring direwolf for a fixed station")
 
-                    if configdata["igating"] == "true":
-                        f.write("IBEACON sendto=IG  delay=0:50 every=" + str(configdata["ibeaconrate"]) + "\n")
+                        # Only beacon our position if there is a valid GPS location
+                        viapath = " via=" + str(eoss) + "WIDE2-1"
+
+                        self.logger.debug(f"VIA path: {viapath}")
+
+                        if gpsposition["isvalid"] == True:
+                            f.write("# This is for a fixed station\n")
+                            f.write("PBEACON sendto=" + str(channel) + " delay=0:30 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " via=" + str(eoss) + "WIDE2-1  symbol=" + str(self.configuration["symbol"]) + overlay + " comment=\"" + str(self.configuration["comment"] + "\"\n"))
 
                     f.write("###########################################\n\n")
 
 
-            # The rest of the direwolf configuration
-            f.write("AGWPORT 8000\n")
-            f.write("KISSPORT 8001\n")
+                    #### Only if we're igating... 
+                    if self.configuration["igating"] == "true":
+                        self.logger.info(f"Direolf configured to igate to 127.0.0.1")
 
-            f.close()
-        return filename, freqmap
+                        password = self.configuration["passcode"]
+                        f.write("# APRS-IS Info\n")
+                        #f.write("IGSERVER noam.aprs2.net\n")
+                        f.write("IGSERVER 127.0.0.1\n")
+                        f.write("IGLOGIN " + self.callsign + " " + str(password) + "\n\n")
+                        #password = aprslib.passcode(str(callsign))
 
-    except (KeyboardInterrupt, SystemExit):
-        f.close()
-        return (None, None)
-    except IOError as error:
-        print("Unable to create direwolf configuration file.\n %s" % error)
-        return (None, None)
-            
+                        # If this station is beaconing directly to APRS-IS...then that can only happen if we have a IGSERVER defined (just above).
+                        if self.configuration["ibeacon"] == "true":
+
+                            self.logger.info(f"Direwolf configured to use internet beaconing")
+
+                            f.write("########## for internet beaconing #########\n");
+
+                            # If this is a mobile station, then we want to turn on "smart" beaconing.
+                            if self.configuration["mobilestation"] == "true":
+                                f.write("# This is for a mobile station\n")
+                                f.write("TBEACON sendto=IG  delay=0:40 every=" + str(self.configuration["ibeaconrate"]) + "  altitude=1  symbol=" + str(self.configuration["symbol"]) + overlay + "    comment=\"" + str(self.configuration["comment"]) +  "\"\n")
+
+                            # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
+                            else:
+                                # Only beacon our position if there is a valid GPS location
+                                if gpsposition["isvalid"]:
+                                    f.write("# This is for a fixed station\n")
+                                    f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(self.configuration["symbol"]) + overlay + " comment=\"" + str(self.configuration["comment"] + "\"\n"))
+
+                            if self.configuration["igating"] == "true":
+                                f.write("IBEACON sendto=IG  delay=0:50 every=" + str(self.configuration["ibeaconrate"]) + "\n")
+
+                            f.write("###########################################\n\n")
+
+                # We're assuming that there's a GPS attached to this system
+                f.write("GPSD\n\n")
+
+                # The rest of the direwolf configuration
+                f.write("AGWPORT 8000\n")
+                f.write("KISSPORT 8001\n")
+                
+                # close the file
+                f.close()
+
+            return True
+
+        except IOError as error:
+            self.logger.error(f"Unable to create direwolf configuration file: {error}")
+            return False
+                
+
+    ##################################################
+    # terminate a process 
+    ##################################################
+    def stop(self, process = None)->bool:
+
+        # sanity check
+        if process is None and self.p is None:
+            return False
+
+        # if we were called without a pid, the use our own
+        if process is None:
+            process = self.p
+        
+        # Check if this direwolf process is running
+        if process.poll() is None:
+
+            self.logger.info(f"Terminating direwolf sub-process, {process.pid}.")
+
+            # try to terminate it with a SIGTERM
+            process.terminate()
+
+            # now wait for the direwolf process to end
+            try:
+
+                self.logger.info(f"Waiting for direwolf sub-process, {process.pid}, to end..")
+
+                # wait a few seconds for the process to end
+                process.wait(6)
+
+            except (sb.TimeoutExpired):
+
+                # direwolf didn't end so we now send a SIGKILL signal instead
+                self.logger.info(f"Killing direwolf process {process.pid}...")
+                process.kill()
+
+        # return the process state
+        return process.poll()
 
 
-##################################################
-# Run direwolf
-##################################################
-def direwolf(e, callsign, freqlist, config, position):
-    # Location of the direwolf binary
-    df_binary = "/usr/local/bin/direwolf"
 
-    # The location of the direwolf log file
-    logfile = "/eosstracker/logs/direwolf.out"
+    ##################################################
+    # run.  This will block while direwolf is running
+    ##################################################
+    def run(self)->bool:
 
-    # (re)create the direwolf configuration file without database support
-    configfile, freqmap = createDirewolfConfig(callsign, freqlist, config, position)
+        # sanity checks
+        if self.isRunning() == True:
+            self.logger.error("Unable to run Direwolf as it's already running.") 
+            return False
 
-    # if the configfile is none, something went wrong and we must abort
-    if configfile is None:
-        print("Error creating the direwolf configuration file.")
-        return
+        # sanity checks
+        #if self.beaconing == False:
+        #    self.logger.info("Beaconing is disabled, not running Direwolf.")
+        #    return False
 
-    # The command string and arguments for running direwolf.
-    df_command = [df_binary, "-t", "0", "-T", "%D %T", "-c", configfile]
+        # (re)create the direwolf configuration file without database support
+        ret = self.createDirewolfConfig()
 
-    # The direwolf process
-    p = None
+        # if there was an error creating the configuration file, the we must return
+        if ret is not True:
+            self.logger.error("Error creating the Direwolf configuration file.")
+            return False
 
-    # Now run direwolf...
-    # This is a loop because we want to restart direwolf if it is killed or fails.
-    while not e.is_set():
-        try:
+        # The command string and arguments for running direwolf.
+        df_command = [self.df_binary, "-t", "0", "-T", "%D %T", "-c", self.config_file]
+
+        # The direwolf process
+        p = None
+
+        # Now run direwolf...
+        # This is a loop because we want to restart direwolf if it is killed (by some external means) or fails.
+        while not self.stopevent.is_set():
+            #try:
 
             # We open the logfile first, for writing
-            l = open(logfile, "w")
+            l = open(self.df_logfile, "w")
 
-            # Run the direwolf command
-            print("Starting direwolf.")
-            sys.stdout.flush()
-            p = sb.Popen(df_command, stdout=l, stderr=l)
+            # the direwolf subprocess
+            self.p = sb.Popen(df_command, stdout=l, stderr=l)
 
-            # Wait for it to finish
-            while p.poll() is None and not e.is_set():
-                #print "Waiting for direwolf to end..."
-                e.wait(1)
+            self.logger.info(f"Direwolf sub-process started pid: {self.p.pid}")
 
-            # Direwolf should not be running, but if it is, we need to kill it
-            if p.poll() is None:
-                print("Terminating direwolf...")
-                p.terminate()
-                print("Waiting for direwolf to end..")
-                p.wait()
-                print("Direwolf ended")
+            # Wait for direwolf to finish
+            while self.p.poll() is None and not self.stopevent.is_set():
+                self.stopevent.wait(1)
 
-            # Close the log file
+            # Check if the Direwolf process is still running, if it is, then kill it
+            self.stop(self.p)
+            self.logger.info(f"Direwolf sub-process, {self.p.pid}, ended")
+
+            # Close the direwolf log file
             l.close()
 
-        except (KeyboardInterrupt, SystemExit):
-            if p.poll() is None:
-                print("Terminating direwolf...")
-                p.terminate()
-                print("Waiting for direwolf to end..")
-                p.wait()
-                print("Direwolf ended")
+            #except (KeyboardInterrupt, SystemExit, GracefulExit) as e:
+
+                # Check if the Direwolf is running, if it is, then kill it
+            #    self.stop(self.p)
+            #    self.logger.info(f"Direwolf sub-process, {self.p.pid}, ended")
+
+                # Close the direwolf log file
+            #    l.close()
+
+                # exit out of this loop because we're ending
+            #    break
+
+        self.logger.info("Direwolf sub-process has finished.")
+
+        return True
 
 
-            # Close the log file
-            l.close()
-            
-            # exit out of this loop
-            break
 
-    print("Direwolf process has finished.")
+    ##################################################
+    # check if the direwolf process is running.  Return the PID of the direwolf process or -1 if not running
+    ##################################################
+    def isRunning(self):
 
+        # Iterate over all running processes
+        pid = -1
+        for proc in psutil.process_iter():
+           # Get process detail as dictionary
+           try:
+               pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+           except (psutil.NoSuchProcess, psutil.AccessDenied):
+               pass
+           else:
+               if "direwolf" in pInfoDict["name"].lower() or "direwolf" in pInfoDict["cmdline"]:
+                   pid = pInfoDict["pid"]
+
+        return pid
 
 
 ##################################################
-# check if the direwolf process is running
+# runDirewolf
 ##################################################
-def isDirewolfRunning():
+def runDirewolf(config):
 
-    # Iterate over all running processes
-    pid = -1
-    for proc in psutil.process_iter():
-       # Get process detail as dictionary
-       try:
-           pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
-       except (psutil.NoSuchProcess, psutil.AccessDenied):
-           pass
-       else:
-           if "direwolf" in pInfoDict["name"].lower() or "direwolf" in pInfoDict["cmdline"]:
-               pid = pInfoDict["pid"]
+    # signal handler for catching kills
+    signal.signal(signal.SIGTERM, local_signal_handler)
 
-    return pid
+    try:
+
+        # setup logging
+        logger = logging.getLogger(__name__)
+        qh = QueueHandler(config["loggingqueue"])
+        logger.addHandler(qh)
+        logger.setLevel(logging.INFO)
+
+        # Create a new direwolf object
+        logger.info("Starting direwolf")
+        k = Direwolf(configuration = config)
+
+        logger.debug(f"Direwolf: {k}")
+        logger.debug("Running Direwolf.run()...")
+
+        # this will block until the process ends
+        k.run()
+
+    except (KeyboardInterrupt, SystemExit, GracefulExit): 
+        logger.info("Stopping direwolf")
+        k.stop()
+
+    finally:
+        logger.info("Direwolf ended.")
+
