@@ -26,7 +26,7 @@ echo ""
 
 sleep 1
 echo "Installing Apache web server..."
-apt-get -y install apache2 apache2-dev php php-pgsql php-sqlite3
+apt-get -y install apache2 apache2-dev php php-pgsql
 echo ""
 
 #sleep 1 
