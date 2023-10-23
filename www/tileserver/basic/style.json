@@ -12,7 +12,7 @@
   "sources": {
     "openmaptiles": {
       "type": "vector",
-      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/mar2023-north-america-latest.json"
+      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/north-america-latest.json"
     }
   },
   "glyphs": "https://eosstracker.local/tileserver/fonts/{fontstack}/{range}.pbf",

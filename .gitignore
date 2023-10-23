@@ -15,3 +15,4 @@ doc/2019-GPSL-Presentation.pdf
 www/audio/*.mp3
 www/audio/*.json
 www/tileserver/*.mbtiles
+www/tileserver/latestmap.txt

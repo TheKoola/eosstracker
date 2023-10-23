@@ -2062,7 +2062,7 @@ function getTrackers() {
 
         // set the base layers for the map
         baselayer = { "Basic": basic, "OSM Bright": osmbright };
-        basic.addTo(map);
+        osmbright.addTo(map);
 
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map);

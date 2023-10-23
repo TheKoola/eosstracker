@@ -48,7 +48,7 @@
   "sources": {
     "openmaptiles": {
       "type": "vector",
-      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/mar2023-north-america-latest.json"
+      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/north-america-latest.json"
     }
   },
   "sprite": "https://eosstracker.local/tileserver/osm-bright/sprite",
