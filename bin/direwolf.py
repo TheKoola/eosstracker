@@ -100,8 +100,11 @@ class Direwolf:
             handler = QueueHandler(self.configuration["loggingqueue"])
             self.logger.addHandler(handler)
 
+        # check if there is an ssid given
+        self.ssid = self.configuration["ssid"] if "ssid" in self.configuration else 0
+
         # the callsign of the user running this
-        self.callsign = self.configuration["callsign"] + "-" + self.configuration["ssid"]
+        self.callsign = self.configuration["callsign"] + ("-" + str(self.ssid) if self.ssid > 0 else "")
 
         # does the configuration indicate we're RF beaconing?
         self.beaconing = True if self.configuration["beaconing"] == "true" else False
@@ -123,7 +126,7 @@ class Direwolf:
                 "lookbackperiod":"180",
                 "iconsize":"24",
                 "plottracks":"off", 
-                "ssid" : "2", 
+                "ssid" : "0", 
                 "igating" : "false", 
                 "beaconing" : "false", 
                 "passcode" : "", 

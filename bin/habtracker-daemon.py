@@ -237,7 +237,7 @@ def readConfiguration(configfile, options):
             "lookbackperiod":"180",
             "iconsize":"24",
             "plottracks":"off", 
-            "ssid" : "2", 
+            "ssid" : "0", 
             "igating" : "false", 
             "beaconing" : "false", 
             "passcode" : "", 
@@ -274,9 +274,9 @@ def readConfiguration(configfile, options):
     if conf["callsign"] == "":
         conf["callsign"] = options.callsign
 
-    # If the ssid is empty, we use "2" as the default
+    # If the ssid is empty, we use "0" as the default
     if conf["ssid"] == "":
-        conf["ssid"] = 2
+        conf["ssid"] = 0
 
     # if igating is enabled, then we need to determine the aprs-is passcode, etc.
     if conf["igating"] == "true":
@@ -615,7 +615,12 @@ def buildFreqMap(config):
             # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
             samplerate = 50000
 
-            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + "-" + str(config["ssid"])
+            ssid = int(config["ssid"]) if "ssid" in config else 0
+            if ssid <= 0:
+                ssid = None
+
+            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + ("-" + str(ssid) if ssid else "")
+            logger.info(f"direwolfcallsign: {direwolfstatus['direwolfcallsign']}, ssid: {ssid}")
             direwolfstatus["direwolffreqlist"] = direwolfFreqList
             direwolfstatus["direwolffreqmap"] = freqmap
             direwolfstatus["direwolfaudiorate"] = samplerate

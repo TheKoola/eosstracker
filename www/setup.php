@@ -557,6 +557,7 @@ include $documentroot . '/common/header.php';
 		    <td class="packetlist" style="text-align: center; white-space: nowrap;">Callsign: <input type="text" form="configuration_form" id="callsign" oninput="setCustomValidity('');" onchange="validateCallsign();" placeholder="callsign" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}" size="9" maxlength="6" name="callsign" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" >
                     &nbsp; SSID: 
                     <select id="ssid" name="ssid" form="configuration_form" onchange="validateCallsign();">
+                        <option value="0">none</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>

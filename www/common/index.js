@@ -62,7 +62,13 @@ function getConfiguration() {
         var eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
         var b = (beaconing == "true" ? "yes" : "no");
         var b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
-        var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
+        var ssid = jsonData.ssid;
+
+        // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
+        if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
+            ssid = "";
+
+        //var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
 
         document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
         document.getElementById("timezone").innerHTML = timezone;

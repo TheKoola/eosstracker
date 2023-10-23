@@ -90,8 +90,11 @@ class SubProcess:
         # setup logging
         self.setupLogging()
 
+        # check if there is an ssid given
+        self.ssid = self.configuration["ssid"] if "ssid" in self.configuration else 0
+
         # the callsign of the user running this
-        self.callsign = self.configuration["callsign"] + "-" + self.configuration["ssid"]
+        self.callsign = self.configuration["callsign"] + ("-" + str(self.ssid) if self.ssid > 0 else "")
 
         # does the configuration indicate we're RF beaconing?
         self.beaconing = True if self.configuration["beaconing"] == "true" else False
