@@ -429,7 +429,7 @@ class PacketStream:
                         if self.queue_age > 0:
 
                             # the current time
-                            ts = time.time()
+                            ts = time.monotonic()
 
                             # time when this packet was added to this queue
                             entry_time = packet.properties["queue_time"] if "queue_time" in packet.properties else ts
@@ -437,7 +437,7 @@ class PacketStream:
                             # Amount of time this packet has spent in the queue
                             time_in_queue = ts - entry_time
 
-                            self.logger.debug(f"{self.server.nickname} getPacketFromQueue: {packet}: {time_in_queue=}")
+                            self.logger.debug(f"{self.server.nickname} getPacketFromQueue: {entry_time=} {ts=} {time_in_queue=}")
                             
                             # if the time this packet spent in the queue is < the queue_age then add it to the list we'll return
                             if time_in_queue < self.queue_age:
@@ -486,11 +486,11 @@ class PacketStream:
 
                             # number of items in the queue
                             size = q.qsize()
+                            ts = time.monotonic()
 
                             # check the size of the queue to determine if we should add another packet on top.
                             if size < q_low_watermark:
                                 self.logger.debug(f"{self.server.nickname}  placing packet on {qname}[{size}]:  {packetobj}")
-                                ts = int(time.time())
                                 packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
@@ -508,7 +508,6 @@ class PacketStream:
                                 self.logger.warn(f"{self.server.nickname} {qname} cleared. qsize={q.qsize()}") 
 
                                 # with the queue cleared, add this most recent packet to the queue.
-                                ts = int(time.time())
                                 packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
@@ -517,7 +516,6 @@ class PacketStream:
                                 self.logger.warn(f"{self.server.nickname} placing packet on {qname}[{size}] [above low water mark]: {packetobj}")
 
                                 # Finally, go ahead and place the new packet on the queue
-                                ts = int(time.time())
                                 packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
