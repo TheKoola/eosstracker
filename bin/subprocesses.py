@@ -91,7 +91,7 @@ class SubProcess:
         self.setupLogging()
 
         # check if there is an ssid given
-        self.ssid = self.configuration["ssid"] if "ssid" in self.configuration else 0
+        self.ssid = int(self.configuration["ssid"]) if "ssid" in self.configuration else 0
 
         # the callsign of the user running this
         self.callsign = self.configuration["callsign"] + ("-" + str(self.ssid) if self.ssid > 0 else "")
