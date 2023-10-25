@@ -31,11 +31,11 @@ class Packet:
     text: str
     frequency: int
     source: str
-    properties: list = field(default_factory=list)
+    properties: list = field(default_factory=dict)
 
     def __post_init__(self)->None:
         if not self.properties:
-            self.properties = []
+            self.properties = {}
 
     @property
     def bytestring(self):
