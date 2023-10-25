@@ -288,6 +288,12 @@ class PacketStream:
         # internal (to this class) Event object that when triggered causes threads to stop running
         self.okay = mp.Event()
 
+        # This is the default queue aging parameter.  This is used to determine if a packet that has been lanquishing in a queue for <insert time>.
+        # If the packet has been in the queue for longer than this time (in seconds), then don't send it to the socket.  If this variable is 0, then a 
+        # packet's time in the queue isn't evaluated and a packet can have lived in the queue for infinite time.
+        self.queue_age = 0
+
+
 
     def ready(self)->bool:
         if self.sock:
@@ -409,6 +415,7 @@ class PacketStream:
                     packet = q.get_nowait()
 
                     self.logger.debug(f"{self.server.nickname} getPacketFromQueue:  {qname}, [{q.qsize()}]  {packet}")
+
                     # run this packet through the filter (if it exists)
                     packet = ph.pfilter(packet) if ph.pfilter else packet
 
@@ -417,7 +424,32 @@ class PacketStream:
 
                     # if we ended up with a packet after filtering and encoding, then add it to our packet list
                     if packetbytes:
-                        packetlist.append(packetbytes)  
+
+                        # check how long this packet has been in the queue
+                        if self.queue_age > 0:
+
+                            # the current time
+                            ts = time.time()
+
+                            # time when this packet was added to this queue
+                            entry_time = packet.properties["queue_time"] if "queue_time" in packet.properties else ts
+
+                            # Amount of time this packet has spent in the queue
+                            time_in_queue = ts - entry_time
+
+                            self.logger.debug(f"{self.server.nickname} getPacketFromQueue: {packet}: {time_in_queue=}")
+                            
+                            # if the time this packet spent in the queue is < the queue_age then add it to the list we'll return
+                            if time_in_queue < self.queue_age:
+
+                                # add this packet to the list we'll return
+                                packetlist.append(packetbytes)  
+
+                        else:
+                            # queue_age limits not being inforced.
+
+                            # add this packet to the list we'll return
+                            packetlist.append(packetbytes)  
 
                 except (Empty) as e:
                     # the queue was empty, but we don't care...go check the next queue
@@ -458,6 +490,8 @@ class PacketStream:
                             # check the size of the queue to determine if we should add another packet on top.
                             if size < q_low_watermark:
                                 self.logger.debug(f"{self.server.nickname}  placing packet on {qname}[{size}]:  {packetobj}")
+                                ts = int(time.time())
+                                packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
                             elif size > q_high_watermark:
@@ -474,6 +508,8 @@ class PacketStream:
                                 self.logger.warn(f"{self.server.nickname} {qname} cleared. qsize={q.qsize()}") 
 
                                 # with the queue cleared, add this most recent packet to the queue.
+                                ts = int(time.time())
+                                packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
                             else:
@@ -481,6 +517,8 @@ class PacketStream:
                                 self.logger.warn(f"{self.server.nickname} placing packet on {qname}[{size}] [above low water mark]: {packetobj}")
 
                                 # Finally, go ahead and place the new packet on the queue
+                                ts = int(time.time())
+                                packetobj.properties["queue_time"] = ts
                                 q.put(packetobj)  
 
                         except (Full) as e:
@@ -517,23 +555,7 @@ class PacketStream:
 
                             # send this packet to the server
                             self.sock.sendall(p)
-
-                            # save the timestamp of when this transfer occured
-                            #tsprev = int(time.time())
                     else:
-                        # no packets were returned.  So we check if we should send a keepalive packet to the server
-                        #self.logger.debug(f"{self.server.nickname}:  no packets in queue to send")
-
-
-                        # check how long it's been since we last sent something to the server. If it's been too long, then we need to send some data to the server
-                        #delta = int(time.time()) - tsprev
-                        #if delta > 30:
-                        #    keepalive = b'#####\r\n'
-                        #    self.logger.debug(f"{self.server.nickname}: sending keepalive packet: {keepalive}")
-                        #    self.sock.sendall(keepalive)
-
-                            # save the time (in secs) of this transfer
-                            #tsprev = int(time.time())
 
                         # wait a short time before retrying to get an item from the queues
                         self.okay.wait(1)
@@ -545,13 +567,6 @@ class PacketStream:
                     if "Resource temporarily unavailable" in str(e):
                         self.disconnect()
                         self.okay.set()
-
-                #except (KeyboardInterrupt, SystemExit) as e:
-                #    self.logger.debug(f"{self.server.nickname} send_thread, got signal to end: {e}")
-#
-#                    # we were signaled to shutdown so close the socket
-#                    self.disconnect()
-#                    self.okay.set()
 
         # loop ended.
         self.logger.debug(f"{self.server.nickname}: send_thread now ended.")
@@ -583,15 +598,6 @@ class PacketStream:
                     # Try to read at most 4096 bytes from the socket
                     data = self.sock.recv(4096)
 
-                    # sock.recv returns empty if the connection drops
-                    #if not data:
-                    #    self.logger.error(f"{self.server.nickname}:  {self.server.hostname} socket.recv(): returned empty while trying to read one line")
-
-                        # close our connection
-                    #    self.disconnect()
-                    #    self.okay.set()
-
-                    #else:
                     if data:
                         # append whatever data was read to the bigbuffer
                         bigbuffer += data
@@ -605,6 +611,7 @@ class PacketStream:
                             # we've found one line, return it
                             return line
                 else:
+
                     # Socket wasn't ready
                     # wait a little bit before trying to read data from the socket again
                     #self.logger.debug(f"{self.server.nickname} socket wasn't ready")
@@ -1050,6 +1057,12 @@ class AprsisStream(PacketStream):
 
         self.logger.debug(f"{self.server.nickname} initial aprs filter string: {self.aprsfilter.filterstring}")
 
+        # don't igate packets older than this number of seconds
+        self.igating_time_limit = 30
+
+        # Set the queue age limit to the igating time limit so packets don't sit in the queue for longer than the limit, waiting to be sent to the APRS-IS server.
+        self.queue_age = self.igating_time_limit
+
 
     def connect(self)->bool:
         ret = super().connect()
@@ -1218,7 +1231,7 @@ class AprsisStream(PacketStream):
 
                 # current time since epoch
                 epoch = int(time.time())
-                if epoch - int(properties["decode_timestamp"]) > 30:
+                if epoch - int(properties["decode_timestamp"]) > self.igating_time_limit:
                     self.logger.debug(f"{self.server.nickname} igatingFilter.  Packet age ('decode_timestamp') is too old to igate: {p}")
                     return None
 
