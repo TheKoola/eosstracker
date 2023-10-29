@@ -6,8 +6,9 @@
 
 # The local location for things
 MAPSLOC=/eosstracker/www/tileserver
+MBTILESFILE=north-america-latest.mbtiles
 LATEST=${MAPSLOC}/latestmap.txt
-LATEST_MAP=${MAPSLOC}/north-america-latest.mbtiles
+LATEST_MAP=${MAPSLOC}/${MBTILESFILE}
 
 # URLs 
 KIOSK_LATEST_URL=https://track.eoss.org/mbtiles/latestmap.txt
@@ -18,6 +19,8 @@ KIOSK_MAP_URL=https://track.eoss.org/mbtiles/north-america-latest.mbtiles
 if [ ! -s ${LATEST} ]; then
     echo 0 > ${LATEST}
 fi
+
+PWD=$(pwd)
 
 # now get the latestmap.txt file from the kiosk
 wget -q --show-progress -O /tmp/kiosk-latestmap.txt ${KIOSK_LATEST_URL}
@@ -38,6 +41,9 @@ if [ $ret -eq 0 ]; then
     echo "Done."
 
 else 
+
+    cd ${MAPSLOC}
+
     # there was a different version up on the kiosk, so we try to download it.
     # download it to a temporary file first
     wget -q --show-progress --backups=3 ${KIOSK_MAP_URL}
@@ -48,5 +54,6 @@ else
     echo "Latest map downloaded: "
     ls -lh ${LATEST_MAP} | cut -d" " -f5,9-
     echo "Done."
+    cd ${PWD}
 fi
 
