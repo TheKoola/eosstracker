@@ -2276,11 +2276,11 @@
         "line-opacity": {
           "stops": [
             [
-              12,
+              8,
               0
             ],
             [
-              12.5,
+              8.5,
               1
             ]
           ]
@@ -2289,8 +2289,12 @@
           "base": 1.2,
           "stops": [
             [
-              12,
+              8,
               0.5
+            ],
+            [
+              9,
+              1
             ],
             [
               13,
@@ -4972,7 +4976,7 @@
       "type": "symbol",
       "source": "openmaptiles",
       "source-layer": "transportation_name",
-      "minzoom": 15,
+      "minzoom": 8,
       "filter": [
         "all",
         [
@@ -4999,12 +5003,12 @@
           "base": 1,
           "stops": [
             [
-              13,
+              8,
               12
             ],
             [
               14,
-              13
+              16
             ]
           ]
         }
