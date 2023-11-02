@@ -55,9 +55,11 @@
     var updateTimeout;
     var sidebar;
     var layerControl;
-    var tilelayer;
     var osmbright;
+    var osmbrightstyle;
     var basic;
+    var basicstyle;
+    var tilelayer;
     var lookbackPeriod = 180;
     var updateType = "regular";
     var gpsStatusBox;
@@ -1979,16 +1981,6 @@ function getTrackers() {
         var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
         tilelayer = L.tileLayer(osmUrl, {minZoom: 4, maxZoom: 19, attribution: osmAttrib});
 
-        osmbright = L.maplibreGL({
-            style: '/tileserver/osm-bright/style.json',
-            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
-        });
-
-        basic = L.maplibreGL({
-            style: '/tileserver/basic/style.json',
-            attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
-        });
-
 
         // Create a map object. 
 	    map = new L.Map('map', {
@@ -2059,13 +2051,73 @@ function getTrackers() {
             getgps(true);
         }, 10);
 
-
-        // set the base layers for the map
-        baselayer = { "Basic": basic, "OSM Bright": osmbright };
-        osmbright.addTo(map);
-
         // use the grouped layers plugin so the layer selection widget shows layers categorized
-        layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map);
+        layerControl = L.control.groupedLayers({}, {}, { groupCheckboxes: true}).addTo(map);
+
+        // Add OSM-bright to the map
+        $.get("/tileserver/osm-bright/style.json", function(d) {
+            let stylejson = d;
+            let myhostname = window.location.hostname;
+
+            // update the hostname within the URL of for the map styling
+            if (d.sources) 
+                if (d.sources.openmaptiles) 
+                    if (d.sources.openmaptiles.url) {
+                        let url = new URL(d.sources.openmaptiles.url);
+                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
+                    }
+            if (d.sprite) {
+                let url = new URL(d.sprite);
+                d.sprite = d.sprite.replace(url.hostname, myhostname);
+            }
+
+            if (d.glyphs) {
+                let url = new URL(d.glyphs);
+                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
+            }
+
+            osmbrightstyle = d;
+            osmbright = L.maplibreGL({
+                style: osmbrightstyle,
+                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+            });
+
+            layerControl.addBaseLayer(osmbright, "OSM Bright");
+            osmbright.addTo(map);
+        });
+
+
+        // Add basic to the map
+        $.get("/tileserver/basic/style.json", function(d) {
+            let stylejson = d;
+            let myhostname = window.location.hostname;
+
+            // update the hostname within the URL of for the map styling
+            if (d.sources) 
+                if (d.sources.openmaptiles) 
+                    if (d.sources.openmaptiles.url) {
+                        let url = new URL(d.sources.openmaptiles.url);
+                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
+                    }
+            if (d.sprite) {
+                let url = new URL(d.sprite);
+                d.sprite = d.sprite.replace(url.hostname, myhostname);
+            }
+
+            if (d.glyphs) {
+                let url = new URL(d.glyphs);
+                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
+            }
+
+            basicstyle = d;
+            basic = L.maplibreGL({
+                style: basicstyle,
+                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+            });
+
+            layerControl.addBaseLayer(basic, "Basic");
+        });
+
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
