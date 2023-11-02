@@ -387,18 +387,26 @@ def createProcesses(configuration):
             procs.append(aprs)
 
 
+        # The direwolf process
+        logger.debug(f"Creating Direwolf subprocess")
+        dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
+        dfprocess.daemon = True
+        procs.append(dfprocess)
+
+        # The direwolf tap process 
+        logger.debug(f"Creating Direwolf Tap subprocess")
+        dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
+        dftapprocess.daemon = True
+        dftapprocess.name = "Direwolf KISS Tap"
+        procs.append(dftapprocess)
+
+
     ####### NO #######
     # This is the RTP Multicast connection tap.  
     #rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
     #rtp.daemon = True
     #procs.append(rtp)
     ####### NO #######
-
-    # The direwolf process
-    logger.debug(f"Creating Direwolf subprocess")
-    dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
-    dfprocess.daemon = True
-    procs.append(dfprocess)
 
     # The aprsc process
     # Don't need this process as the conectors will perform igating instead.
@@ -407,13 +415,6 @@ def createProcesses(configuration):
     #aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
     #aprscprocess.daemon = True
     #procs.append(aprscprocess)
-
-    # The direwolf tap process 
-    logger.debug(f"Creating Direwolf Tap subprocess")
-    dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
-    dftapprocess.daemon = True
-    dftapprocess.name = "Direwolf KISS Tap"
-    procs.append(dftapprocess)
 
     # Return the list of newly created processes
     return procs
@@ -656,6 +657,7 @@ def buildFreqMap(config):
 
         else:
             direwolfstatus["direwolfcallsign"] = ""
+            direwolfstatus["direwolffreqlist"] = []
            
         direwolfstatus["antennas"] = antennas 
 
@@ -769,15 +771,19 @@ def main():
 
         # get the frequency, udp mapping (from backend database of active flights) and set various objects.
         direwolfstatus = buildFreqMap(configuration)
-        configuration["direwolffreqlist"] = direwolfstatus["direwolffreqlist"]
-        configuration["direwolffreqmap"] = direwolfstatus["direwolffreqmap"]
-        configuration["xmit_channel"] = direwolfstatus["xmit_channel"]
-        configuration["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
-        configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"]
+        configuration["direwolffreqlist"] = direwolfstatus["direwolffreqlist"] if "direwolffreqlist" in direwolfstatus else []
+        configuration["direwolffreqmap"] = direwolfstatus["direwolffreqmap"] if "direwolffreqmap" in direwolfstatus else None
+        configuration["xmit_channel"] = direwolfstatus["xmit_channel"] if "xmit_channel" in direwolfstatus else None
+        configuration["direwolfcallsign"] = direwolfstatus["direwolfcallsign"] if "direwolfcallsign" in direwolfstatus else None
+        configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"] if "direwolfaudiorate" in direwolfstatus else None
         configuration["maxdirewolfchannels"] = 8
         status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
         status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
         status["antennas"] = direwolfstatus["antennas"]
+
+        # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating.
+        if len(configuration["direwolffreqlist"]) == 0:
+            configuration["igating"] = "false"
 
         # we want to connect to for aprs-is connectivity
         configuration["aprsisserver"] = "noam.aprs2.net"
