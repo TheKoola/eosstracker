@@ -50,7 +50,7 @@ if [ $? -eq 0 ]; then
     # wait for 12 seconds looping each time to see if there are any remaining processes
     let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)
     let i=0
-    while [ $num_procs -gt 0 ] && [ $i -lt 18 ]
+    while [ $num_procs -gt 0 ] && [ $i -lt 25 ]
     do
         echo "Waiting/checking for habtracker-daemon processes to die...${i}" >> ${LOGFILE}
         let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)
