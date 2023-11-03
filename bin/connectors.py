@@ -1511,50 +1511,50 @@ class AprsisStream(PacketStream):
                 if self.stationLocation["isvalid"]:
                     return self.stationLocation
 
-        # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
-        nofix = True
-        trycount = 0
-        while nofix == True and trycount < 30:
+        try:
+            # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
+            nofix = True
+            trycount = 0
+            while nofix == True and trycount < 30:
 
-            # This retreives the latest GPS data (assuing GPS Poller process is running)
-            g = self.configuration["position"]
+                # This retreives the latest GPS data (assuing GPS Poller process is running)
+                g = self.configuration["position"]
 
 
-            if "gpsdata" in g:
-                position = g["gpsdata"]
+                if "gpsdata" in g:
+                    position = g["gpsdata"]
 
-                if "mode"  in position:
-                    mode = int(position["mode"])
+                    if "mode"  in position:
+                        mode = int(position["mode"])
 
-                    if mode == 3:
+                        if mode == 3:
 
-                        # we've got a 3D position fix!!
-                        nofix = False
-                        gpsposition["altitude"] = float(position["altitude"])
-                        gpsposition["latitude"] = float(position["lat"])
-                        gpsposition["longitude"] = float(position["lon"])
-                        gpsposition["bearing"] = float(position["bearing"])
-                        gpsposition["speed_mph"] = float(position["speed_mph"])
-                        gpsposition["isvalid"] = True
+                            # we've got a 3D position fix!!
+                            nofix = False
+                            gpsposition["altitude"] = float(position["altitude"])
+                            gpsposition["latitude"] = float(position["lat"])
+                            gpsposition["longitude"] = float(position["lon"])
+                            gpsposition["bearing"] = float(position["bearing"])
+                            gpsposition["speed_mph"] = float(position["speed_mph"])
+                            gpsposition["isvalid"] = True
 
-                        # sanity check
-                        if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
-                            gpsposition["isvalid"] = False
+                            # sanity check
+                            if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
+                                gpsposition["isvalid"] = False
 
-            if nofix == True:
-                #try:
-                    # we're still waiting on the GPS to obtain a fix so we wait for 1 second
-                self.okay.wait(1)
+                if nofix == True:
 
-                #except (KeyboardInterrupt, SystemExit) as e:
-                #    self.disconnect()
-                #    self.okay.set()
-                #    return gpsposition
+                    # we're still waiting on the GPS to obtain a fix so we wait this long
+                    seconds = round((1.2) ** trycount) if trycount < 22 else (1.2) ** 22
+                    self.okay.wait(seconds)
 
-                # increment our try counter
-                trycount += 1
+                    # increment our try counter
+                    trycount += 1
 
-                self.logger.info(f"{self.server.nickname} Waiting on GPS fix: {trycount}s")
+                    self.logger.info(f"{self.server.nickname} Waiting on GPS fix ({trycount=}): {seconds}s")
+
+        except (GracefulExit, KeyboardInterrupt, SystemExit) as e:
+            return gpsposition
 
 
         # if we still don't have a GPS fix, then we query the database for our last known location

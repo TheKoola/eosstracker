@@ -139,37 +139,46 @@ class SubProcess:
                 "isvalid" : False
                 }
 
-        # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
-        nofix = True
-        trycount = 0
-        while nofix == True and trycount < 30:
-            
-            # This retreives the latest GPS data (assuming GPS Poller process is running)
-            g = self.configuration["position"]
+        try:
+            # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
+            nofix = True
+            trycount = 0
+            while nofix == True and trycount < 30:
+                
+                # This retreives the latest GPS data (assuming GPS Poller process is running)
+                g = self.configuration["position"]
 
-            if "gpsdata" in g: 
-                position = g["gpsdata"]
+                if "gpsdata" in g: 
+                    position = g["gpsdata"]
 
-                if "mode"  in position:
-                    mode = int(position["mode"])
+                    if "mode"  in position:
+                        mode = int(position["mode"])
 
-                    if mode == 3:
-                        
-                        # we've got a 3D position fix!!
-                        nofix = False
-                        gpsposition["altitude"] = round(float(position["altitude"]) * .3048,2)  # convert to meters
-                        gpsposition["latitude"] = round(float(position["lat"]),8)
-                        gpsposition["longitude"] = round(float(position["lon"]),8)
-                        gpsposition["isvalid"] = True
+                        if mode == 3:
+                            
+                            # we've got a 3D position fix!!
+                            nofix = False
+                            gpsposition["altitude"] = round(float(position["altitude"]) * .3048,2)  # convert to meters
+                            gpsposition["latitude"] = round(float(position["lat"]),8)
+                            gpsposition["longitude"] = round(float(position["lon"]),8)
+                            gpsposition["isvalid"] = True
 
-            if nofix == True:
-                # we're still waiting on the GPS to obtain a fix so we wait for 1 second
-                self.stopevent.wait(1)
+                            # sanity check
+                            if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
+                                gpsposition["isvalid"] = False
 
-                # increment our try counter
-                trycount += 1
+                if nofix == True:
 
-                self.logger.info(f"{self.name}: Waiting on GPS fix: {trycount}s")
+                    # we're still waiting on the GPS to obtain a fix so we wait this long
+                    seconds = round((1.2) ** trycount) if trycount < 22 else round((1.2) ** 22)
+                    self.logger.info(f"{self.name} Waiting on GPS fix ({trycount=}): {seconds}s")
+                    self.stopevent.wait(seconds)
+
+                    # increment our try counter
+                    trycount += 1
+
+        except (GracefulExit, KeyboardInterrupt, SystemExit) as e:
+            return gpsposition
 
 
         # if we still don't have a GPS fix, then we query the database for our last known location
@@ -268,13 +277,36 @@ class SubProcess:
             self.logger.error(f"{self.name}: Unable to run {self.name} as it's already running.") 
             return -9999
 
-        # (re)create the sub-process configuration file
-        ret = self.createConfig()
+        try:
 
-        # if there was an error creating the configuration file, the we must return
-        if ret is not True:
-            self.logger.error(f"{self.name}: Error creating the {self.name} configuration file.")
+            # Loop trying to create the configuration until successful or interrupted 
+            ret = False
+            trycount = 0
+            while not self.stopevent.is_set() and ret is not True:
+
+                # (re)create the sub-process configuration file
+                ret = self.createConfig()
+
+                # if there was an error creating the configuration file, the we must return
+                if ret is not True:
+                    # we're still waiting on the GPS to obtain a fix so we wait this long
+                    self.logger.error(f"{self.name}: Error creating the {self.name} configuration file.")
+
+                    # number of seconds to wait before we retry
+                    seconds = round((1.35) ** trycount) if trycount < 14 else round((1.35) ** 13)
+                    self.logger.info(f"{self.name} Unable to create configuration file waiting before retrying ({trycount=}): {seconds}s")
+                    self.stopevent.wait(seconds)
+
+                    # increment our try counter
+                    trycount += 1
+
+
+        except (GracefulExit, KeyboardInterrupt, SystemExit) as e:
+            self.logger.debug(f"{self.name}: caught keyboardinterrupt, {e}")
+            self.stopevent.set()
+            self.stop()
             return -9999
+
 
         try:
             # This is a loop because we want to restart the sub-process if it is killed (by some external means) or fails.
@@ -310,7 +342,8 @@ class SubProcess:
             self.stop()
 
         finally:
-            self.logger.info(f"{self.name}: sub-process has finished with retcode: {self.p.returncode}.")
+            if self.p:
+                self.logger.info(f"{self.name}: sub-process has finished with retcode: {self.p.returncode}.")
 
         return self.p.returncode
 
@@ -473,8 +506,10 @@ class Direwolf(SubProcess):
                         f.write("ACHANNELS 1\n")
                         f.write("CHANNEL " + str(channel) + "\n")
                         f.write("MYCALL " + self.callsign + "\n")
-                        f.write("MODEM 1200\n")
-                        f.write("FIX_BITS 1\n\n")
+                        f.write("MODEM 1200\n\n")
+
+                        # direwolf doesn't really recommend this being turned on v1.7+
+                        #f.write("FIX_BITS 1\n\n")
 
                         # If listening to the satellite frequency and igating, then only igate if we heard the packet through a digipeater.
                         # For satellite ops we don't want to igate packets heard directly.
