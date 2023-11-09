@@ -16,3 +16,4 @@ www/audio/*.mp3
 www/audio/*.json
 www/tileserver/*.mbtiles
 www/tileserver/latestmap.txt
+!www/tileserver/natural_earth_2_shaded_relief.raster.mbtiles
