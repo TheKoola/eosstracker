@@ -1171,11 +1171,11 @@ class AprsisStream(PacketStream):
                 for d in properties["digipeaters"]:
                     dupper = d.upper()
                     if 'TCPIP' in dupper or 'TCPXX' in dupper or 'RFONLY' in dupper or 'NOGATE' in dupper:
-                        self.logger.debug(f"{self.server.nickname} igatingFilter.  Not igating packet: {p}")
+                        self.logger.info(f"{self.server.nickname} igatingFilter.  Not igating RF only packet: {p}")
                         return None
             else:
                 # digipeaters weren't broken out....this shouldn't happen, right?
-                self.logger.debug(f"{self.server.nickname} igatingFilter.  Digipeater list wasn't available.")
+                self.logger.info(f"{self.server.nickname} igatingFilter.  Digipeater list wasn't available: {p}")
                 return None
 
 
@@ -1190,33 +1190,33 @@ class AprsisStream(PacketStream):
 
                     # don't igate query packets
                     if packettype == ord(b'?'):
-                        self.logger.debug(f"{self.server.nickname} igatingFilter.  Not igating query packet: {p}")
+                        self.logger.info(f"{self.server.nickname} igatingFilter.  Not igating query packet: {p}")
                         return None
 
                     # ignoring third party packets (for now)
                     elif packettype == ord(b'}'):
-                        self.logger.debug(f"{self.server.nickname} igatingFilter.  Not igating third party packet: {p}")
+                        self.logger.info(f"{self.server.nickname} igatingFilter.  Not igating third party packet: {p}")
                         return None
                 else:
-                    self.logger.debug(f"{self.server.nickname} igatingFilter.  There was no information part to this packet: {p}")
+                    self.logger.info(f"{self.server.nickname} igatingFilter.  There was no information part to this packet: {p}")
             else:
-                self.logger.debug(f"{self.server.nickname} igatingFilter.  There was no information part to this packet: {p}")
+                self.logger.info(f"{self.server.nickname} igatingFilter.  There was no information part to this packet: {p}")
 
 
             # did this come from a satellite.  We don't want to igate it if we've heard it directly.
             if p.frequency == 145825000:
                 if "digipeaters" in properties:
                     if len(properties["digipeaters"]) == 0:
-                        self.logger.debug(f"{self.server.nickname} igatingFilter.  Not igating packet heard directly from a satellite xmitter: {p}")
+                        self.logger.info(f"{self.server.nickname} igatingFilter.  Not igating packet heard directly from a satellite xmitter: {p}")
                         return None
                 else:
-                    self.logger.debug(f"{self.server.nickname} igatingFilter.  Satgate.  Digipeater list wasn't available.")
+                    self.logger.info(f"{self.server.nickname} igatingFilter.  Satgate.  Digipeater list wasn't available: {p}")
                     return None
 
             # Make sure this is an APRS packet
             if "is_aprs" in properties:
                 if properties["is_aprs"] == False:
-                    self.logger.debug(f"{self.server.nickname} igatingFilter.  packet is not APRS: {p}")
+                    self.logger.info(f"{self.server.nickname} igatingFilter.  Packet is not APRS: {p}")
                     return None
 
             # check timestamps.  Anything older than 30sec, we don't igate.
@@ -1226,11 +1226,11 @@ class AprsisStream(PacketStream):
                 # current time since epoch
                 epoch = int(time.time())
                 if epoch - int(properties["decode_timestamp"]) > self.igating_time_limit:
-                    self.logger.debug(f"{self.server.nickname} igatingFilter.  Packet age ('decode_timestamp') is too old to igate: {p}")
+                    self.logger.info(f"{self.server.nickname} igatingFilter.  Packet age decode_timestamp={int(properties['decode_timestamp'])} is too old to igate: {p}")
                     return None
 
         else:
-            self.logger.debug(f"{self.server.nickname} igatingFilter.  Not igating packet, no properties defined: {p}")
+            self.logger.info(f"{self.server.nickname} igatingFilter.  Not igating packet, no properties defined: {p}")
             return None
 
         # if we made it this far then pass the packet on as worthy to be igated.
