@@ -1009,6 +1009,10 @@ class AprsisStream(PacketStream):
         # Check if we want to beacon over the Internet to the APRS-IS server.  Only possible if we're also igating with a non-CWOP connection.
         self.can_beacon = True if self.configuration["ibeacon"] == "true" and self.igating else False
 
+        # igating statistics
+        self.igated_stations = {}
+
+        # check if we're igating or not
         if self.igating:
             # if we're igating 
             self.logger.info(f"{self.server.nickname} Igating enabled for {self.taptype} connnection to {self.server.hostname}:{self.server.portnum}")
@@ -1235,6 +1239,17 @@ class AprsisStream(PacketStream):
 
         # if we made it this far then pass the packet on as worthy to be igated.
         self.logger.debug(f"{self.server.nickname}  passed igating filter: {p=}")
+
+        # update statistics
+        if 'source' in p.properties:
+            self.igated_stations[p.properties['source']] = (self.igated_stations[p.properties['source']] if p.properties['source'] in self.igated_stations else 0) + 1
+            self.logger.debug(f"{self.server.nickname} {self.igated_stations=}")
+
+            # Update the shared (between processes) dictionary for station's we've igated
+            igstats = self.configuration["igatestatistics"]
+            if igstats is not None:
+                igstats["igated_stations"] = self.igated_stations
+
         return p
 
 

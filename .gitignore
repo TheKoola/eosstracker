@@ -9,6 +9,7 @@ etc/*
 www/configuration/config.txt
 www/gpsstatus.json*
 www/daemonstatus.json*
+www/igatestats.json*
 bin/*.pyc
 bin/*pycache*
 doc/2019-GPSL-Presentation.pdf

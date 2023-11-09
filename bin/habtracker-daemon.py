@@ -31,7 +31,7 @@ import datetime
 import psycopg2 as pg
 import aprslib
 import logging
-from logging.handlers import QueueListener, TimedRotatingFileHandler
+from logging.handlers import QueueListener, TimedRotatingFileHandler, QueueHandler
 #logger = logging.getLogger(__name__)
 #logger.propagate = False
 
@@ -315,8 +315,6 @@ def createProcesses(configuration):
     dbwriter.daemon = True
     procs.append(dbwriter)
 
-
-
     # This is the landing predictor process
     logger.debug(f"Creating Landing Predictor subprocess")
     landingprocess = mp.Process(name="Landing Predictor", target=lp.runLandingPredictor, args=(configuration,))
@@ -401,6 +399,19 @@ def createProcesses(configuration):
         procs.append(dftapprocess)
 
 
+    # if we're igating, then create a process to update a JSON file with igating statistics.  
+    # Might expand on this idea in the future with a "stats" or "telemetry" process that publishes data about the backend.
+    igating = (True if configuration["igating"] == "true" else False) if "igating" in configuration else False
+    if igating:
+
+        # The telemetry process
+        logger.debug(f"Creating Telemetry subprocess")
+        tmprocess = mp.Process(name="Telemetry", target=telemetry, args=(configuration,))
+        tmprocess.daemon = True
+        procs.append(tmprocess)
+
+
+
     ####### NO #######
     # This is the RTP Multicast connection tap.  
     #rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
@@ -418,6 +429,102 @@ def createProcesses(configuration):
 
     # Return the list of newly created processes
     return procs
+
+
+##################################################
+# This is the telemetry process.  It will loop, periodically publishing stats about the backend processes to a JSON file
+##################################################
+def telemetry(config)->None:
+
+    # Sanity check
+    if config is None:
+        return None
+
+    # name of this process
+    name = "Telemetry:"
+
+    # make sure we're igating
+    igating = (True if config["igating"] == "true" else False) if "igating" in config else False
+
+    # get the stop event
+    stopevent = config["stopevent"] if "stopevent" in config else None
+
+    # get the logging queue
+    loggingqueue = config["loggingqueue"] if "loggingqueue" in config else None
+
+    # setup logging
+    telemlogger = logging.getLogger(f"{__name__}.Telemetry")
+    telemlogger.setLevel(logging.INFO)
+    telemlogger.propagate = False
+
+    # check if a logging queue was supplied
+    if loggingqueue is not None:
+        handler = QueueHandler(loggingqueue)
+        telemlogger.addHandler(handler)
+
+    telemlogger.debug(f"{name} process started")
+
+    # where we store the telemetry we want to publish
+    jsonFile = "/eosstracker/www/igatestats.json"
+    jsonTempFile = "/eosstracker/www/igatestats.json.tmp"
+
+    # Get the igate stats dictionary
+    igatestats = config["igatestatistics"] if "igatestatistics" in config else None
+    
+    try:
+        
+        # Loop counter
+        i = 0
+
+        # Loop continuously looking to publish telemetry
+        while not stopevent.is_set():
+
+            # handle igating statistics
+            if igatestats:
+
+                # make sure the object exists
+                if "igated_stations" in igatestats:
+
+                    # ...and that there is a valid dictionary therein...
+                    stats = igatestats["igated_stations"]
+                    if stats:
+
+
+                        ##### need a better way to do this instead of just dumping to a JSON file.  Seems poorly thought out.  However, 
+                        ##### at the moment it will do. 
+
+                        # sort the stats dictionary by value in reverse order.
+                        #sorted_stats = sorted(stats.items(), key=lambda x: x[1], reverse=True)
+                        sorted_stats = { x: v for x, v in sorted(stats.items(), key=lambda x: x[1], reverse=True)}
+
+                        telemlogger.debug(f"{name} Igate statistics: {sorted_stats=}")
+
+                        # open the JSON temp file and write our telemetry to it
+                        with open(jsonTempFile, "w") as f:
+                            f.write(json.dumps(sorted_stats))
+
+                        # Now move the temp file in place over the real one.
+                        if os.path.isfile(jsonTempFile):
+                            os.rename(jsonTempFile, jsonFile)
+
+                        # every 60th time through the loop we write an info message to system logging
+                        if not i % 60:
+                            topstations = {A:N for (A,N) in [ k for k in sorted_stats.items()][:3]}
+                            #topstations = sorted_stats[:3]
+                            telemlogger.info(f"{name} Total igated packets: {sum(stats.values())}, top stations {topstations}")
+
+            # wait a few seconds before getting igate stats again
+            stopevent.wait(5)
+
+            # increment our loop counter
+            i += 1
+
+    except (KeyboardInterrupt, SystemExit):
+        telemlogger.info(f"process interrupted.  Now ending.")
+    finally:
+        telemlogger.info(f"process finished.")
+
+
 
 
 ##################################################
@@ -740,6 +847,9 @@ def main():
 
             # Create a list of all beacon callsigns on active flights.  This is a list of beacon callsigns updated by the landing predictor process.
             configuration["activebeacons"] = manager.dict()
+
+            # Create an object where we store igating statistics.  This is a dictionary with keys representing a station's callsign.  Values are number of packets igated.
+            configuration["igatestatistics"] = manager.dict()
 
         else:
 
