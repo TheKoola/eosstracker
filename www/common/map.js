@@ -55,6 +55,8 @@
     var updateTimeout;
     var sidebar;
     var layerControl;
+    var osmliberty;
+    var osmlibertystyle;
     var osmbright;
     var osmbrightstyle;
     var basic;
@@ -2054,7 +2056,39 @@ function getTrackers() {
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers({}, {}, { groupCheckboxes: true}).addTo(map);
 
-        // Add OSM-bright to the map
+        // Add OSM-Liberty to the map
+        $.get("/tileserver/osm-liberty/style.json", function(d) {
+            let stylejson = d;
+            let myhostname = window.location.hostname;
+
+            // update the hostname within the URL of for the map styling
+            if (d.sources) 
+                if (d.sources.openmaptiles) 
+                    if (d.sources.openmaptiles.url) {
+                        let url = new URL(d.sources.openmaptiles.url);
+                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
+                    }
+            if (d.sprite) {
+                let url = new URL(d.sprite);
+                d.sprite = d.sprite.replace(url.hostname, myhostname);
+            }
+
+            if (d.glyphs) {
+                let url = new URL(d.glyphs);
+                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
+            }
+
+            osmlibertystyle = d;
+            osmliberty = L.maplibreGL({
+                style: osmlibertystyle,
+                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+            });
+
+            layerControl.addBaseLayer(osmliberty, "Base Map");
+            osmliberty.addTo(map);
+        });
+
+/*        // Add OSM-bright to the map
         $.get("/tileserver/osm-bright/style.json", function(d) {
             let stylejson = d;
             let myhostname = window.location.hostname;
@@ -2117,7 +2151,7 @@ function getTrackers() {
 
             layerControl.addBaseLayer(basic, "Basic");
         });
-
+*/
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
