@@ -765,8 +765,23 @@ Check status of the firewall
 
 `sudo ufw status`
 
+### Update IP forwarding defaults for the UFW firewall
+Edit the `/etc/ufw/sysctl.conf` file and uncomment the following lines.
+
+Edit the file:
+
+```sudo vi /etc/ufw/sysctl.conf```
+
+Now uncomment these lines (i.e. remote the `#` character the begining of the line):
+
+```
+net/ipv4/ip_forward=1
+net/ipv6/conf/default/forwarding=1
+net/ipv6/conf/all/forwarding=1
+```
+
 ### Update the firewall configuration:
-Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode):
+Run these commands to update the firewall configuration (port 67 is for DHCP when in hotspot mode).
 ```
 sudo ufw allow Apache
 sudo ufw allow "Apache Secure"
@@ -776,6 +791,12 @@ sudo ufw allow 14580
 sudo ufw allow gpsd
 sudo ufw allow 53
 sudo ufw allow 67
+```
+
+Next you'll need to allow for incoming traffic on the system's wifi adapter to be routed through the system and out to an internet connection (i.e. you're tethering with a phone or are using another physical network connection through the RJ45 ports).  The interface name on your system might be different from `wlp2s0` in which case you'll need to run `ifconfig -a` to determine the wifi adapter's interface name and use that instead in the command below:
+
+```
+sudo ufw route allow in on wlp2s0 to any
 ```
 
 ### Now enable the firewall
