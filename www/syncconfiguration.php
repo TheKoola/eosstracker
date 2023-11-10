@@ -139,6 +139,22 @@
                 sql_close($link);
                 return 0;
             }
+
+            # We remove all beacons (if any) that are on the existing flight configuration.  ...because
+            # we want to replace the beacons with the new roster coming from the kiosk
+            # SQL for removing flight beacons from existing flights
+            $remove_sql = "delete from flightmap where flightid=$1;";
+            $result = pg_query_params($link, $remove_sql, array(
+                sql_escape_string($flight["flightid"])
+            ));
+
+            # Check the result
+            if (!$result) {
+                printf ("{\"result\": \"0\", \"error\": %s}", json_encode(sql_last_error()));
+                sql_close($link);
+                return 0;
+            }
+
         }
     }
 
@@ -151,7 +167,7 @@
         # callsign | text    |           | not null |
         # location | text    |           |          |
         # freq     | numeric |           |          |
-
+        
         # Loop through each item
         foreach ($data["flightmap"] as $flight) {
             
