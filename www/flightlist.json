@@ -1,5 +1,47 @@
 [
     { 
+        "flight": "EOSS-350",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-12"
+        ],
+        "day": "2023-11-11"
+    },
+    { 
+        "flight": "EOSS-349",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-11-04"
+    },
+    { 
+        "flight": "EOSS-348",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-1",
+            "AE0SS-12"
+        ],
+        "day": "2023-11-04"
+    },
+    { 
+        "flight": "EOSS-347",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-10-21"
+    },
+    { 
+        "flight": "EOSS-346",
+        "beacons": [
+            "KC0D-14",
+            "KC0D-1",
+            "AE0SS-13"
+        ],
+        "day": "2023-09-09"
+    },
+    { 
         "flight": "EOSS-345",
         "beacons": [
             "KC0D-2",
