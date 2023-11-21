@@ -72,6 +72,9 @@ su eosstracker -c "git checkout -- sql/eoss_specifics.sql"
 su eosstracker -c "git checkout -- cleanandstage.bash"
 su eosstracker -c "git pull"
 
+# change the permissions on the configuration directory.
+chmod 777 /eosstracker/www/configuration
+
 echo
 echo
 su eosstracker -c "git status"
