@@ -30,14 +30,14 @@ This application note is written in 12 parts in two sections:
 6. Create PostgreSQL/PostGIS databases with PostGIS extensions
 
 ### Section 2
-7. [Install OpenStreetMap tile server](#7-install-openstreetmap-tile-server)
-8. Configure renderd
-9. Configure Apache for SSL (optional)
-10. Configure Apache mod_tile
-11. Configure GPSd
+7. [Install OpenStreetMap tile server](#installosm)
+8. [Configure renderd](#renderd)
+9. [Configure Apache](#apache)
+11. Configure GPSD
 12. Install Direwolf
 
 
+<a name="installosm"></a>
 ## 7. Install OpenStreetMap tile server
 
 EOSS uses OpenStreetMap to provide offline map information while tracker
@@ -55,13 +55,7 @@ OpenStreetMap data into a PostgreSQL / PostGIS database suitable for application
 rendering into a map, geocoding with Nominatim, or general analysis.
 
 ```
-eosstracker@tracker:~$ cd ~/src
-eosstracker@tracker:~/src$ git clone git://github.com/openstreetmap/osm2pgsql.git
-eosstracker@tracker:~/src$ cd osm2pgsql
-eosstracker@tracker:~/src/osm2pgsql$ mkdir build && cd build
-eosstracker@tracker:~/src/osm2pgsql/build$ cmake ..
-eosstracker@tracker:~/src/osm2pgsql/build$ make
-eosstracker@tracker:~/src/osm2pgsql/build$ sudo make install
+sudo apt install osm2pgsql
 ```
 
 Next install the SomeoneElseOSM [fork](https://github.com/SomeoneElseOSM/mod_tile) of 
@@ -97,7 +91,7 @@ to the /eosstracker directory:
 
 ```
 eosstracker@tracker:~/src/openstreetmap-carto$ sudo cp -pr mapnik.xml openstreetmap-carto.lua openstreetmap-carto.style /eosstracker/osm/
-eosstracker@tracker:~/src/openstreetmap-carto$ sudo cp -pr data symbols /eosstracker/osm/
+eosstracker@tracker:~/src/openstreetmap-carto$ sudo cp -pr data symbols patterns /eosstracker/osm/
 eosstracker@tracker:~/src/openstreetmap-carto$ sudo chown -R eosstracker:eosstracker /eosstracker/osm
 ```
 
@@ -179,7 +173,228 @@ free -h
 
 That's it!  You now have an OpenStreetMap offline database of the continental United States.
 
-## 8. Install and configure renderd
+<a name="renderd"></a>
+## 8. Configure renderd
 
-T
+Renderd will listen for map rendering requests, read data from the `gis` database about the geographic area in question, and create metatiles (bundled groups of small PNG images) at the zoom level requested.  Metatiles are saved within a specific location that is specified in two locations:  `/usr/local/etc/renderd.conf` and `/etc/apache2/sites-enabled/default-ssl.conf`.
+
+
+### The Renderd configuration file
+
+Edit the renderd configuration file:
+```
+sudo vi /usr/local/etc/renderd.conf
+```
+
+Edit the paths so that your `renderd.conf` looks like this example:
+```
+[renderd]
+num_threads=4
+tile_dir=/eosstracker/maps
+stats_file=/var/run/renderd/renderd.stats
+
+[mapnik]
+plugins_dir=/usr/lib/mapnik/3.0/input
+font_dir=/usr/share/fonts/truetype
+font_dir_recurse=1
+
+[maps]
+URI=/maps/
+TILEDIR=/eosstracker/maps
+XML=/eosstracker/osm/mapnik.xml
+HOST=localhost
+TILESIZE=256
+MAXZOOM=20
+```
+
+### The renderd service
+
+This will create the renderd service and set it to automatically start at system boot.  First edit the copy of renderd.init within the mod_tile source tree:
+```
+cd ~/src/mod_tile/debian
+vi renderd.init
+```
+
+Then change the `RUNASUSER=` line to indicate that we want the renderd service to run as the `eosstracker` user:
+```
+RUNASUSER=eosstracker
+```
+
+Then save and exit.
+
+Next copy that file to the `/etc/init.d` directory, change its permissions, and copy the service file to the `/lib/systemd/system` directory:
+``` 
+sudo cp ~/src/mod_tile/debian/renderd.init /etc/init.d/renderd
+sudo chmod u+x /etc/init.d/renderd
+sudo cp ~/src/mod_tile/debian/renderd.service /lib/systemd/system
+```
+
+Try and start the service.  It shoud reply with `[ ok ] Starting renderd (via systemctl): renderd.service.`:
+```
+sudo /etc/init.d/renderd start
+```
+
+
+Assuming that was successful, then enable renderd to start automatically at every system restart:
+``` 
+sudo systemctl enable renderd
+```
+
+
+### Create touch file to prevent tile re-rendering
+
+This touch file (a file with zero size) will prevent renderd from re-rendering old tiles.  Since this is an offline (so to speak) version of OSM the database will never be updated with new/changed content from OpenStreetMaps.  By default when renderd looks at a metatile that's older than 3 days it will initiate a re-render job, creating a new metatile for that geographic area.  That's great if the database is being updated with new content, but with this install, that data is static.  Therefore, we want to prevent renderd from re-rendering tiles. 
+
+To do that, we need to create the `tiles` sub-directory (if it doesn't already exist) and create a touch file therein.  Like this:
+```
+mkdir -p /eosstracker/maps/tiles
+touch -t /eosstracker/maps/tiles/planet-import-complete
+```
+
+
+<a name="apache"></a>
+## 9. Configure Apache
+
+### Enable apache modules
+
+Enable these modules for Apache:
+
+```
+sudo a2enmod ssl
+sudo a2enmod rewrite
+```
+
+### Edit the two site configuration files
+
+The two Apache site confguration files will need to be edited to reflect the new location of the DocumentRoot and to enable redirection to the SSL port 443.  Start by editing the `/etc/apache2/sites-enabled/000-default.conf`.  
+
+Edit the file as root:
+```
+sudo vi /etc/apache2/sites-enabled/000-default.conf
+```
+
+
+Change the `DocumentRoot` directive to reflect the `/eosstracker/www` path.  Then paste in these lines so that HTTP requests are redirected to their HTTPS equivalents:
+
+```
+        RewriteEngine On
+        RewriteCond %{HTTPS} off
+        RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
+```
+
+
+Example, final version of the `/etc/apache2/sites-enabled/000-default.conf` file:
+
+```
+<VirtualHost *:80>
+        # The ServerName directive sets the request scheme, hostname and port that
+        # the server uses to identify itself. This is used when creating
+        # redirection URLs. In the context of virtual hosts, the ServerName
+        # specifies what hostname must appear in the request's Host: header to
+        # match this virtual host. For the default virtual host (this file) this
+        # value is not decisive as it is used as a last resort host regardless.
+        # However, you must set it for any further virtual host explicitly.
+        #ServerName www.example.com
+
+        ServerAdmin webmaster@localhost
+        DocumentRoot /eosstracker/www
+
+        RewriteEngine On
+        RewriteCond %{HTTPS} off
+        RewriteRule (.*) https://%{SERVER_NAME}/$1 [R,L]
+
+        # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+        # error, crit, alert, emerg.
+        # It is also possible to configure the loglevel for particular
+        # modules, e.g.
+        #LogLevel info ssl:warn
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # For most configuration files from conf-available/, which are
+        # enabled or disabled at a global level, it is possible to
+        # include a line for only one particular virtual host. For example the
+        # following line enables the CGI configuration for this host only
+        # after it has been globally disabled with "a2disconf".
+        #Include conf-available/serve-cgi-bin.conf
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet
+```
+
+
+Next, paste in lines that will support the renderd daemon and update the DocumentRoot directive within the SSL site, apache configuration file, `/etc/apache2/sites-enabled/default-ssl.conf`.
+
+Edit the file:
+```
+sudo vi /etc/apache2/sites-enabled/default-ssl.conf
+```
+
+Make sure the top of the file looks like this:
+```
+<IfModule mod_ssl.c>
+        <VirtualHost _default_:443>
+                ServerAdmin webmaster@localhost
+
+                DocumentRoot /eosstracker/www
+
+                ##### this is for OSM tile rendering...
+                LoadTileConfigFile /usr/local/etc/renderd.conf
+                ModTileRenderdSocketName /var/run/renderd/renderd.sock
+                # Timeout before giving up for a tile to be rendered
+                ModTileRequestTimeout 0
+                # Timeout before giving up for a tile to be rendered that is otherwise missing
+                ModTileMissingRequestTimeout 30
+                #######
+
+```
+
+### Edit apache2.conf
+
+The primary apache configuration file will need to be updated to allow web trafic to the `/eosstracker/www` directory.
+
+Edit the file:
+```
+sudo vi /etc/apache2/apache2.conf
+```
+
+Then near the bottom of the file (amongst the other `directory` initatives) paste in these lines:
+```
+<Directory /eosstracker/www/>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+</Directory>
+```
+
+### Update apache to load the mod_tile module
+
+Apache will need to know about the mod_tile module. Edit a new file called `/etc/apache2/conf-available/mod_tile.conf` and a directive that indicates where the library module is located at. 
+
+Edit the file:
+```
+sudo vi /etc/apache2/conf-available/mod_tile.conf
+```
+
+Now add this single line to that file, save, and exit:
+```
+LoadModule tile_module /usr/lib/apache2/modules/mod_tile.so
+```
+
+Now enable this module:
+```
+sudo a2enconf mod_tile
+```
+
+
+### Restart Apache
+
+Finally, restart apache services:
+```
+sudo systemctl restart apache
+```
+
+
+
 
