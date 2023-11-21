@@ -33,8 +33,9 @@ This application note is written in 12 parts in two sections:
 7. [Install OpenStreetMap tile server](#installosm)
 8. [Configure renderd](#renderd)
 9. [Configure Apache](#apache)
-11. Configure GPSD
-12. Install Direwolf
+10. [Configure GPSD](#gpsd)
+11. [Configure Chrony Time Services](#chrony)
+12. [Install Dire Wolf](#direwolf)
 
 
 <a name="installosm"></a>
@@ -176,7 +177,7 @@ That's it!  You now have an OpenStreetMap offline database of the continental Un
 <a name="renderd"></a>
 ## 8. Configure renderd
 
-Renderd will listen for map rendering requests, read data from the `gis` database about the geographic area in question, and create metatiles (bundled groups of small PNG images) at the zoom level requested.  Metatiles are saved within a specific location that is specified in two locations:  `/usr/local/etc/renderd.conf` and `/etc/apache2/sites-enabled/default-ssl.conf`.
+Renderd will listen for map rendering requests, read data from the `gis` database about the geographic area in question, and create metatiles (bundled groups of small PNG images) at the zoom level requested.  Metatiles are saved within a specific location that is specified within the renderd configuration file:  `/usr/local/etc/renderd.conf`.
 
 
 ### The Renderd configuration file
@@ -186,7 +187,7 @@ Edit the renderd configuration file:
 sudo vi /usr/local/etc/renderd.conf
 ```
 
-Edit the paths so that your `renderd.conf` looks like this example:
+Edit the `renderd.conf` file so that looks like this example:
 ```
 [renderd]
 num_threads=4
@@ -243,12 +244,12 @@ sudo systemctl enable renderd
 
 ### Create touch file to prevent tile re-rendering
 
-This touch file (a file with zero size) will prevent renderd from re-rendering old tiles.  Since this is an offline (so to speak) version of OSM the database will never be updated with new/changed content from OpenStreetMaps.  By default when renderd looks at a metatile that's older than 3 days it will initiate a re-render job, creating a new metatile for that geographic area.  That's great if the database is being updated with new content, but with this install, that data is static.  Therefore, we want to prevent renderd from re-rendering tiles. 
+This touch file (a file with zero size) will prevent renderd from re-rendering old tiles.  By default when renderd looks at a metatile that's older than 3 days it will initiate a re-render job, creating a new metatile for that geographic area.  That's great if the database is being updated with new content, but with this install, that data is static, so any re-rendering will simply create a new metatile with the exact same content as before.  To prevent renderd from re-rendering tiles unnecessarily, we create this touch file with a really old date so that renderd will forego any re-rendering jobs.
 
 To do that, we need to create the `tiles` sub-directory (if it doesn't already exist) and create a touch file therein.  Like this:
 ```
 mkdir -p /eosstracker/maps/tiles
-touch -t /eosstracker/maps/tiles/planet-import-complete
+touch -t 200001010000 /eosstracker/maps/tiles/planet-import-complete
 ```
 
 
@@ -266,7 +267,7 @@ sudo a2enmod rewrite
 
 ### Edit the two site configuration files
 
-The two Apache site confguration files will need to be edited to reflect the new location of the DocumentRoot and to enable redirection to the SSL port 443.  Start by editing the `/etc/apache2/sites-enabled/000-default.conf`.  
+The two Apache site-confguration files will need to be edited to reflect the new location of the `DocumentRoot` and to enable redirection to the SSL port 443.  Start by editing the `/etc/apache2/sites-enabled/000-default.conf`.  
 
 Edit the file as root:
 ```
@@ -396,5 +397,144 @@ sudo systemctl restart apache
 ```
 
 
+<a name="gpsd"></a>
+## 10. Configure GPSD
 
+The system needs GPSD running (and connected to an external USB GPS puck) in order to determine the system's position.  That position is used to update data on the map pages as well as calculate relative locations to flights.  In addition, Dire Wolf can use GPSD for determining its location.
+
+
+### Edit the gpsd configuration file
+Update the `/etc/default/gpsd` file to add a couple of parameters to how the gpsd daemon is started.  The `-n` parameter instructs GPSD to poll the GPS regardless if a client is connected or not.  The `-G` parameter cacuses gpsd to listen on all addresses rather than just the loop back in the event the user has other systems (on their local network) that can make use of the centralized and network accessible GPSD service.
+
+Edit the `/etc/default/gpsd` file:
+```
+sudo vi /etc/default/gpsd
+```
+
+Set the `GPSD_OPTIONS=` and the `DEVICES=` lines as follows.  Then save and exit the vi editor.
+```
+GPSD_OPTIONS="-n -G"
+DEVICES="/dev/ttyACM0"
+```
+
+
+### Update the gpsd.socket service
+
+Next we must update the addresses that the GPSD socket service is listening too so that external clients can connect to our GPSD instance if desired.  Start by editing the `/lib/systemd/system/gpsd.socket` file:
+``` 
+sudo vi /lib/systemd/system/gpsd.socket
+```
+
+Change the `127.0.0.1` address on one of the `ListenStream=` lines to be `0.0.0.0`.  Like this:
+```
+ListenStream=0.0.0.0:2947
+```
+
+### Reload and restart GPSD
+
+Next restart the GPSD services:
+```
+sudo systemctl daemon-reload
+sudo systemctl restart gpsd.service
+sudo systemctl restart gpsd.socket
+```
+
+
+One should then be able to start the `cgps` command line program to view the GPS status (assuming one has a USB GPS puck attached to the system):
+```
+cgps
+````
+
+To quit, just hit the `q` key.
+
+
+<a name="chrony"></a>
+## 11. Configure Chrony and Time Services
+
+The `chrony` system service is a replacement for the traditional NTP software stack.  It functions seamlessly with other NTP servers and clients.  Its configuration will need to be edited such that when the system is in an offline mode (i.e not connected to the internet) it can get time updates from GPS.  In addition, other local NTP clients can use this system as a time server.
+
+### Install chrony
+First, install the chrony time software:
+```
+sudo apt install chrony
+```
+
+### Edit the configuration file
+Next edit the `/etc/chrony/chrony.conf` configuration file:
+```
+sudo vi /etc/chrony/chrony.conf
+```
+
+
+Paste these lines in at the very bottom of that configuration file:
+```
+# set larger delay to allow the NMEA source to overlap with
+# the other sources and avoid the falseticker status
+refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
+refclock SHM 1 refid PPS precision 1e-9
+
+# Allow access from NTP clients
+allow
+```
+
+### Reboot for changes to take effect
+The system will need to be rebooted in order for these changes to take effect.
+```
+sudo reboot
+```
+
+
+### Time verification w/ GPS
+Once the system is back online (from the reboot), you an run this command to display those time servers that chrony is using as time sources.  There should also be lines that show that GPSD is a potential time source.
+
+For example, notice the `GPS` and `PPS` lines in the following output:
+```
+chronyc sources
+
+210 Number of sources = 10
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+#? GPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
+#? PPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
+^+ prod-ntp-5.ntp1.ps5.cano>     2   6   377    59  -1488us[-1488us] +/-   65ms
+^+ prod-ntp-4.ntp1.ps5.cano>     2   6   377    60  +1330us[+1330us] +/-   63ms
+^+ prod-ntp-3.ntp4.ps5.cano>     2   6   377    62  -2867us[-3237us] +/-   63ms
+^+ alphyn.canonical.com          2   6   377    60   -112us[ -112us] +/-   49ms
+^+ 104.167.241.253               2   6   377    61  -3224us[-3224us] +/-   60ms
+^+ gosanf.hojmark.net            2   6   377    62  +2959us[+2589us] +/-   58ms
+^* time.as394414.net             2   6   377    62   -546us[ -917us] +/-   23ms
+^+ li1150-42.members.linode>     2   6   377    63  +1089us[ +719us] +/-   34ms
+```
+
+
+<a name="direwolf"></a>
+## 12. Install Dire Wolf
+
+The final step is to install the Dire Wolf software based TNC.  Dire Wolf is repsonsible for decoding APRS packets.  This version of direwolf has been modified to save any decoded packets to the PostgresQL database for use by the web-based frontend of the EOSSTracker software.
+
+### Install prerequisite software
+These packages will need to be installed (if not already) prior to building direwolf:
+
+```
+sudo apt install libasound2-dev libpq-dev libgps-dev
+```
+
+
+### Download and build direwolf
+Run these commands to download direwolf, build it, and finally install it.
+
+```
+cd ~
+git clone https://www.github.com/edgeofspace/direwolf
+cd direwolf
+git checkout eoss
+```
+
+Now build the binaries:
+```
+make
+sudo make install
+```
+
+That's it, you're done!!
 
