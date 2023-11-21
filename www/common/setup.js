@@ -1766,7 +1766,11 @@
 
         form_data.append("callsign", callsign.value.toUpperCase());
         form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
-        form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+
+        if (audiodev.selectedIndex in audiodev.options) {
+            form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+        }
+
         form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
         form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
         $.ajax({
