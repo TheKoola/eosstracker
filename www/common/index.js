@@ -74,7 +74,7 @@ function getConfiguration() {
         document.getElementById("timezone").innerHTML = timezone;
         document.getElementById("igating").innerHTML = i2;
         document.getElementById("beaconing").innerHTML = b2;
-        document.getElementById("ssid").innerHTML = ssid; 
+        document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
     });
 }
 

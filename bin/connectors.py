@@ -64,10 +64,10 @@ def local_signal_handler(signum, frame):
 ##################################    
 # function to generate a random callsign
 ##################################    
-def randomCallsign()->str:
+def randomCallsign(pre:str = "")->str:
 
-    # First 5 characters are random
-    callsign = "".join(random.choice(string.ascii_uppercase) for x in range(5))
+    # the callsign
+    callsign = pre[:5].upper() + "".join(random.choice(string.ascii_uppercase) for x in range(5 - len(pre[:5])))
 
     # The number of random digits we need
     numRandomDigits = 9 - len(callsign)
@@ -1006,8 +1006,14 @@ class AprsisStream(PacketStream):
         # check if we're able to igate or not.  Only possible with a non-CWOP connection.
         self.igating = True if self.configuration["igating"] == "true" and self.taptype == 'aprs' else False
 
+        # hard set this, as the aprsc daemon will igate for us.
+        self.igating = False
+
         # Check if we want to beacon over the Internet to the APRS-IS server.  Only possible if we're also igating with a non-CWOP connection.
         self.can_beacon = True if self.configuration["ibeacon"] == "true" and self.igating else False
+
+        # station callsign (not necessarily the same as the credentials used for logging into the APRS-IS server)
+        self.station_callsign = self.configuration["callsign"] if "callsign" in self.configuration else None
 
         # igating statistics
         self.igated_stations = {}
@@ -1460,8 +1466,8 @@ class AprsisStream(PacketStream):
                     filterlist.append(self.configuration["customfilter"])
 
             # this station's filter
-            call = self.creds.callsign.split("-")[0]
-            stationfilter = 'e/' + call + '*' if self.creds.callsign else None
+            call = self.station_callsign.split("-")[0]
+            stationfilter = 'e/' + call + '*' if self.station_callsign else None
             if stationfilter:
                 filterlist.append(stationfilter)
             
@@ -1624,6 +1630,9 @@ class DirewolfKISS(PacketStream):
         # Are we igating?
         self.igating = True if self.configuration["igating"] == "true" else False
 
+        # Hard set this to igating
+        self.igating = False
+
         # define queues for handing packets for igating (if enabled) and to the database
         if self.igating:
             queuelist = [ (self.configuration["igatingqueue"], "igating queue"), (self.configuration["databasequeue"], "database queue") ]
@@ -1738,21 +1747,17 @@ def connectorTap(configuration, typeoftap = 'aprs'):
 
         # if a callsign was provided then use it, otherwise generate a random one.
         if configuration["callsign"]:
-            ssid = 0
-            if configuration["ssid"]:
-                ssid = int(configuration["ssid"])
-
-            mycallsign = configuration["callsign"] + ("-" + configuration["ssid"] if ssid else "")
+            mycallsign = randomCallsign(configuration["callsign"])
         else:
-            mycallsign = configuration["callsign"] if "callsign" in configuration and configuration["callsign"] != '' else randomCallsign()
+            mycallsign = configuration["callsign"] if "callsign" in configuration and configuration["callsign"] != '' else randomCallsign("EOSS")
 
         logger.debug(f"connectorTap: using {mycallsign} for {typeoftap} tap")
 
         # aprsis server name
         aprsserver = configuration["cwopserver"] if typeoftap == "cwop" else configuration["aprsisserver"]
 
-        # passcode
-        passcode = configuration["passcode"] if configuration["passcode"] else None
+        # we don't need a passcode for read-only connections
+        passcode = None
 
         # credentials
         mycreds = CredentialSet(callsign = mycallsign, passcode = passcode, name='eosstracker', version='1.5')
@@ -1762,7 +1767,13 @@ def connectorTap(configuration, typeoftap = 'aprs'):
         server = Server(hostname = aprsserver, portnum = 14580, nickname = aprsserver)
 
         # create a new APRS-IS connection object
-        tap = AprsisStream(configuration=configuration, loggingqueue = configuration["loggingqueue"], stopevent = configuration["stopevent"], creds=mycreds, taptype=typeoftap, server = server)
+        tap = AprsisStream(
+                configuration=configuration, 
+                loggingqueue = configuration["loggingqueue"], 
+                stopevent = configuration["stopevent"], 
+                creds = mycreds, 
+                taptype = typeoftap, 
+                server = server)
 
     elif typeoftap == 'dwkiss':
         server = Server(hostname="127.0.0.1", portnum=8001, nickname="direwolf")

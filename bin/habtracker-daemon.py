@@ -77,7 +77,6 @@ def signal_handler(signum, frame):
     raise GracefulExit()
 
 
-
 ##################################################
 # argument_parser function...This will parse through any command line options given and return the options
 ##################################################
@@ -321,7 +320,13 @@ def createProcesses(configuration):
     landingprocess.daemon = True
     procs.append(landingprocess)
 
-    # This is the APRS-IS connection tap.  
+    # Start the aprsc sub process
+    logger.debug(f"Creating Aprsc subprocess")
+    aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
+    aprscprocess.daemon = True
+    procs.append(aprscprocess)
+
+    # This is the APRS-IS connection tap, it will connect to the aprsc process we start above.
     logger.debug(f"Creating APRS-IS Tap subprocess")
     aprstap = mp.Process(name="APRS-IS Tap", target=connectors.connectorTap, args=(configuration, "aprs"))
     aprstap.daemon = True
@@ -401,14 +406,14 @@ def createProcesses(configuration):
 
     # if we're igating, then create a process to update a JSON file with igating statistics.  
     # Might expand on this idea in the future with a "stats" or "telemetry" process that publishes data about the backend.
-    igating = (True if configuration["igating"] == "true" else False) if "igating" in configuration else False
-    if igating:
+    #igating = (True if configuration["igating"] == "true" else False) if "igating" in configuration else False
+    #if igating:
 
         # The telemetry process
-        logger.debug(f"Creating Telemetry subprocess")
-        tmprocess = mp.Process(name="Telemetry", target=telemetry, args=(configuration,))
-        tmprocess.daemon = True
-        procs.append(tmprocess)
+    #    logger.debug(f"Creating Telemetry subprocess")
+    #    tmprocess = mp.Process(name="Telemetry", target=telemetry, args=(configuration,))
+    #    tmprocess.daemon = True
+    #    procs.append(tmprocess)
 
 
 
@@ -419,13 +424,6 @@ def createProcesses(configuration):
     #procs.append(rtp)
     ####### NO #######
 
-    # The aprsc process
-    # Don't need this process as the conectors will perform igating instead.
-    #
-    #logger.debug(f"Creating Aprsc subprocess")
-    #aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
-    #aprscprocess.daemon = True
-    #procs.append(aprscprocess)
 
     # Return the list of newly created processes
     return procs
@@ -896,7 +894,8 @@ def main():
             configuration["igating"] = "false"
 
         # we want to connect to for aprs-is connectivity
-        configuration["aprsisserver"] = "noam.aprs2.net"
+        #configuration["aprsisserver"] = "noam.aprs2.net"
+        configuration["aprsisserver"] = "127.0.0.1"
 
         # where the direwolf instance is running
         configuration["direwolfserver"] = "127.0.0.1"
