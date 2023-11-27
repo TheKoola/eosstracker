@@ -324,6 +324,7 @@ class GPSPoller(object):
             prevlat = 0
             prevlon = 0
             timeprev = ""
+            last_insert_time = datetime.datetime.utcnow()
 
             ##########
             # Position reporting loop...
@@ -367,8 +368,12 @@ class GPSPoller(object):
                     # 3D Fix
                     if report["mode"] == 3:
 
+                        # calculate the elapsed time between the last database position insert.  If it's been longer than some minimum interval then we want to add 
+                        # a new row to the database regardless if our position has moved or not.
+                        elapsed_time = datetime.datetime.utcnow() - last_insert_time
+
                         # If our position has changed by .0001 of a lat/lon degree, then we consider it significant enough to add a row to the database
-                        if round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon:
+                        if (round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon) or elapsed_time.total_seconds() > 7200:
 
                             # SQL statement
                             sql = """insert into
@@ -411,6 +416,9 @@ class GPSPoller(object):
                                         # Save this position for the next iteration of the loop
                                         prevlat = round(gpsd.fix.latitude,4)
                                         prevlon = round(gpsd.fix.longitude,4)
+
+                                        # log the time of this database insert
+                                        last_insert_time = datetime.datetime.utcnow()
                            
                                     # If a database error occured, print the error, the set the variable so that this loop ends.
                                     except pg.DatabaseError as error:
