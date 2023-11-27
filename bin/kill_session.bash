@@ -47,7 +47,7 @@ if [ $? -eq 0 ]; then
     leadproc=$(ps -ef | grep "habtracker-daemon" | grep -v grep | awk 'BEGIN {s = 999999} { if ($2 < s) s=$2;} END {print s}')
     kill $leadproc >> ${LOGFILE}
 
-    # wait for 12 seconds looping each time to see if there are any remaining processes
+    # wait for some time looping each time to see if there are any remaining processes
     let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)
     let i=0
     while [ $num_procs -gt 0 ] && [ $i -lt 25 ]
@@ -73,7 +73,6 @@ if [ $? -eq 0 ]; then
         pkill -9 habtracker-daemon >> ${LOGFILE}
     fi
 fi
-exit
 
 # first kill aprsc because we have to use sudo...
 ps -ef | grep aprsc | grep -v grep > /dev/null
