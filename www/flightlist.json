@@ -1,158 +1,446 @@
 [
-    { 
+    {
+        "flight": "EOSS-353",
+        "beacons": [
+            "AE0SS-2",
+            "K0SCC-14"
+        ],
+        "day": "2023-12-02",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.86",
+            "eoss": "2.67",
+            "parachute": "1.81",
+            "neckload": "13.34",
+            "balloon": "3.31",
+            "gross": "16.64",
+            "necklift": "18.33"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "292"
+    },
+    {
+        "flight": "EOSS-352",
+        "beacons": [
+            "KC0D-1",
+            "KC0D-3"
+        ],
+        "day": "2023-12-02",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "9.14",
+            "eoss": "2.19",
+            "parachute": "1.70",
+            "neckload": "13.03",
+            "balloon": "3.31",
+            "gross": "16.33",
+            "necklift": "17.93"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "287"
+    },
+    {
+        "flight": "EOSS-351",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-12"
+        ],
+        "day": "2023-12-02",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.00",
+            "eoss": "3.52",
+            "parachute": "1.70",
+            "neckload": "13.21",
+            "balloon": "3.31",
+            "gross": "16.52",
+            "necklift": "18.17"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "290"
+    },
+    {
         "flight": "EOSS-350",
         "beacons": [
             "KC0D-2",
             "AE0SS-12"
         ],
-        "day": "2023-11-11"
+        "day": "2023-11-11",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "13.95",
+            "eoss": "6.20",
+            "parachute": "1.70",
+            "neckload": "21.85",
+            "balloon": "6.61",
+            "gross": "28.46",
+            "necklift": "27.54"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "461"
     },
-    { 
+    {
         "flight": "EOSS-349",
         "beacons": [
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-11-04"
+        "day": "2023-11-04",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "12.12",
+            "eoss": "4.32",
+            "parachute": "1.70",
+            "neckload": "18.14",
+            "balloon": "6.61",
+            "gross": "24.75",
+            "necklift": "23.09"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "401"
     },
-    { 
+    {
         "flight": "EOSS-348",
         "beacons": [
             "KC0D-2",
             "AE0SS-1",
             "AE0SS-12"
         ],
-        "day": "2023-11-04"
+        "day": "2023-11-04",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "14.39",
+            "eoss": "6.20",
+            "parachute": "1.70",
+            "neckload": "22.28",
+            "balloon": "6.61",
+            "gross": "28.90",
+            "necklift": "28.06"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "469"
     },
-    { 
+    {
         "flight": "EOSS-347",
         "beacons": [
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-10-21"
+        "day": "2023-10-21",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "4.93",
+            "eoss": "6.15",
+            "parachute": "1.70",
+            "neckload": "12.78",
+            "balloon": "3.31",
+            "gross": "16.08",
+            "necklift": "17.60"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "282"
     },
-    { 
+    {
         "flight": "EOSS-346",
         "beacons": [
             "KC0D-14",
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-09-09"
+        "day": "2023-09-09",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "1.02",
+            "eoss": "8.04",
+            "parachute": "1.70",
+            "neckload": "10.75",
+            "balloon": "3.31",
+            "gross": "14.06",
+            "necklift": "14.97"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "247"
     },
-    { 
+    {
         "flight": "EOSS-345",
         "beacons": [
             "KC0D-2",
             "AE0SS-13"
         ],
-        "day": "2023-07-29"
+        "day": "2023-07-29",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "7.52",
+            "eoss": "4.91",
+            "parachute": "1.63",
+            "neckload": "14.05",
+            "balloon": "6.61",
+            "gross": "20.67",
+            "necklift": "18.19"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "335"
     },
-    { 
+    {
         "flight": "EOSS-344",
         "beacons": [
             "KC0D-2",
             "AE0SS-13"
         ],
-        "day": "2023-07-22"
+        "day": "2023-07-22",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "8.07",
+            "eoss": "6.09",
+            "parachute": "1.63",
+            "neckload": "15.79",
+            "balloon": "6.61",
+            "gross": "22.40",
+            "necklift": "20.27"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "363"
     },
-    { 
+    {
         "flight": "EOSS-343",
         "beacons": [
             "KC0D-12",
             "AE0SS-9"
         ],
-        "day": "2023-06-17"
+        "day": "2023-06-17",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "3.13",
+            "eoss": "2.87",
+            "parachute": "2.40",
+            "neckload": "8.40",
+            "balloon": "6.61",
+            "gross": "15.01",
+            "necklift": "11.40"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "243"
     },
-    { 
+    {
         "flight": "EOSS-342",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-06-03"
+        "day": "2023-06-03",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "5.58",
+            "eoss": "4.22",
+            "parachute": "1.39",
+            "neckload": "11.20",
+            "balloon": "3.31",
+            "gross": "14.50",
+            "necklift": "15.55"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "255"
     },
-    { 
+    {
         "flight": "EOSS-341",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-05-04"
+        "day": "2023-05-04",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "2.80",
+            "eoss": "4.22",
+            "parachute": "1.63",
+            "neckload": "8.66",
+            "balloon": "3.31",
+            "gross": "11.96",
+            "necklift": "12.85"
+        },
+        "liftfactor": "1.35",
+        "h2fill": "218"
     },
-    { 
+    {
         "flight": "EOSS-340",
         "beacons": [
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-04-22"
+        "day": "2023-04-22",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.01",
+            "eoss": "4.29",
+            "parachute": "1.70",
+            "neckload": "12.00",
+            "balloon": "3.31",
+            "gross": "15.31",
+            "necklift": "16.59"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "269"
     },
-    { 
+    {
         "flight": "EOSS-339",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-04-22"
+        "day": "2023-04-22",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.16",
+            "eoss": "4.29",
+            "parachute": "1.70",
+            "neckload": "13.15",
+            "balloon": "3.31",
+            "gross": "16.46",
+            "necklift": "18.09"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "289"
     },
-    { 
+    {
         "flight": "EOSS-338",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-04-16"
+        "day": "2023-04-16",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.00",
+            "eoss": "4.71",
+            "parachute": "1.15",
+            "neckload": "20.86",
+            "balloon": "6.61",
+            "gross": "27.47",
+            "necklift": "26.35"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "445"
     },
-    { 
+    {
         "flight": "EOSS-337",
         "beacons": [
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-04-01"
+        "day": "2023-04-01",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "5.38",
+            "eoss": "4.75",
+            "parachute": "1.70",
+            "neckload": "11.82",
+            "balloon": "3.31",
+            "gross": "15.13",
+            "necklift": "16.36"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "266"
     },
-    { 
+    {
         "flight": "EOSS-336",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-04-01"
+        "day": "2023-04-01",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "12.61",
+            "eoss": "4.71",
+            "parachute": "1.15",
+            "neckload": "18.47",
+            "balloon": "6.61",
+            "gross": "25.08",
+            "necklift": "23.48"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "407"
     },
-    { 
+    {
         "flight": "EOSS-335",
         "beacons": [
             "KC0D-1",
             "KC0D-3",
             "AE0SS-13"
         ],
-        "day": "2023-03-26"
+        "day": "2023-03-26",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "8.23",
+            "eoss": "7.48",
+            "parachute": "1.15",
+            "neckload": "16.86",
+            "balloon": "6.61",
+            "gross": "23.47",
+            "necklift": "21.55"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "381"
     },
-    { 
+    {
         "flight": "EOSS-334",
         "beacons": [
             "KE0BMV-11",
             "AE0SS-9"
         ],
-        "day": "2023-01-14"
+        "day": "2023-01-14",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.46",
+            "eoss": "3.23",
+            "parachute": "2.25",
+            "neckload": "12.93",
+            "balloon": "3.31",
+            "gross": "16.24",
+            "necklift": "17.81"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "285"
     },
-    { 
+    {
         "flight": "EOSS-333",
         "beacons": [
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2023-01-14"
+        "day": "2023-01-14",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.53",
+            "eoss": "3.17",
+            "parachute": "1.46",
+            "neckload": "13.16]",
+            "balloon": "3.31",
+            "gross": "16.46",
+            "necklift": "18.101"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "289"
     },
-    { 
+    {
         "flight": "EOSS-332",
         "beacons": [
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2023-01-14"
+        "day": "2023-01-14",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "5.02",
+            "eoss": "4.22",
+            "parachute": "1.39",
+            "neckload": "10.63",
+            "balloon": "3.31",
+            "gross": "13.94",
+            "necklift": "14.81"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "245"
     },
     {
         "flight": "EOSS-331",
@@ -161,7 +449,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2022-11-05"
+        "day": "2022-11-05",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "11.26",
+            "eoss": "6.33",
+            "parachute": "1.15",
+            "neckload": "18.73",
+            "balloon": "6.61",
+            "gross": "25.35",
+            "necklift": "23.80"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "411"
     },
     {
         "flight": "EOSS-330",
@@ -169,7 +469,19 @@
             "KC0D-1",
             "AE0SS-12"
         ],
-        "day": "2022-10-29"
+        "day": "2022-10-29",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.87",
+            "eoss": "4.74",
+            "parachute": "1.15",
+            "neckload": "21.76",
+            "balloon": "6.61",
+            "gross": "28.37",
+            "necklift": "27.43"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "460"
     },
     {
         "flight": "EOSS-329",
@@ -178,7 +490,19 @@
             "KC0D-3",
             "AE0SS-13"
         ],
-        "day": "2022-10-15"
+        "day": "2022-10-15",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.44",
+            "eoss": "4.53",
+            "parachute": "1.70",
+            "neckload": "13.66",
+            "balloon": "3.31",
+            "gross": "16.97",
+            "necklift": "18.75"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "298"
     },
     {
         "flight": "EOSS-328",
@@ -187,7 +511,19 @@
             "KC0D-3",
             "KC0D-15"
         ],
-        "day": "2022-07-30"
+        "day": "2022-07-30",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.89",
+            "eoss": "4.05",
+            "parachute": "2.25",
+            "neckload": "13.19",
+            "balloon": "3.31",
+            "gross": "16.50",
+            "necklift": "17.32"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "279"
     },
     {
         "flight": "EOSS-327",
@@ -195,7 +531,19 @@
             "KC0D-1",
             "AE0SS-12"
         ],
-        "day": "2022-07-30"
+        "day": "2022-07-30",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.32",
+            "eoss": "3.68",
+            "parachute": "1.15",
+            "neckload": "13.15",
+            "balloon": "3.31",
+            "gross": "16.45",
+            "necklift": "17.26"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "278"
     },
     {
         "flight": "EOSS-326",
@@ -203,7 +551,19 @@
             "KC0D-14",
             "AE0SS-13"
         ],
-        "day": "2022-07-30"
+        "day": "2022-07-30",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.61",
+            "eoss": "3.75",
+            "parachute": "1.15",
+            "neckload": "11.51",
+            "balloon": "3.31",
+            "gross": "14.82",
+            "necklift": "15.22"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "250"
     },
     {
         "flight": "EOSS-325",
@@ -211,7 +571,19 @@
             "KC0D-1",
             "AE0SS-12"
         ],
-        "day": "2022-04-24"
+        "day": "2022-04-24",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.52",
+            "eoss": "3.68",
+            "parachute": "1.15",
+            "neckload": "12.35",
+            "balloon": "3.31",
+            "gross": "15.66",
+            "necklift": "15.48"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "254"
     },
     {
         "flight": "EOSS-324",
@@ -219,7 +591,19 @@
             "KE0BMV-11",
             "KC0D-15"
         ],
-        "day": "2022-04-09"
+        "day": "2022-04-09",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.62",
+            "eoss": "2.60",
+            "parachute": "2.25",
+            "neckload": "13.47",
+            "balloon": "3.31",
+            "gross": "16.77",
+            "necklift": "17.66"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "283"
     },
     {
         "flight": "EOSS-323",
@@ -227,7 +611,19 @@
             "AE0SS-13",
             "KC0D-14"
         ],
-        "day": "2022-04-09"
+        "day": "2022-04-09",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "4.78",
+            "eoss": "4.33",
+            "parachute": "1.70",
+            "neckload": "10.80",
+            "balloon": "3.31",
+            "gross": "14.11",
+            "necklift": "14.33"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "238"
     },
     {
         "flight": "EOSS-322",
@@ -235,7 +631,19 @@
             "AE0SS-12",
             "KC0D-1"
         ],
-        "day": "2022-04-09"
+        "day": "2022-04-09",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.50",
+            "eoss": "4.19",
+            "parachute": "1.63",
+            "neckload": "13.32",
+            "balloon": "3.31",
+            "gross": "16.63",
+            "necklift": "17.481"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "281"
     },
     {
         "flight": "EOSS-321",
@@ -244,7 +652,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2022-04-02"
+        "day": "2022-04-02",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "14.77",
+            "eoss": "4.67",
+            "parachute": "1.15",
+            "neckload": "20.59",
+            "balloon": "6.61",
+            "gross": "27.21",
+            "necklift": "26.03"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "441"
     },
     {
         "flight": "EOSS-320",
@@ -252,7 +672,19 @@
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2022-01-28"
+        "day": "2022-01-28",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "7.75",
+            "eoss": "6.23",
+            "parachute": "1.15",
+            "neckload": "15.13",
+            "balloon": "6.61",
+            "gross": "21.74",
+            "necklift": "19.48"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "353"
     },
     {
         "flight": "EOSS-319",
@@ -260,7 +692,19 @@
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2022-01-28"
+        "day": "2022-01-28",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "13.12",
+            "eoss": "4.77",
+            "parachute": "1.15",
+            "neckload": "19.04",
+            "balloon": "6.61",
+            "gross": "25.65",
+            "necklift": "24.77"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "416"
     },
     {
         "flight": "EOSS-318",
@@ -268,7 +712,19 @@
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2021-11-06"
+        "day": "2021-11-06",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.41",
+            "eoss": "4.35",
+            "parachute": "1.70",
+            "neckload": "21.45",
+            "balloon": "6.61",
+            "gross": "28.06",
+            "necklift": "27.06"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "455"
     },
     {
         "flight": "EOSS-317",
@@ -277,7 +733,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2021-10-30"
+        "day": "2021-10-30",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "16.95",
+            "eoss": "6.36",
+            "parachute": "1.15",
+            "neckload": "24.46",
+            "balloon": "6.61",
+            "gross": "31.07",
+            "necklift": "29.12"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "483"
     },
     {
         "flight": "EOSS-316",
@@ -285,7 +753,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2021-10-10"
+        "day": "2021-10-10",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "11.38",
+            "eoss": "6.12",
+            "parachute": "1.15",
+            "neckload": "18.65",
+            "balloon": "6.61",
+            "gross": "25.26",
+            "necklift": "22.44"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "393"
     },
     {
         "flight": "EOSS-315",
@@ -293,7 +773,19 @@
             "KC0D-14",
             "AE0SS-13"
         ],
-        "day": "2021-10-10"
+        "day": "2021-10-10",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.87",
+            "eoss": "2.97",
+            "parachute": "1.68",
+            "neckload": "11.52",
+            "balloon": "3.31",
+            "gross": "14.82",
+            "necklift": "15.96"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "260"
     },
     {
         "flight": "EOSS-314",
@@ -301,7 +793,19 @@
             "KC0D-14",
             "AE0SS-13"
         ],
-        "day": "2021-08-01"
+        "day": "2021-08-01",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "4.80",
+            "eoss": "3.55",
+            "parachute": "1.15",
+            "neckload": "9.50",
+            "balloon": "3.31",
+            "gross": "12.80",
+            "necklift": "13.34"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "225"
     },
     {
         "flight": "EOSS-313",
@@ -309,7 +813,19 @@
             "KC0D-1",
             "K0SCC-14"
         ],
-        "day": "2021-08-01"
+        "day": "2021-08-01",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.97",
+            "eoss": "3.24",
+            "parachute": "1.15",
+            "neckload": "11.35",
+            "balloon": "3.31",
+            "gross": "14.66",
+            "necklift": "15.75"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "258"
     },
     {
         "flight": "EOSS-312",
@@ -317,7 +833,8 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2021-08-01"
+        "day": "2021-08-01",
+        "balloonsize": "1500gm"
     },
     {
         "flight": "EOSS-311",
@@ -326,7 +843,19 @@
             "KC0D-2",
             "AE0SS-12"
         ],
-        "day": "2021-07-24"
+        "day": "2021-07-24",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "5.50",
+            "eoss": "5.50",
+            "parachute": "1.63",
+            "neckload": "12.63",
+            "balloon": "3.31",
+            "gross": "15.94",
+            "necklift": "17.41"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "280"
     },
     {
         "flight": "EOSS-310",
@@ -334,7 +863,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2021-04-18"
+        "day": "2021-04-18",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "10.24",
+            "eoss": "4.63",
+            "parachute": "1.15",
+            "neckload": "16.02",
+            "balloon": "6.61",
+            "gross": "22.63",
+            "necklift": "20.77"
+        },
+        "liftfactor": "1.21",
+        "h2fill": "370"
     },
     {
         "flight": "EOSS-309",
@@ -342,7 +883,19 @@
             "KC0D-14",
             "AE0SS-13"
         ],
-        "day": "2021-04-10"
+        "day": "2021-04-10",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.91",
+            "eoss": "4.67",
+            "parachute": "1.15",
+            "neckload": "21.73",
+            "balloon": "6.61",
+            "gross": "28.34",
+            "necklift": "25.98"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "440"
     },
     {
         "flight": "EOSS-308",
@@ -350,7 +903,19 @@
             "KC0D-3",
             "AE0SS-12"
         ],
-        "day": "2021-04-03"
+        "day": "2021-04-03",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "18.68",
+            "eoss": "4.63",
+            "parachute": "1.15",
+            "neckload": "24.45",
+            "balloon": "6.61",
+            "gross": "31.07",
+            "necklift": "30.67"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "504"
     },
     {
         "flight": "EOSS-307",
@@ -360,7 +925,19 @@
             "KC0D-2",
             "AE0SS-13"
         ],
-        "day": "2021-03-20"
+        "day": "2021-03-20",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "8.44",
+            "eoss": "7.73",
+            "parachute": "1.15",
+            "neckload": "17.32",
+            "balloon": "6.61",
+            "gross": "23.93",
+            "necklift": "20.91"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "372"
     },
     {
         "flight": "EOSS-306",
@@ -369,7 +946,19 @@
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2021-01-16"
+        "day": "2021-01-16",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.70",
+            "eoss": "4.73",
+            "parachute": "1.39",
+            "neckload": "12.82",
+            "balloon": "3.31",
+            "gross": "16.12",
+            "necklift": "17.65"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "283"
     },
     {
         "flight": "EOSS-305",
@@ -377,7 +966,19 @@
             "KC0D-1",
             "K0SCC-14"
         ],
-        "day": "2020-11-07"
+        "day": "2020-11-07",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.86",
+            "eoss": "3.21",
+            "parachute": "1.15",
+            "neckload": "12.22",
+            "balloon": "3.31",
+            "gross": "15.52",
+            "necklift": "16.57"
+        },
+        "liftfactor": "1.28",
+        "h2fill": "268"
     },
     {
         "flight": "EOSS-304",
@@ -385,7 +986,19 @@
             "KC0D-14",
             "AE0SS-13"
         ],
-        "day": "2020-11-07"
+        "day": "2020-11-07",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "8.63",
+            "eoss": "2.69",
+            "parachute": "1.72",
+            "neckload": "13.04",
+            "balloon": "3.31",
+            "gross": "16.35",
+            "necklift": "17.13"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "276"
     },
     {
         "flight": "EOSS-303",
@@ -394,7 +1007,19 @@
             "KC0D-3",
             "K0SCC-14"
         ],
-        "day": "2020-11-01"
+        "day": "2020-11-01",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "16.09",
+            "eoss": "5.27",
+            "parachute": "1.72",
+            "neckload": "23.08",
+            "balloon": "6.61",
+            "gross": "29.69",
+            "necklift": "28.721"
+        },
+        "liftfactor": "1.19",
+        "h2fill": "477"
     },
     {
         "flight": "EOSS-302",
@@ -402,7 +1027,19 @@
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2020-10-03"
+        "day": "2020-10-03",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "5.14",
+            "eoss": "5.30",
+            "parachute": "1.39",
+            "neckload": "11.83",
+            "balloon": "6.61",
+            "gross": "18.45",
+            "necklift": "17.37"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "324"
     },
     {
         "flight": "EOSS-301",
@@ -413,7 +1050,19 @@
             "AE0SS-12",
             "K0SCC-14"
         ],
-        "day": "2020-08-01"
+        "day": "2020-08-01",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "17.64",
+            "eoss": "5.02",
+            "parachute": "1.63",
+            "neckload": "24.28",
+            "balloon": "6.61",
+            "gross": "30.90",
+            "necklift": "28.92"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "480"
     },
     {
         "flight": "EOSS-300",
@@ -423,7 +1072,19 @@
             "KC0D-2",
             "AE0SS-13"
         ],
-        "day": "2020-07-11"
+        "day": "2020-07-11",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "0.12",
+            "eoss": "6.66",
+            "parachute": "1.63",
+            "neckload": "8.41",
+            "balloon": "3.31",
+            "gross": "11.72",
+            "necklift": "11.34"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "198"
     },
     {
         "flight": "EOSS-299",
@@ -431,7 +1092,19 @@
             "KC0D-12",
             "AE0SS-12"
         ],
-        "day": "2020-05-30"
+        "day": "2020-05-30",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.34",
+            "eoss": "2.76",
+            "parachute": "2.40",
+            "neckload": "20.49",
+            "balloon": "6.61",
+            "gross": "27.11",
+            "necklift": "25.37"
+        },
+        "liftfactor": "1.18",
+        "h2fill": "432"
     },
     {
         "flight": "EOSS-298",
@@ -439,7 +1112,19 @@
             "KC0D-14",
             "AE0SS-12"
         ],
-        "day": "2020-03-15"
+        "day": "2020-03-15",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "4.13",
+            "eoss": "3.53",
+            "parachute": "1.24",
+            "neckload": "8.90",
+            "balloon": "3.31",
+            "gross": "12.20",
+            "necklift": "11.95"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "206"
     },
     {
         "flight": "EOSS-297",
@@ -447,7 +1132,19 @@
             "KC0D-2",
             "K0SCC-14"
         ],
-        "day": "2020-03-15"
+        "day": "2020-03-15",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.78",
+            "eoss": "2.56",
+            "parachute": "1.48",
+            "neckload": "10.81",
+            "balloon": "3.31",
+            "gross": "14.12",
+            "necklift": "14.34"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "238"
     },
     {
         "flight": "EOSS-296",
@@ -455,7 +1152,19 @@
             "KC0D-2",
             "AE0SS-12"
         ],
-        "day": "2019-11-09"
+        "day": "2019-11-09",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "10.06",
+            "eoss": "4.60",
+            "parachute": "1.15",
+            "neckload": "15.80",
+            "balloon": "6.61",
+            "gross": "22.42",
+            "necklift": "19.17"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "348"
     },
     {
         "flight": "EOSS-295",
@@ -463,7 +1172,19 @@
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2019-11-09"
+        "day": "2019-11-09",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "17.39",
+            "eoss": "3.13",
+            "parachute": "1.15",
+            "neckload": "21.67",
+            "balloon": "6.61",
+            "gross": "28.28",
+            "necklift": "25.91"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "439"
     },
     {
         "flight": "EOSS-294",
@@ -471,7 +1192,19 @@
             "KC0D-2",
             "AE0SS-12"
         ],
-        "day": "2019-11-02"
+        "day": "2019-11-02",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "15.42",
+            "eoss": "4.54",
+            "parachute": "1.15",
+            "neckload": "21.10",
+            "balloon": "6.61",
+            "gross": "27.71",
+            "necklift": "25.26"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "431"
     },
     {
         "flight": "EOSS-293",
@@ -479,7 +1212,19 @@
             "KC0D-1",
             "AE0SS-13"
         ],
-        "day": "2019-10-12"
+        "day": "2019-10-12",
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "7.02",
+            "eoss": "4.09",
+            "parachute": "1.72",
+            "neckload": "12.83",
+            "balloon": "3.31",
+            "gross": "16.14",
+            "necklift": "16.87"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "273"
     },
     {
         "flight": "EOSS-292",
@@ -488,7 +1233,19 @@
             "AE0SS-12",
             "AE0SS-13"
         ],
-        "day": "2019-07-27"
+        "day": "2019-07-27",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "8.27",
+            "eoss": "4.71",
+            "parachute": "1.15",
+            "neckload": "14.12",
+            "balloon": "6.61",
+            "gross": "20.73",
+            "necklift": "17.23"
+        },
+        "liftfactor": "1.15",
+        "h2fill": "322"
     },
     {
         "flight": "EOSS-291",
@@ -496,9 +1253,18 @@
             "KC0D-1",
             "AE0SS-12"
         ],
-        "day": "2019-07-13"
+        "day": "2019-07-13",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "11.90",
+            "eoss": "3.71",
+            "parachute": "1.15",
+            "neckload": "16.77",
+            "balloon": "6.61",
+            "gross": "23.38",
+            "necklift": "20.74"
+        },
+        "liftfactor": "1.17",
+        "h2fill": "370"
     }
 ]
-
-
-   

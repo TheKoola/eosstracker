@@ -96,7 +96,7 @@
             $endtime = $datarow["day"] . " 23:59:59";
             $callsign_list = "{" . implode(", ", $datarow["beacons"]) . "}";
             $flightname = $datarow["flight"];
-            $flightid = strtolower(str_replace("-", "", $flightname));
+            $flightid = str_replace("EOSS-", "", $flightname);
 
             $result = pg_query_params($link, $query, array($starttime, $endtime, $callsign_list))
                 or die(pg_last_error());
@@ -124,35 +124,8 @@
     # main code
     ####################################################
 
-    // where we hold our results
-    $js = [];
-
-    try {
-
-        // create a new memcache object and connect to the backend daemon
-        $memcache = new Memcache;
-        $connectionresult = $memcache->connect('localhost', 11211);
-        if (!$connectionresult)
-            throw new Exception("memcache fail");
-
-        // attempt to get the process_status key from memcache
-        $getresult = $memcache->get('analysispackets');
-
-        // If the key was found in memcache, then we'll just use that.
-        if ($getresult) {
-            $js = json_decode($getresult);
-        }
-        else {
-            // cache miss.  Now get the status of the backend processes
-            $js = getAnalysisPackets();
-
-            // now add this to memcache with a TTL of 3600 seconds (i.e. 1 hour)
-            $memcache->set('analysispackets', json_encode($js), false, 3600);
-        }
-    } catch (Exception $e) {
-        // Connect to the backend and run the python script to determine process status
-        $js = getAnalysisPackets();
-    }
+    // get the analysis packets
+    $js = getAnalysisPackets();
 
     // print out results
     printf("%s", json_encode($js));
