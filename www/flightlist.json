@@ -414,7 +414,7 @@
             "client": "8.53",
             "eoss": "3.17",
             "parachute": "1.46",
-            "neckload": "13.16",
+            "neckload": "13.16]",
             "balloon": "3.31",
             "gross": "16.46",
             "necklift": "18.101"
@@ -834,7 +834,18 @@
             "AE0SS-12"
         ],
         "day": "2021-08-01",
-        "balloonsize": "1500gm"
+        "balloonsize": "1500gm",
+        "weights": {
+            "client": "6.97",
+            "eoss": "3.24",
+            "parachute": "1.15",
+            "neckload": "11.35",
+            "balloon": "3.31",
+            "gross": "14.66",
+            "necklift": "15.75"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "258"
     },
     {
         "flight": "EOSS-311",
