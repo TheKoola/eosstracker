@@ -155,7 +155,7 @@ class databaseWriter(object):
 
                     except (Empty, ValueError) as e:
 
-                        self.logger.debug(f"Packetqueue was empty: {e}")
+                        #self.logger.debug(f"Packetqueue was empty: {e}")
 
                         # if the queue was empty, then wait for a second before retrying
                         self.stopevent.wait(1)
@@ -214,7 +214,7 @@ class databaseWriter(object):
     def setDBConnection(self, dbstring = None):
         # Set the database connection 
         if dbstring:
-            self.logger.debug(f"Setting databse connection string to: {dbstring}")
+            self.logger.debug(f"Setting database connection string to: {dbstring}")
             self.dbstring = dbstring
 
 
@@ -600,7 +600,7 @@ def runDatabaseWriter(config):
 
         # Create a new database writer object
         logger.info("Starting databasewriter process.")
-        k = databaseWriter(timezone = config["timezone"], stopevent = config["stopevent"], packetqueue = config["databasequeue"])
+        k = databaseWriter(timezone = config["timezone"], stopevent = config["stopevent"], packetqueue = config["databasequeue"], loggingqueue = config["loggingqueue"])
 
         logger.debug(f"databasewriter: {k}")
         logger.debug("Running databaseWriter.run()...")
