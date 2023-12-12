@@ -750,8 +750,8 @@
     {
         "flight": "EOSS-316",
         "beacons": [
-            "KC0D-3",
-            "AE0SS-12"
+            "KC0D-14",
+            "AE0SS-13"
         ],
         "day": "2021-10-10",
         "balloonsize": "3000gm",
@@ -770,8 +770,8 @@
     {
         "flight": "EOSS-315",
         "beacons": [
-            "KC0D-14",
-            "AE0SS-13"
+            "KC0D-3",
+            "AE0SS-12"
         ],
         "day": "2021-10-10",
         "balloonsize": "1500gm",
