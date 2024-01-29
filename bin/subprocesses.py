@@ -348,7 +348,10 @@ class SubProcess:
                 self.logger.info(f"{self.name}: sub-process has finished")
                 self.logger.debug(f"{self.name}: sub-process has finished with retcode: {self.p.returncode}.")
 
-        return self.p.returncode
+        if self.p:
+            return self.p.returncode
+        else: 
+            return None
 
 
     ##################################################
