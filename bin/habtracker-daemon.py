@@ -975,7 +975,7 @@ def main():
                         logger.info(f"Waiting on GPS fix ({trycount=}): {seconds}s")
 
                     # check the trycount.  If it's really large, then we abort running.
-                    if trycount > 5:
+                    if trycount > 30:
                         logger.error("Unable to acquire GPS position fix, aborting")
                         raise GracefulExit
 
