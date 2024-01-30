@@ -240,6 +240,7 @@ def readConfiguration(configfile, options):
             "igating" : "false", 
             "beaconing" : "false", 
             "passcode" : "", 
+            "gpshost": "",
             "fastspeed" : "45", 
             "fastrate" : "01:00", 
             "slowspeed" : "5", 
@@ -577,28 +578,30 @@ def endProcesses(processes = None)->bool:
 
     # loop through each process in the list
     for p in processes:
-        logger.info(f"Waiting for [{p.pid}] {p.name} to end...")
 
         # Join the process, waiting for it to end, but only wait a few seconds
-        p.join(10)
+        if p.is_alive():
+            logger.info(f"Waiting for [{p.pid}] {p.name} to end...")
+            p.join(10)
 
-        # check if the process is still alive.  If so, then we need to attempt to terminate it (maybe its hung?)
-        if p.exitcode == None:
-            logger.info(f"Terminating process, [{p.pid}] {p.name}...")
-            p.terminate()
+            # check if the process is still alive.  If so, then we need to attempt to terminate it (maybe its hung?)
+            if p.exitcode == None:
+                logger.info(f"Terminating process, [{p.pid}] {p.name}...")
+                p.terminate()
 
 
     # Loop through the processes once more, if anything is still running then we need to SIGKILL it
     for p in processes:
 
         # wait a few seconds for the process to end.
-        p.join(5)
+        if p.is_alive():
+            p.join(5)
 
-        # if the process still hasn't terminated, then we SIGKILL it
-        if p.exitcode == None:
+            # if the process still hasn't terminated, then we SIGKILL it
+            if p.exitcode == None:
 
-            logger.info(f"Sending SIGKILL to process, [{p.pid}] {p.name}...")
-            p.kill()
+                logger.info(f"Sending SIGKILL to process, [{p.pid}] {p.name}...")
+                p.kill()
 
     return True
 
@@ -768,6 +771,44 @@ def buildFreqMap(config):
 
         return direwolfstatus
 
+##################################################
+# Determine if the GPS Poller process has acquired a position fix.  
+##################################################
+def getPosition(configuration)->dict:
+
+    # default position object
+    gpsposition = {
+            "altitude" : 0.0,
+            "latitude" : 0.0,
+            "longitude" : 0.0,
+            "bearing" : 0.0,
+            "speed_mph" : 0.0,
+            "isvalid" : False
+            }
+
+    # This retreives the latest GPS data (assuing GPS Poller process is running)
+    g = configuration["position"]
+
+    if "gpsdata" in g:
+        position = g["gpsdata"]
+
+        if "mode"  in position:
+            mode = int(position["mode"])
+
+            if mode == 3:
+                gpsposition["altitude"] = float(position["altitude"])
+                gpsposition["latitude"] = float(position["lat"])
+                gpsposition["longitude"] = float(position["lon"])
+                gpsposition["bearing"] = float(position["bearing"])
+                gpsposition["speed_mph"] = float(position["speed_mph"])
+                gpsposition["isvalid"] = True
+
+                # sanity check
+                if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
+                    gpsposition["isvalid"] = False
+
+    return gpsposition
+
 
 ##################################################
 # main function
@@ -903,10 +944,47 @@ def main():
         # Create all of the sub-processes
         processes = createProcesses(configuration)
 
-        # Loop through each process starting it
+        # finds the GPS process, start it first, then wait until it obtains a position fix before starting everything else.
+        gpsproc = None
         for p in processes:
-            logger.info(f"Starting process for {p.name}")
-            p.start()
+            if p.name == "GPS Position Tracker":
+
+                # Start the GPS Poller process
+                p.start()
+
+                # Loop initialization params
+                fixacquired = False
+                trycount = 0
+
+                # Loop until we get a GPS fix, or the trycount becomes too large (in which case we eject)
+                while not fixacquired:
+                    gpsposition = getPosition(configuration)
+
+                    if gpsposition["isvalid"]:
+                        fixacquired = True
+                        logger.info(f"GPS 3D fix acquired: {gpsposition['latitude']}, {gpsposition['longitude']}")
+                    else:
+
+                        # we're still waiting on the GPS to obtain a fix so we wait this long
+                        seconds = round((1.2) ** trycount) if trycount < 22 else (1.2) ** 22
+                        stopevent.wait(seconds)
+
+                        # increment our try counter
+                        trycount += 1
+
+                        logger.info(f"Waiting on GPS fix ({trycount=}): {seconds}s")
+
+                    # check the trycount.  If it's really large, then we abort running.
+                    if trycount > 5:
+                        logger.error("Unable to acquire GPS position fix, aborting")
+                        raise GracefulExit
+
+
+        # Loop through each process starting it (unless it's already been started)
+        for p in processes:
+            if not p.is_alive():
+                logger.info(f"Starting process for {p.name}")
+                p.start()
 
         # Save the operating mode and status to a JSON file
         jsonStatusFile = "/eosstracker/www/daemonstatus.json"

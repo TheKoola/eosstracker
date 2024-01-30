@@ -72,6 +72,10 @@ class GPSPoller(object):
     # the logging queue
     loggingqueue: mp.Queue = None
 
+    # The hostname of where the GPSD instance lives
+    # by default this is set to blank or the localhost.
+    gpshost: str = "localhost"
+
     #####################################
     # the post init constructor
     #####################################
@@ -90,6 +94,14 @@ class GPSPoller(object):
             self.logger.addHandler(handler)
 
 
+        # Set the gpshost value to all lower case
+        self.gpshost = self.gpshost.lower()
+
+        # gpshost value supplied is set localhost if blank or "local"
+        if self.gpshost == "" or self.gpshost == "local":
+            self.gpshost = "localhost"
+
+
     ################################
     # destructor
     def __del__(self):
@@ -105,6 +117,7 @@ class GPSPoller(object):
             # Our GPS stats object
             gpsstats = { "utc_time" : "n/a", 
                          "mode" : "0", 
+                         "host" : self.gpshost,
                          "status" : "no device", 
                          "devicepath" : "",
                          "lat" : "n/a", 
@@ -207,17 +220,29 @@ class GPSPoller(object):
         # Current system datetime                
         datetime_record = datetime.datetime.utcnow().isoformat() + 'Z'
 
+        # GPSD object
+        gpsd = None
+
         # Primary loop for handling GPS polling.
         while not self.stopevent.is_set():
 
             # Connect to the GPSD daemon
-            gpsd = gps(mode=WATCH_ENABLE)
+            try:
+                self.logger.info(f"Attempting to connect to GPSD running on {self.gpshost}")
+                gpsd = gps(mode=WATCH_ENABLE, host = self.gpshost)
+
+            except Exception as error:
+                self.logger.error(f"Unable to connect to GPSD on {self.gpshost}:  {error}")
+                
+                # Wait for a few seconds, then continue
+                self.stopevent.wait(5)
+                continue
 
             # Connect to PostgreSQL
             dbconnect_trycount = 0
             while not self.connectToDatabase() and not self.stopevent.is_set() and dbconnect_trycount < self.connectionRetryLimit :
                 dbconnect_trycount += 1
-                e.wait(5)
+                self.stopevent.wait(5)
 
             # If we're over the connection retry limit, then break out of this loop as we're unable to connect to the database
             if dbconnect_trycount >= self.connectionRetryLimit:
@@ -239,10 +264,12 @@ class GPSPoller(object):
                 # Get latest status from GPSD
                 try: 
                     report = next(gpsd)
+
                 except Exception as error:
 
                     # Set this to false so the inner loop will end
                     gpsDeviceFound = False
+                    self.logger.info(f"Unable to connect to GPSD running on {self.gpshost}")
 
                 # Current system datetime                
                 utc_datetime = datetime.datetime.utcnow()
@@ -279,6 +306,7 @@ class GPSPoller(object):
                 if gpsDeviceFound == False:
                     gpsstats = { "utc_time" : str(datetime_record),
                                  "mode" : str(report["mode"] if "mode" in report else "0"),
+                                 "host" : self.gpshost,
                                  "status" : "no device",
                                  "devicepath" : "n/a",
                                  "lat" : "n/a",
@@ -300,31 +328,34 @@ class GPSPoller(object):
             #########
 
 
+             
+            if gpsDeviceFound:
+                # A GPS device has been activated...update the GPS JSON status file
+                gpsstats = { "utc_time" : str(datetime_record),
+                             "mode" : str(report["mode"] if "mode" in report else "0"),
+                             "host" : self.gpshost,
+                             "status" : "waiting on device",
+                             "devicepath" : str(gpspath),
+                             "lat" : "n/a",
+                             "lon" : "n/a",
+                             "satellites" : [],
+                             "bearing" : "n/a", 
+                             "speed_mph" : "n/a",
+                             "altitude" : "n/a"
+                               }
 
-            # A GPS device has been activated...update the GPS JSON status file
-            gpsstats = { "utc_time" : str(datetime_record),
-                         "mode" : str(report["mode"] if "mode" in report else "0"),
-                         "status" : "waiting on device",
-                         "devicepath" : str(gpspath),
-                         "lat" : "n/a",
-                         "lon" : "n/a",
-                         "satellites" : [],
-                         "bearing" : "n/a", 
-                         "speed_mph" : "n/a",
-                         "altitude" : "n/a"
-                           }
+                self.logger.debug("GPS activated: {}".format(gpsstats))
+                self.logger.info(f"Connection to GPS on {self.gpshost} established ({str(gpspath)})")
 
-            self.logger.debug("GPS activated: {}".format(gpsstats))
+                # Save the status of the GPS(s) to the status file
+                self._saveGPSStatus(gpsstats)
+                self.updatePosition(gpsstats)
 
-            # Save the status of the GPS(s) to the status file
-            self._saveGPSStatus(gpsstats)
-            self.updatePosition(gpsstats)
-
-            # Loop initialization params...
-            prevlat = 0
-            prevlon = 0
-            timeprev = ""
-            last_insert_time = datetime.datetime.utcnow()
+                # Loop initialization params...
+                prevlat = 0
+                prevlon = 0
+                timeprev = ""
+                last_insert_time = datetime.datetime.utcnow()
 
             ##########
             # Position reporting loop...
@@ -445,6 +476,7 @@ class GPSPoller(object):
                         # Our GPS stats object
                         gpsstats = { "utc_time" : str(datetime_record),
                                      "mode" : str(gpsd.fix.mode),
+                                     "host" : self.gpshost,
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
                                      "lat" : str(round(gpsd.fix.latitude, 6)),
@@ -482,6 +514,7 @@ class GPSPoller(object):
                         # Our GPS stats object
                         gpsstats = { "utc_time" : str(datetime_record),
                                      "mode" : str(gpsd.fix.mode),
+                                     "host" : self.gpshost,
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
                                      "lat" : str(round(gpsd.fix.latitude, 6)),
@@ -503,6 +536,7 @@ class GPSPoller(object):
                         # Our GPS stats object
                         gpsstats = { "utc_time" : str(datetime_record),
                                  "mode" : str(gpsd.fix.mode if gpsd.fix.mode else "0"),
+                                 "host" : self.gpshost,
                                  "status" : "acquiring fix",
                                  "devicepath" : str(gpspath),
                                  "lat" : "n/a",
@@ -547,6 +581,7 @@ class GPSPoller(object):
         # Our GPS stats object
         gpsstats = { "utc_time" : "n/a", 
                      "mode" : "0", 
+                     "host" : self.gpshost,
                      "status" : "no device", 
                      "devicepath" : "",
                      "lat" : "n/a", 
@@ -582,7 +617,7 @@ def runGPSPoller(config):
 
         # Create a new GPSPoller object
         logger.info("Starting GPS poller process.")
-        g = GPSPoller(stopevent = config["stopevent"], position = config["position"], loggingqueue = config["loggingqueue"])
+        g = GPSPoller(stopevent = config["stopevent"], position = config["position"], loggingqueue = config["loggingqueue"], gpshost = config["gpshost"])
 
         # Start the poller
         g.run()
@@ -591,9 +626,6 @@ def runGPSPoller(config):
         logger.debug(f"runGPSPoller caught keyboardinterrupt")
         config["stopevent"].set()
         g.close()
-    finally:
-        logger.info("GPSPoller ended")
-
 
 if __name__ == "__main__":
     runGPSPoller(mp.Event())

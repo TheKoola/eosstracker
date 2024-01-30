@@ -59,6 +59,7 @@
     $ray["ibeacon"] = "false";
     $ray["airdensity"] = "false";
     $ray["mobilestation"] = "true";
+    $ray["gpshost"] = "";
     $fallbackJSON = json_encode($ray);
 
 

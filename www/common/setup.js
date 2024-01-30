@@ -948,27 +948,22 @@
     *
     * This function will get the list of timezones from the backend database.
     ***********/
-    function getTimeZones() {
-	$.get("readconfiguration.php", function(data) {
-	    var mytzJson = JSON.parse(data);
-	    var mytz = mytzJson.timezone;
+    function getTimeZones(currentTZ) {
+        $.get("gettimezones.php", function(data) {
+            var tzJson = JSON.parse(data);
+            var t;
+    
+            // blank out the timezone field
+            document.getElementById("settimezone").innerHTML = "";
 
-	    //document.getElementById("errors2").innerHTML = "New TZ:  " + mytz + ",  id: " + mytzJson.sessionid;
-            $.get("gettimezones.php", function(data) {
-                var tzJson = JSON.parse(data);
-                var t;
-		
-                // blank out the list of flightids for the prediction form
-                $("#settimezone").html("");
-
-                for (t in tzJson) {
-		    if (mytz == tzJson[t].timezone)
-                        $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).prop("selected", true).html(tzJson[t].timezone));
-		    else
-                        $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).html(tzJson[t].timezone));
-                }
-	    });
-	});
+            // Now loop through each timezone adding it as a selectable option in the dropdown.
+            for (t in tzJson) {
+                if (currentTZ == tzJson[t].timezone)
+                    $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).prop("selected", true).html(tzJson[t].timezone));
+                else
+                    $("#settimezone").append($("<option></option>").val(tzJson[t].timezone).html(tzJson[t].timezone));
+            }
+        });
     }
 
     /***********
@@ -1485,7 +1480,6 @@
             var serialport = document.getElementById("serialport");
             var serialproto = document.getElementById("serialproto");
 
-
             document.getElementById("callsign").value = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);	    
             $("#ssid").val(jsonData.ssid);
             //ssid.selectedIndex = (typeof(jsonData.ssid) == "undefined" ? 9 : jsonData.ssid -1 );	    
@@ -1504,6 +1498,7 @@
             document.getElementById("mobilestation").checked = (typeof(jsonData.mobilestation) == "undefined" ? false : (jsonData.mobilestation == "true" ? true : false));
             document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
             document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
+            document.getElementById("gpshost").value = (typeof(jsonData.gpshost) == "undefined" ? "" : jsonData.gpshost);	    
             var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
             $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
 
@@ -1520,6 +1515,10 @@
                 document.getElementById("filter_lon").value = lon;
                 document.getElementById("filter_radius").value = rad;
             }
+
+            // Update the timezones dropdown
+            var currentTZ = (typeof(jsonData.timezone) == "undefined" ? "America/Denver" : jsonData.timezone);
+            getTimeZones(currentTZ);
 
             // Update the aprs symbols dropdown box
             var sym;
@@ -1669,6 +1668,8 @@
         var filter_lat = document.getElementById("filter_lat");
         var filter_lon = document.getElementById("filter_lon");
         var filter_radius = document.getElementById("filter_radius");
+	    var gpshost = document.getElementById("gpshost");
+        var timezone = document.getElementById("settimezone");
 
 	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
@@ -1766,9 +1767,14 @@
 
         form_data.append("callsign", callsign.value.toUpperCase());
         form_data.append("ssid", ssid.options[ssid.selectedIndex].value);
-        form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+
+        if (audiodev.selectedIndex in audiodev.options) {
+            form_data.append("audiodev", audiodev.options[audiodev.selectedIndex].value);
+        }
         form_data.append("serialport", serialport.options[serialport.selectedIndex].value);
         form_data.append("serialproto", serialproto.options[serialproto.selectedIndex].value);
+        form_data.append("gpshost", gpshost.value);
+        form_data.append("timezone", timezone.options[timezone.selectedIndex].value); 
         $.ajax({
             url: "setconfiguration.php",
             dataType: 'json',
@@ -2056,6 +2062,5 @@
         getPredictions();
         getLaunchSites();
         getFrequencies();
-	    getTimeZones();
 	    getConfiguration();
     }

@@ -661,7 +661,11 @@ class Direwolf(SubProcess):
                     f.write("IGLOGIN " + randomcallsign + " " + str(password) + "\n\n")
 
                 # We're assuming that there's a GPS attached to this system
-                f.write("GPSD\n\n")
+                if "gpshost" in self.configuration:
+                    if self.configuration["gpshost"] == "localhost" or self.configuration["gpshost"] == "local" or self.configuration["gpshost"] == "":
+                        f.write("GPSD\n\n")
+                    else:
+                        f.write(f"GPSD {self.configuration['gpshost']}\n\n")
 
                 # The rest of the direwolf configuration
                 f.write("AGWPORT 8000\n")

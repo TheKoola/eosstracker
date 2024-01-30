@@ -10,6 +10,7 @@
     "fastrate": "01:00",
     "fastspeed": "45",
     "fastturn": "20",
+    "gpshost": "",
     "ibeacon": "false",
     "ibeaconrate": "15:00",
     "iconsize": "24",
