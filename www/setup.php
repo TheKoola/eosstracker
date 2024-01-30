@@ -521,39 +521,19 @@ include $documentroot . '/common/header.php';
             <div id="configurationSelection" style="display: none;">
             <p class="normal-italic">
                 Use this section to set configuration parameters for the HAB Tracker system.  These settings are system-wide and are not configurable on a per user basis.
-            </p>
-            <p class="header" style="font-size: 1.2em;"> 
-                <img class="bluesquare" style="width: 8px; margin: 0px; padding: 7px; padding-right: 15px;"  src="/images/graphics/smallbluesquare.png">
-                Timezone
-            <p ><span id="settimezone_error"></span></p>
-            <p>
-                Changes to the timezone take effect immediately across all web screens, but do not impact the local computer system time.  The timezone setting is persistent across process restarts and computer reboots/power-cycles.
-                <form name="timezone_form" id="timezone_form">
-                <table class="packetlist" style="margin-left: 30px; margin-right: 30px; margin-top: 10px; width: auto;" cellpadding=0 cellspacing=0 border=0>
-		<tr><th class="packetlistheader">Configuration Item</th><th class="packetlistheader" style="text-align: center;">Value</th></tr>
-                <tr><td class="packetlist"><strong>Timezone</strong> used throughout the interface.</td>
-		    <td class="packetlist" style="white-space: nowrap; padding: 5px;">Timezone: <select form="timezone_form" id="settimezone" onchange="setTimeZone(this);"></select></td>
-                </tr>
-                </table>
-                </form>
-            </p>
-
-            <p class="header" style="font-size: 1.2em;"> 
-                <img class="bluesquare" style="width: 8px; margin: 0px; padding: 7px; padding-right: 15px;"  src="/images/graphics/smallbluesquare.png">
-                Transmitting and Igating 
-            </p>
-	    <p >
             These values are <font style="text-decoration: underline;">OPTIONAL</font> and not required for regular, read-only/receive-only operation.  A valid ham radio callsign is mandatory    if igating (ex. uploading of APRS packets to the Internet) or beaconing via APRS is desired (i.e. transmitting APRS packets over radio frequencies).
-            </p>
-	    <p >
-                Changes to settings require the system processes to be restarted (on the <a href="/" class="normal-link-black">Home page</a>) before taking effect.  Settings are persistent across process restarts and computer reboots/power-cycles.
+            Changes to settings require the system processes to be restarted (on the <a href="/" class="normal-link-black">Home page</a>) before taking effect.  Settings are persistent across process restarts and computer reboots/power-cycles.
             </p>
             <p><span id="configurationsettings_error"></span></p>
             <p style="margin-top: 20px; margin-bottom: 10px;">
                 <form name="configuration_form" id="configuration_form">
                 <table class="packetlist" style="margin-left: 30px; margin-right: 30px; width: 80%;" cellpadding=0 cellspacing=0 border=0>
 		<tr><th colspan=2 class="packetlistheader">Configuration Item</th><th class="packetlistheader" style="text-align: center;">Value</th></tr>
-		<tr><td colspan=2 class="packetlist"><strong>Callsign and SSID</strong>.  Enter your ham radio callsign and select an appropriate SSID.</td>
+        <tr><td class="packetlist-highlight2"  rowspan=1 style="padding-top: 20px; padding-bottom: 20px;">
+                <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Identity</div>
+            </td>
+
+            <td class="packetlist"><strong>Callsign and SSID</strong>.  Enter your ham radio callsign and select an appropriate SSID.</td>
 		    <td class="packetlist" style="text-align: center; white-space: nowrap;">Callsign: <input type="text" form="configuration_form" id="callsign" oninput="setCustomValidity('');" onchange="validateCallsign();" placeholder="callsign" style="text-transform: uppercase;"  pattern="[a-zA-Z]{1,2}[0-9]{1}[a-zA-Z]{1,3}" size="9" maxlength="6" name="callsign" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" >
                     &nbsp; SSID: 
                     <select id="ssid" name="ssid" form="configuration_form" onchange="validateCallsign();">
@@ -578,6 +558,38 @@ include $documentroot . '/common/header.php';
                 </tr> 
 
 
+		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">Timezone</td></tr>
+        <tr> <td class="packetlist-highlight2"  rowspan=1 style="padding-top: 20px; padding-bottom: 20px;">
+                 <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">Timezone</div>
+             </td>
+
+             <td class="packetlist">
+                 <strong>Timezone</strong> used throughout the interface.  Changes to the timezone take effect immediately across all web screens, but do not impact the local computer system time.  This timezone setting is persistent across process restarts and computer reboots/power-cycles.
+             </td>
+
+             <td class="packetlist"  style="text-align: right;">Timezone: 
+                 <select form="configuration_form" id="settimezone"></select>
+             </td>
+        </tr> 
+
+
+		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">Global Positioning System (GPS)</td></tr>
+        <tr> <td class="packetlist-highlight2"  rowspan=1 style="padding-top: 20px; padding-bottom: 20px;">
+                 <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">GPS</div>
+             </td>
+
+             <td class="packetlist">
+                 <strong>GPS</strong> is used to determine the location and altitude of this system.  For a locally attached GPS device (ex. serial or USB connection) leave this blank or "localhost".  To 
+                     leverage the GPS connected to another system enter the IP address or hostname of that system here.  This assumes the "other" system is running GPSD and is accessible on the same
+                     network as this system.
+             </td>
+
+             <td class="packetlist"  style="text-align: right;">GPSD Host: 
+                 <input form="configuration_form" id="gpshost" style="text-align: center;" size="16" maxlength="64" name="gpshost" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off" placeholder="localhost">
+             </td>
+        </tr> 
+
+
 		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">APRS-IS Internet Uplink</td></tr>
         <tr> <td class="packetlist-highlight2"  rowspan=1>
              <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">APRS-IS</div></td>
@@ -588,6 +600,7 @@ include $documentroot . '/common/header.php';
                     Radius (km): <input type="number"  form="configuration_form" style="text-align: right;" size="6" name="filter_radius" id="filter_radius" autocomplete="off" autocapitalize="off" spellcheck="false" autocorrect="off"  placeholder="radius" max="5000" min="100" step="50">
              </td>
         </tr> 
+
 
 		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">Igating to the Internet</td></tr>
 		<tr>

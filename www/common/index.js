@@ -145,6 +145,10 @@ function getrecentdata() {
           //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
           if (procs >= keys.length - 1)
               processInTransition = 0;
+
+          else if (procs <= 1 && statusJson.active == 0)
+              // we must have tried to start, but hit a failure and now nothing is running.
+              processInTransition = 0;
           $("#direwolferror").html("");
           return;
       }
@@ -277,6 +281,7 @@ function getgps() {
         theDate = theDate.replace(/T/g, " "); 
         theDate = theDate.replace(/.[0-9]*Z$/g, ""); 
         var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
+            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Host:</td><td><strong>" + jsonData.host + "</strong></td></tr>"
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
