@@ -58,7 +58,7 @@ include $documentroot . '/common/header.php';
                 <p style="margin: 10px; margin-left: 5px; ">
                     <button type="button" value="Start" class="graybutton" name="Start" id="startbutton" onclick="startUpProcesses();">Start</button> 
                     &nbsp; 
-                    <button type="button" value="Stop" name="Shutdown" id="stopbutton" class="graybutton"  onclick="shutDownProcesses();">Stop</button>
+                    <button type="button" value="Stop" name="Shutdown" id="stopbutton" class="graybutton"  onclick="shutDownProcesses();">Stop/Abort</button>
                 </p>
             </div>
         </div>

@@ -104,14 +104,15 @@ function startUpProcesses() {
 * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
 ***********/
 function shutDownProcesses() {
-    if (processInTransition == 0 && numProcessesRunning > 1) {
-        processInTransition = 2;
+    //if (processInTransition == 0 && numProcessesRunning > 1) {
+        //processInTransition = 2;
         var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
         $("#antenna-data").html(stoppinghtml);
         $.get("shutdown.php", function(data) {
+            processInTransition = 2;
             getrecentdata();
         });
-    }
+    //}
 
     return false;
 }
@@ -140,7 +141,7 @@ function getrecentdata() {
       numProcessesRunning = procs;
 
       // find out what state we're in...
-      var donehtml = "<p><mark class=\"marginal\">Not running...</mark></p>";
+      var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
       if (processInTransition == 1) {    // we're starting up...
           //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
           if (procs >= keys.length - 1)
