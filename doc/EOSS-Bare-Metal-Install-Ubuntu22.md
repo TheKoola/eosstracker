@@ -26,7 +26,7 @@ Last update:  1/31/2024
 15. [Network Time](#time)
 
 ### Maps
-16. [Downloading Map Tiles File](#tiles)
+16. [Downloading a Map Tiles (mbtiles) File](#tiles)
 
 # Basic System Functionality
 <a name="installos"></a>
@@ -868,7 +868,7 @@ sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
 ```
 
 <a name="tiles"></a>
-## Dewnloading Mbtiles File
+## Downloading a Map Tiles (mbtiles) File
 
 Finally, download the most recent mbtiles file from the EOSS Kiosk system.  A mbtiles file, is one where the individidual map tiles for a given geographic region have been compressed into a single file, making it easier for portability, etc..  The downside to this, however, is that file sizes can be much larger, in this case, approximately 32GB in size.  Therefore it is highly recommended to perform this step with your system having access to a high-speed Internet connection to prevent download times becoming excessive.
 
