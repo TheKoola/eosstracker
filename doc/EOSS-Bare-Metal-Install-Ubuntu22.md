@@ -1,6 +1,6 @@
 # EOSS Brick Build Notes - Ubuntu 22
 
-Last update:  04/12/2023
+Last update:  1/31/2024
 
 ## High Level Steps
 
@@ -26,7 +26,7 @@ Last update:  04/12/2023
 15. [Network Time](#time)
 
 ### Maps
-16. [Creating an OpenStreetMap Server](#osm)
+16. [Downloading Map Tiles File](#tiles)
 
 # Basic System Functionality
 <a name="installos"></a>
@@ -267,7 +267,7 @@ cd /tmp
 git clone https://www.github.com/thekoola/eosstracker
 cd /tmp/eosstracker
 git pull
-git checkout brickv2
+git checkout brickv2.1
 ```
 
 ### Install packages
@@ -867,7 +867,15 @@ sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
 sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
 ```
 
-<a name="osm"></a>
-## Open Street Map Configuration
+<a name="tiles"></a>
+## Dewnloading Mbtiles File
 
-Now create an Open Street Map server by following the steps on [switch2osm](https://www.switch2osm.org/) for Ubuntu 22.04.
+Finally, download the most recent mbtiles file from the EOSS Kiosk system.  A mbtiles file, is one where the individidual map tiles for a given geographic region have been compressed into a single file, making it easier for portability, etc..  The downside to this, however, is that file sizes can be much larger, in this case, approximately 32GB in size.  Therefore it is highly recommended to perform this step with your system having access to a high-speed Internet connection to prevent download times becoming excessive.
+
+To download the most recent mbtiles file from the EOSS Kiosk run these commands:
+```
+/eosstracker/sbin/getlatestmap.bash
+```
+
+
+
