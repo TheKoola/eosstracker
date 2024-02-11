@@ -22,9 +22,9 @@
 *
  */
 
-var numProcessesRunning = 0;
 var processInTransition = 0;
 var interval;
+var isRunning = 0;
 
 /***********
 * escapeHtml
@@ -85,10 +85,10 @@ function getConfiguration() {
 * This function will submit a request to the backend web system to start the various daemons for the system.
 ***********/
 function startUpProcesses() {
-    if (processInTransition == 0 && numProcessesRunning < 2) {
+    if (processInTransition == 0 && isRunning == 0) {
         processInTransition = 1;
         var startinghtml = "<p><mark class=\"marginal\">Starting...</mark></p>";
-        $("#antenna-data").html(startinghtml);
+        document.getElementById("antenna-data").innerHTML = startinghtml;
         $.get("startup.php", function(data) { 
             getrecentdata(); 
         });
@@ -104,15 +104,12 @@ function startUpProcesses() {
 * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
 ***********/
 function shutDownProcesses() {
-    //if (processInTransition == 0 && numProcessesRunning > 1) {
-        //processInTransition = 2;
-        var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
-        $("#antenna-data").html(stoppinghtml);
-        $.get("shutdown.php", function(data) {
-            processInTransition = 2;
-            getrecentdata();
-        });
-    //}
+    var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
+    document.getElementById("antenna-data").innerHTML = stoppinghtml;
+    $.get("shutdown.php", function(data) {
+        processInTransition = 2;
+        getrecentdata();
+    });
 
     return false;
 }
@@ -130,102 +127,218 @@ function getrecentdata() {
       var antennas = statusJson.antennas
       var i = 0;
       var procs = 0;
+      var procstatus = {
+          "direwolf" : false,
+          "gpsd" : false,
+          "aprsc" : false,
+          "backend" : false
+      };
 
-   /* Loop through the processes and update their status */
-  for (i = 0; i < keys.length; i++) {
-      document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-          (statusJson.processes[i].status > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+      // is the backend active?
+      var isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
+
+      // is the backend beaconing?
+      var isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
+
+      // are we igating?
+      var isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
+
+      // is the backend connected to an SDR dongle?
+      var isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
+
+      // should we be expecting gpsd to be running?  Is the gpshost set to the local system?
+      var gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
+      var expectGPSD = (gpsHost == "" || gpsHost == "local" || gpsHost == "localhost" || gpsHost == "127.0.0.1" || gpsHost == "127.0.1.1" ? true : false);
+
+
+      // Loop through the processes and update their status 
+      for (i = 0; i < keys.length; i++) {
+          document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
+              (statusJson.processes[i].status > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
           procs += statusJson.processes[i].status; 
+
+          var procname = statusJson.processes[i].process.toLowerCase();
+          var proc_status = statusJson.processes[i].status;
+
+          if (procname.startsWith("direwolf")) {
+              procstatus.direwolf = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
+                  (procstatus.direwolf ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+          }
+          else if (procname.startsWith("aprs")) {
+              procstatus.aprsc = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
+                  (procstatus.aprsc ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+          }
+          else if (procname.startsWith("gpsd")) {
+              procstatus.gpsd = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
+              if (expectGPSD) {
+                  document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
+                      (procstatus.gpsd ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+              }
+              else {
+                  // we are not expecting that GPSD is running on this system as we're using a non-local hostname for the gpshost.  So we just mark this status as "n/a".
+                  document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "n/a";
+              }
+          }
+          else if (procname.startsWith("habtrack")) {
+              procstatus.backend = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
+              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
+                  (procstatus.backend ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+          }
       }
 
-      numProcessesRunning = procs;
+      // determine if the backend is actually running.  
+      // isRunning:
+      // 0 - not running
+      // 1 - running
+      // -1 - transitioning or some odd state
+      //
+      // backend is "active", we've found an SDR dongle attached
+      if (isActive && isRFMode) {
 
-      // find out what state we're in...
-      var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
+          // ...then we'd expect to find direwolf, aprsc, and the backend running
+          if (procstatus.direwolf && procstatus.aprsc && procstatus.backend)
+              isRunning = 1;
+          else
+              // huh...the backend says that we're "active" and in "rf_mode", but yet the [some of the] processes we were expecting aren't running?
+              isRunning = -1;
+      }
+      // backend is "active", but there wasn't an SDR dongle attached...so we're presumably running in "online" mode
+      else if (isActive && !isRFMode) {
+
+          // ...then we'd expect to find just aprsc and the backend running.  Although direwolf might be running, but just for beaconing via an external radio.
+          if (procstatus.aprsc && procstatus.backend)
+              isRunning = 1;
+          else
+              isRunning = -1;
+      }
+      // the backend is not active as it doesn't think it's running.
+      else if (!isActive) {
+
+          //...then we'd expect that no processes are running, except maybe GPSD
+          if (!procstatus.direwolf && !procstatus.aprsc && !procstatus.backend)
+              isRunning = 0;
+          else
+              isRunning = -1;
+      }
+      // Shouldn't get here, but just in case
+      else
+          isRunning = 0;
+
+
+      // debugging
+      //document.getElementById("error").innerHTML = "<pre>isRunning: " + isRunning + "\nprocstatus: " + JSON.stringify(procstatus) + "\nstatusJson: " + JSON.stringify(statusJson)
+      //    + "\nexpectGPSD: " + expectGPSD
+      //    + "</pre>";
+
+      // find out what state we're in... and update the onscreen status
+      //
+
       if (processInTransition == 1) {    // we're starting up...
-          //document.getElementById("debug").innerHTML = "starting up still...processInTransition: " + processInTransition;
-          if (procs >= keys.length - 1)
+
+          if (isRunning == 1)
               processInTransition = 0;
 
-          else if (procs <= 1 && statusJson.active == 0)
+          else if (isRunning == 0)
               // we must have tried to start, but hit a failure and now nothing is running.
               processInTransition = 0;
+
+          // blank the direwolf error section since we're in transition.  This is updated further below
           $("#direwolferror").html("");
-          return;
+
       }
       else if (processInTransition == 2) {     // we're shutting down...
-          //document.getElementById("debug").innerHTML = "shutting down still...processInTransition: " + processInTransition;
-          if (procs <= 1)
+          if (isRunning == 0)
               processInTransition = 0; 
+
+          // blank the direwolf error section since we're in transition.  This is updated further below
           $("#direwolferror").html("");
-          return;
+
       }
-      else {   // we're either up or shutdown, but we're NOT in transition
-          //document.getElementById("debug").innerHTML = "not in transistion....processInTransition: " + processInTransition;
-          if (statusJson.rf_mode == 1 && procs >= keys.length)   // We're running in RF mode...i.e. SDRs are attached to the system
-              donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
-          if (statusJson.rf_mode == 0 && procs >= keys.length-1)   // We're running in online mode...i.e. SDRs are not attached to the system
-              donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
+
+
+      // we're either up or shutdown, but we're NOT in transition
+      // if we're no longer in transition, update the status screens 
+      //
+      // We only want to update the status screen if we're NOT in transition
+      if (processInTransition == 0) {   
+
+          // if we're running and connected to an SDR, then udpate the status area with the antenna/SDR details
+          if (isRunning && isRFMode) { 
+
+              // if there are antennas/SDR detailed being reported then we display that
+              if (antennas.length > 0) {
+                  var antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
+
+                  for (i = 0; i < antennas.length; i++) {
+                      var frequencies = antennas[i].frequencies;  
+                      var rtl_id = antennas[i].rtl_id;
+                      var k = 0;
+                      var freqhtml = "";
+                      var callsign_html = "";
+                      //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
+                      //
+
+                      var product_name_lower = antennas[i].rtl_product.toLowerCase();
+                      var instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
+
+                      for (k = 0; k < frequencies.length; k++) 
+                          freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
+
+                      antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
+                          + "<div class=\"antenna-table\">"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
+                          + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
+                          + "</div>"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell\">Frequencies</div>"
+                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
+                          + "</div>"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell\">GnuRadio Status</div>"
+                          + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
+                          + "</div>"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell\">SDR Information</div>"
+                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
+                          + "</div>"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell\">Igating Status</div>"
+                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isIgating ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
+                          + "</div>"
+                          + "<div class=\"table-row\">"
+                          + "    <div class=\"table-cell\">Beaconing Status</div>"
+                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isBeaconing ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
+                          + "</div>"
+                          + "</div>"
+                          + "</div>";
+                  }
+
+                  // update the status screen area
+                  $("#antenna-data").html(antenna_html);
+              }
+              else {  // no antenna info...which is odd, since we're supposed to be in RF mode...but...
+                  var donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
+
+                  // Update the onscreen status
+                  $("#antenna-data").html(donehtml);
+              }
+          }
+          else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
+                  donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
+
+                  // Update the onscreen status
+                  $("#antenna-data").html(donehtml);
+          }
+          else {  // we're not running
+              var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
+
+              // Update the onscreen status
+              $("#antenna-data").html(donehtml);
+          }
       }
-      $("#antenna-data").html(donehtml);
-     
-
-    //var antenna_html = "<table class=\"presentation-area\" cellpadding=0 cellspacing=0 border=0><tr>";
-    var antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
-    if (!statusJson.antennas) {
-        $("#antenna-data").html("<p><mark class=\"marginal\">Not running...</mark></p>");
-        $("#direwolferror").html("");
-        return;
-    }
-    for (i = 0; i < antennas.length; i++) {
-        var frequencies = antennas[i].frequencies;  
-        var rtl_id = antennas[i].rtl_id;
-        var k = 0;
-        var freqhtml = "";
-        var callsign_html = "";
-        //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
-        //
-
-        var product_name_lower = antennas[i].rtl_product.toLowerCase();
-        var instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
-
-        for (k = 0; k < frequencies.length; k++) 
-            freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
-
-        antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
-            + "<div class=\"antenna-table\">"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
-            + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Frequencies</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">GnuRadio Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">SDR Information</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Igating Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (statusJson.igating == "true" ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-            + "</div>"
-            + "<div class=\"table-row\">"
-            + "    <div class=\"table-cell\">Beaconing Status</div>"
-            + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (statusJson.beaconing == "true" ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-            + "</div>"
-            + "</div>"
-            + "</div>";
-    }
-
-    if (antennas.length == 0 || (antennas.length > 0 && procs < keys.length-1)) 
-          antenna_html = donehtml;
-    $("#antenna-data").html(antenna_html);
-  
   });
 
   $.get("getlogs.php", function(data) {

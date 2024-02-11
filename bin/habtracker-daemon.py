@@ -929,6 +929,7 @@ def main():
         status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
         status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
         status["antennas"] = direwolfstatus["antennas"]
+        status["gpshost"] = configuration["gpshost"]
 
         # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating.
         if len(configuration["direwolffreqlist"]) == 0:
@@ -1027,6 +1028,7 @@ def main():
     status["antennas"] = []
     status["rf_mode"] = 0
     status["active"] = 0
+    status["gpshost"] = configuration["gpshost"]
     with open(jsonStatusTempFile, "w") as f:
         f.write(json.dumps(status))
     if os.path.isfile(jsonStatusTempFile):
