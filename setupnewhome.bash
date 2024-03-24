@@ -48,7 +48,7 @@ adduser eosstracker dialout
 echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
 cd /
 su - eosstracker -c "cd /; git clone https://www.github.com/thekoola/eosstracker"
-su - eosstracker -c "cd /eosstracker; git checkout brickv2; git status"
+su - eosstracker -c "cd /eosstracker; git checkout brickv2.1; git status"
 
 echo
 echo
