@@ -54,3 +54,9 @@ echo
 echo
 echo "/eosstracker successfully setup!"
 
+echo "Adding rc.local to /etc..."
+cp /eosstracker/sbin/rc.local /etc
+chmod 755 /etc/rc.local
+echo "Finished adding rc.local to /etc"
+
+
