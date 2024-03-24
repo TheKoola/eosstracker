@@ -12,7 +12,7 @@ Last update:  1/31/2024
 ### EOSSTracker Software and Dependencies
 4. [Install & Configure EOSSTracker Software](#eosstracker)
 5. [Setup PostgresQL Database](#database)
-6. [Creating the rc.local File](#rclocal)
+6. [Reboot](#reboot)
 7. [Building and Installing Direwolf](#direwolf)
 8. [Building and Installing APRSC](#aprsc)
 9. [Airspy udev Rules](#airspy)
@@ -320,7 +320,7 @@ psql -d aprs -f ./aprs-database.v2.sql 
 psql -d aprs -f ./eoss_specifics.sql
 ```
 
-<a name="rclocal"></a>
+<a name="reboot"></a>
 ## Reboot
 
 ```
