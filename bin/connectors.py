@@ -867,10 +867,11 @@ class RTPStream(MulticastPacketStream):
 
         self.igating = True if self.configuration["igating"] == "true" else False
 
-        if self.igating:
-            queuelist = [ (self.configuration["igatingqueue"], "igating queue"), (self.configuration["databasequeue"], "database queue") ]
-        else:
-            queuelist = [ (self.configuration["databasequeue"], "database queue") ]
+        # don't do igating
+        #if self.igating:
+        #    queuelist = [ (self.configuration["igatingqueue"], "igating queue"), (self.configuration["databasequeue"], "database queue") ]
+        #else:
+        queuelist = [ (self.configuration["databasequeue"], "database queue") ]
 
         # this packet handler should decode the RTP+AX25 packet, then save it to both the igating and database queues
         readhandler = PacketHandler(q=queuelist, pfilter=None, transform=parse_RTP_AX25)
@@ -1015,6 +1016,9 @@ class AprsisStream(PacketStream):
         # station callsign (not necessarily the same as the credentials used for logging into the APRS-IS server)
         self.station_callsign = self.configuration["callsign"] if "callsign" in self.configuration else None
 
+        # station ssid (if present)
+        self.station_ssid = int(self.configuration["ssid"]) if "ssid" in self.configuration else None
+
         # igating statistics
         self.igated_stations = {}
 
@@ -1122,7 +1126,19 @@ class AprsisStream(PacketStream):
         """
         Used to convert packets read from the networking socket to a Packet object
         """
-        return Packet(text = packetbytes.decode(encoding='utf-8', errors='ignore'), frequency=None, source=self.server.nickname)
+
+        # need to determine if the ka9q-radio backend was the source of this packet.  If so, then the "qAO,<callsign-ssid>" string should be in the address field.
+        packettext = packetbytes.decode(encoding='utf-8', errors='ignore')
+
+        # do this if another connector isn't tapped into the source of packets (ex. ka9q-radio, direwolf, etc.)
+        # check the packet text for our own station (i.e. the ka9q-radio backend heard the packet, and igated it)
+        #searchstring = "qAO," + self.station_callsign + ("-" + str(self.station_ssid) if self.station_ssid > 0 else "")
+        #if searchstring.lower() in packettext.lower():
+        #    source = "ka9q-radio"
+        #else:
+        #    source = self.server.nickname
+        
+        return Packet(text = packettext, frequency=None, source=self.server.nickname)
 
     def toTNC2(self, p: Packet)->bytes:
         """

@@ -84,3 +84,6 @@ rm -f ${LOGDIR}/direwolf.out
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
 nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &
 
+# start up the igate service
+${BINDIR}/start_igate.bash >> ${LOGFILE} 
+

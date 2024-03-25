@@ -90,7 +90,8 @@
             f.freq,
             f.raw,
             f.path,
-            f.dense_rank
+            f.dense_rank,
+            f.source
             
             from
                 (select distinct
@@ -121,7 +122,8 @@
                     (string_to_array(regexp_replace(split_part(split_part(a.raw, ':', 1), '>', 2), ',WIDE[0-9]*[\-]*[0-9]*', '', 'g'), ','))[2:]
                 else
                     NULL
-                end as path
+                end as path,
+                a.source
 
                 from packets a left outer join (select fm.callsign from flights f, flightmap fm where fm.flightid = f.flightid and f.active = 't') as b on a.callsign = b.callsign
                 left outer join (select t.callsign from trackers t order by t.callsign) as c 
@@ -204,7 +206,12 @@
         $symbol = $row['symbol'];
         $speed_mph = $row['speed_mph'];
         $heardfrom = $row['heardfrom'];
-        $frequency = ($row['freq'] == "" ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : ""));
+        if (str_starts_with($row["source"], 'direwolf'))
+            $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
+        else if (str_starts_with($row["source"], "ka9q-radio"))
+            $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ka9q-radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
+        else
+            $frequency = "TCPIP";
         $bearing = $row['bearing'];
         $latitude = $row['latitude'];
         $longitude = $row['longitude'];
@@ -820,6 +827,8 @@
         $heardfrom = $row['heardfrom'];
         if (str_starts_with($row["source"], 'direwolf'))
             $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
+        else if (str_starts_with($row["source"], "ka9q-radio"))
+            $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ka9q-radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
         else
             $frequency = "TCPIP";
 

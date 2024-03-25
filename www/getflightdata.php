@@ -714,7 +714,7 @@
                         "comment" => $r["comment"],
                         "symbol" => $r["symbol"]
                     );
-                    if (str_starts_with($r["source"], 'direwolf'))
+                    if (str_starts_with($r["source"], 'direwolf') || str_starts_with($r["source"], 'ka9q-radio'))
                         $lastpath = $lastpath . "R";
                     else
                         $lastpath = $lastpath . "I";
@@ -917,6 +917,8 @@
         $heardfrom = $row['heardfrom'];
         if (str_starts_with($row["source"], 'direwolf'))
             $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ext radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
+        else if (str_starts_with($row["source"], "ka9q-radio"))
+            $frequency = ($row['freq'] == "" || $row['freq'] == 0 ? "ka9q-radio" : ($row['freq'] != "n/a" ? $row['freq'] : "--"));
         else
             $frequency = "TCPIP";
 

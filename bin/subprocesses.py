@@ -492,45 +492,6 @@ class Direwolf(SubProcess):
                 adevice = 0
                 channel = 0
 
-                # Loop through the frequency/port lists creating the audio device sections
-                for freqlist in self.configuration["direwolffreqlist"]:
-
-                    f.write("###########################################\n")
-                    for freq, port, prefix, sn, idx in freqlist:
-
-                        if adevice >= self.maxchannels:
-                            self.logger.debug(f"{self.name}: max audio device channels reached with direwolf configuration build. {freq=} {port=} {prefix=} {sn=} {idx=}")
-                            break
-
-                         # This is the audio device section for this RTL, frequency, and port combination
-                        f.write("# SDR Device: " + prefix + " (s/n: " + sn + ")  Frequency: " + str(round(freq/1000000.0, 3)) + "MHz\n")
-                        f.write("ADEVICE" + str(adevice) + " udp:" + str(port) + " null\n")
-
-                        # Audio sample rate
-                        f.write("ARATE " + str(self.samplerate) + "\n")
-
-                        f.write("ACHANNELS 1\n")
-                        f.write("CHANNEL " + str(channel) + "\n")
-                        f.write("MYCALL " + self.callsign + "\n")
-                        f.write("MODEM 1200\n\n")
-
-                        # direwolf doesn't really recommend this being turned on v1.7+
-                        #f.write("FIX_BITS 1\n\n")
-
-                        # If listening to the satellite frequency and igating, then only igate if we heard the packet through a digipeater.
-                        # For satellite ops we don't want to igate packets heard directly.
-                        # Note:  buddy list filter is clearly a work in progress...
-                        if freq == 145825000 and self.igating == True:
-                            f.write("FILTER " + str(channel) + self.satfilter + "\n")
-
-                        # Add this channel to the channel-to-frequency mapping
-                        #freqmap.append({ "channel" : channel, "frequency" : freq, "sdr" : prefix + sn })
-
-                        channel = channel + 2
-                        adevice = adevice + 1
-
-                    f.write("###########################################\n\n")
-
                 # when beaconing the user can include the EOSSn string within their VIA path for transmitted packets.  The EOSS payloads will digipeat any 
                 # packet that has this string in its VIA path.
                 if self.configuration["includeeoss"] == "true" and self.configuration["eoss_string"] != "":
@@ -602,63 +563,6 @@ class Direwolf(SubProcess):
                             f.write("PBEACON sendto=" + str(channel) + " delay=0:30 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " via=" + str(eoss) + "WIDE2-1  symbol=" + str(self.configuration["symbol"]) + overlay + " comment=\"" + str(self.configuration["comment"] + "\"\n"))
 
                     f.write("###########################################\n\n")
-
-
-                self.logger.info(f"{self.name}: igating set to {self.igating}")
-                if self.igating:
-
-                    # when using aprsc (running locally) we need direwolf to always be configured to igate.  If a packet makes it to the APRS-IS cloud (or not) is determined 
-                    # by the "ro" or "full" flag within the aprsc configuration file for its uplink definition to noam.aprs2.net.
-                    self.logger.info(f"{self.name}: Direwolf configured to igate to 127.0.0.1 as {self.callsign}")
-                    password = self.configuration["passcode"]
-                    f.write("# APRS-IS Info\n")
-                    f.write("IGSERVER 127.0.0.1\n")
-                    f.write("IGLOGIN " + self.callsign + " " + str(password) + "\n\n")
-
-                    # If this station is beaconing directly to APRS-IS...then that can only happen if we have a IGSERVER defined (just above)...AND...aprsc is configured 
-                    # to have a "full" connection type on its uplink port definition to noam.aprs2.net.  That "full" flag is only set when igating is set to True, thus 
-                    # the "if self.igating" statement above.
-                    if self.configuration["ibeacon"] == "true":
-
-                        self.logger.info(f"{self.name}: Direwolf configured to use internet beaconing")
-                        f.write("########## for internet beaconing #########\n");
-
-                        # If this is a mobile station, then we want to turn on "smart" beaconing.
-                        if self.configuration["mobilestation"] == "true":
-                            f.write("# This is for a mobile station\n")
-                            f.write("TBEACON sendto=IG  delay=0:40 every=" + str(self.configuration["ibeaconrate"]) + "  altitude=1  symbol=" + str(self.configuration["symbol"]) + overlay + "    comment=\"" + str(self.configuration["comment"]) +  "\"\n")
-
-                        # Otherwise, this is a fixed station so we just use the last alt/lat/lon as where this station is located at.
-                        else:
-                            # Only beacon our position if there is a valid GPS location
-                            if gpsposition["isvalid"]:
-                                f.write("# This is for a fixed station\n")
-                                f.write("PBEACON sendto=IG delay=0:40 every=11:00 altitude=" + str(gpsposition["altitude"]) + " lat=" + str(gpsposition["latitude"]) + " long=" + str(gpsposition["longitude"]) + " symbol=" + str(self.configuration["symbol"]) + overlay + " comment=\"" + str(self.configuration["comment"] + "\"\n"))
-
-                        if self.igating == True:
-                            f.write("IBEACON sendto=IG  delay=0:50 every=" + str(self.configuration["ibeaconrate"]) + "\n")
-
-                        f.write("###########################################\n\n")
-
-                else:
-                    # we're not igating (to APRS-IS cloud), but direwolf still needs to upload packets to the local aprsc.
-                    # does it really?  I don't think we need direwolf to upload to aprsc for any eosstracker purposes because the 
-                    # local kisstap will get packets decoded by direwolf.  However, there might be external aprsc clients that will need a single consolidated stream.  
-                    #
-                    # When using aprsc (running locally) we need direwolf to always be configured to igate.  If a packet makes it to the APRS-IS cloud (or not) is determined 
-                    # by the "ro" or "full" flag within the aprsc configuration file for its uplink definition to noam.aprs2.net.
-
-                    # However...when we're not configure to igate (i.e. aprsc has a 'ro' on its uplink port to noam.aprs2.net) we just use a random callsign for direwolf's
-                    # credentials to the locally running aprsc instance.  Presumably, because if we're not igating, then we can't trust the callsign + passcode from the user.
-                    basecallsign = self.callsign.split('-')[0]
-                    numRandomDigits = 9 - len(basecallsign)
-                    randomcallsign = basecallsign + str(random.randint(5, 10 ** numRandomDigits - 1)).zfill(numRandomDigits)
-
-                    self.logger.info(f"{self.name}: Direwolf configured to igate to 127.0.0.1 as {randomcallsign}")
-                    password = aprslib.passcode(randomcallsign)
-                    f.write("# APRS-IS Info\n")
-                    f.write("IGSERVER 127.0.0.1\n")
-                    f.write("IGLOGIN " + randomcallsign + " " + str(password) + "\n\n")
 
                 # We're assuming that there's a GPS attached to this system
                 if "gpshost" in self.configuration:

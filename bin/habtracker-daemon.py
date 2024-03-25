@@ -220,6 +220,8 @@ def checkDirPerms():
 ##################################################
 def readConfiguration(configfile, options):
 
+    logger = logging.getLogger(__name__)
+
     # try to open the configuration file
     try:
         with open('/eosstracker/www/configuration/config.txt') as json_data:
@@ -281,7 +283,6 @@ def readConfiguration(configfile, options):
     # if igating is enabled, then we need to determine the aprs-is passcode, etc.
     if conf["igating"] == "true":
         if str(aprslib.passcode(str(conf["callsign"]))) != str(conf["passcode"]):
-            logger = logging.getLogger(__name__)
             logger.warning(f"Incorrect passcode. {str(conf['passcode'])}, not equal to, {aprslib.passcode(str(conf['callsign']))}.  igating disabled.")
             conf["igating"] = "false"
 
@@ -391,18 +392,19 @@ def createProcesses(configuration):
             procs.append(aprs)
 
 
-        # The direwolf process
+    # The direwolf process
+    if  configuration["beaconing"] == "true":
         logger.debug(f"Creating Direwolf subprocess")
         dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
         dfprocess.daemon = True
         procs.append(dfprocess)
 
-        # The direwolf tap process 
-        logger.debug(f"Creating Direwolf Tap subprocess")
-        dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
-        dftapprocess.daemon = True
-        dftapprocess.name = "Direwolf KISS Tap"
-        procs.append(dftapprocess)
+    # The direwolf tap process 
+    #logger.debug(f"Creating Direwolf Tap subprocess")
+    #dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
+    #dftapprocess.daemon = True
+    #dftapprocess.name = "Direwolf KISS Tap"
+    #procs.append(dftapprocess)
 
 
     # if we're igating, then create a process to update a JSON file with igating statistics.  
@@ -418,12 +420,12 @@ def createProcesses(configuration):
 
 
 
-    ####### NO #######
+    ####### YES #######
     # This is the RTP Multicast connection tap.  
-    #rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
-    #rtp.daemon = True
-    #procs.append(rtp)
-    ####### NO #######
+    rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
+    rtp.daemon = True
+    procs.append(rtp)
+    ####### YES #######
 
 
     # Return the list of newly created processes
@@ -654,7 +656,8 @@ def buildFreqMap(config):
         freqmap = []
 
         # Get the RTL-SDR USB dongles that are attached
-        sdrs = searchrtlsdr.getUSBDevices()
+        #sdrs = searchrtlsdr.getUSBDevices()
+        sdrs = []
 
         # The number of SDRs
         i = len(sdrs)
@@ -674,6 +677,13 @@ def buildFreqMap(config):
 
         direwolfstatus = {}
         antennas = []
+
+        # the direwolf callsign and ssid
+        ssid = int(config["ssid"]) if "ssid" in config else 0
+        if ssid <= 0:
+            ssid = None
+
+        direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + ("-" + str(ssid) if ssid else "")
 
         # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
         if i > 0:
@@ -724,11 +734,6 @@ def buildFreqMap(config):
             # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
             samplerate = 50000
 
-            ssid = int(config["ssid"]) if "ssid" in config else 0
-            if ssid <= 0:
-                ssid = None
-
-            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + ("-" + str(ssid) if ssid else "")
             logger.info(f"direwolfcallsign: {direwolfstatus['direwolfcallsign']}, ssid: {ssid}")
             direwolfstatus["direwolffreqlist"] = direwolfFreqList
             direwolfstatus["direwolffreqmap"] = freqmap
@@ -927,13 +932,13 @@ def main():
         configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"] if "direwolfaudiorate" in direwolfstatus else None
         configuration["maxdirewolfchannels"] = 8
         status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
-        status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
         status["antennas"] = direwolfstatus["antennas"]
+        status["rf_mode"] = 1 if len(status["antennas"]) > 0 else 0
         status["gpshost"] = configuration["gpshost"]
 
         # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating.
-        if len(configuration["direwolffreqlist"]) == 0:
-            configuration["igating"] = "false"
+        #if len(configuration["direwolffreqlist"]) == 0:
+        #    configuration["igating"] = "false"
 
         # we want to connect to for aprs-is connectivity
         #configuration["aprsisserver"] = "noam.aprs2.net"

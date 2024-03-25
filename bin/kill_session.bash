@@ -36,6 +36,11 @@ echo > ${LOGFILE}
 echo "########" >> ${LOGFILE}
 date >> ${LOGFILE}
 echo "########" >> ${LOGFILE}
+
+# stop the igate service
+echo "Stopping igate.service..."
+${BINDIR}/stop_igate.bash >> ${LOGFILE} 
+
 echo "Shutting down the habtracker-daemon processes..." >> ${LOGFILE}
 
 # now try and kill the processes for the habtracker-daemon script
