@@ -37,10 +37,6 @@ echo "########" >> ${LOGFILE}
 date >> ${LOGFILE}
 echo "########" >> ${LOGFILE}
 
-# stop the igate service
-echo "Stopping igate.service..."
-${BINDIR}/stop_igate.bash >> ${LOGFILE} 
-
 echo "Shutting down the habtracker-daemon processes..." >> ${LOGFILE}
 
 # now try and kill the processes for the habtracker-daemon script
@@ -96,5 +92,25 @@ fi
 
 echo "#####################" >> $LOGFILE
 echo >> $LOGFILE
+
+echo "Stopping igate (if running)..." >> ${LOGFILE}
+sudo /bin/systemctl stop igate.service >> ${LOGFILE} 
+sudo /bin/systemctl disable igate.service >> ${LOGFILE} 
+#sudo /bin/systemctl status igate.service >> ${LOGFILE} 
+
+echo "Stopping powerlogger..." >> ${LOGFILE}
+sudo /bin/systemctl stop powerlogger.service >> ${LOGFILE} 
+sudo /bin/systemctl disable powerlogger.service >> ${LOGFILE} 
+#sudo /bin/systemctl status powerlogger.service >> ${LOGFILE} 
+
+echo "Stopping 2m FM recorder..." >> ${LOGFILE}
+sudo /bin/systemctl stop recordings@2m-fm.service >> ${LOGFILE} 
+sudo /bin/systemctl disable recordings@2m-fm.service >> ${LOGFILE} 
+#sudo /bin/systemctl status recordings@2m-fm.service >> ${LOGFILE} 
+
+echo "Stopping 2m FM packet recorder..." >> ${LOGFILE}
+sudo /bin/systemctl stop recordings@packet-fm.service >> ${LOGFILE} 
+sudo /bin/systemctl disable recordings@packet-fm.service >> ${LOGFILE} 
+#sudo /bin/systemctl status recordings@packet-fm.service >> ${LOGFILE} 
 
 

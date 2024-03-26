@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 import logging
 from logging.handlers import QueueHandler, QueueListener
 
-from decoders import parse_RTP_AX25
+from decoders import parse_RTP_AX25, genpasscode
 from packet import Packet
 import kissprocessor
 import habconfig
@@ -218,7 +218,7 @@ class CredentialSet:
 
 
     def setCallsign(self, callsign: str, passcode: str = '')->None:
-        self.callsign = call.upper()
+        self.callsign = callsign.upper()
         self.passcode = passcode
 
 
@@ -1030,24 +1030,28 @@ class AprsisStream(PacketStream):
             self.setWriteHandlers([writehandler])
             self.can_send = True
 
-            # the internet beaconing rate
-            rate = self.configuration["ibeaconrate"]
-            if rate:
-                sp = rate.split(":")
-                secs = int(sp[0]) * 60
-                if len(sp) > 1:
-                    secs += int(sp[1])
-                self.ibeacon_rate = secs
-            else:
-                # default beacon rate of 10min
-                self.ibeacon_rate = 600
+            if self.can_beacon:
+
+                # the internet beaconing rate
+                rate = self.configuration["ibeaconrate"]
+                if rate:
+                    sp = rate.split(":")
+                    secs = int(sp[0]) * 60
+                    if len(sp) > 1:
+                        secs += int(sp[1])
+                    self.ibeacon_rate = secs
+                else:
+                    # default beacon rate of 10min
+                    self.ibeacon_rate = 600
+
+                self.logger.info(f"{self.server.nickname} APRS-IS beacon rate: {self.ibeacon_rate} seconds")
+
+            elif self.taptype == 'aprs':
+                self.logger.info(f"{self.server.nickname} APRS-IS beaconing disabled for {self.server.hostname}:{self.server.portnum}")
+
         elif self.taptype == 'aprs':
             self.logger.info(f"{self.server.nickname} Igating disabled for {self.server.hostname}:{self.server.portnum}")
 
-        if self.can_beacon:
-            self.logger.info(f"{self.server.nickname} APRS-IS beacon rate: {self.ibeacon_rate} seconds")
-        elif self.taptype == 'aprs':
-            self.logger.info(f"{self.server.nickname} APRS-IS beaconing disabled for {self.server.hostname}:{self.server.portnum}")
 
         # default aprsis filter:  200km around Denver, CO USA
         self.aprsfilter = AprsFilter(['r/39.739281/-104.984894/200']) 
@@ -1127,9 +1131,9 @@ class AprsisStream(PacketStream):
         Used to convert packets read from the networking socket to a Packet object
         """
 
-        # need to determine if the ka9q-radio backend was the source of this packet.  If so, then the "qAO,<callsign-ssid>" string should be in the address field.
         packettext = packetbytes.decode(encoding='utf-8', errors='ignore')
 
+        # need to determine if the ka9q-radio backend was the source of this packet.  If so, then the "qAO,<callsign-ssid>" string should be in the address field.
         # do this if another connector isn't tapped into the source of packets (ex. ka9q-radio, direwolf, etc.)
         # check the packet text for our own station (i.e. the ka9q-radio backend heard the packet, and igated it)
         #searchstring = "qAO," + self.station_callsign + ("-" + str(self.station_ssid) if self.station_ssid > 0 else "")
@@ -1285,7 +1289,8 @@ class AprsisStream(PacketStream):
         threadlist.append(ft)
 
         # the beacon (to the APRS-IS server) thread
-        if self.can_send and self.can_beacon and self.igating:
+        #if self.can_send and self.can_beacon and self.igating:
+        if self.can_send and self.can_beacon:
             self.logger.debug(f"{self.server.nickname} Creating beacon_thread")
             xt = th.Thread(name=f"{self.server.nickname}:beacon_thread", target=self.beacon_thread, args=())
             xt.daemon = True
@@ -1418,7 +1423,8 @@ class AprsisStream(PacketStream):
 
         # this is the final packet
         tocall = "APZES1"  # experimental tocall:  APZxxx
-        packet = f"{self.creds.callsign}>{tocall},TCPIP*:{info}"
+        callsign = self.station_callsign + ("-" + str(self.station_ssid) if self.station_ssid > 0 else "")
+        packet = f"{callsign}>{tocall},TCPIP*:{info}"
 
         return packet
 

@@ -81,9 +81,111 @@ echo "###################" >> ${LOGFILE}
 
 rm -f ${LOGDIR}/direwolf.out
 
+
+# remove the old stderr file (if any)
+rm -f ${STDERR}
+touch ${STDERR}
+
+
+# the configuration for this system
+CONFIG=/eosstracker/www/configuration/config.txt
+
+# Check if we're supposed to be igating or not
+IGATING=$(/usr/bin/jq '.igating' --raw-output ${CONFIG})
+if [ ${IGATING} == "true" ]; then
+
+    # update the igate.conf file with our particulars.
+    ##
+    ##
+    ##
+    IGATECONF=/etc/radio/igate.conf
+
+    echo "AX25=ax25.local" > ${IGATECONF}
+    SSID=$(/usr/bin/jq '.ssid' --raw-output ${CONFIG})
+    if [ -z "${SSID}" ] || [ "${SSID}" == "0" ]; then
+        CALL=$(/usr/bin/jq '.callsign' --raw-output ${CONFIG})
+    else
+        CALL=$(/usr/bin/jq '.callsign' --raw-output ${CONFIG})"-"${SSID}
+    fi
+
+    echo "CALL=${CALL}" >> ${IGATECONF}
+    echo "SERVER=127.0.0.1" >> ${IGATECONF}
+
+    ibeacon=$(/usr/bin/jq '.ibeacon' --raw-output ${CONFIG})
+    if [ "${ibeacon}" == "true" ]; then
+        echo "BEACONING=1" >> ${IGATECONF}
+    else
+        echo "BEACONING=0" >> ${IGATECONF}
+    fi
+
+    gpsdhost=$(/usr/bin/jq '.gpshost' --raw-output ${CONFIG})
+    if [ ! -z "${gpsdhost}" ]; then
+        echo "GPSDHOST=\"-H ${gpsdhost}\"" >> ${IGATECONF}
+    else
+        echo "GPSDHOST=\"-H localhost\"" >> ${IGATECONF}
+    fi
+
+    # default lat/lon/alt
+    echo "LAT=\"\"" >> ${IGATECONF}
+    echo "LON=\"\"" >> ${IGATECONF}
+    echo "ALT=\"\"" >> ${IGATECONF}
+
+
+    symbol=$(/usr/bin/jq '.symbol' --raw-output ${CONFIG} | /usr/bin/sed 's/\\/\\\\/g')
+    if [ ! -z "${symbol}" ]; then
+        echo "SYMBOL=\"${symbol}\"" >> ${IGATECONF}
+    else
+        # if no symbol then just use a red dot
+        echo "SYMBOL=\"//\"" >> ${IGATECONF}
+    fi
+
+    overlay=$(/usr/bin/jq '.overlay' --raw-output ${CONFIG} | /usr/bin/sed 's/\\/\\\\/g')
+    if [ ! -z "${overlay}" ]; then
+        echo "OVERLAY=\"-O ${overlay}\"" >> ${IGATECONF}
+    else
+        echo "OVERLAY=\"\"" >> ${IGATECONF}
+    fi
+
+    comment=$(/usr/bin/jq '.comment' --raw-output ${CONFIG})
+    if [ ! -z "${comment}" ]; then
+        echo "COMMENT=\"${comment}\"" >> ${IGATECONF}
+    else
+        # if no symbol then just use a red dot
+        echo "COMMENT=\"${CALL}\"" >> ${IGATECONF}
+    fi
+
+    mobile=$(/usr/bin/jq '.mobilestation' --raw-output ${CONFIG})
+    if [ ! -z "${mobile}" ]; then
+        echo "MOBILE=1" >> ${IGATECONF}
+    else
+        # if no symbol then just use a red dot
+        echo "MOBILE=0" >> ${IGATECONF}
+    fi
+
+    echo "Starting igate..." >> ${LOGFILE}
+    sudo /bin/systemctl enable igate.service >> ${LOGFILE} 2>>${STDERR}
+    sudo /bin/systemctl start igate.service >> ${LOGFILE} 2>>${STDERR} 
+    #sudo /bin/systemctl status igate.service >> ${LOGFILE} 2>${STDERR} 
+fi
+
+# startup the powerlogger service
+echo "Starting powerlogger..." >> ${LOGFILE}
+sudo /bin/systemctl enable powerlogger.service >> ${LOGFILE} 2>>${STDERR}
+sudo /bin/systemctl start powerlogger.service >> ${LOGFILE} 2>>${STDERR}
+#sudo /bin/systemctl status powerlogger.service >> ${LOGFILE} 2>>${STDERR}
+
+# startup the 2m FM recording service
+echo "Starting 2m FM recorder..." >> ${LOGFILE}
+sudo /bin/systemctl enable recordings@2m-fm.service >> ${LOGFILE} 2>>${STDERR}
+sudo /bin/systemctl start recordings@2m-fm.service >> ${LOGFILE} 2>>${STDERR}
+#sudo /bin/systemctl status recordings@2m-fm.service >> ${LOGFILE} 2>>${STDERR}
+
+# startup the 2m FM packet recording service
+echo "Starting 2m FM packet recorder..." >> ${LOGFILE}
+sudo /bin/systemctl enable recordings@packet-fm.service >> ${LOGFILE} 2>>${STDERR}
+sudo /bin/systemctl start recordings@packet-fm.service >> ${LOGFILE} 2>>${STDERR}
+#sudo /bin/systemctl status recordings@packet-fm.service >> ${LOGFILE} 2>>${STDERR}
+
+# Finally start up the habtracker software
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
-nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &
-
-# start up the igate service
-${BINDIR}/start_igate.bash >> ${LOGFILE} 
-
+nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>>${STDERR} &

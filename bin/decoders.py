@@ -347,8 +347,8 @@ def genpasscode(callsign: str)->str:
             # left shift every other character (within the callsign) by 8 bits, then XOR that result with the prior result
             code = code ^ (ord(char) << (8 if not i % 2 else 0))
 
-        # mask off every bit > 15 within this integer.:w
-        return code & 0x7fff
+        # mask off every bit > 15 within this integer.
+        return str(code & 0x7fff)
 
     else:
         return None
