@@ -334,7 +334,8 @@
         end as windgust_magnitude_mph,
         case
             when z.raw similar to '%_%t[-0-9]{3}%' then
-                to_number(substring(z.raw from position('_' in z.raw) + 13 for 3), '999')
+                --to_number(substring(z.raw from position('_' in z.raw) + 13 for 3), '999')
+                to_number(substring(substring(z.raw from position('_' in z.raw)) from position('t' in substring(z.raw from position('_' in z.raw))) +1 for 3), '999')
             else
                 NULL
         end as temperature
