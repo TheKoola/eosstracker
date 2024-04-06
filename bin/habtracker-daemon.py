@@ -914,6 +914,11 @@ def main():
 
         # Set JSON inital status data
         status["rf_mode"] = 0
+
+        # The name of the backend 
+        status["backend"] = "ka9q-radio"
+        #status["backend"] = "gnuradio"
+
         status["direwolfcallsign"] = ""
         status["antennas"] = []
         status["igating"] = configuration["igating"]

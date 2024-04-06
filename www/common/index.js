@@ -149,6 +149,8 @@ function getrecentdata() {
       // should we be expecting gpsd to be running?  Is the gpshost set to the local system?
       var gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
       var expectGPSD = (gpsHost == "" || gpsHost == "local" || gpsHost == "localhost" || gpsHost == "127.0.0.1" || gpsHost == "127.0.1.1" ? true : false);
+      // get the backend type
+      var backend = (typeof(statusJson.backend) != "undefined" ? statusJson.backend : null);
 
 
       // Loop through the processes and update their status 
@@ -326,11 +328,15 @@ function getrecentdata() {
                   $("#antenna-data").html(donehtml);
               }
           }
-          else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
+          else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system or using a different backend
+
+              if (backend && backend == "ka9q-radio") // using the KA9Q-Radio backend
+                  donehtml = "<p><mark class=\"okay\">Running.  Using " + backend + ".</mark></p>";
+              else
                   donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
 
-                  // Update the onscreen status
-                  $("#antenna-data").html(donehtml);
+              // Update the onscreen status
+              $("#antenna-data").html(donehtml);
           }
           else {  // we're not running
               var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
