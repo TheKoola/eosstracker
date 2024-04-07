@@ -59,6 +59,13 @@ else
 <script src="/common/leaflet.rotatedMarker.js"></script>
 <script src="/common/leaflet-gpsbox.js"></script>
 
+<!-- Mapbox GL JS -->
+<script src="/common/maplibre-gl.js"></script>
+<link href="/common/maplibre-gl.css" rel="stylesheet">
+
+<!-- Leaflet shim for maplibre -->
+<script src="/common/leaflet-maplibre-gl.js"></script>
+
 </head>
 <body>
 

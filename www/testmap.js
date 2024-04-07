@@ -537,7 +537,6 @@ function updateTooltipContent(geojson, layer) {
 
 
 
-
 /***********
 * setupMap function
 *
@@ -562,10 +561,6 @@ function setupMap() {
     // Set the center of the map and starting zoom level
     map.setView(new L.latLng(starting_location.lat, starting_location.lon), starting_location.zoom);
 
-    // Add the map as the default base layer
-    tilelayer.addTo(map);
-
-
     /**************** zoom level display box ****************/
     // Create a small box in the top right hand corner to display the map zoom level
     var zoomLevelBox = L.control.gpsbox().addTo(map);
@@ -581,7 +576,6 @@ function setupMap() {
 
     // The status message box
     statusbox = L.control.gpsbox({"position": "topleft"}).addTo(map);
-    statusbox.show("Loading map...");
 
     // Add a GeoJSON layer to hold heard stations (this is the catchall)
     stations = new AprsStations().addTo(map);
@@ -591,7 +585,8 @@ function setupMap() {
 
     /************************ layer selection control ***********/
     // Add our OSM map as the "base map" layer.
-    var baselayer = { "Base Map": tilelayer };
+    //var baselayer = { "Base Map": tilelayer };
+    var baselayer = { };
 
     // Overlay layers
     var overlays = { "My Location": mylocation, "Other Stations": stations };
@@ -599,7 +594,6 @@ function setupMap() {
     // Add the layer control to the map
     layercontrol = L.control.layers(baselayer, overlays).addTo(map);
     /********************************************************/
-
 
     // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
     if (!L.Browser.touch) {
@@ -614,8 +608,69 @@ function setupMap() {
     // Add a zoom control to the map.  We do this last so that it's below the other controls in the top righthand corner of the map.:w
     var zoom = L.control.zoom({ "position": "topright" }).addTo(map);
 
-    // Update status message
-    statusbox.show("Map loaded");
+    // load the base map layer
+    let stylejson = "tileserver/osm-liberty/style.json";
+    getMapStyle(stylejson);
+}
+
+
+/***********
+* getMapStyle
+*
+* Connect to the backend to load the base map layer
+***********/
+function getMapStyle(url) {
+
+    // create a new request oject
+    let xhttp = new XMLHttpRequest();
+
+    // define our response function 
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+
+            // Parse the returned json 
+            let d = JSON.parse(this.responseText);
+
+            // get the user's hostname
+            let myhostname = window.location.hostname;
+
+            // update the hostname within the URL of for the map styling
+            if (d.sources) 
+                if (d.sources.openmaptiles) 
+                    if (d.sources.openmaptiles.url) {
+                        let url = new URL(d.sources.openmaptiles.url);
+                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
+                    }
+            if (d.sprite) {
+                let url = new URL(d.sprite);
+                d.sprite = d.sprite.replace(url.hostname, myhostname);
+            }
+
+            if (d.glyphs) {
+                let url = new URL(d.glyphs);
+                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
+            }
+
+            osmlibertystyle = d;
+            osmliberty = L.maplibreGL({
+                style: osmlibertystyle,
+                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+            });
+
+            layercontrol.addBaseLayer(osmliberty, "Base Map");
+            osmliberty.addTo(map);
+
+            // Update status message
+            statusbox.show("Map loaded");
+        }
+    }
+
+    // Connect to the backend server and get the map style
+    statusbox.show("Loading map...");
+    xhttp.open("GET", url, true);
+
+    // Send our request
+    xhttp.send();
 }
 
 
