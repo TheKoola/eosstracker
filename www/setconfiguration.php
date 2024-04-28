@@ -60,6 +60,7 @@
     $ray["airdensity"] = "false";
     $ray["mobilestation"] = "true";
     $ray["gpshost"] = "";
+    $ray["ka9qradio"] = "false";
     $fallbackJSON = json_encode($ray);
 
 

@@ -459,7 +459,7 @@
                         extract ('epoch' from (now()::timestamp - c.thetime)) as elapsed_secs,
                         c.sourcename,
                         case when array_length(c.path, 1) > 0 then
-                            c.path[array_length(c.path, 1)]
+                            split_part(c.path[array_length(c.path, 1)],'*',1)
                         else
                             c.sourcename
                         end as heardfrom,
@@ -770,7 +770,7 @@
             y.freq,
             y.channel,
             case when array_length(y.path, 1) > 0 then
-                y.path[array_length(y.path, 1)]
+                split_part(y.path[array_length(y.path, 1)],'*',1)
             else
                 y.sourcename
             end as heardfrom,

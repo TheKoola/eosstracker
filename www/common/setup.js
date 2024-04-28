@@ -1496,6 +1496,7 @@
             document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
             document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
             document.getElementById("mobilestation").checked = (typeof(jsonData.mobilestation) == "undefined" ? false : (jsonData.mobilestation == "true" ? true : false));
+            document.getElementById("ka9qradio").checked = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
             document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
             document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
             document.getElementById("gpshost").value = (typeof(jsonData.gpshost) == "undefined" ? "" : jsonData.gpshost);	    
@@ -1670,6 +1671,7 @@
         var filter_radius = document.getElementById("filter_radius");
 	    var gpshost = document.getElementById("gpshost");
         var timezone = document.getElementById("settimezone");
+        var ka9qradio = document.getElementById("ka9qradio");
 
 	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
 	    var f;
@@ -1725,6 +1727,7 @@
 		    form_data.append("passcode", "");
         }
 
+        form_data.append("ka9qradio", ka9qradio.checked.toString());
         form_data.append("mobilestation", mobilestation.checked.toString());
 
 	    if (beaconing.checked) {

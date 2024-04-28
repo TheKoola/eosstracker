@@ -126,8 +126,12 @@ include $documentroot . '/common/header.php';
             <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="igating"></span></div>
         </div>
         <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Beaconing:</div>
+            <div class="table-cell" style="border-top: none;">RF Beaconing:</div>
             <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="beaconing"></span></div>
+        </div>
+        <div class="table-row">
+            <div class="table-cell" style="border-top: none;">Listening for KA9Q-Radio:</div>
+            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="ka9qradio"></span></div>
         </div>
     </div>
 

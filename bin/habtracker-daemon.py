@@ -241,6 +241,7 @@ def readConfiguration(configfile, options):
             "beaconing" : "false", 
             "passcode" : "", 
             "gpshost": "",
+            "ka9qradio": "false",
             "fastspeed" : "45", 
             "fastrate" : "01:00", 
             "slowspeed" : "5", 
@@ -417,13 +418,12 @@ def createProcesses(configuration):
     #    procs.append(tmprocess)
 
 
-
-    ####### NO #######
     # This is the RTP Multicast connection tap.  
-    #rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
-    #rtp.daemon = True
-    #procs.append(rtp)
-    ####### NO #######
+    ka9qradio = True if configuration["ka9qradio"] == "true" else False
+    if ka9qradio:
+        rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
+        rtp.daemon = True
+        procs.append(rtp)
 
 
     # Return the list of newly created processes
@@ -930,12 +930,14 @@ def main():
         status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
         status["antennas"] = direwolfstatus["antennas"]
         status["gpshost"] = configuration["gpshost"]
+        status["ka9qradio"] = configuration["ka9qradio"]
 
-        # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating.
-        if len(configuration["direwolffreqlist"]) == 0:
+        # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating unless we're listening
+        # to a ka9q-radio backend somewhere on the local network.
+        if len(configuration["direwolffreqlist"]) == 0 and status["ka9qradio"] == "false":
             configuration["igating"] = "false"
 
-        # we want to connect to for aprs-is connectivity
+        # we want to connect to this system for aprs-is connectivity
         #configuration["aprsisserver"] = "noam.aprs2.net"
         configuration["aprsisserver"] = "127.0.0.1"
 
@@ -1029,6 +1031,7 @@ def main():
     status["rf_mode"] = 0
     status["active"] = 0
     status["gpshost"] = configuration["gpshost"]
+    status["ka9qradio"] = configuration["ka9qradio"]
     with open(jsonStatusTempFile, "w") as f:
         f.write(json.dumps(status))
     if os.path.isfile(jsonStatusTempFile):

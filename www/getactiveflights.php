@@ -522,7 +522,7 @@
                         z.lon,
                         z.sourcename,
                         case when array_length(z.path, 1) > 0 then
-                            z.path[array_length(z.path, 1)]
+                            split_part(z.path[array_length(z.path, 1)], '*',1)
                         else
                             z.sourcename
                         end as heardfrom,

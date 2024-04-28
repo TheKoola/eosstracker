@@ -590,6 +590,20 @@ include $documentroot . '/common/header.php';
         </tr> 
 
 
+		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">KA9Q-Radio</td></tr>
+        <tr> <td class="packetlist-highlight2"  rowspan=1 style="padding-top: 20px; padding-bottom: 20px;">
+                 <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">KA9Q-Radio</div>
+             </td>
+
+             <td class="packetlist">
+                 <strong>KA9Q-Radio</strong> uses a novel approach in distributing audio streams from radio frequencies.  If this option is enabled, this system will listen for any audio streams produced
+                     by a KA9Q-Radio instance running on the local network.  
+             </td>
+             <td class="packetlist"  id="ka9qradiotext" style="text-align: center; white-space: nowrap;">Listen for KA9Q-Radio: <input type="checkbox" form="configuration_form" name="ka9qradio" id="ka9qradio"></td>
+        </tr> 
+
+
+
 		<tr><td colspan=3 class="packetlist-highlight" style="font-size: 1.1em; font-variant: small-caps; ">APRS-IS Internet Uplink</td></tr>
         <tr> <td class="packetlist-highlight2"  rowspan=1>
              <div style="-webkit-transform: rotate(270deg);  -ms-transform: rotate(270deg); transform: rotate(270deg); font-variant: small-caps; vertical-align: middle; text-align: center;">APRS-IS</div></td>

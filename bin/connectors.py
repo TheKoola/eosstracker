@@ -865,7 +865,11 @@ class RTPStream(MulticastPacketStream):
         if self.configuration is None:
             raise TypeError('configuration cannot be None')
 
-        self.igating = True if self.configuration["igating"] == "true" else False
+        # For RTP streams (i.e. listening to a ka9q-radio instance), we only turn on igating if direwolf is not already igating (i.e. Direwolf is connected to an SDR).
+        # The reasoning for this is because aprsc disallows multiple logins from the same callsign-ssid.  Therefore, we can forward packets heard from ka9q-radio on to 
+        # APRS-IS (or the local aprsc instance) only if direwolf is not running.
+        #self.is_direwolf_igating = True if len(self.configuration["direwolffreqlist"]) > 0 else False
+        self.igating = True #if not self.is_direwolf_igating else False
 
         if self.igating:
             queuelist = [ (self.configuration["igatingqueue"], "igating queue"), (self.configuration["databasequeue"], "database queue") ]
@@ -1003,20 +1007,55 @@ class AprsisStream(PacketStream):
         readhandler = PacketHandler(q=[(self.configuration["databasequeue"], "database queue")], pfilter=self.filterComments, transform=self.transform)
         self.setReadHandlers([readhandler])
 
-        # check if we're able to igate or not.  Only possible with a non-CWOP connection.
-        self.igating = True if self.configuration["igating"] == "true" and self.taptype == 'aprs' else False
 
-        # hard set this, as the aprsc daemon will igate for us.
-        self.igating = False
+        #----------- start of igating & ibeaconing determination -------------
+        # this is kindof a mess, but boils down to igating and listening to packets coming from a ka9q-radio instance.
 
-        # Check if we want to beacon over the Internet to the APRS-IS server.  Only possible if we're also igating with a non-CWOP connection.
-        self.can_beacon = True if self.configuration["ibeacon"] == "true" and self.igating else False
+        # Is direwolf configured to run (and igate??)?  We determine this by checking the length of the frequency list that direwolf uses to configure itself.  If that 
+        # list is empty, then no SDR dongles were found locally attached and therefore direwolf shouldn't be running except in the case when it's only being
+        # used to transmit beacons over RF w/ an external radio.
+        self.is_direwolf_igating = True if len(self.configuration["direwolffreqlist"]) > 0 else False
+
+        # are we listening to ka9q-radio?
+        self.is_ka9qradio = True if self.configuration["ka9qradio"] == "true" or self.configuration["ka9qradio"] == True else False
+
+        # Check if we're able to igate or not.  Only possible with a non-CWOP connection.  We'll use this criteria:
+        # 1) is igating actually enabled..if yes, then stop.  we're igating
+        # 2) igating is not enabled in the configuration, but we're setup to listen to KA9Q-Radio...we need to then turn on igating
+        self.real_igating = True if self.configuration["igating"] == "true" or self.configuration["igating"] == True else False
+        self.igating = True if self.taptype =='aprs' and (self.real_igating or (self.is_ka9qradio or self.is_direwolf_igating))  else False
+
+        # if we're listening to a ka9q-radio instance and configure to igate, then we need to adjust our credentials to be the user's real callsign-ssid,
+        # That's because aprsc does not allow for duplicate logins (i.e. multiple connections from the same verified callsign-ssid).
+        if self.is_ka9qradio and self.taptype == 'aprs' and self.real_igating:
+            self.creds = CredentialSet(callsign = self.configuration["callsign"] + ("-" + self.configuration["ssid"] if self.configuration["ssid"] else ""), passcode = self.configuration["passcode"], name='eosstracker', version='1.5')
+            self.logger.debug(f"{self.server.nickname} credentials updated to: {self.creds}")
+
+        # Check if we want to beacon over the Internet to the APRS-IS server.  Only possible if we're also igating with a non-CWOP connection....AND...direwolf isn't running.
+        # That's because when direwolf is running (i.e. connected to an SDR) then it will be the mechanism that transmits this system's position to APRS-IS, etc..
+        self.can_beacon = True if self.configuration["ibeacon"] == "true" and self.real_igating and self.is_ka9qradio else False
+
+        #----------- end of igating & ibeaconing determination -------------
+
 
         # station callsign (not necessarily the same as the credentials used for logging into the APRS-IS server)
         self.station_callsign = self.configuration["callsign"] if "callsign" in self.configuration else None
 
         # igating statistics
         self.igated_stations = {}
+
+        # the internet beaconing rate
+        rate = self.configuration["ibeaconrate"]
+        if rate:
+            sp = rate.split(":")
+            secs = int(sp[0]) * 60
+            if len(sp) > 1:
+                secs += int(sp[1])
+            self.ibeacon_rate = secs
+        else:
+            # default beacon rate of 10min
+            self.ibeacon_rate = 600
+
 
         # check if we're igating or not
         if self.igating:
@@ -1026,17 +1065,6 @@ class AprsisStream(PacketStream):
             self.setWriteHandlers([writehandler])
             self.can_send = True
 
-            # the internet beaconing rate
-            rate = self.configuration["ibeaconrate"]
-            if rate:
-                sp = rate.split(":")
-                secs = int(sp[0]) * 60
-                if len(sp) > 1:
-                    secs += int(sp[1])
-                self.ibeacon_rate = secs
-            else:
-                # default beacon rate of 10min
-                self.ibeacon_rate = 600
         elif self.taptype == 'aprs':
             self.logger.info(f"{self.server.nickname} Igating disabled for {self.server.hostname}:{self.server.portnum}")
 
@@ -1399,9 +1427,34 @@ class AprsisStream(PacketStream):
            # append to packet
            info += comment
 
+        # Determine if we should use the station's callsign (i.e. the legit, HAM callsign for this station) or the randomized call that is [sometimes] used instead.
+        # If direwolf is running (i.e. connected to an SDR), then it will be the mechanism used for beaconing this station's position to APRS-IS and/or over RF.  
+        # However, in the case when we're listening to a KA9Q-Radio instance and NOT running direwolf, then we need to use the legit station's address as the callsign
+        # for our position packet (because direwolf isn't).
+        #callsign = self.creds.callsign
 
+        # if direwolf isn't running (i.e. it's not trying to beacon to APRS-IS or over RF itself) then we need to use the original legit callsign for this HAM operator
+        #if not self.is_direwolf_igating:
+#
+#            # figure out this station's SSID
+#            ssid = None
+#            if "ssid" in self.configuration:
+#                ssidstring = self.configuration["ssid"] 
+#                
+#                if len(ssidstring) > 0:
+#                    try:
+#                        ssid = int(ssidstring)
+#                        if ssid == 0:
+#                            ssid = None
+#                    except ValueError:
+#                        pass
+#
+#            # construct this station's callsign-ssid string
+#            callsign = self.configuration["callsign"] + ("-" + str(ssid) if ssid else "")
+                
         # this is the final packet
         tocall = "APZES1"  # experimental tocall:  APZxxx
+        #packet = f"{callsign}>{tocall},TCPIP*:{info}"
         packet = f"{self.creds.callsign}>{tocall},TCPIP*:{info}"
 
         return packet
@@ -1627,11 +1680,16 @@ class DirewolfKISS(PacketStream):
         if self.configuration is None:
             raise TypeError('configuration cannot be None')
 
-        # Are we igating?
-        self.igating = True if self.configuration["igating"] == "true" else False
+        # are we listening to ka9q-radio?
+        self.is_ka9qradio = True if self.configuration["ka9qradio"] == "true" or self.configuration["ka9qradio"] == True else False
 
-        # Hard set this to igating
-        self.igating = False
+        # Hard set this to not igate.  We don't want to read packets from Direwolf's KISS port, then tranfer them to the AprsisStream object, where they're ultimately sent to 
+        # the locally running aprsc instance or directly to the APRS-IS cloud.  That's because when direwolf is running (i.e. connected to an SDR), then it's already igating heard 
+        # packets to the locally running aprsc instance.  Sooo, we don't need to do that here as well.
+        #
+        # However, in the case when we're going to both listen to a ka9q-radio source as well as have direwolf connected to a local SDR, igating then becomes more complicated.  In that situation
+        # we would like to igate packets from both sources, but in order to do that, we have to disable igating within the direwolf configuration file then enable igating here, instead.
+        self.igating = True if self.is_ka9qradio else False
 
         # define queues for handing packets for igating (if enabled) and to the database
         if self.igating:
