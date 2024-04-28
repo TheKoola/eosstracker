@@ -96,7 +96,7 @@
             y.freq,
             y.channel,
             case when array_length(y.path, 1) > 0 then
-                y.path[array_length(y.path, 1)]
+                split_part(y.path[array_length(y.path, 1)], '*', 1)
             else
                 y.sourcename
             end as heardfrom,

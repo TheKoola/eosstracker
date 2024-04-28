@@ -16,6 +16,7 @@
     "iconsize": "24",
     "igating": "false",
     "includeeoss": "true",
+    "ka9qradio": "false",
     "lookbackperiod": "180",
     "objectbeaconing": "false",
     "overlay": "",

@@ -249,7 +249,7 @@
                         c.raw,
                         c.sourcename,
                         case when array_length(c.path, 1) > 0 then
-                            c.path[array_length(c.path, 1)]
+                            split_part(c.path[array_length(c.path, 1)], '*', 1)
                         else
                             c.sourcename
                         end as heardfrom,

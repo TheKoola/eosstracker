@@ -75,7 +75,7 @@
             f.callsign,
             f.sourcename,
             case when array_length(f.path, 1) > 0 then
-                f.path[array_length(f.path, 1)]
+                split_part(f.path[array_length(f.path, 1)],'*',1)
             else
                 f.sourcename
             end as heardfrom,
@@ -290,7 +290,7 @@
         z.freq,
         z.channel,
         case when array_length(z.path, 1) > 0 then
-            z.path[array_length(z.path, 1)]
+            split_part(z.path[array_length(z.path, 1)], '*', 1)
         else
             z.sourcename
         end as heardfrom,
@@ -679,7 +679,7 @@
             y.freq,
             y.channel,
             case when array_length(y.path, 1) > 0 then
-                y.path[array_length(y.path, 1)]
+                split_part(y.path[array_length(y.path, 1)], '*', 1)
             else
                 y.sourcename
             end as heardfrom,

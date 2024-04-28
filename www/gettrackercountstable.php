@@ -86,7 +86,7 @@
             a.tm,
             a.callsign,
             case when array_length(a.path, 1) > 0 then
-                a.path[array_length(a.path, 1)]
+                split_part(a.path[array_length(a.path, 1)], '*', 1)
             else
                 a.sourcename
             end as heardfrom,

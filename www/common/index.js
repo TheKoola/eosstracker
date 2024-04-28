@@ -63,6 +63,8 @@ function getConfiguration() {
         var b = (beaconing == "true" ? "yes" : "no");
         var b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
         var ssid = jsonData.ssid;
+        var ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
+        var ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
 
         // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
         if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
@@ -75,6 +77,7 @@ function getConfiguration() {
         document.getElementById("igating").innerHTML = i2;
         document.getElementById("beaconing").innerHTML = b2;
         document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
+        document.getElementById("ka9qradio").innerHTML = ka9qhtml;
     });
 }
 
@@ -145,6 +148,9 @@ function getrecentdata() {
 
       // is the backend connected to an SDR dongle?
       var isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
+
+      // are we listening for packets from an instance of KA9Q-Radio running on the local network?
+      var isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
 
       // should we be expecting gpsd to be running?  Is the gpshost set to the local system?
       var gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
@@ -327,10 +333,13 @@ function getrecentdata() {
               }
           }
           else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
+              if (isKa9qradio) 
+                  donehtml = "<p><mark class=\"okay\">Listening for packets from KA9Q-Radio</mark></p>";
+              else
                   donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
 
-                  // Update the onscreen status
-                  $("#antenna-data").html(donehtml);
+              // Update the onscreen status
+              $("#antenna-data").html(donehtml);
           }
           else {  // we're not running
               var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
