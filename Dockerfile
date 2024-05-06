@@ -63,7 +63,7 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  cd /usr/src/app; \
  git clone https://github.com/TheKoola/eosstracker.git; \
  cd /usr/src/app/eosstracker; \
- git checkout brickv2; \
+ git checkout brickv2.1; \
  git pull; \
  su eosstracker -c "cp -rpa bin doc etc logs sbin sql www /eosstracker/"; \
  su eosstracker -c "cp -rpa .git /eosstracker/"; \
