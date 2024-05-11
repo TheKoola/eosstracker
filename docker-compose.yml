@@ -9,8 +9,6 @@ services:
     restart: unless-stopped
     command: /run.sh
     environment:
-      - PGID=1000
-      - PUID=1000
       - TZ=America/Denver
     volumes:
       - /opt/eosstracker/config/eosstracker:/eosstracker
