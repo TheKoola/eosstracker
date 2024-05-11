@@ -2,7 +2,7 @@ version: '3'
 
 services:
   eosstracker:
-    image: thekoola/eosstracker:brickv2
+    image: thekoola/eosstracker:brickv2.1
     devices:
       - /dev/bus/usb
     container_name: eosstracker
@@ -20,9 +20,3 @@ services:
       - "8421:80"
       - "8422:443"
       - "9988:14501"
-    networks:
-      - dev
-
-networks:
-  dev:
-    external: true
