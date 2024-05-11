@@ -61,10 +61,8 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  su - eosstracker -c "pip3 install --no-cache-dir aprslib"; \
 # Install eosstracker
  cd /usr/src/app; \
- git clone https://github.com/TheKoola/eosstracker.git; \
+ git clone -b brickv2.1 https://github.com/TheKoola/eosstracker.git; \
  cd /usr/src/app/eosstracker; \
- git checkout brickv2.1; \
- git pull; \
  su eosstracker -c "cp -rpa bin doc etc logs sbin sql www /eosstracker/"; \
  su eosstracker -c "cp -rpa .git /eosstracker/"; \
  su eosstracker -c "cp -pa .gitignore /eosstracker/"; \
