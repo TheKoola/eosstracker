@@ -669,6 +669,8 @@ include $documentroot . '/common/header.php';
                 <option value="EOSSF">EOSSF</option>
                 <option value="EOSSG">EOSSG</option>
                 <option value="EOSSX">EOSSX</option>
+                <option value="ATLA">ATLA</option>
+                <option value="COLU">COLU</option>
                 <option value="DISC">DISC</option>
                 <option value="VOYA">VOYA</option>
                 <option value="ARISS">ARISS</option>
