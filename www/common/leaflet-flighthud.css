@@ -165,13 +165,13 @@ td.leaflet-control-flighthud-cellright {
 }
 
 @keyframes newdata {
-    from { background-color: red; }
+    from { background-color: rgba(0, 100, 0, .80); }
     to { background: rgba(255, 255, 255, .80); }
 }
 
 .redToBlack {
     animation-name:  newdata;
-    animation-duration: 3s;
+    animation-duration: 2s;
 }
 
 @keyframes alertflash {
