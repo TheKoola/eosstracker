@@ -2172,7 +2172,7 @@ function getTrackers() {
         var zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
 
         // add a scale widget in the lower left hand corner for miles / kilometers.
-        var scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
+        var scale = L.control.scale({position: 'bottomright', maxWidth: 400, metric: false}).addTo(map);
 
 	    // add a widget in the upper right hand corner for adding waypoints
 	    var marker_control = new L.Control.SimpleMarkers({marker_draggable: true});
