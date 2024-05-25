@@ -13,8 +13,5 @@ services:
     volumes:
       - /opt/eosstracker/config/eosstracker:/eosstracker
     ports:
-      - "8321:8000"
-      - "8322:8001"
-      - "8421:80"
       - "8422:443"
       - "9988:14501"

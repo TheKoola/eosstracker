@@ -7,14 +7,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Denver
 
 RUN apt-get update \
+&& apt-get upgrade -y \
 && apt-get install -y --no-install-recommends \
- git-core \
- ca-certificates \
-&& apt-get update 
-
+ git-core ca-certificates \
+&& apt-get install -y locales \
+&& rm -rf /var/lib/apt/lists/* \
 # make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
-RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
-        && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
 ENV LANG en_US.utf8
 
 # Get packages -- Note: comes from install-packages.bash
@@ -147,7 +147,7 @@ ENV TZ=America/Denver
 RUN apt-get update \
 && apt-get upgrade -y \
 && apt-get install -y --no-install-recommends \
- ca-certificates \
+locales ca-certificates \
 # Run environment for direwolf
  libasound2-dev libudev-dev gpsd libgps-dev ax25-tools \
 # Run environment for aprsc
@@ -155,20 +155,19 @@ RUN apt-get update \
 # Run environment for eosstracker
  git sudo curl wget \
  apache2 apache2-dev php php-pgsql \
- libusb-1.0-0-dev \
  postgresql-14 postgresql-14-postgis-3 postgresql-14-postgis-3-scripts postgis \
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
  gnuradio gnuradio-dev gr-osmosdr rtl-sdr airspy \
- gpsd gpsd-clients libgps-dev alsa-utils usbutils \
+ gpsd gpsd-clients libgps-dev alsa-utils usbutils libusb-1.0-0-dev \
 # General utilities
  ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon \
 && apt-get clean autoclean \
 && apt-get autoremove --yes \
+&& rm -rf /var/lib/apt/lists/* \
+# make the "en_US.UTF-8" locale so it will be utf-8 by default
+&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
 && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
-# make the "en_US.UTF-8" locale so it will be utf-8 by default
-RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
-        && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG en_US.utf8
 
 # Set time zone
@@ -191,20 +190,20 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  echo "eosstracker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
  echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash" >> /etc/sudoers
 
-# Configure gpsd
+# Configure gpsd ports
 EXPOSE 2947/tcp
 
-# Configure apache
+# Configure apache ports
 EXPOSE 80/tcp 443/tcp
 
-# Configure postgresql
+# Configure postgresql ports
 EXPOSE 5432/tcp 5432/udp
 
-# Configure aprsc
+# Configure aprsc ports
 EXPOSE 8080/udp 14501/tcp 14580/tcp 14580/udp 10152/tcp 10152/udp
 RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc
 
-# Configure direwolf
+# Configure direwolf ports
 EXPOSE 8000/tcp 8001/tcp
 
 # Copy the binaries from the build image
