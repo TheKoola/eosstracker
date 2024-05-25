@@ -155,6 +155,7 @@ RUN apt-get update \
 # Run environment for eosstracker
  git sudo curl wget \
  apache2 apache2-dev php php-pgsql \
+ libusb-1.0-0-dev \
  postgresql-14 postgresql-14-postgis-3 postgresql-14-postgis-3-scripts postgis \
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
  gnuradio gnuradio-dev gr-osmosdr rtl-sdr airspy \
