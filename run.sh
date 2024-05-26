@@ -28,8 +28,8 @@ if [ -d /eosstracker ]; then
         su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
         su - eosstracker -c "cd /eosstracker; git status"
         cp -rpa /usr/src/eosstracker/db /eosstracker/
-        cp -rpa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
-
+        su eosstracker -c 'echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt'
+        
     fi
 else
 
@@ -42,7 +42,7 @@ else
     su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
     su - eosstracker -c "cd /eosstracker; git status"
     cp -rpa /usr/src/eosstracker/db /eosstracker/
-    cp -rpa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
+    su eosstracker -c 'echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt'
 
 fi
 
@@ -62,7 +62,7 @@ fi
 service postgresql start && service apache2 start
 
 # Start a process
-tail -f /eosstracker/logs/habtracker.log &
+tail -f /var/log/apache2/access.log &
 
 # Start the gpsd process 
 echo "Using the GPS device ${GPS_DEVICE} ..."

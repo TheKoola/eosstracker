@@ -5,13 +5,18 @@ services:
     image: thekoola/eosstracker:brickv2.1
     devices:
       - /dev/bus/usb
+      - /dev/ttyUSB0
     container_name: eosstracker
     restart: unless-stopped
     command: /run.sh
     environment:
       - TZ=America/Denver
+      - GPS_DEVICE=/dev/ttyUSB0
+    cap_add:
+      - SYS_ADMIN
     volumes:
-      - /opt/eosstracker/config/eosstracker:/eosstracker
+      - ./eosstracker:/eosstracker
     ports:
-      - "8422:443"
-      - "9988:14501"
+      - 80:80
+      - 443:443
+      - 14501:14501
