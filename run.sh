@@ -22,8 +22,13 @@ if [ -d /eosstracker ]; then
 
 	# /eosstracker is empty, continue...
         echo "OK ... Setting up and copying /eosstracker directory"
-        chown eosstracker:eosstracker /eosstracker
-        cp -rpa /usr/src/eosstracker/* /eosstracker/
+        chown -R eosstracker:eosstracker /eosstracker
+        echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
+        cd /
+        su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
+        su - eosstracker -c "cd /eosstracker; git status"
+        cp -rpa /usr/src/eosstracker/db /eosstracker/
+        cp -rpa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
 
     fi
 else
@@ -31,27 +36,37 @@ else
     # /eosstracker does not exist, continue...
     echo "OK ... Creating, setting up and copying /eosstracker directory"
     mkdir -p /eosstracker
-    chown eosstracker:eosstracker /eosstracker
-    cp -rpa /usr/src/eosstracker/* /eosstracker/
+    chown -R eosstracker:eosstracker /eosstracker
+    echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
+    cd /
+    su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
+    su - eosstracker -c "cd /eosstracker; git status"
+    cp -rpa /usr/src/eosstracker/db /eosstracker/
+    cp -rpa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
 
 fi
+
+# Fix permissions
+/usr/bin/chown -R postgres:postgres /eosstracker/db/postgresql
+/usr/bin/chown -R aprsc:aprsc /opt/aprsc/data /opt/aprsc/dev /opt/aprsc/logs
+/usr/bin/chown -R aprsc:aprsc /opt/aprsc/sbin /opt/aprsc/web
+/usr/bin/chown -R aprsc:eosstracker /opt/aprsc/etc
+/usr/bin/chmod 777 /eosstracker/www/configuration /eosstracker/www/audio
+/usr/bin/chmod 444 /eosstracker/www/configuration/defaults.txt
+/usr/bin/chmod 444 /eosstracker/www/nodeid.txt
 
 # Run rc.local
 /bin/bash /eosstracker/sbin/rc.local
 
 # Start services
-# service php8.1-fpm start && \
-service postgresql start && \
-# service renderd start && \
-service apache2 start
+service postgresql start && service apache2 start
 
 # Start a process
-tail -f /var/log/apache2/access.log &
+tail -f /eosstracker/logs/habtracker.log &
 
 # Start the gpsd process 
-# /usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G tcp://gps:8888
-/usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G /dev/ttyUSB0 &
-# /usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G /dev/bus/usb/003/013 &
+echo "Using the GPS device ${GPS_DEVICE} ..."
+/usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G ${GPS_DEVICE} &
 
 fg %1
 

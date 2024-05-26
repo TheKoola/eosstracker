@@ -37,14 +37,14 @@ RUN apt-get update \
  gpsd gpsd-clients libgps-dev \
 # Additional packages
  libttspico-utils ffmpeg net-tools htop wavemon avahi-daemon avahi-utils \
-&& apt-get -y remove pulseaudio modemmanager \
+&& apt-get -y remove --purge pulseaudio modemmanager \
 && apt-get clean autoclean \
 && apt-get autoremove --yes \
 && rm -rf /var/lib/{apt,dpkg,cache,log}/ 
 
 #### Install eosstracker from https://github.com/TheKoola/eosstracker ####
 
-WORKDIR /usr/src/app
+WORKDIR /
 
 # Configure user eosstracker, create directory and set permissions
 RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eosstracker; \
@@ -67,30 +67,12 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
 # Install aprslib
  su - eosstracker -c "pip3 install --no-cache-dir aprslib"; \
 # Install eosstracker
- cd /usr/src/app; \
- git clone -b brickv2.1 https://github.com/TheKoola/eosstracker.git; \
- cd /usr/src/app/eosstracker; \
- su eosstracker -c "cp -rpa bin doc etc logs sbin sql www /eosstracker/"; \
- su eosstracker -c "cp -rpa .git /eosstracker/"; \
- su eosstracker -c "cp -pa .gitignore /eosstracker/"; \
- su eosstracker -c "cp -pa CHANGES.md CUSTOMIZATION.md LICENSE README.md /eosstracker/"; \
- su eosstracker -c "cp -pa cleanandstage.bash fixperms.bash setupnewhome.bash /eosstracker/"; \
- mkdir /eosstracker/osm /eosstracker/maps /eosstracker/db; \
- chown -R eosstracker:eosstracker /eosstracker/osm /eosstracker/maps /eosstracker/db; \
-# Cleanup any old files -- Note: comes from cleanandstage.bash
- cd /eosstracker/www/images/aprs; \
- rm -f index.html makeall.bash makeimages-overlays.bash makeimages.bash; \
- rm -f makeimages2.bash makeimages3.bash symbols-new.txt symbols.csv symbols.txt; \
- rm -f symbols2.csv tocalls.bash tocalls.txt tocalls2.bash tocalls3.bash; \
- cd /eosstracker/www; \
- rm -f common/COPYING common/sessionvariables.php common/symbols.js images/graphics/eosslogo.png; \
- rm -f predictiondata/*.txt preferences.php; \ 
- rm -fr images/flightindicators/img images/aprs/aprs-symbol-index/; \
- cd /eosstracker; \
- rm -f bin/COPYING www/COPYING; \
-# Set up github -- Note: comes from cleanandstage.bash
- su eosstracker -c "git checkout -- etc/README logs/.gitignore logs/README sql/eoss_specifics.sql"; \
- su eosstracker -c "git pull && git status"; \
+ su - eosstracker -c "cd /; git clone -b brickv2.1 https://github.com/TheKoola/eosstracker.git"; \
+ su - eosstracker -c "cd /eosstracker; git status"; \
+ mkdir /eosstracker/db; \
+ chown -R eosstracker:eosstracker /eosstracker/db; \
+#  su eosstracker -c "git checkout -- etc/README logs/.gitignore logs/README sql/eoss_specifics.sql"; \
+#  su eosstracker -c "git pull && git status"; \
 # Fix permissions -- Note: comes from fixperms.bash
  chmod 777 /eosstracker/www/configuration /eosstracker/www/audio; \
  chmod 444 /eosstracker/www/configuration/defaults.txt; \
@@ -149,6 +131,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Denver
+ENV GPS_DEVICE=/dev/ttyUSB0
 
 # Get packages
 RUN apt-get update \
@@ -174,7 +157,7 @@ locales ca-certificates \
 # General utilities
  alsa-utils usbutils libusb-1.0-0-dev libasound2-dev libudev-dev libevent-dev \
  libttspico-utils ffmpeg net-tools wavemon vim avahi-daemon avahi-utils \
-&& apt-get -y remove pulseaudio modemmanager \
+&& apt-get -y remove --purge pulseaudio modemmanager \
 && apt-get clean autoclean \
 && apt-get autoremove --yes \
 && rm -rf /var/lib/apt/lists/* \
@@ -200,25 +183,25 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  su - eosstracker -c "pip3 install --no-cache-dir aprslib"; \
 # Update sudoers
  echo "#### These are for the eosstracker and www-data web user" >> /etc/sudoers; \
- #echo "eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /sr/bin/pkill" >> /etc/sudoers; \ 
+#  echo "eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill" >> /etc/sudoers; \ 
  echo "eosstracker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
  echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash" >> /etc/sudoers
 
 # Configure gpsd ports
-EXPOSE 2947/tcp
+# EXPOSE 2947/tcp
 
 # Configure apache ports
 EXPOSE 80/tcp 443/tcp
 
 # Configure postgresql ports
-EXPOSE 5432/tcp 5432/udp
+# EXPOSE 5432/tcp 5432/udp
 
-# Configure aprsc ports
-EXPOSE 8080/udp 14501/tcp 14580/tcp 14580/udp 10152/tcp 10152/udp
+# Configure aprsc ports and user
+EXPOSE 14501/tcp
 RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc
 
 # Configure direwolf ports
-EXPOSE 8000/tcp 8001/tcp
+# EXPOSE 8000/tcp 8001/tcp
 
 # Copy the binaries from the build image
 COPY --from=build /etc/udev/rules.d/99-direwolf-cmedia.rules /etc/udev/rules.d/
@@ -239,6 +222,10 @@ RUN cd /usr/src/eosstracker; \
 # Unlock aprsc for testing
 RUN sed -i '$d' /opt/aprsc/etc/aprsc.conf; sed -i '$d' /opt/aprsc/etc/aprsc.conf
 
+# Fix airspy
+RUN echo "ATTR{idVendor}==\"1d50\", ATTR{idProduct}==\"60a1\", SYMLINK+=\"airspy-%k\", MODE=\"660\", GROUP=\"plugdev\"" \
+ >> /etc/udev/rules.d/52-airspy.rules
+
 # Configure PostgreSQL 
 RUN service postgresql start && \
  su - postgres -c "createuser eosstracker"; \
@@ -250,7 +237,8 @@ RUN service postgresql start && \
  su eosstracker -c "psql -q -d aprs -f /usr/src/eosstracker/sql/aprs-database.v2.sql" && \
  su eosstracker -c "psql -q -d aprs -f /usr/src/eosstracker/sql/eoss_specifics.sql" && \
  service postgresql stop && \
- mv /var/lib/postgresql /usr/src/eosstracker/db/; \
+ cp -rpa /var/lib/postgresql /usr/src/eosstracker/db/; \
+ rm -fr /var/lib/postgresql; \
  sed -i "s/data_directory = '\/var\/lib\/postgresql\/14\/main'/data_directory = '\/eosstracker\/db\/postgresql\/14\/main'/g" \
        /etc/postgresql/14/main/postgresql.conf 
 
@@ -278,6 +266,8 @@ RUN a2enmod ssl; \
 
 # Configure gpsd
 RUN sed -i 's/GPSD_OPTIONS=""/GPSD_OPTIONS="-n -G"/g' /etc/default/gpsd; \
+ MyGPSDevice="${GPS_DEVICE}"; \
+ sed -i 's/DEVICES=""/DEVICES="$MyGPSDevice"/g' /etc/default/gpsd; \
  sed -i 's/ListenStream=127.0.0.1:2947/#ListenStream=127.0.0.1:2947/g' /lib/systemd/system/gpsd.socket; \
  sed -i 's/# ListenStream=0.0.0.0:2947/ListenStream=0.0.0.0:2947/g' /lib/systemd/system/gpsd.socket
 
