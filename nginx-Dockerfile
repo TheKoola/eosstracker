@@ -22,20 +22,13 @@ RUN apt-get update \
 && apt-get install -qq -y --no-install-recommends \
  git sed sudo wget vim tini usbutils \
  gcc g++ make cmake build-essential \
-# Apache web server
  apache2 apache2-dev php php-pgsql php-sqlite3 php-cli php-cgi libapache2-mod-php \
-# PostgreSQL
  postgresql-14 postgis postgresql-14-postgis-3 postgresql-14-postgis-3-scripts  \
-# Python libraries
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
-# Build libraries
- alsa-utils libusb-1.0-0-dev libasound2-dev libudev-dev ax25-tools \
+ alsa-utils usbutils libusb-1.0-0-dev libasound2-dev libudev-dev ax25-tools \
  libevent-dev libssl-dev libsctp-dev libcap-dev zlib1g-dev \
-# Gnuradio and libraries
  gnuradio gnuradio-dev gr-osmosdr rtl-sdr airspy \
-# GPSD and libraries
  gpsd gpsd-clients libgps-dev \
-# Additional packages
  libttspico-utils ffmpeg net-tools htop wavemon avahi-daemon avahi-utils \
 && apt-get -y remove pulseaudio modemmanager \
 && apt-get clean autoclean \
@@ -161,18 +154,16 @@ locales ca-certificates \
  libevent-dev libssl-dev libsctp-dev libcap-dev zlib1g-dev \
 # Run environment for eosstracker
  git sudo curl wget \
-# Apache web server
- apache2 apache2-dev php php-pgsql php-sqlite3 php-cli php-cgi libapache2-mod-php \
-# PostgreSQL
+ apache2 php php-pgsql php-sqlite3 php-cli php-cgi libapache2-mod-php \
  postgresql-14 postgis postgresql-14-postgis-3 postgresql-14-postgis-3-scripts  \
-# Python libraries
  python3-mapnik python3-matplotlib python3-numpy python3-pip python3-psutil python3-psycopg2 python3-scipy python3-usb \
-# Gnuradio and libraries
  gnuradio gnuradio-dev gr-osmosdr rtl-sdr airspy \
-# Run environment for gpsd
  gpsd gpsd-clients libgps-dev \
-# General utilities
  alsa-utils usbutils libusb-1.0-0-dev libasound2-dev libudev-dev libevent-dev \
+# nginx web server with https
+ nginx nginx-common nginx-core ssl-cert php-fpm libnginx-mod-http-geoip \
+ libnginx-mod-http-image-filter libnginx-mod-http-xslt-filter libnginx-mod-mail libnginx-mod-stream \
+# General utilities
  libttspico-utils ffmpeg net-tools wavemon vim avahi-daemon avahi-utils \
 && apt-get -y remove pulseaudio modemmanager \
 && apt-get clean autoclean \
@@ -254,6 +245,27 @@ RUN service postgresql start && \
  sed -i "s/data_directory = '\/var\/lib\/postgresql\/14\/main'/data_directory = '\/eosstracker\/db\/postgresql\/14\/main'/g" \
        /etc/postgresql/14/main/postgresql.conf 
 
+# Configure renderd service
+# RUN sed -i 's/RUNASUSER=_renderd/RUNASUSER=eosstracker/g' /etc/init.d/renderd; \
+# sed -i 's/User=_renderd/User=eosstracker/g' /lib/systemd/system/renderd.service; \
+# echo "[renderd]\n\
+# num_threads=4\n\
+# tile_dir=/eosstracker/maps\n\
+# stats_file=/var/run/renderd/renderd.stats\n\n\
+# [mapnik]\n\
+# plugins_dir=/usr/lib/mapnik/3.1/input\n\
+# font_dir=/usr/share/fonts/truetype\n\
+# font_dir_recurse=1\n\n\
+# [maps]\n\
+# URI=/maps/\n\
+# TILEDIR=/eosstracker/maps\n\
+# XML=/eosstracker/osm/mapnik.xml\n\
+# HOST=localhost\n\
+# TILESIZE=256\n\
+# MAXZOOM=20\n" >> /usr/local/etc/renderd.conf; \
+# mkdir -p /eosstracker/maps/tiles; \
+# touch -t 200001010000 /eosstracker/maps/tiles/planet-import-complete
+
 # Configure Apache
 RUN a2enmod ssl; \
  a2enmod rewrite; \
@@ -269,12 +281,62 @@ RUN a2enmod ssl; \
        RewriteRule (.*) https:\/\/%{SERVER_NAME}\/$1 [R,L]/' /etc/apache2/sites-enabled/000-default.conf; \
  sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/eosstracker\/www/g' /etc/apache2/sites-enabled/000-default.conf; \
  sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/eosstracker\/www/g' /etc/apache2/sites-enabled/default-ssl.conf; \
+#  sed -i 's/#LogLevel info ssl\:warn/#LogLevel info ssl\:warn\n \
+#                \n \
+#                \####### This is for OSM tile rendering...\n \
+#                LoadTileConfigFile \/usr\/local\/etc\/renderd.conf\n \
+#                ModTileRenderdSocketName \/var\/run\/renderd\/renderd.sock\n \
+#                \# Timeout before giving up for a tile to be rendered\n \
+#                ModTileRequestTimeout 0\n \
+#                \# Timeout before giving up for a tile to be rendered that is otherwise missing\n \
+#                ModTileMissingRequestTimeout 30\n \
+#                \#######/g' /etc/apache2/sites-enabled/default-ssl.conf; \
  echo "<Directory /eosstracker/www/>" >> /etc/apache2/apache2.conf; \
  echo "	Options Indexes FollowSymLinks" >> /etc/apache2/apache2.conf; \
  echo "	AllowOverride None" >> /etc/apache2/apache2.conf; \
  echo "	Require all granted" >> /etc/apache2/apache2.conf; \
  echo "</Directory>" >> /etc/apache2/apache2.conf; \
  service apache2 stop
+
+# Configure nginx
+RUN echo "# EOSS nginx configuration file" >> /etc/nginx/sites-available/eosstracker; \
+ echo "server {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    listen 80;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    server_name eosstracker.local;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    return 301 https://\$host\$request_uri;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "}" >> /etc/nginx/sites-available/eosstracker; \
+ echo "server {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    listen 443 ssl default_server;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    root /eosstracker/www;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    server_name eosstracker.local;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    index index.php index.html index.htm index.nginx-debian.html;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    include snippets/snakeoil.conf;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    location / {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "        try_files \$uri \$uri/ =404;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    location /predictiondata {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "        autoindex on;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "    location ~ (about|setup|monitor|rawdata|home|dashboard)\.php\$ {" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "        auth_basic \"Adminstrator Access\";" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "        auth_basic_user_file /eosstracker/etc/.htpasswd;" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "        include snippets/fastcgi-php.conf;" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;" >> /etc/nginx/sites-available/eosstracker; \
+#  echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    location ~ \.php\$ {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "       include snippets/fastcgi-php.conf;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "       fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    location /tileserver/ {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "        proxy_pass http://eoss-tiles:8080/;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    location ~ /\.ht {" >> /etc/nginx/sites-available/eosstracker; \
+ echo "       deny all;" >> /etc/nginx/sites-available/eosstracker; \
+ echo "    }" >> /etc/nginx/sites-available/eosstracker; \
+ echo "}" >> /etc/nginx/sites-available/eosstracker; \
+#  sed -i 's/gzip on;/gzip off;/g' /etc/nginx/nginx.conf; \
+ rm /etc/nginx/sites-enabled/default; \
+ ln -s /etc/nginx/sites-available/eosstracker /etc/nginx/sites-enabled/eosstracker
 
 # Configure gpsd
 RUN sed -i 's/GPSD_OPTIONS=""/GPSD_OPTIONS="-n -G"/g' /etc/default/gpsd; \

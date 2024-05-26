@@ -36,17 +36,22 @@ else
 
 fi
 
+# Run rc.local
+/bin/bash /eosstracker/sbin/rc.local
+
+# Start services
+# service php8.1-fpm start && \
+service postgresql start && \
+# service renderd start && \
+service apache2 start
+
 # Start a process
 tail -f /var/log/apache2/access.log &
 
 # Start the gpsd process 
-/usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G &
-
-# Start the PostgreSQL service
-service postgresql start
-
-# Start the Apache service
-service apache2 start
+# /usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G tcp://gps:8888
+/usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G /dev/ttyUSB0 &
+# /usr/sbin/gpsd -F /run/gpsd/gpsd.socket -n -N -G /dev/bus/usb/003/013 &
 
 fg %1
 

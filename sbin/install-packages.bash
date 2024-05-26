@@ -37,7 +37,7 @@ echo ""
 sleep 1
 echo "Installing PostgreSQL..."
 #apt-get -y install postgresql postgresql-contrib postgis postgresql-10-postgis-2.4 postgresql-10-postgis-scripts
-apt-get -y install postgresql-14 postgis 
+apt-get -y install postgresql-14 postgis postgresql-14-postgis-3 postgresql-14-postgis-3-scripts
 echo ""
 
 sleep 1
