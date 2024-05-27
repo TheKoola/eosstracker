@@ -2,6 +2,9 @@
 
 set -m
 
+BASEDIR=/opt/aprsc
+DIRNAME=aprsc
+
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
 	echo "not running as root...exiting"
@@ -28,7 +31,7 @@ if [ -d /eosstracker ]; then
         su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
         su - eosstracker -c "cd /eosstracker; git status"
         cp -rpa /usr/src/eosstracker/db /eosstracker/
-        su eosstracker -c 'echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt'
+        cp -pa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
         
     fi
 else
@@ -42,7 +45,7 @@ else
     su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
     su - eosstracker -c "cd /eosstracker; git status"
     cp -rpa /usr/src/eosstracker/db /eosstracker/
-    su eosstracker -c 'echo "EOSS-Docker" >> /eosstracker/www/nodeid.txt'
+    cp -pa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
 
 fi
 
@@ -55,8 +58,39 @@ fi
 /usr/bin/chmod 444 /eosstracker/www/configuration/defaults.txt
 /usr/bin/chmod 444 /eosstracker/www/nodeid.txt
 
-# Run rc.local
-/bin/bash /eosstracker/sbin/rc.local
+# Check and add necessary directories and mount points for aprsc >= 2.1.5
+if [ ! -d $BASEDIR/etc ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/etc
+fi
+
+if [ ! -d $BASEDIR/dev ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/dev
+fi
+
+if [ ! -d $BASEDIR/lib ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/lib
+fi
+
+if [ ! -d $BASEDIR/lib64 ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/lib64
+fi
+
+if [ ! -d $BASEDIR/usr/lib ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/usr/lib
+fi
+
+if [ ! -d $BASEDIR/usr/lib64 ]; then
+	/bin/mkdir -p -m 755 $BASEDIR/usr/lib64
+fi
+
+# Copy files and special devices for aprsc >= 2.1.5 chroot environment
+if [ ! -e $BASEDIR/etc/gai.conf ]; then
+	/bin/cp -p /etc/resolv.conf /etc/nsswitch.conf /etc/hosts /etc/gai.conf $BASEDIR/etc/
+fi
+
+if [ ! -e $BASEDIR/dev/random ]; then
+	/bin/cp -pa /dev/urandom /dev/random /dev/null /dev/zero $BASEDIR/dev/
+fi
 
 # Start services
 service postgresql start && service apache2 start
