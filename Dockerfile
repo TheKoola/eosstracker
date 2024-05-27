@@ -67,15 +67,16 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
 # Install aprslib
  su - eosstracker -c "pip3 install --no-cache-dir aprslib"; \
 # Install eosstracker
- su - eosstracker -c "cd /; git clone -b brickv2.1 https://github.com/TheKoola/eosstracker.git"; \
+ su - eosstracker -c "cd /; git clone --progress -b brickv2.1 https://github.com/TheKoola/eosstracker.git"; \
  su - eosstracker -c "cd /eosstracker; git status"; \
  mkdir /eosstracker/db; \
  chown -R eosstracker:eosstracker /eosstracker/db; \
-#  su eosstracker -c "git checkout -- etc/README logs/.gitignore logs/README sql/eoss_specifics.sql"; \
-#  su eosstracker -c "git pull && git status"; \
 # Fix permissions -- Note: comes from fixperms.bash
  chmod 777 /eosstracker/www/configuration /eosstracker/www/audio; \
  chmod 444 /eosstracker/www/configuration/defaults.txt; \
+# Fix airspy
+ echo "ATTR{idVendor}==\"1d50\", ATTR{idProduct}==\"60a1\", SYMLINK+=\"airspy-%k\", MODE=\"660\", GROUP=\"plugdev\"" \
+  >> /etc/udev/rules.d/52-airspy.rules; \
 # Update sudoers 
  echo "#### These are for the eosstracker and www-data web user" >> /etc/sudoers; \
  #echo "eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /sr/bin/pkill" >> /etc/sudoers; \ 
@@ -89,7 +90,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /usr/src/app
 
-RUN git clone -b 1.6 https://github.com/wb2osz/direwolf.git && \
+RUN git clone --progress -b 1.6 https://github.com/wb2osz/direwolf.git && \
  cd /usr/src/app/direwolf/src; \
  sed -i 's/#define MAX_ADEVS [0-9]/#define MAX_ADEVS 9/g' direwolf.h; \
  sed -i 's/if (new_count > delete_count + [0-9][0-9][0-9]) {/if (new_count > delete_count + 500) {/g' rrbb.c; \
@@ -107,7 +108,7 @@ RUN git clone -b 1.6 https://github.com/wb2osz/direwolf.git && \
 WORKDIR /usr/src/app
 
 RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/nologin --group aprsc; \
- git clone https://github.com/edgeofspace/aprsc.git && \
+ git clone --progress https://github.com/edgeofspace/aprsc.git && \
  cd /usr/src/app/aprsc/src; \
  ./configure --prefix /opt/aprsc && \
  make && \
@@ -211,11 +212,10 @@ COPY --from=build /root/ /root/
 COPY --from=build /home/eosstracker/ /home/eosstracker/
 COPY --from=build /eosstracker/ /usr/src/eosstracker/
 
-# Check github status and set nodeid.txt
+# Fix permissions and set nodeid.txt
 RUN cd /usr/src/eosstracker; \
  chmod 777 /usr/src/eosstracker/www/configuration /usr/src/eosstracker/www/audio; \
  chmod 444 /usr/src/eosstracker/www/configuration/defaults.txt; \
- #su eosstracker -c "git pull && git status"; \
  su eosstracker -c 'echo "EOSS-Docker" >> /usr/src/eosstracker/www/nodeid.txt'; \
  chmod 444 /usr/src/eosstracker/www/nodeid.txt
 

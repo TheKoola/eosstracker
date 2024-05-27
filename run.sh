@@ -28,7 +28,7 @@ if [ -d /eosstracker ]; then
         chown -R eosstracker:eosstracker /eosstracker
         echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
         cd /
-        su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
+        su - eosstracker -c "cd /; git clone -q -b brickv2.1 https://www.github.com/thekoola/eosstracker"
         su - eosstracker -c "cd /eosstracker; git status"
         cp -rpa /usr/src/eosstracker/db /eosstracker/
         cp -pa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
@@ -42,7 +42,7 @@ else
     chown -R eosstracker:eosstracker /eosstracker
     echo "Cloning https://www.github.com/thekoola/eosstracker to /eosstracker..."
     cd /
-    su - eosstracker -c "cd /; git clone -b brickv2.1 https://www.github.com/thekoola/eosstracker"
+    su - eosstracker -c "cd /; git clone -q -b brickv2.1 https://www.github.com/thekoola/eosstracker"
     su - eosstracker -c "cd /eosstracker; git status"
     cp -rpa /usr/src/eosstracker/db /eosstracker/
     cp -pa /usr/src/eosstracker/www/nodeid.txt /eosstracker/www/
