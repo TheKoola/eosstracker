@@ -1,5 +1,4 @@
 # Ignore the maps, osm, db, and logs directories
-.trunk/
 maps/
 osm/
 db/
