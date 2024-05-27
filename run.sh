@@ -58,6 +58,10 @@ fi
 /usr/bin/chmod 444 /eosstracker/www/configuration/defaults.txt
 /usr/bin/chmod 444 /eosstracker/www/nodeid.txt
 
+# Reset backend process states
+echo "Resetting the backend process states in case of improper shutdown..."
+rm -f /eosstracker/www/daemonstatus.json
+
 # Check and add necessary directories and mount points for aprsc >= 2.1.5
 if [ ! -d $BASEDIR/etc ]; then
 	/bin/mkdir -p -m 755 $BASEDIR/etc
