@@ -8,6 +8,7 @@ services:
       - /dev/ttyUSB0
     container_name: eosstracker
     restart: unless-stopped
+    network_mode: host
     command: /run.sh
     environment:
       - TZ=America/Denver
@@ -16,7 +17,3 @@ services:
       - SYS_ADMIN
     volumes:
       - ./data:/eosstracker
-    ports:
-      - 80:80
-      - 443:443
-      - 14501:14501
