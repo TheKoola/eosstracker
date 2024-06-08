@@ -2,7 +2,7 @@
 #
 # EOSS docker install bootstrap file
 # 2024-06-08
-# N2XGL
+# de N2XGL
 #
 # Note:  Hardcoded for user eosstracker
 
@@ -36,8 +36,9 @@ groupadd docker
 
 echo "Adding $EOSS_USER to docker group..."
 usermod -aG docker ${EOSS_USER}
+newgrp docker
 
-echo "Configuring Doccker to start on boot..."
+echo "Configuring Docker to start on boot..."
 systemctl enable docker.service
 systemctl enable containerd.service
 
