@@ -6,7 +6,7 @@
 #
 # Note:  Hardcoded for user eosstracker
 
-USER=eosstracker
+EOSSUSER=eosstracker
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
@@ -34,8 +34,8 @@ apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docke
 echo "Creating the docker group..."
 groupadd docker
 
-echo "Adding $USER to docker group..."
-usermod -aG docker $USER
+echo "Adding $EOSSUSER to docker group..."
+usermod -aG docker $EOSSUSER
 
 echo "Configuring Doccker to start on boot..."
 systemctl enable docker.service
