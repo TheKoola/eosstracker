@@ -46,7 +46,7 @@ echo "All packages installed successfully."
 echo "Installing docker compose file into /opt/eosstracker..."
 mkdir -p /opt/eosstracker
 mkdir -p /opt/eosstracker/data
-curl -o /opt/eosstracker/docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
+curl -s -o /opt/eosstracker/docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
 chown -R ${EOSS_USER}:${EOSS_USER} /opt/eosstracker
 
 exit 0
