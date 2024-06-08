@@ -24,8 +24,8 @@ echo \
   tee /etc/apt/sources.list.d/docker.list > /dev/null
 apt-get update
 
-# echo "Installing Docker and Docker Compose..."
-# apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo "Installing Docker and Docker Compose..."
+apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "All packages installed successfully."
 exit 0
