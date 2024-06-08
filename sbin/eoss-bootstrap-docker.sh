@@ -1,8 +1,10 @@
 #!/bin/bash
 #
 # EOSS docker install bootstrap file
-# 2024-0608
+# 2024-06-08
 # N2XGL
+
+# USER=eosstracker
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
@@ -26,6 +28,16 @@ apt-get update
 
 echo "Installing Docker and Docker Compose..."
 apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+echo "Creating the docker group..."
+groupadd docker
+
+echo "Adding $USER to docker group..."
+usermod -aG docker $USER
+
+echo "Configuring Doccker to start on boot..."
+systemctl enable docker.service
+systemctl enable containerd.service
 
 echo "All packages installed successfully."
 exit 0
