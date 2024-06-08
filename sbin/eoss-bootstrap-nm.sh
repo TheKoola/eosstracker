@@ -14,12 +14,13 @@ if [ ${ME} != "root" ]; then
         exit
 fi
 
-echo "Installing network manager..."
+echo "Installing network manager and hostapd..."
 apt-get update
-apt-get install network-manager
+apt-get install network-manager hostapd
 
 echo "Removing modemmanager if present..."
 apt remove --purge modemmanager
+
 
 
 
