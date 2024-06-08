@@ -3,8 +3,10 @@
 # EOSS docker install bootstrap file
 # 2024-06-08
 # N2XGL
+#
+# Note:  Hardcoded for user eosstracker
 
-# USER=eosstracker
+USER=eosstracker
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
