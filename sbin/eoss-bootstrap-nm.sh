@@ -23,13 +23,14 @@ apt-get -y install network-manager hostapd dnsmasq
 echo "Removing modemmanager if present..."
 apt-get -y remove --purge modemmanager
 
-echo -e "\nEnter the WiFi hotspot ESID (e.g. EOSS-XX): "
+echo -en "\nEnter the WiFi hotspot SSID (e.g. EOSS-XX): "
 read EOSS_HOTSPOT
 
-echo "Connfiguring hotspot ESID $EOSS_HOTSPOT..."
+echo "Connfiguring hotspot SSID $EOSS_HOTSPOT..."
 nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid ${EOSS_HOTSPOT} mode ap
 nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk \
   ipv4.method shared 802-11-wireless-security.psk 'abcd1234'
+nmcli connection modify 802-11-wireless.powersave disable
 nmcli connection modify Hotspot wifi-sec.pmf disable
 nmcli connection modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
 
