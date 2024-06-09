@@ -8,6 +8,8 @@
 
 EOSS_USER=eosstracker
 
+set -e
+
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
         echo "Not running as root...exiting"
@@ -42,9 +44,8 @@ usermod -aG docker ${EOSS_USER}
 newgrp docker
 
 echo "Configuring Docker to start on boot..."
-systemctl enable docker.service
-systemctl enable containerd.service
-
+systemctl enable docker.service && \
+systemctl enable containerd.service && \
 sleep 3
 
 echo "Installing docker compose file into /opt/eosstracker..."
