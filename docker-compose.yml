@@ -16,5 +16,6 @@ services:
     volumes:
       - ./data:/eosstracker
     ports:
+      - 80:80
       - 443:443
       - 14501:14501
