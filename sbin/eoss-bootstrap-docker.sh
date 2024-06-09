@@ -37,7 +37,7 @@ echo "Installing Docker and Docker Compose..."
 apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "Creating the docker group..."
-groupadd docker
+groupadd -f docker
 
 echo "Adding $EOSS_USER to docker group..."
 usermod -aG docker ${EOSS_USER}
