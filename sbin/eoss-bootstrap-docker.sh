@@ -8,7 +8,7 @@
 
 EOSS_USER=eosstracker
 
-# set -e
+set -e
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
