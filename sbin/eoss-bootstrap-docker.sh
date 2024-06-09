@@ -14,6 +14,9 @@ if [ ${ME} != "root" ]; then
         exit
 fi
 
+echo "Removing any existing docker packages..."
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get remove $pkg; done
+
 echo "Installing Docker's official GPG key..."
 apt-get update
 apt-get install ca-certificates curl
@@ -42,12 +45,22 @@ echo "Configuring Docker to start on boot..."
 systemctl enable docker.service
 systemctl enable containerd.service
 
-echo "All packages installed successfully."
+sleep 3
 
 echo "Installing docker compose file into /opt/eosstracker..."
 mkdir -p /opt/eosstracker
 mkdir -p /opt/eosstracker/data
 curl -s -o /opt/eosstracker/docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
 chown -R ${EOSS_USER}:${EOSS_USER} /opt/eosstracker
+
+echo "All packages installed successfully."
+echo "Eosstracker docker-compose.yml file installed in /opt/eosstracker."
+echo ""
+
+sleep 3
+
+echo "----  Log out eosstracker and log back in to activate Docker permissions.   ----"
+echo "----  Once that is done, run 'docker compose up -d' from /opt/eosstracker.  ----"
+echo ""
 
 exit 0

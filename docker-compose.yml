@@ -15,3 +15,6 @@ services:
       - SYS_ADMIN
     volumes:
       - ./data:/eosstracker
+    ports:
+      - 443:443
+      - 14501:14501
