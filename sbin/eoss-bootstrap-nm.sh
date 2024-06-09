@@ -8,6 +8,8 @@
 
 EOSS_USER=eosstracker
 
+# set -e
+
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
         echo "Not running as root...exiting"
@@ -16,10 +18,10 @@ fi
 
 echo "Installing network manager and hostapd..."
 apt-get update
-apt-get install network-manager hostapd
+apt-get -y install network-manager hostapd
 
 echo "Removing modemmanager if present..."
-apt remove --purge modemmanager
+apt-get -y remove --purge modemmanager
 
 
 

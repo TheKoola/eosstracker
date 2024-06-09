@@ -8,7 +8,7 @@
 
 EOSS_USER=eosstracker
 
-set -e
+# set -e
 
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
@@ -21,7 +21,7 @@ for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
 
 echo "Installing Docker's official GPG key..."
 apt-get update
-apt-get install ca-certificates curl
+apt-get -y install ca-certificates curl
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 chmod a+r /etc/apt/keyrings/docker.asc
@@ -34,19 +34,19 @@ echo \
 apt-get update
 
 echo "Installing Docker and Docker Compose..."
-apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "Creating the docker group..."
 groupadd -f docker
 
 echo "Adding $EOSS_USER to docker group..."
 usermod -aG docker ${EOSS_USER}
-newgrp docker
+# newgrp docker
 
-echo "Configuring Docker to start on boot..."
-systemctl enable docker.service && \
-systemctl enable containerd.service && \
-sleep 3
+# echo "Configuring Docker to start on boot..."
+# systemctl enable docker.service && \
+# systemctl enable containerd.service && \
+# sleep 3
 
 echo "Installing docker compose file into /opt/eosstracker..."
 mkdir -p /opt/eosstracker
@@ -57,9 +57,6 @@ chown -R ${EOSS_USER}:${EOSS_USER} /opt/eosstracker
 echo "All packages installed successfully."
 echo "Eosstracker docker-compose.yml file installed in /opt/eosstracker."
 echo ""
-
-sleep 3
-
 echo "----  Log out eosstracker and log back in to activate Docker permissions.   ----"
 echo "----  Once that is done, run 'docker compose up -d' from /opt/eosstracker.  ----"
 echo ""
