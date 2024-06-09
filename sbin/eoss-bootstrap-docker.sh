@@ -17,7 +17,7 @@ if [ ${ME} != "root" ]; then
 fi
 
 echo "Removing any existing docker packages..."
-for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get remove $pkg; done
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get -y remove $pkg; done
 
 echo "Installing Docker's official GPG key..."
 apt-get update
