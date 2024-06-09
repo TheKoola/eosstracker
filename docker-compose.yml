@@ -1,18 +1,16 @@
-version: '3'
-
 services:
   eosstracker:
     image: thekoola/eosstracker:brickv2.1
     devices:
       - /dev/bus/usb
-      - /dev/ttyUSB0
+      - /dev/ttyACM0
     container_name: eosstracker
     restart: unless-stopped
     network_mode: host
     command: /run.sh
     environment:
       - TZ=America/Denver
-      - GPS_DEVICE=/dev/ttyUSB0
+      - GPS_DEVICE=/dev/ttyACM0
     cap_add:
       - SYS_ADMIN
     volumes:
