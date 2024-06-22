@@ -2,6 +2,9 @@
 
 Last update:  6/22/2024
 
+Warning:  This is to install *only* the base Ubuntu 24.04 operating system.  Eosstracker will *not* run natively on Ubuntu 24.04.
+This is intended for Docker installations.  To install eosstracker natively, refer to the Ubuntu 22.04 instructions.
+
 ## High Level Steps
 
 ### Basic System Functionality
@@ -307,6 +310,9 @@ sudo ufw status
 <a name="time"></a>
 ## Time Server Configuration
 
+### Install the chrony time service
+`sudo apt-get install chrony`
+
 ### Edit the time configuration configuration file:
 
 `sudo vi /etc/chrony/chrony.conf`
@@ -326,54 +332,8 @@ allow
 
 `sudo reboot`
 
-### Verification of Time
-
-Now check that chrony (the time service on Ubuntu) is connecting to the GPS.  Using the following command should list all of the time sources (GPS included) that chrony has contacted to evaluate as a potential time sync source:
-
-`chronyc sources`
-
-An example of a system that is connect to the internet.  Notice the `GPS` line and that in the far right column there is an offset value `200ms`.  You should see some non-zero number there.
+### Install additonal packages
+```sh
+sudo apt-get -y install ipheth-utils htop alsa-utils
+sudo apt-get -y remove pulseaudio
 ```
-210 Number of sources = 10
-MS Name/IP address         Stratum Poll Reach LastRx Last sample               
-===============================================================================
-#? GPS                           0   4     1    15    +43ms[  +43ms] +/-  200ms
-#? PPS                           0   4     0     -     +0ns[   +0ns] +/-    0ns
-^+ alphyn.canonical.com          2   6    17    14  -2746us[-1023us] +/-   83ms
-^- golem.canonical.com           2   6    17    12  -5068us[-5068us] +/-   95ms
-^- pugot.canonical.com           2   6    17    13  -4846us[-4846us] +/-   87ms
-^- chilipepper.canonical.com     2   6    17    13  -5460us[-5460us] +/-   97ms
-^+ lithium.constant.com          2   6    17    14  -3792us[-2069us] +/-   75ms
-^- ec2-34-198-67-116.comput>     3   6    17    13  -5748us[-5748us] +/-  103ms
-^* i.will.not.be.extorted.o>     2   6    17    14  +7708us[+9431us] +/-   42ms
-^+ fry.gwi.net                   2   6    17    15  -7847us[  -48ms] +/-   76ms
-```
-
-### Alternative checks
-Secondly one can run this command that shows time data coming from the GPS assuming the GPS has a FIX on some satellites.  One has to be root to run this command:
-
-`sudo ntpshmmon -n 5`
-
-Example output:
-```
-ntpshmmon version 1
-#      Name Seen@                Clock                Real                 L Prec
-sample NTP0 1548699816.644704781 1548699816.643714859 1548699815.640000104 0 -20
-sample NTP0 1548699820.717288106 1548699820.716170449 1548699819.640000104 0 -20
-sample NTP0 1548699821.088285007 1548699821.087243473 1548699819.740000009 0 -20
-sample NTP0 1548699821.351885356 1548699821.350920519 1548699819.840000152 0 -20
-sample NTP0 1548699822.192025998 1548699822.191887564 1548699820.840000152 0 -20
-```
-
-<a name="tiles"></a>
-## Downloading a Map Tiles (mbtiles) File
-
-Finally, download the most recent mbtiles file from the EOSS Kiosk system.  A mbtiles file, is one where the individidual map tiles for a given geographic region have been compressed into a single file, making it easier for portability, etc..  The downside to this, however, is that file sizes can be much larger, in this case, approximately 32GB in size.  Therefore it is highly recommended to perform this step with your system having access to a high-speed Internet connection to prevent download times becoming excessive.
-
-To download the most recent mbtiles file from the EOSS Kiosk run these commands:
-```
-/eosstracker/sbin/getlatestmap.bash
-```
-
-
-
