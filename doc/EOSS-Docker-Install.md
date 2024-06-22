@@ -13,16 +13,17 @@ Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 4. [Update and Unload Kernel Modules](#kernelmods)
 
 ### Eosstracker Docker Compose YAML file
-5. [Create directory and Compose file](#dockercompose)
-6. [Configure Devices and Environment](#configdevenv)
-7. [Start Eosstracker container](#eosstrackerstart)
+5. [Install additionl packages](#installaddpack)
+6. [Create directory and Compose file](#dockercompose)
+7. [Configure Devices and Environment](#configdevenv)
+8. [Start Eosstracker container](#eosstrackerstart)
 
 ### Configure Eosstracker
-8. [Synchronize with EOSS Kiosk](#kiosksync)
-9. [Configure Eosstracker settings (optional)](#eosssettings)
+9. [Synchronize with EOSS Kiosk](#kiosksync)
+10. [Configure Eosstracker settings (optional)](#eosssettings)
 
 ### Download Map Files
-10. [Downloading Eosstracker map files](#getmapfiles)
+11. [Downloading Eosstracker map files](#getmapfiles)
 
 
 ## Updating and Maintaining Eosstracker
@@ -111,6 +112,14 @@ Note:  If the `modprobe -r` command errors, a reboot may be required to unload t
 
 # Create directory and Compose file
 
+<a name="installaddpack"></a>
+## Install some additional packages
+
+Eosstracker requires access to audio, net-tools and libraries for usb SDR devices.
+```sh
+sudo apt-get install -y avahi-daemon net-tools librtlsdr2
+```
+
 <a name="dockercompose"></a>
 ## Choose a location for eosstracker
 
@@ -118,12 +127,19 @@ Choose a location and create a directory to contain the eosstracker Docker Compo
 directory will contain the eosstracker flight database and map files.  For the EOSS brick computers, the default 
 location is in the user's home directory `/home/eosstracker`.  Within the directory, create a subdirectory for storing the data:
 ```sh
+cd ~
 mkdir data
 ```
 
 ## Create the Docker Compose file
 
-Next create a `docker-compose.yml` text file within the directory, alongside the `data` folder you just created.  The contents of 
+Note:  A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
+```sh
+curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
+```
+Continue reading to learn about a Compose file for different configurations.  Otherwise, jump to [Start Eosstracker](#eosstrackerstart).
+
+Create a `docker-compose.yml` text file within the directory, alongside the `data` folder you just created.  The contents of 
 the Compose file will vary depending on your configuration.  For the EOSS brick computers, a default Compose file can be 
 found [here](https://github.com/TheKoola/eosstracker/blob/brickv2.1/docker-compose.yml) and consists of:
 ```yaml
@@ -144,11 +160,6 @@ services:
       - SYS_ADMIN
     volumes:
       - ./data:/eosstracker
-```
-
-A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
-```sh
-curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
 ```
 
 <a name="configdevenv"></a>
@@ -268,3 +279,10 @@ Note:  Depending on the speed of your host computer and Internet connection, thi
 approximately 32 GB.  For the EOSS tracker computers on a high-speed Internet connection, this takes approximately 15 minutes.
 
 You can run this command any time you are connected to the Internet and it will check to see if you have the latest map files.
+
+Some Docker commands:
+To check the GPS receiver is working:
+```sh
+docker exec -it eosstracker cgps
+```
+Note:  Type 'q' to quit.
