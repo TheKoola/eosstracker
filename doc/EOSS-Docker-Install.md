@@ -15,21 +15,21 @@ Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 ### Eosstracker Docker Compose YAML file
 5. [Create directory and Compose file](#dockercompose)
 6. [Configure Devices and Environment](#configdevenv)
-7. [Start Eosstracker Container](#eosstrackerstart)
+7. [Start Eosstracker container](#eosstrackerstart)
 
 ### Configure Eosstracker
 8. [Synchronize with EOSS Kiosk](#kiosksync)
-9. [Configure Eosstracker Settings](#eosssettings)
+9. [Configure Eosstracker settings (optional)](#eosssettings)
 
 ### Download Map Files
-10. [Downloading Eosstracker Map Files](#getmapfiles)
+10. [Downloading Eosstracker map files](#getmapfiles)
 
 
 ## Updating and Maintaining Eosstracker
 
 ### Updating Eosstracker
-1. [Updating the Eosstracker Container](#updatecontainer)
-2. [Updating the EOSS Map Files](#updatemapfiles)
+1. [Updating the Eosstracker container](#updatecontainer)
+2. [Updating the EOSS map files](#updatemapfiles)
 3. Helpful Docker commands
 
 
@@ -183,7 +183,7 @@ Note:  A valid GPS device is required, otherwise eosstracker may fail to start.
 ## Start Eosstracker
 
 The first time you run eosstracker, you must connect your computer to a network with access to the Internet.  
-In the console, change to the directory where the `docker-compose.yml` files is saved.  Execute the following 
+In the console, change to the directory where the `docker-compose.yml` file is saved.  Execute the following 
 command from the console:
 ```sh
 docker compose up -d
@@ -191,7 +191,7 @@ docker compose up -d
 Note:  The first time you run the eosstracker container, Docker will pull the latest image and build it.  Depending
 on the speed of your computer and Internet connection, this can take several minutes.  Furthermore, once the
 container is running, it will detect the empty `data` directory and will download and populate it with eosstracker
-files.  This will also take a few minutes.
+files.  This will take a few additional minutes.
 
 Once it is up and running, you can see what the Eosstracker container is doing by following the log file.  Use the 
 following command to view the eosstracker log file, and press CTRL-C to exit when done.
@@ -207,8 +207,8 @@ In order to auto-populate the EOSS launch sites and standard frequencies, use yo
 Navigate to the `SETUP` tab, and expand the `Synchronize Flights, Trackers, etc.` section.  Click on the `Synchronize...` button.
 
 <a name="eosssettings"></a>
-## Configure eosstracker settings
-To conigure the callsign and other settings specific to your installation, use your web browswer and navigate to the `SETUP` tab.
+## Configure eosstracker settings (optional)
+To optionally conigure the callsign and other settings specific to your installation, use your web browswer and navigate to the `SETUP` tab.
 Expand the `System Configuration` section and make changes.  Don't forget to click `Save Settings` at the bottom of the page.
 
 
@@ -235,7 +235,7 @@ You can run this command any time you are connected to the Internet and it will 
 
 <a name="updatecontainer"></a>
 ## Updating the eosstracker container
-As updates are released 
+As updates to Eosstracker are released, the Docker container version will be updated to match. 
 
 Connect your computer to a network with access to the Internet.  In the console, change to the directory where 
 the `docker-compose.yml` files is saved.  Execute the following command from the console:
@@ -252,7 +252,7 @@ If you do see a new version, execute the following command to restart the contai
 docker compose down && docker compose up -d
 ```
 
-You can run this command any time you are connected to the Internet and it will check to see if you have the latest
+You can run the `docker compose pull` command any time you are connected to the Internet and it will check to see if you have the latest
 Eosstracker container.
 
 <a name="updatemapfiles"></a>
