@@ -23,13 +23,15 @@ Last update:  6/22/2024
 <a name="installos"></a>
 ## Install the base OS
 
-Start with a clean install of Ubuntu 24.04 Server LTS.  During the installation it will ask for a username/password as well as a "computer name" or hostname.  Use the following:
+Start with a clean install of Ubuntu 24.04 Server LTS.  During the installation it will ask for a 
+username/password as well as a "computer name" or hostname.  Use the following:
 ```
 User Name:  EOSS Tracker
 Computer name:  eosstracker
 username:  eosstracker
 Password:  <insert standard password>
 ```
+The installer will prompt you to install the OpenSSH Server.  Select it to install, and choose to allow password authentication over SSH.
 
 ## Update software
 
@@ -122,7 +124,7 @@ nmcli c show
 ```
 sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
 sudo nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
-sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
+sudo nmcli c modify Hotspot wifi-sec.pmf 1 connection.autoconnect true connection.autoconnect-priority 20
 ```
 
 ### Edit `/etc/resolv.conf`
@@ -165,8 +167,6 @@ domain=local
 dhcp-option=option:ntp-server,10.42.0.1
 ```
 
-
-
 ### Reboot to test
 
 You'll likely need to reboot to test all of this:
@@ -203,8 +203,6 @@ alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker
 alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 ```
-
-
 
 <a name="airspy"></a>
 ## Fixing Airspy Udev Rules

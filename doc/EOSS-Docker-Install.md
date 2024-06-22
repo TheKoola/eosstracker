@@ -117,7 +117,7 @@ Note:  If the `modprobe -r` command errors, a reboot may be required to unload t
 
 Eosstracker requires access to audio, net-tools and libraries for usb SDR devices.
 ```sh
-sudo apt-get install -y avahi-daemon net-tools librtlsdr2
+sudo apt-get install -y avahi-daemon net-tools librtlsdr2 libairspy0
 ```
 
 <a name="dockercompose"></a>
