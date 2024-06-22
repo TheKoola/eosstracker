@@ -9,7 +9,11 @@ Last update:  6/22/2024
 2. [Install Docker Engine](#installdocker)
 3. [Post-install recommendations](#convenience)
 
+### Exclude RTL-SDR Kernel Modules
+4. [Update and Unload Kernel Modules](#kernelmods)
 
+### Eosstracker Docker Compose YAML file
+5. [Create directory and Compose file](#dockercompose)
 
 
 # Basic System and Docker Functionality
@@ -70,3 +74,53 @@ Per the post-install recommendations [here](https://docs.docker.com/engine/insta
 sudo usermod -aG docker $USER
 ```
 Note:  You will need to log out and log back in for the changes to take effect.
+
+
+# Exclude RTL-SDR Kernel Modules
+
+<a name="kernelmods"></a>
+## Update and unload RTL-SDR kernel modules
+
+The RTL DVB kernel modules must be blacklisted on the Docker host. RTL-SDR itself is not required on the host. This can be accomplished using the following commands:
+```sh
+echo 'blacklist dvb_usb_rtl28xxu' | sudo tee /etc/modprobe.d/blacklist-dvb_usb_rtl28xxu.conf
+sudo modprobe -r dvb_usb_rtl28xxu
+```
+Note:  If the `modprobe -r` command errors, a reboot may be required to unload the module.
+
+
+# Create directory and Compose file
+
+<a name="dockercompose"></a>
+## Choose a location for eosstracker
+
+Choose a location and create a directory to contain the eosstracker Docker Compose file and the eosstracker data.  The data directory will contain the eosstracker balloon flight database and map files.  For the EOSS brick computers, the default location is in the user's home directory `/home/eosstracker`.  Within
+that directory, create a folder for storing the data:
+```sh
+mkdir data
+```
+
+## Create the Docker Compose file
+Create a `docker-compose.yml` file within the directory, alongside the data folder you just created.  The contents of the Compose file will vary depending on your
+configuration.  For the EOSS brick computers, a default Compose file can be found [here](https://github.com/TheKoola/eosstracker/blob/brickv2.1/docker-compose.yml)
+and consists of:
+```yaml
+services:
+  eosstracker:
+    image: thekoola/eosstracker:brickv2.1
+    devices:
+      - /dev/bus/usb
+      - /dev/ttyACM0
+    container_name: eosstracker
+    restart: unless-stopped
+    network_mode: host
+    command: /run.sh
+    environment:
+      - TZ=America/Denver
+      - GPS_DEVICE=/dev/ttyACM0
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - ./data:/eosstracker
+```
+
