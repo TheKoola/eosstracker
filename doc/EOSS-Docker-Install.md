@@ -1,8 +1,8 @@
-# EOSS Brick Build Notes - Docker
+# EOSS SDR Tracker Docker Install
 
-Last update:  6/22/2024
+Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 
-## High Level Steps
+## First-time Installation High-level Steps
 
 ### Basic System and Docker Functionality
 1. [Install Base OS](#installbasic)
@@ -14,13 +14,23 @@ Last update:  6/22/2024
 
 ### Eosstracker Docker Compose YAML file
 5. [Create directory and Compose file](#dockercompose)
+6. [Configure Devices and Environment](#configdevenv)
+7. [Start Eosstracker Container](#eosstrackerstart)
 
 ### Configure Eosstracker
-6. [Synchronize with EOSS Kiosk](#kiosksync)
-7. [Configure Eosstracker Settings]
+8. [Synchronize with EOSS Kiosk](#kiosksync)
+9. [Configure Eosstracker Settings](#eosssettings)
 
 ### Download Map Files
-8. [Download Eosstracker map files](#getmapfiles)
+10. [Downloading Eosstracker Map Files](#getmapfiles)
+
+
+## Updating and Maintaining Eosstracker High-level Steps
+
+### Updating Eosstracker
+1. [Updating the Eosstracker Container](#updatecontainer)
+2. [Updating the EOSS Map Files](#updatemapfiles)
+3. Helpful Docker commands
 
 
 # Basic System and Docker Functionality
@@ -90,8 +100,8 @@ Note:  You will need to log out and log back in for the changes to take effect.
 <a name="kernelmods"></a>
 ## Update and unload RTL-SDR kernel modules
 
-The RTL DVB kernel modules must be blacklisted on the Docker host. RTL-SDR itself is not required on the host. This can 
-be accomplished using the following commands:
+The RTL DVB kernel modules must be blacklisted on the Docker host computer. RTL-SDR itself is not required on the host. 
+This can be accomplished using the following commands:
 ```sh
 echo 'blacklist dvb_usb_rtl28xxu' | sudo tee /etc/modprobe.d/blacklist-dvb_usb_rtl28xxu.conf
 sudo modprobe -r dvb_usb_rtl28xxu
@@ -105,15 +115,16 @@ Note:  If the `modprobe -r` command errors, a reboot may be required to unload t
 ## Choose a location for eosstracker
 
 Choose a location and create a directory to contain the eosstracker Docker Compose file and the eosstracker data.  The data 
-directory will contain the eosstracker balloon flight database and map files.  For the EOSS brick computers, the default 
-location is in the user's home directory `/home/eosstracker`.  Within that directory, create a folder for storing the data:
+directory will contain the eosstracker flight database and map files.  For the EOSS brick computers, the default 
+location is in the user's home directory `/home/eosstracker`.  Within the directory, create a subdirectory for storing the data:
 ```sh
 mkdir data
 ```
 
 ## Create the Docker Compose file
-Create a `docker-compose.yml` file within the directory, alongside the data folder you just created.  The contents of the 
-Compose file will vary depending on your configuration.  For the EOSS brick computers, a default Compose file can be 
+
+Next create a `docker-compose.yml` text file within the directory, alongside the `data` folder you just created.  The contents of 
+the Compose file will vary depending on your configuration.  For the EOSS brick computers, a default Compose file can be 
 found [here](https://github.com/TheKoola/eosstracker/blob/brickv2.1/docker-compose.yml) and consists of:
 ```yaml
 services:
@@ -134,8 +145,53 @@ services:
     volumes:
       - ./data:/eosstracker
 ```
-## Configure devices
-In order for the eosstracker Docker container to have access to the devices on your host computer, 
+
+A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
+```sh
+curl -o docker-compopse.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
+```
+
+<a name="configdevenv"></a>
+## Configure devices and environment
+
+In order for the eosstracker Docker container to have access to the devices on your host computer, the Compose file
+needs to have settings unique to your system, otherwise eosstracker may fail to start.  The container will need
+access to the SDR devices on your USB bus.  If you use a local GPS receiver on your computer, the container will
+also need access to it.  Note:  Even if your GPS receiver is plugged into a USB port, it enumerates as a serial
+device with a "tty" designation, and must be mapped separately.
+
+In the devices section of `docker-compose.yml`, include the following modified for your configuration:
+```yaml
+    devices:
+      - /dev/bus/usb
+      - /dev/ttyACM0
+```
+Both the `/dev/bus/usb` and `/dev/ttyACM0` may be different for your configuration.  These are the settings for
+the EOSS brick computer.  The Compose file will fail if you point these devices to non-existing locations.
+
+The `GPS_DEVICE` environment variable is used to pass the default device location to the `gpsd` daemon running
+inside the container.  In the environment section of `docker-compose.yml`, include the following for your
+configuration, matching the device setting for your GPS receiver.
+```yaml
+    environment:
+      - TZ=America/Denver
+      - GPS_DEVICE=/dev/ttyACM0
+```
+Note:  A valid GPS device is required, otherwise eosstracker may fail to start.
+
+<a name="eosstrackerstart"></a>
+## Start Eosstracker
+
+The first time you run eosstracker, you must connect your computer to a network with access to the Internet.  
+In the console, change to the directory where the `docker-compose.yml` files is saved.  Execute the following 
+command from the console:
+```sh
+docker compose up -d
+```
+Note:  The first time you run the eosstracker container, Docker will pull the latest image and build it.  Depending
+on the speed of your computer and Internet connection, this can take several minutes.  Furthermore, once the
+container is running, it will detect the empty `data` directory and will download and populate it with eosstracker
+files.  This will also take a few minutes.
 
 
 # Configure Eosstracker
@@ -143,9 +199,12 @@ In order for the eosstracker Docker container to have access to the devices on y
 <a name="kiosksync"></a>
 ## Synchronize with kiosk
 In order to auto-populate the EOSS launch sites and standard frequencies, use your web browser to synchronize with the kiosk. 
+Navigate to the `SETUP` tab, and expand the `Synchronize Flights, Trackers, etc.` section.  Click on the `Synchronize...` button.
 
+<a name="eosssettings"></a>
 ## Configure eosstracker settings
-To conigure the callsign and settings specific to your installation, use your web browswer and navigate to `System Configuration`.
+To conigure the callsign and other settings specific to your installation, use your web browswer and navigate to the `SETUP` tab.
+Expand the `System Configuration` section and make changes.  Don't forget to click `Save Settings` at the bottom of the page.
 
 
 # Download map files
@@ -161,7 +220,46 @@ Begin by connecting your computer to a network with access to the Internet.  Exe
 ```sh
 docker exec -it --user eosstracker eosstracker /eosstracker/sbin/getlatestmap.bash
 ```
-Note:  Depending on the speed of your host computer and Internet connection, this can take a while.  You will be downloading approximately 
-32 GB.  For the EOSS tracker computers on a high-speed Internet connection, this takes approximately 15 minutes.
+Note:  Depending on the speed of your host computer and Internet connection, this can take a while.  You will be downloading 
+approximately 32 GB.  For the EOSS tracker computers on a high-speed Internet connection, this takes approximately 15 minutes.
+
+You can run this command any time you are connected to the Internet and it will check to see if you have the latest map files.
+
+
+# Updating Eosstracker Container
+
+<a name="updatecontainer"></a>
+## Updating the eosstracker container
+As updates are released 
+
+Connect your computer to a network with access to the Internet.  In the console, change to the directory where 
+the `docker-compose.yml` files is saved.  Execute the following command from the console:
+```sh
+docker compose pull
+```
+Note:  If there is a new version of the eosstracker container, Docker will pull the latest image and build it.  Depending
+on the speed of your computer and Internet connection, this can take several minutes.
+
+If there is no new version, the docker pull command will exit.  
+
+If you do see a new version, execute the following command to restart the container:
+```sh
+docker compose down && docker compose up -d
+```
+
+You can run this command any time you are connected to the Internet and it will check to see if you have the latest
+Eosstracker container.
+
+<a name="updatemapfiles"></a>
+## Downloading latest EOSS map files
+For EOSS users, a map file containing all of North America is available.  To check to see if you have the latest map file, 
+and automatically download it if you don't, follow this step.
+
+Connect your computer to a network with access to the Internet.  Log in and execute the following command from the console: 
+```sh
+docker exec -it --user eosstracker eosstracker /eosstracker/sbin/getlatestmap.bash
+```
+Note:  Depending on the speed of your host computer and Internet connection, this can take a while.  You will be downloading 
+approximately 32 GB.  For the EOSS tracker computers on a high-speed Internet connection, this takes approximately 15 minutes.
 
 You can run this command any time you are connected to the Internet and it will check to see if you have the latest map files.
