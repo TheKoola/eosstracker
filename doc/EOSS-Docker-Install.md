@@ -148,7 +148,7 @@ services:
 
 A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
 ```sh
-curl -o docker-compopse.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
 ```
 
 <a name="configdevenv"></a>
