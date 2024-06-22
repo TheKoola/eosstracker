@@ -25,7 +25,7 @@ Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 10. [Downloading Eosstracker Map Files](#getmapfiles)
 
 
-## Updating and Maintaining Eosstracker High-level Steps
+## Updating and Maintaining Eosstracker
 
 ### Updating Eosstracker
 1. [Updating the Eosstracker Container](#updatecontainer)
@@ -193,6 +193,11 @@ on the speed of your computer and Internet connection, this can take several min
 container is running, it will detect the empty `data` directory and will download and populate it with eosstracker
 files.  This will also take a few minutes.
 
+Once it is up and running, you can see what the Eosstracker container is doing by following the log file.  Use the 
+following command to view the eosstracker log file, and press CTRL-C to exit when done.
+```sh
+docker compose logs -f
+```
 
 # Configure Eosstracker
 
