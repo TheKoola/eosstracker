@@ -13,7 +13,7 @@ Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 4. [Update and Unload Kernel Modules](#kernelmods)
 
 ### Eosstracker Docker Compose YAML file
-5. [Install additionl packages](#installaddpack)
+5. [Install additional packages](#installaddpack)
 6. [Create directory and Compose file](#dockercompose)
 7. [Configure Devices and Environment](#configdevenv)
 8. [Start Eosstracker container](#eosstrackerstart)
