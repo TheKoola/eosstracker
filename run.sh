@@ -122,6 +122,9 @@ if [ -f ${HABLOGFILE} ]; then
 else
     tail -f /var/log/apache2/access.log &
 fi
+child=$!
+
+echo "Tail process id: ${child} ..."
 
 # Start the gpsd process 
 echo "Using the GPS device ${GPS_DEVICE} ..."
