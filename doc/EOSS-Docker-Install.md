@@ -31,7 +31,7 @@ Notes by Jeff N2XGL, Version 1.0, Dated 2024-06-22
 ### Updating Eosstracker
 1. [Updating the Eosstracker container](#updatecontainer)
 2. [Updating the EOSS map files](#updatemapfiles)
-3. Helpful Docker commands
+3. [Helpful Docker commands](#otherdockercommands)
 
 
 # Basic System and Docker Functionality
@@ -115,7 +115,8 @@ Note:  If the `modprobe -r` command errors, a reboot may be required to unload t
 <a name="installaddpack"></a>
 ## Install some additional packages
 
-Eosstracker requires access to audio, net-tools and libraries for usb SDR devices.
+Eosstracker requires access to [avahi](https://avahi.org/), [net-tools](https://sourceforge.net/projects/net-tools/), 
+and libraries for usb SDR devices.  Perform the following command to install them.
 ```sh
 sudo apt-get install -y avahi-daemon net-tools librtlsdr2 libairspy0
 ```
@@ -135,7 +136,7 @@ mkdir data
 
 > Note:  A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
 > ```sh
-> curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml`
+> curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
 > ```
 > Continue reading to learn about a Compose file for different configurations.  Otherwise, jump to [Start Eosstracker](#eosstrackerstart).
 
@@ -256,9 +257,9 @@ docker compose pull
 Note:  If there is a new version of the eosstracker container, Docker will pull the latest image and build it.  Depending
 on the speed of your computer and Internet connection, this can take several minutes.
 
-If there is no new version, the docker pull command will exit.  
+If there is no new version, the command will simply exit.  
 
-If you do see a new version, execute the following command to restart the container:
+If you do see a new version, execute the following command to restart the container, after the pull and build are complete:
 ```sh
 docker compose down && docker compose up -d
 ```
@@ -280,9 +281,32 @@ approximately 32 GB.  For the EOSS tracker computers on a high-speed Internet co
 
 You can run this command any time you are connected to the Internet and it will check to see if you have the latest map files.
 
-Some Docker commands:
+<a name="otherdockercommands"></a>
+## Helpful Docker commands
+Additional general Docker commands, as well as some specificly for Eosstracker, are provided here.
+
+### GPS output
 To check the GPS receiver is working:
 ```sh
 docker exec -it eosstracker cgps
 ```
 Note:  Type 'q' to quit.
+
+### Prune old and unused containers
+To clean up old, obsolete and unused containers (freeing up disk space):
+```sh
+docker system prune
+```
+
+### Open a shell within the running Docker container
+To open a shell as the Eosstracker user within the running container:
+```sh
+docker exec -it --user eosstracker eosstracker /bin/bash
+```
+Note:  Enter 'exit' to close the shell.
+
+### Stop Eosstracker processes (*e.g.* habtracker, aprsc, direwolf)
+To cleanly shutdown processes within the container:
+```sh
+docker exec -it --user eosstracker eosstracker /eosstracker/bin/kill_session.bash
+```

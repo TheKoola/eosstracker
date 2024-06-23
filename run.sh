@@ -5,6 +5,23 @@ set -m
 BASEDIR=/opt/aprsc
 DIRNAME=aprsc
 
+HOMEDIR=/eosstracker
+BINDIR=${HOMEDIR}/bin
+LOGDIR=${HOMEDIR}/logs
+KILLSESSION=${BINDIR}/kill_session.bash
+LOGFILE=${LOGDIR}/killsession_wrapper.log
+HABLOGFILE=${LOGDIR}/habtracker.log
+
+# Define the container shutdown procedure
+cleanup() {
+    echo "Container stopping, shutting down session..."
+    ${KILLSESSION} >${LOGFILE} 2>&1
+    echo "HABTracker sessions have stopped."
+}
+
+#Trap SIGTERM
+trap 'true' SIGTERM
+
 ME=$(whoami)
 if [ ${ME} != "root" ]; then
 	echo "not running as root...exiting"
@@ -100,7 +117,11 @@ fi
 service postgresql start && service apache2 start
 
 # Start a process
-tail -f /var/log/apache2/access.log &
+if [ -f ${HABLOGFILE} ]; then
+    tail -f ${HABLOGFILE} &
+else
+    tail -f /var/log/apache2/access.log &
+fi
 
 # Start the gpsd process 
 echo "Using the GPS device ${GPS_DEVICE} ..."
@@ -108,3 +129,7 @@ echo "Using the GPS device ${GPS_DEVICE} ..."
 
 fg %1
 
+# If we get here, the container is being shutdown
+cleanup
+
+exit 0
