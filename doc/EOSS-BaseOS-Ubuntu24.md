@@ -76,8 +76,7 @@ Get a list of those services that are using `networkd`:
 For example:
 ```
 sudo systemctl | grep networkd
-  networkd-dispatcher.service                                                               loaded    active running   Dispatcher daemon for systemd-networkd
-● systemd-networkd-wait-online.service                                                      loaded    failed failed    Wait for Network to be Configured
+  systemd-networkd-wait-online.service                                                      loaded    failed failed    Wait for Network to be Configured
   systemd-networkd.service                                                                  loaded    active running   Network Configuration
   systemd-networkd.socket  
 ```
