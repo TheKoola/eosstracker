@@ -133,11 +133,9 @@ mkdir data
 
 ## Create the Docker Compose file
 
-Note:  A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
-```sh
-curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml
-```
-Continue reading to learn about a Compose file for different configurations.  Otherwise, jump to [Start Eosstracker](#eosstrackerstart).
+> Note:  A convenient way to install the Compose file for the EOSS brick computer is to execute the following command:
+> `curl -o docker-compose.yml https://raw.githubusercontent.com/TheKoola/eosstracker/brickv2.1/docker-compose.yml`
+> Continue reading to learn about a Compose file for different configurations.  Otherwise, jump to [Start Eosstracker](#eosstrackerstart).
 
 Create a `docker-compose.yml` text file within the directory, alongside the `data` folder you just created.  The contents of 
 the Compose file will vary depending on your configuration.  For the EOSS brick computers, a default Compose file can be 
