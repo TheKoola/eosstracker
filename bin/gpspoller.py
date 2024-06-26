@@ -60,6 +60,9 @@ class GPSPoller(object):
     # The database connection object
     dbconn: pg.extensions.connection = None
 
+    # This is the timezone string for when connecting to the database
+    timezone: str = 'America/Denver'
+
     # The database connection retry limit.
     connectionRetryLimit: int = 99
 
@@ -406,10 +409,12 @@ class GPSPoller(object):
                         # If our position has changed by .0001 of a lat/lon degree, then we consider it significant enough to add a row to the database
                         if (round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon) or elapsed_time.total_seconds() > 7200:
 
+                            self.logger.debug(f"GPS timezone: {self.timezone}")
+
                             # SQL statement
                             sql = """insert into
                                 gpsposition values (
-                                    (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone 'America/Denver',
+                                    (%s::timestamp at time zone 'UTC')::timestamp with time zone at time zone %s,
                                     %s::numeric,
                                     %s::numeric,
                                     %s::numeric,
@@ -428,6 +433,7 @@ class GPSPoller(object):
                                     try:
                                         gpscur.execute(sql, [
                                             thetime,
+                                            self.timezone,
                                             round(gpsd.fix.speed * 2.236936, 1),
                                             gpsd.fix.track,
                                             round(gpsd.fix.altitude * 3.2808399, 0),
@@ -617,7 +623,7 @@ def runGPSPoller(config):
 
         # Create a new GPSPoller object
         logger.info("Starting GPS poller process.")
-        g = GPSPoller(stopevent = config["stopevent"], position = config["position"], loggingqueue = config["loggingqueue"], gpshost = config["gpshost"])
+        g = GPSPoller(stopevent = config["stopevent"], position = config["position"], loggingqueue = config["loggingqueue"], gpshost = config["gpshost"], timezone = config["timezone"])
 
         # Start the poller
         g.run()
