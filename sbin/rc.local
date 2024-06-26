@@ -9,8 +9,8 @@ BASEDIR=/opt/aprsc
 DIRNAME=aprsc
 
 # Grab the hotspot SSID and put that into the WWW home directory for display on the main web page
-if [ -f /etc/NetworkManager/system-connections/Hotspot ]; then 
-	/bin/awk -F"=" '/^ssid=/ {print $2;}' /etc/NetworkManager/system-connections/Hotspot > /eosstracker/www/nodeid.txt 
+if [ -f /etc/NetworkManager/system-connections/Hotspot.nmconnection ]; then 
+	/bin/awk -F"=" '/^ssid=/ {print $2;}' /etc/NetworkManager/system-connections/Hotspot.nmconnection > /eosstracker/www/nodeid.txt 
 	/bin/chmod 444 /eosstracker/www/nodeid.txt
 else 
 	/bin/rm -f /eosstracker/www/nodeid.txt 
