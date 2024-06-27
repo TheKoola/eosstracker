@@ -15,7 +15,7 @@ RUN apt-get update \
 # make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
 && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
-ENV LANG en_US.utf8
+ENV LANG=en_US.utf8
 
 # Get packages -- Note: comes from install-packages.bash
 RUN apt-get update \
@@ -166,7 +166,7 @@ locales ca-certificates \
 && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
 && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
-ENV LANG en_US.utf8
+ENV LANG=en_US.utf8
 
 # Set time zone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
