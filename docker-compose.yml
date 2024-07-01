@@ -14,4 +14,7 @@ services:
     cap_add:
       - SYS_ADMIN
     volumes:
-      - ./data:/eosstracker
+      - data:/eosstracker
+
+volumes:
+  data:
