@@ -31,19 +31,18 @@ else
 
     if [ $ret -eq 0 ]; then
 
-    # Git pull worked, but there are no new files
-    echo "Eosstracker software is up-to-date..."
-    echo "Done."
+        # Git pull worked, but there are no new files
+        echo "Eosstracker software is up-to-date..."
+        echo "Done."
 
     else
 
-    # Git downloaded files and performed updates
-    echo "Eosstracker software has been updated to the latest version..."
-    echo "Done."
+        # Git downloaded files and performed updates
+        echo "Eosstracker software has been updated to the latest version..."
+        echo "Done."
+
+    fi
 
 fi
 
-echo 0
-
 #EOF
-
