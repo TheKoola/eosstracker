@@ -42,3 +42,5 @@ else
     echo "Done."
 
 fi
+
+echo 0
