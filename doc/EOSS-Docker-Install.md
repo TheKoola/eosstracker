@@ -291,6 +291,12 @@ docker exec -it eosstracker cgps
 ```
 Note:  Type 'q' to quit.
 
+### Update the eosstracker software
+To update the base eosstracker software within the container:
+```sh
+docker exec -it eosstracker /eosstracker/sbin/gitpullupdate.bash
+```
+
 ### Prune old and unused containers
 To clean up old, obsolete and unused containers (freeing up disk space):
 ```sh
