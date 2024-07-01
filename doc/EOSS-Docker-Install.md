@@ -126,11 +126,7 @@ sudo apt-get install -y avahi-daemon net-tools librtlsdr2 libairspy0
 
 Choose a location and create a directory to contain the eosstracker Docker Compose file and the eosstracker data.  The data 
 directory will contain the eosstracker flight database and map files.  For the EOSS brick computers, the default 
-location is in the user's home directory `/home/eosstracker`.  Within the directory, create a subdirectory for storing the data:
-```sh
-cd ~
-mkdir data
-```
+location is in the user's home directory `/home/eosstracker`.  
 
 ## Create the Docker Compose file
 
@@ -140,7 +136,7 @@ mkdir data
 > ```
 > Continue reading to learn about a Compose file for different configurations.  Otherwise, jump to [Start Eosstracker](#eosstrackerstart).
 
-Create a `docker-compose.yml` text file within the directory, alongside the `data` folder you just created.  The contents of 
+Create a `docker-compose.yml` text file.  The contents of 
 the Compose file will vary depending on your configuration.  For the EOSS brick computers, a default Compose file can be 
 found [here](https://github.com/TheKoola/eosstracker/blob/brickv2.1/docker-compose.yml) and consists of:
 ```yaml
@@ -160,7 +156,10 @@ services:
     cap_add:
       - SYS_ADMIN
     volumes:
-      - ./data:/eosstracker
+      - data:/eosstracker
+
+volumes:
+  data:
 ```
 
 <a name="configdevenv"></a>
@@ -202,7 +201,7 @@ docker compose up -d
 ```
 Note:  The first time you run the eosstracker container, Docker will pull the latest image and build it.  Depending
 on the speed of your computer and Internet connection, this can take several minutes.  Furthermore, once the
-container is running, it will detect the empty `data` directory and will download and populate it with eosstracker
+container is running, it will detect the empty volume `data` and will download and populate it with eosstracker
 files.  This will take a few additional minutes.
 
 Once it is up and running, you can see what the Eosstracker container is doing by following the log file.  Use the 
