@@ -124,8 +124,8 @@ sudo apt-get install -y avahi-daemon net-tools librtlsdr2 libairspy0
 <a name="dockercompose"></a>
 ## Choose a location for eosstracker
 
-Choose a location and create a directory to contain the eosstracker Docker Compose file and the eosstracker data.  The data 
-directory will contain the eosstracker flight database and map files.  For the EOSS brick computers, the default 
+Choose a location and create a directory to keep the eosstracker Docker Compose file.  A Docker volume 
+will contain the eosstracker flight database and map files.  For the EOSS brick computers, the default 
 location is in the user's home directory `/home/eosstracker`.  
 
 ## Create the Docker Compose file
@@ -201,7 +201,7 @@ docker compose up -d
 ```
 Note:  The first time you run the eosstracker container, Docker will pull the latest image and build it.  Depending
 on the speed of your computer and Internet connection, this can take several minutes.  Furthermore, once the
-container is running, it will detect the empty volume `data` and will download and populate it with eosstracker
+container is running, it will detect the empty Docker volume and will download and populate it with eosstracker
 files.  This will take a few additional minutes.
 
 Once it is up and running, you can see what the Eosstracker container is doing by following the log file.  Use the 
