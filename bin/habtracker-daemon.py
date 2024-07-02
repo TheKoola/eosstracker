@@ -342,7 +342,7 @@ def createProcesses(configuration):
 
     # This is the GnuRadio aprsreceiver process(es)
     freqlist = configuration["direwolffreqlist"]
-    if len(freqlist) > 0:
+    if len(freqlist) > 0 or configuration["beaconing"] == "true" or configuration["beaconing"] == True:
 
         # Max number of SDR channels we can listen to while staying at or under the max limit for direwolf
         # We subtract channels from this amount as we loop through the SDR devices.
@@ -766,6 +766,8 @@ def buildFreqMap(config):
         else:
             direwolfstatus["direwolfcallsign"] = ""
             direwolfstatus["direwolffreqlist"] = []
+            if config["beaconing"] == "true":
+                direwolfstatus["xmit_channel"] = 0 
            
         direwolfstatus["antennas"] = antennas 
 
