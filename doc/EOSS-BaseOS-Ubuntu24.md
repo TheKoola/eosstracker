@@ -1,9 +1,12 @@
 # EOSS Brick Build Notes - Ubuntu 24
 
-Last update:  6/22/2024
+Last update:  7/4/2024
 
-Warning:  This is to install *only* the base Ubuntu 24.04 operating system.  Eosstracker will *not* run natively on Ubuntu 24.04.
-This is intended for Docker installations.  To install eosstracker natively, refer to the Ubuntu 22.04 instructions.
+> Warning:  This is to install *only* the base Ubuntu 24.04 operating system.  
+> Eosstracker software does *not* presently run natively on Ubuntu 24.04.
+> These instructions are intended for installing a host OS with eosstracker running
+> in a Docker container.  To install eosstracker natively running within the host OS,
+> refer to the Ubuntu 22.04 instructions [here](https://github.com/TheKoola/eosstracker/blob/master/doc/EOSS-Bare-Metal-Install-Ubuntu22.md).
 
 ## High Level Steps
 
@@ -11,15 +14,16 @@ This is intended for Docker installations.  To install eosstracker natively, ref
 1. [Install Ubuntu 24.04 LTS](#installos)
 2. [Configure Networking](#networking)
 3. [Convenience Settings](#convenience)
+4. [OPTIONAL: Disable Unattended Upgrades](#disableunattend)
 
 ### EOSSTracker Software and Dependencies
-1. [Airspy udev Rules](#airspy)
+5. [Airspy udev Rules](#airspy)
 
 ### Necessary System Services
-10. [Configure Sudo](#sudo)
-11. [Timezones](#timezones)
-12. [UFW Firewall](#firewall)
-13. [Network Time](#time)
+6. [Configure Sudo](#sudo)
+7. [Timezones](#timezones)
+8. [UFW Firewall](#firewall)
+9. [Network Time](#time)
 
 
 # Basic System Functionality
@@ -60,7 +64,7 @@ Now also remove the modemmanager (it can cause GPSD to misidentify the device)
 
 Edit the netplan file to point to NetworkManager
 
-Edit the `/etc/netplan/00-installer-config.yaml` file such that it only contains these lines:  
+Edit the `/etc/netplan/00-installer-config.yaml` file such that it *only* contains these lines:  
 ```
 network:
   version: 2
@@ -205,6 +209,36 @@ alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker
 alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
 ```
+
+
+## OPTIONAL:  Disable Unattended Upgrages
+<a name="disableunattend"></a>
+
+Unattended upgrades can be a double-edged sword. While they keep your system up to date automatically, 
+they might also unexpectedly change the system’s state or introduce new issues without your prior knowledge. 
+In certain environments, especially in production or where stability is a must, it might be preferable to disable 
+these automatic updates. 
+
+> Warning:  Disabling unattended upgrades transfers the responsibility of keeping 
+> the system secure and updated entirely to you. Without automatic updates, you 
+> must regularly check for and manually install updates to protect your system 
+> from vulnerabilities that are often patched through these updates. Failing to 
+> keep your system updated can expose it to security risks and potential breaches. 
+> Always ensure your system’s software is up-to-date to maintain its security integrity.
+
+If you choose to diable unattended upgrades, begin by disabling the service:
+```
+sudo systemctl disable --now unattended-upgrades
+```
+Next, edit the `/etc/apt/apt.conf.d/20auto-upgrades` file and 
+change `APT::Periodic::Unattended-Upgrade` from a "1" to a "0":
+```
+APT::Periodic::Unattended-Upgrade "0";
+```
+This will allow package lists to be refreshed regularly, but prevent the automatic installation of upgraded
+packages.  You will still be notified about available upgrades, which is helpful.  But the upgrades will
+not automatically install.  You will need to install them manually at a time of your choosing.
+
 
 <a name="airspy"></a>
 ## Fixing Airspy Udev Rules
