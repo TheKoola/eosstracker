@@ -133,6 +133,7 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Denver
 ENV GPS_DEVICE=/dev/ttyUSB0
+ENV EOSS_NODEID=EOSS-Docker
 
 # Get packages
 RUN apt-get update \

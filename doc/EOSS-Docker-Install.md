@@ -187,8 +187,12 @@ configuration, matching the device setting for your GPS receiver.
     environment:
       - TZ=America/Denver
       - GPS_DEVICE=/dev/ttyACM0
+      - EOSS_NODEID=EOSS-Docker
 ```
 Note:  A valid GPS device is required, otherwise eosstracker may fail to start.
+
+The optional `EOSS_NODEID` environment variable is used to pass the EOSS tracker node ID to the container.
+For the EOSS brick computers, this is set to match the WiFi hotspot SSID.
 
 <a name="eosstrackerstart"></a>
 ## Start Eosstracker

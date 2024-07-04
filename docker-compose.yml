@@ -11,6 +11,7 @@ services:
     environment:
       - TZ=America/Denver
       - GPS_DEVICE=/dev/ttyACM0
+      - EOSS_NODEID=EOSS-Docker
     cap_add:
       - SYS_ADMIN
     volumes:

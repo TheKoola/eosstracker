@@ -247,8 +247,20 @@ not automatically install.  You will need to install them manually at a time of 
 <a name="installadds"></a>
 ## Install additional packages
 
-For mobile operation with intermittent Internet connectivity, and for cell modem tethering, install some additional
-packages:
+For EOSS mobile operation and technical support, we recommend installing the following packages.  These include
+- `ipheth-utils` for USB tethering smartphones in hotspot mode
+- `libttspico-utils` for software speech synthesizer
+- `ffmpeg` for libraries and programs for handling video, audio and other multimedia
+- `net-tools` for networking tools
+- `htop` for resource monitoring
+- `wavemon` for wireless device monitoring
+- `chrony` for time/date synchronization
+- `avahi-daemon` and `avahi-utils` for Zeroconf connectivity
+
+Use the following command to install the recommended pacakages:
+```
+sudo apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony avahi-daemon avahi-utils
+```
 
 
 <a name="airspy"></a>

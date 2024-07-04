@@ -116,6 +116,13 @@ fi
 # Start services
 service postgresql start && service apache2 start
 
+# Log the EOSS Node ID
+echo "EOSS Node ID: ${EOSS_NODEID} ..."
+if [ -d /eosstracker/www ]; then
+    echo ${EOSS_NODEID} > /eosstracker/www/nodeid.txt
+    /bin/chmod 444 /eosstracker/www/nodeid.txt
+fi
+
 # Start a process
 if [ -f ${HABLOGFILE} ]; then
     tail -f ${HABLOGFILE} &
