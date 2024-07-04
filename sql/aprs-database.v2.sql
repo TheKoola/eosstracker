@@ -425,6 +425,7 @@ insert into freqs values (145.535);
 insert into freqs values (145.645);
 insert into freqs values (145.710);
 insert into freqs values (145.765);
+insert into freqs values (145.825);
 
 create table launchsites (
     launchsite text primary key,

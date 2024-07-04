@@ -1740,8 +1740,9 @@ class DirewolfKISS(PacketStream):
 
         # the channel used for direwolf beaconing when using an external radio
         xmitchannel = self.configuration["xmit_channel"] if "xmit_channel" in self.configuration else None
+        self.logger.debug(f"{self.server.nickname}: {xmitchannel=}")
 
-        if xmitchannel:
+        if xmitchannel != None:
             if xmitchannel == channel:
                 # add the frequency we found, in this case it's an external radio and we have no idea what frequency it's been tuned too
                 packet.frequency = None
