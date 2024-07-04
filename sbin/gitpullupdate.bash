@@ -18,7 +18,7 @@ fi
 echo "Attempting to update the eosstracker software (timeout 20 seconds)..."
 
 # Perform the git pull
-su - eosstracker -c "cd ${HOMEDIR}; timeout --foreground 20 git pull -q"
+su - eosstracker -c "cd ${HOMEDIR}; timeout --foreground 20 git pull -v"
 let ret=$?
 
 if [ $ret -eq 124 ]; then
