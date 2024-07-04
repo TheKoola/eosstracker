@@ -135,7 +135,7 @@ nmcli c show
 ### Add in the hotspot wifi configuration
 ```
 sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-00 mode ap
-sudo nmcli con modify Hotspot 802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 11 ipv4.method shared 
+sudo nmcli con modify Hotspot 802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 ipv4.method shared 
 sudo nmcli con modify Hotspot 802-11-wireless.powersave 2 
 sudo nmcli con modify Hotspot 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk '<wifi password>'
 sudo nmcli con modify Hotspot 802-11-wireless-security.pmf 1 802-11-wireless-security.proto rsn
