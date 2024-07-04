@@ -128,7 +128,7 @@ do_set_ssid() {
   EOSS_CHANNEL="$(cat $SSID_FILE | grep channel | cut -f2 -d:)"
   EOSS_OLDCHANNEL=$EOSS_CHANNEL
   EOSS_CHANNEL="$(whiptail --title "Set WiFi Hotspot Channel" --inputbox "Enter the Hostpot Channel (1, 6, or 11):" 10 30 "$EOSS_CHANNEL" 3>&1 1>&2 2>&3)"
-  sed -i "s/channel:${EOSS_OLDCHANNEL}/channel: ${EOSS_CHANNEL}/g" "${SSID_FILE}"
+  sed -i "s/channel:[ ]${EOSS_OLDCHANNEL}/channel: ${EOSS_CHANNEL}/g" "${SSID_FILE}"
   
   if [ "$EOSSDOCKER" = True ]; then
     COMPOSEFILE="/home/eosstracker/docker-compose.yml"
