@@ -790,9 +790,7 @@
     * This function will pull the latest GitHub updates through the gitpull.php file
     ***********/
     function gitPullFiles() {
-         $.get("gitpull.php", function(data) {
-            var myresults = "";
-        });
+         $.get("gitpull.php", function(data));
     }
 
     /***********
@@ -2028,6 +2026,9 @@
             var statushtml = "<mark style=\"background-color: " + color + ";\">" + data.error + "</mark>";
 
             document.getElementById("syncup-status").innerHTML = statushtml;
+
+            // Attempt to perform git pull on eosstracker directory
+            gitPullFiles();
 
             // Get predict files automatically
             getPredictFiles();
