@@ -107,6 +107,7 @@ EOF
 # Set the SSID
 do_set_ssid() {
   EOSS_SSID=EOSS-00
+  EOSS_CHANNEL=6
 
   if [ -d /etc/netplan ]; then
     SSID_FILE="$(grep "access-points:" /etc/netplan/*.yaml | cut -f 1 -d:)"
@@ -120,9 +121,15 @@ do_set_ssid() {
 
   EOSS_SSID="$(cat $SSID_FILE | grep -A1 access | tail -1 | cut -f2 -d\")"
   EOSS_OLDID=$EOSS_SSID
-  EOSS_SSID="$(whiptail --title "Set SSID" --inputbox "Enter the SSID:" 10 30 "$EOSS_SSID" 3>&1 1>&2 2>&3)"
+  EOSS_SSID="$(whiptail --title "Set WiFi SSID" --inputbox "Enter the SSID:" 10 30 "$EOSS_SSID" 3>&1 1>&2 2>&3)"
   sed -i "s/${EOSS_OLDID}/${EOSS_SSID}/g" "${SSID_FILE}"
 
+  # Set the Hotspot channel
+  EOSS_CHANNEL="$(cat $SSID_FILE | grep channel | cut -f2 -d:)"
+  EOSS_OLDCHANNEL=$EOSS_CHANNEL
+  EOSS_CHANNEL="$(whiptail --title "Set WiFi Hotspot Channel" --inputbox "Enter the Hostpot Channel (1, 6, or 11):" 10 30 "$EOSS_CHANNEL" 3>&1 1>&2 2>&3)"
+  sed -i "s/channel:${EOSS_OLDCHANNEL}/channel: ${EOSS_CHANNEL}/g" "${SSID_FILE}"
+  
   if [ "$EOSSDOCKER" = True ]; then
     COMPOSEFILE="/home/eosstracker/docker-compose.yml"
     if [ -f ${COMPOSEFILE} ]; then
@@ -136,7 +143,8 @@ do_set_ssid() {
       fi
     fi
     if [ "$INTERACTIVE" = True ]; then
-      whiptail --msgbox "EOSS Hostpsot and Docker compose file\n${COMPOSEFILE}\nupdated with SSID=${EOSS_SSID}." 20 60 2
+      whiptail --msgbox "EOSS Hostpsot updated with SSID=${EOSS_SSID}\nand Channel=${EOSS_CHANNEL}.\n \
+      \nDocker compose file\n${COMPOSEFILE}\nupdated with EOSS_NODEID=${EOSS_SSID}." 20 60 2
     fi
   fi
 }

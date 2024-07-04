@@ -134,9 +134,12 @@ nmcli c show
 
 ### Add in the hotspot wifi configuration
 ```
-sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-XX mode ap
-sudo nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
-sudo nmcli c modify Hotspot wifi-sec.pmf 1 connection.autoconnect true connection.autoconnect-priority 20
+sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-00 mode ap
+sudo nmcli con modify Hotspot 802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 11 ipv4.method shared 
+sudo nmcli con modify Hotspot 802-11-wireless.powersave 2 
+sudo nmcli con modify Hotspot 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk '<wifi password>'
+sudo nmcli con modify Hotspot 802-11-wireless-security.pmf 1 802-11-wireless-security.proto rsn
+sudo nmcli c modify Hotspot connection.autoconnect true connection.autoconnect-priority 20
 ```
 
 ### Edit `/etc/resolv.conf`
@@ -256,10 +259,16 @@ For EOSS mobile operation and technical support, we recommend installing the fol
 - `wavemon` for wireless device monitoring
 - `chrony` for time/date synchronization
 - `avahi-daemon` and `avahi-utils` for Zeroconf connectivity
+- `alsa-utils` for ALSA sound drivers and utilies
 
 Use the following command to install the recommended pacakages:
 ```
-sudo apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony avahi-daemon avahi-utils
+sudo apt-get -y install ipheth-utils libttspico-utils ffmpeg net-tools htop wavemon chrony avahi-daemon avahi-utils alsa-utils
+```
+
+We also recommend removing the pulseaudio if it is installed:
+```
+sudo apt-get -y remove pulseaudio
 ```
 
 
@@ -381,15 +390,11 @@ refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
 refclock SHM 1 refid PPS precision 1e-9
 
 # Allow access from NTP clients
-allow
+allow 
 ```
 
 ### Now reboot the system for the chrony changes to take effect:
 
 `sudo reboot`
 
-### Install additonal packages
-```sh
-sudo apt-get -y install ipheth-utils htop alsa-utils
-sudo apt-get -y remove pulseaudio
-```
+
