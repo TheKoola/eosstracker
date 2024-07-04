@@ -8,17 +8,19 @@ set -m
 HOMEDIR=/eosstracker
 
 # Check to make sure we are root
-ME=$(whoami)
-if [ ${ME} != "root" ]; then
-	echo "Not running as root...exiting"
-	exit
-fi
+# ME=$(whoami)
+# if [ ${ME} != "root" ]; then
+# 	echo "Not running as root...exiting"
+# 	exit
+# fi
 
 # Inform user
 echo "Attempting to update the eosstracker software (timeout 20 seconds)..."
 
 # Perform the git pull
-su - eosstracker -c "cd ${HOMEDIR}; timeout --foreground 20 git pull -v"
+# su - eosstracker -c "cd ${HOMEDIR}; timeout --foreground 20 git pull -v"
+cd ${HOMEDIR}
+timeout --foreground 20 git pull -v
 let ret=$?
 
 if [ $ret -eq 124 ]; then
