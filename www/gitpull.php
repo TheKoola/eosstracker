@@ -31,8 +31,6 @@
     
     $gitpull_script = "/eosstracker/sbin/gitpullupdate.bash";
 
-    $output = shell_exec('sudo -H -b -u eosstracker ' . $gitpull_script);
-    //printf ("%s", json_encode($output));
-    //printf ("[]");
+    $output = shell_exec('sudo -H -u eosstracker ' . $gitpull_script);
     printf ("%s", $output);
 ?>

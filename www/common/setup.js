@@ -785,6 +785,17 @@
     }
 
     /***********
+    * gitPullFiles function
+    *
+    * This function will pull the latest GitHub updates through the gitpull.php file
+    ***********/
+    function gitPullFiles() {
+         $.get("gitpull.php", function(data) {
+            var myresults = "";
+        });
+    }
+
+    /***********
     * deletePredictFiles function
     *
     * This function will delete all predict files that are older than two weeks.

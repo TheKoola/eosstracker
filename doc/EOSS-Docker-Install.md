@@ -299,7 +299,7 @@ Note:  Type 'q' to quit.
 ### Update the eosstracker software
 To update the base eosstracker software within the container:
 ```sh
-docker exec -it eosstracker /eosstracker/sbin/gitpullupdate.bash
+docker exec -it --user eosstracker eosstracker /eosstracker/sbin/gitpullupdate.bash
 ```
 
 ### Prune old and unused containers
