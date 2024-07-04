@@ -791,7 +791,7 @@
     ***********/
     function gitPullFiles() {
         $.get("gitpull.php", function(data) {
-            var myresults = "";
+            var myresults = data.result;
         });
     }
 
