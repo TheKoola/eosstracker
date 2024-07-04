@@ -134,6 +134,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Denver
 ENV GPS_DEVICE=/dev/ttyUSB0
 ENV EOSS_NODEID=EOSS-Docker
+ENV EOSS_IS_DOCKER=1
 
 # Get packages
 RUN apt-get update \
