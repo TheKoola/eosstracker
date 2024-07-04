@@ -15,15 +15,16 @@ Last update:  7/4/2024
 2. [Configure Networking](#networking)
 3. [Convenience Settings](#convenience)
 4. [OPTIONAL: Disable Unattended Upgrades](#disableunattend)
+5. [Install additional packages](#installadds)
 
 ### EOSSTracker Software and Dependencies
-5. [Airspy udev Rules](#airspy)
+6. [Airspy udev Rules](#airspy)
 
 ### Necessary System Services
-6. [Configure Sudo](#sudo)
-7. [Timezones](#timezones)
-8. [UFW Firewall](#firewall)
-9. [Network Time](#time)
+7. [Configure Sudo](#sudo)
+8. [Timezones](#timezones)
+9. [UFW Firewall](#firewall)
+10. [Network Time](#time)
 
 
 # Basic System Functionality
@@ -93,9 +94,14 @@ sudo systemctl stop systemd-networkd.service
 sudo systemctl stop systemd-networkd.socket  
 ```
 
-Now mask all of those services so they don't start by using a command like this:
+Now mask all of those services so they don't start by using commands like these:
 
-`sudo systemctl mask <service>`
+```
+sudo systemctl mask networkd-dispatcher.service   
+sudo systemctl mask systemd-networkd-wait-online.service
+sudo systemctl mask systemd-networkd.service
+sudo systemctl mask systemd-networkd.socket  
+```
 
 ### Now have netplan configure NetworkManager by running these commands:
 ```
@@ -128,7 +134,7 @@ nmcli c show
 
 ### Add in the hotspot wifi configuration
 ```
-sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-11 mode ap
+sudo nmcli connection add type wifi ifname wlp2s0 con-name Hotspot autoconnect yes ssid EOSS-XX mode ap
 sudo nmcli connection modify Hotspot 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk ipv4.method shared 802-11-wireless-security.psk '<wifi password>'
 sudo nmcli c modify Hotspot wifi-sec.pmf 1 connection.autoconnect true connection.autoconnect-priority 20
 ```
@@ -198,21 +204,19 @@ endif
 ### Bashrc entries
 Add this to the end of the eosstracker's `~/.bashrc` file:
 ```
-export PGDATABASE=aprs
 set -o vi
 ```
 
-### Bash command aliases
+<!-- ### Bash command aliases
 Create the `~/.bash_aliases` file with the following contents:
 ```
 alias p='ps -ef | egrep "direwolf|aprsc|gpsd|killsession|kill_session|habtracker-daemon|gpswss" | grep -v grep'
 alias r='cat /eosstracker/sql/shortlist.sql | psql -d aprs'
 alias blank='echo "update teams set flightid=NULL;" | psql -d aprs'
-```
+``` -->
 
-
-## OPTIONAL:  Disable Unattended Upgrages
 <a name="disableunattend"></a>
+## OPTIONAL:  Disable Unattended Upgrages
 
 Unattended upgrades can be a double-edged sword. While they keep your system up to date automatically, 
 they might also unexpectedly change the system’s state or introduce new issues without your prior knowledge. 
@@ -238,6 +242,13 @@ APT::Periodic::Unattended-Upgrade "0";
 This will allow package lists to be refreshed regularly, but prevent the automatic installation of upgraded
 packages.  You will still be notified about available upgrades, which is helpful.  But the upgrades will
 not automatically install.  You will need to install them manually at a time of your choosing.
+
+
+<a name="installadds"></a>
+## Install additional packages
+
+For mobile operation with intermittent Internet connectivity, and for cell modem tethering, install some additional
+packages:
 
 
 <a name="airspy"></a>
