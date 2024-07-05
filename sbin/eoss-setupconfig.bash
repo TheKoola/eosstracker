@@ -54,7 +54,7 @@ do_expand_rootfs() {
   [ "$PART_START" ] || return 1
   # Return value will likely be error for fdisk as it fails to reload the
   # partition table because the root fs is mounted
-  fdisk "$ROOT_DEV" <<EOF
+  fdisk -c -u "$ROOT_DEV" <<EOF
 p
 d
 $PART_NUM
