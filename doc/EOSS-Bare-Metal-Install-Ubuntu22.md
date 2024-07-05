@@ -523,7 +523,7 @@ Then paste in these lines at the end of that file:
 ```
 #### These are for the eosstracker and www-data web user
 eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill
-www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash
+www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash, /eosstracker/sbin/gitpullupdate.bash
 ```
 
 <a name="apache"></a>
