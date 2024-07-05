@@ -27,6 +27,7 @@
 EOSS_USER=eosstracker
 INTERACTIVE=True
 EOSSDOCKER=True
+EOSS24=True
 
 set -e
 
@@ -109,26 +110,80 @@ do_set_ssid() {
   EOSS_SSID=EOSS-00
   EOSS_CHANNEL=6
 
-  if [ -d /etc/netplan ]; then
-    SSID_FILE="$(grep "access-points:" /etc/netplan/*.yaml | cut -f 1 -d:)"
-    [ "$SSID_FILE" ] || return 1
-  else
-    if [ "$INTERACTIVE" = True ]; then
-      whiptail --msgbox "Netplan does not appear to be configured correctly." 20 60 2
-    fi
-    return 0
+  # Check if netplan for Ubuntu 24.04 or 22.04
+  if [ -f /etc/NetworkManager/system-connections/Hotspot.nmconnection ]; then
+    # In Ubuntu 24.04, default netplan creates configuration YAML in /etc/netplan
+    # In Ubuntu 22.04, default netplan creates INI in /etc/NetworkManager/system-connections
+    EOSS24=False
   fi
 
-  EOSS_SSID="$(cat $SSID_FILE | grep -A1 access | tail -1 | cut -f2 -d\")"
+  # Check if Docker is installed 
+  if [ ! -f /var/run/docker.pid ]; then
+    # Docker is not installed nor running
+    EOSSDOCKER=False
+  fi
+
+  if [ "$EOSS24" = True ]; then
+    # Ubuntu 24.04
+    if [ -d /etc/netplan ]; then
+      SSID_FILE="$(grep "access-points:" /etc/netplan/*.yaml | cut -f 1 -d:)"
+      [ "$SSID_FILE" ] || return 1
+    else
+      if [ "$INTERACTIVE" = True ]; then
+        whiptail --msgbox "Netplan does not appear to be configured correctly." 20 60 2
+      fi
+      return 0
+    fi
+  else
+    # Ubuntu 22.04
+    if [ -f /etc/NetworkManager/system-connections/Hotspot.nmconnection ]; then
+      SSID_FILE="/etc/NetworkManager/system-connections/Hotspot.nmconnection"
+    else
+      if [ "$INTERACTIVE" = True ]; then
+        whiptail --msgbox "NetworkManager does not appear to be configured correctly." 20 60 2
+      fi
+      return 0
+    fi
+  fi
+
+  if [ "$EOSS24" = True ]; then
+  # Ubuntu 24.04
+    EOSS_SSID="$(cat $SSID_FILE | grep -A1 access | tail -1 | cut -f2 -d\")"
+  else
+  # Ubuntu 22.04
+    EOSS_SSID="$(cat $SSID_FILE | grep ssid | cut -f2 -d=)"
+  fi
+
   EOSS_OLDID=$EOSS_SSID
   EOSS_SSID="$(whiptail --title "Set WiFi SSID" --inputbox "Enter the SSID:" 10 30 "$EOSS_SSID" 3>&1 1>&2 2>&3)"
-  sed -i "s/${EOSS_OLDID}/${EOSS_SSID}/g" "${SSID_FILE}"
+
+  if [ "$EOSS24" = True ]; then
+  # Ubuntu 24.04
+    sed -i "s/${EOSS_OLDID}/${EOSS_SSID}/g" "${SSID_FILE}"
+  else
+  # Ubuntu 22.04
+    sed -i "s/ssid=${EOSS_OLDID}/ssid=${EOSS_SSID}/g" "${SSID_FILE}"
+  fi
 
   # Set the Hotspot channel
-  EOSS_CHANNEL="$(cat $SSID_FILE | grep channel | cut -f2 -d:)"
+  if [ "$EOSS24" = True ]; then
+  # Ubuntu 24.04
+    EOSS_CHANNEL="$(cat $SSID_FILE | grep channel | cut -f2 -d:)"
+  else
+  # Ubuntu 22.04
+    EOSS_CHANNEL="$(cat $SSID_FILE | grep channel | cut -f2 -d=)"
+  fi
+
   EOSS_OLDCHANNEL=$EOSS_CHANNEL
   EOSS_CHANNEL="$(whiptail --title "Set WiFi Hotspot Channel" --inputbox "Enter the Hostpot Channel (1, 6, or 11):" 10 30 "$EOSS_CHANNEL" 3>&1 1>&2 2>&3)"
-  sed -i "s/channel:[ ]${EOSS_OLDCHANNEL}/channel: ${EOSS_CHANNEL}/g" "${SSID_FILE}"
+
+  if [ "$EOSS24" = True ]; then
+  # Ubuntu 24.04
+    sed -i "s/channel:[ ]${EOSS_OLDCHANNEL}/channel: ${EOSS_CHANNEL}/g" "${SSID_FILE}"
+  else
+  # Ubuntu 22.04
+    sed -i "s/channel=${EOSS_OLDCHANNEL}/channel=${EOSS_CHANNEL}/g" "${SSID_FILE}"
+  fi
   
   if [ "$EOSSDOCKER" = True ]; then
     COMPOSEFILE="/home/eosstracker/docker-compose.yml"
