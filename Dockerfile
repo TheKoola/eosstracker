@@ -81,7 +81,8 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  echo "#### These are for the eosstracker and www-data web user" >> /etc/sudoers; \
  #echo "eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /sr/bin/pkill" >> /etc/sudoers; \ 
  echo "eosstracker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
- echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash" >> /etc/sudoers
+ echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash, /eosstracker/sbin/gitpullupdate.bash" \
+  >> /etc/sudoers
 
 # Set time zone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone 
@@ -188,7 +189,8 @@ RUN adduser --disabled-password --disabled-login --gecos "EOSS tracker user" eos
  echo "#### These are for the eosstracker and www-data web user" >> /etc/sudoers; \
 #  echo "eosstracker ALL=(ALL) NOPASSWD: /opt/aprsc/sbin/aprsc, /usr/bin/pkill" >> /etc/sudoers; \ 
  echo "eosstracker ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
- echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash" >> /etc/sudoers
+ echo "www-data ALL=(eosstracker) NOPASSWD: /eosstracker/bin/start_session.bash, /eosstracker/bin/killsession_wrapper.bash, /eosstracker/sbin/gitpullupdate.bash" \
+ >> /etc/sudoers
 
 # Configure gpsd ports
 # EXPOSE 2947/tcp
