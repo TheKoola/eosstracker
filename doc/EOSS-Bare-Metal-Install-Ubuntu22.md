@@ -300,7 +300,9 @@ psql (14.5 (Ubuntu 14.5-0ubuntu0.22.04.1))
 Type "help" for help.
 postgres=# alter user eosstracker with encrypted password '<insert database password>';
 ALTER ROLE
-postgres=#
+postgres=# \q
+
+postgres@eosstracker:~$
 ```
 
 ### Create a new database:
@@ -309,7 +311,10 @@ createdb aprs -O eosstracker
 echo "create extension postgis;" | psql -d aprs
 ```
 
->>> Log off as the postgres user.
+Finally, log off as the postgres user:
+```
+postgres@eosstracker:~$ exit
+```
 
 ### Create The Database Schema
 
