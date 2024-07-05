@@ -201,6 +201,10 @@ do_set_ssid() {
       whiptail --msgbox "EOSS Hostpsot updated with SSID=${EOSS_SSID}\nand Channel=${EOSS_CHANNEL}.\n \
       \nDocker compose file\n${COMPOSEFILE}\nupdated with EOSS_NODEID=${EOSS_SSID}." 20 60 2
     fi
+  else
+    if [ "$INTERACTIVE" = True ]; then
+      whiptail --msgbox "EOSS Hostpsot updated with SSID=${EOSS_SSID}\nand Channel=${EOSS_CHANNEL}." 20 60 2
+    fi
   fi
 }
 
