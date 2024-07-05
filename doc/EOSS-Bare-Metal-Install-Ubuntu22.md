@@ -719,6 +719,12 @@ Next you'll need to allow for incoming traffic on the system's wifi adapter to b
 sudo ufw route allow in on wlp2s0 to any
 ```
 
+In order to allow packets from an instance of [KA9Q-Radio](https://github.com/ka9q/ka9q-radio) running on the local network, a set of firewall rules will need to be defined.  Run these commands to add these firewall rules:
+```
+sudo ufw allow from any to 239.0.0.0/8
+sudo ufw allow from 239.0.0.0/8 to any
+```
+
 ### Now enable the firewall
 ```
 sudo ufw enable
