@@ -1,5 +1,20 @@
 # Revision History #
 
+## Version 2.1 - July 2024 ##
+
+### New Features: ###
+
+- Upgraded code baseline for Ubuntu 22.04.
+
+- Master branch is retired.  Use brickv2.1 branch from now on.
+ 
+- Experimental Docker container.
+
+- The "Synchronize..." button will now also perform a git pull for the latest version of the brickv2.1 branch.
+
+- Many more under the hood!
+
+
 ## Version 1.4 - Under Development ##
 
 ### New Features: ###
