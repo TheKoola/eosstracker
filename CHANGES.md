@@ -15,13 +15,6 @@
 - Many more under the hood!
 
 
-## Version 1.4 - Under Development ##
-
-### New Features: ###
-
-### Issues Fixed: ###
-
-
 ## Version 1.3 - June 2020 ##
 
 ### New Features: ###
