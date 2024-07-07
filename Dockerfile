@@ -122,6 +122,7 @@ RUN adduser --system --no-create-home --home /var/run/aprsc --shell /usr/sbin/no
  chmod 755 /opt/aprsc/etc /opt/aprsc/dev;  \
  cp -p /etc/resolv.conf /etc/nsswitch.conf /etc/hosts /etc/gai.conf /opt/aprsc/etc/; \
  cp -pa /dev/urandom /dev/random /dev/null /dev/zero /opt/aprsc/dev/; \
+ echo "nameserver 127.0.0.53" > /opt/aprsc/etc/resolv.conf; \
  chmod 775 /opt/aprsc/etc; \
  chown -R aprsc:eosstracker /opt/aprsc/etc; \
  chown -R aprsc:aprsc /opt/aprsc/logs /opt/aprsc/web /opt/aprsc/sbin /opt/aprsc/data
