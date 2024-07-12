@@ -72,7 +72,7 @@ else
     ]);
 
     # If the dump1090-fa package has been installed, then this should be its URL
-    $dump1090fa_url = "https://" . $_SERVER["HTTP_HOST"] . "/dump1090-fa";
+    $dump1090fa_url = "https://" . $_SERVER["HTTP_HOST"] . "/skyaware";
 
     # Get HTML headers by trying to load the URL 
     $file_headers = get_headers($dump1090fa_url, 0, $context);
@@ -99,7 +99,7 @@ else
         <li class="menubar"><a href="/setup.php" class="navbar">Setup</a></li>
         <li class="menubar"><a href="/rawdata.php" class="navbar">Data</a></li>
         <li class="menubar"><a href="/dashboard.php" target="_blank" class="navbar">Dashboard</a></li>
-        <?php if ($exists) { ?> <li class="menubar"><a href="/dump1090-fa" target="_blank" class="navbar">ADS-B</a></li> <?php } ?>
+        <?php if ($exists) { ?> <li class="menubar"><a href="/skyaware" target="_blank" class="navbar">ADS-B</a></li> <?php } ?>
         <li class="menubar"><a id="maplink" href="/map.php" target="_blank" class="navbar">Map</a></li>
         <li class="menubar"><a href="/about.php" class="navbar">About</a></li>
         </ul>
