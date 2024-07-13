@@ -368,8 +368,9 @@ class SubProcess:
            except (psutil.NoSuchProcess, psutil.AccessDenied):
                pass
            else:
-               if self.name in pInfoDict["name"].lower() or self.name in pInfoDict["cmdline"]:
-                   pid = pInfoDict["pid"]
+               if pInfoDict["name"] and pInfoDict["cmdline"]:
+                   if self.name in pInfoDict["name"].lower() or self.name in pInfoDict["cmdline"]:
+                       pid = pInfoDict["pid"]
 
         return pid
 
