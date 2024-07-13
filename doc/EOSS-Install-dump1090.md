@@ -2,6 +2,7 @@
 
 Application Notes by Marty WA0GEH,
 Version 1.1, Dated 2020-05-01
+Version 1.2, Updated 2024-07-13, by Jeff N2XGL
 
 ## Installing dump1090 for ADS-B decoding
 
@@ -9,17 +10,14 @@ These instructions, provided by Jeff Deaton, N6BA and Jeff Shykula, N2XGL,
 enable the EOSS SDR Tracking system to monitor ADS-B position reports from
 active aircraft flights.  From an ADS-B tab on the Web page, a user can
 observe flight data on a locally-hosted FlightAware screen.  This capability
-runs concurrent with the original APRS tracking application.  It is only
-available in Version 1.3 or the `dev` branch.
+runs concurrent with the original APRS tracking application.  
 
 ### Required Hardware
 
 Additional hardware items need to be provided to enable ADS-B capability:
 
-1. The EOSS APRS SDR Tracking system must be either at Version 1.3 or
-configured for the `dev` branch to qualify for this installation.
-See [here](https://github.com/TheKoola/eosstracker/blob/master/doc/EOSS-Upgrades-and-Code-Branches.md)
-for information about software upgrades and the `dev` branch from GitHub.
+1. The EOSS APRS SDR Tracking system must be either at Version 1.3 or greater 
+to qualify for this installation.
 
 2. A second USB SDR receiver to be used to receive data in the 1090 MHz range.  
 This can be the same model USB SDR deployed for the APRS frequencies.  
@@ -111,12 +109,11 @@ enter the following commands (Copy and paste OK):
 ```
 sudo apt install librtlsdr-dev libusb-1.0-0-dev dh-systemd libncurses5-dev libbladerf-dev
 cd /tmp
-git clone https://github.com/edgeofspace/dump1090-fa.git
+git clone https://github.com/edgeofspace/dump1090.git
 cd dump1090
-git checkout eoss
 dpkg-buildpackage -b --no-sign -tc
 cd ..
-sudo apt install ./dump1090-fa_3.8.1_amd64.deb
+sudo apt install ./dump1090-fa_9.0_amd64.deb
 ```
 
 To verify the installation succeeded, at the command prompt, enter:
@@ -135,10 +132,9 @@ You are now ready to test the ADS-B application.
 
 ### Test the New ADS-B Application
 
-For Version 1.3 users and `dev` branch users, to ensure the new apps have
-started, reboot your brick.  The apps should have started as a result of the
-installation, but this reboot is to make sure they reliably start each time.  
-Follow the steps below to test the installation:
+To ensure the new apps have started, reboot your brick.  The apps should have 
+started as a result of the installation, but this reboot is to make sure they 
+reliably start each time.  Follow the steps below to test the installation:
 1. Access the EOSS SDR APRS Web page and observe the new menu tab labeled
 "ADS-B" at the top of your screen.  The page should look similar to this:
 
