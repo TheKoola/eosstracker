@@ -47,11 +47,12 @@ for proc in psutil.process_iter():
        pass
    else:
        for p in procstatus:
-           if p["process"] in pInfoDict["name"].lower() or p["process"] in pInfoDict["cmdline"]:
-               p["cmdline"] = pInfoDict["cmdline"]
-               listOfProcesses.append(pInfoDict)
-               p["status"] = 1  
-               break
+           if pInfoDict["name"] and pInfoDict["cmdline"]:
+               if p["process"] in pInfoDict["name"].lower() or p["process"] in pInfoDict["cmdline"]:
+                   p["cmdline"] = pInfoDict["cmdline"]
+                   listOfProcesses.append(pInfoDict)
+                   p["status"] = 1  
+                   break
 
 for p in procstatus:
     isrunning += p["status"]
