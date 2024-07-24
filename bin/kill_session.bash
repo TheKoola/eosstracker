@@ -89,6 +89,9 @@ if [ $? -eq 0 ]; then
     pkill direwolf >> ${LOGFILE}
 fi
 
+# delete the daemonstatus.json file
+rm ${HOMEDIR}/www/daemonstatus.json
+
 echo "#####################" >> $LOGFILE
 echo >> $LOGFILE
 

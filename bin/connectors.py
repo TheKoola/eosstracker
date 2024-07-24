@@ -1351,6 +1351,12 @@ class AprsisStream(PacketStream):
             self.logger.warning(f"{self.server.nickname} getPositionPacket.  GPS position was not valid.")
             return None
 
+        # only form up a position packet (that will be sent to APRS-IS) if we have a GPS location from the GPS device itself.
+        if "source" in gpsposition:
+            if gpsposition["source"] != "gps":
+                self.logger.warning(f"{self.server.nickname} getPositionPacket.  GPS position was not valid.")
+                return None
+
         # is this a mobile or stationary station?
         is_mobile = True if self.configuration["mobilestation"] == "true" else False
 
@@ -1572,7 +1578,8 @@ class AprsisStream(PacketStream):
                 "longitude" : 0.0,
                 "bearing" : 0.0,
                 "speed_mph" : 0.0,
-                "isvalid" : False
+                "isvalid" : False,
+                "source" : None
                 }
 
 
@@ -1586,10 +1593,12 @@ class AprsisStream(PacketStream):
                     return self.stationLocation
 
         try:
-            # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
+            # Wait for a little while to try and get our GPS location from the GPS Poller process
+            # update:  setting this to try only a few times (trycount < 2) to get the GPS location from the GPS Poller process (which gets it from GPSD)
+            #          only once.  If there's not a 3D fix, then we "punt" and let try and query our last known position from the database
             nofix = True
             trycount = 0
-            while nofix == True and trycount < 30:
+            while nofix == True and trycount < 2:
 
                 # This retreives the latest GPS data (assuing GPS Poller process is running)
                 g = self.configuration["position"]
@@ -1611,6 +1620,7 @@ class AprsisStream(PacketStream):
                             gpsposition["bearing"] = float(position["bearing"])
                             gpsposition["speed_mph"] = float(position["speed_mph"])
                             gpsposition["isvalid"] = True
+                            gpsposition["source"] = "gps"
 
                             # sanity check
                             if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
@@ -1618,14 +1628,15 @@ class AprsisStream(PacketStream):
 
                 if nofix == True:
 
+
                     # we're still waiting on the GPS to obtain a fix so we wait this long
                     seconds = round((1.2) ** trycount) if trycount < 22 else (1.2) ** 22
+                    self.logger.debug(f"{self.server.nickname} Waiting on GPS fix ({trycount=}): {seconds}s")
                     self.okay.wait(seconds)
 
                     # increment our try counter
                     trycount += 1
 
-                    self.logger.info(f"{self.server.nickname} Waiting on GPS fix ({trycount=}): {seconds}s")
 
         except (GracefulExit, KeyboardInterrupt, SystemExit) as e:
             return gpsposition
@@ -1634,7 +1645,7 @@ class AprsisStream(PacketStream):
         # if we still don't have a GPS fix, then we query the database for our last known location
         if nofix == True:
 
-            self.logger.info("Unable to acqure 3D fix from GPS, querying database for last known location")
+            self.logger.debug("Unable to acqure 3D fix from GPS, querying database for last known location")
 
             #try: 
             # connect to the database

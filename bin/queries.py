@@ -831,7 +831,8 @@ def getGPSPosition(dbconn = None, logger = None):
                     "altitude" : float(my_alt),
                     "latitude" : float(my_lat),
                     "longitude" : float(my_lon),
-                    "isvalid" : True
+                    "isvalid" : True,
+                    "source" : "database"
                     }
 
             logger.debug("GPS position: %f, %f, %f, isvalid: %d" % (gpsposition["altitude"], gpsposition["latitude"], gpsposition["longitude"], gpsposition["isvalid"]))

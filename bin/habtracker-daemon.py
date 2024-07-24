@@ -949,42 +949,6 @@ def main():
         # Create all of the sub-processes
         processes = createProcesses(configuration)
 
-        # finds the GPS process, start it first, then wait until it obtains a position fix before starting everything else.
-        gpsproc = None
-        for p in processes:
-            if p.name == "GPS Position Tracker":
-
-                # Start the GPS Poller process
-                p.start()
-
-                # Loop initialization params
-                fixacquired = False
-                trycount = 0
-
-                # Loop until we get a GPS fix, or the trycount becomes too large (in which case we eject)
-                while not fixacquired:
-                    gpsposition = getPosition(configuration)
-
-                    if gpsposition["isvalid"]:
-                        fixacquired = True
-                        logger.info(f"GPS 3D fix acquired: {gpsposition['latitude']}, {gpsposition['longitude']}")
-                    else:
-
-                        # we're still waiting on the GPS to obtain a fix so we wait this long
-                        seconds = round((1.2) ** trycount) if trycount < 22 else (1.2) ** 22
-                        stopevent.wait(seconds)
-
-                        # increment our try counter
-                        trycount += 1
-
-                        logger.info(f"Waiting on GPS fix ({trycount=}): {seconds}s")
-
-                    # check the trycount.  If it's really large, then we abort running.
-                    if trycount > 30:
-                        logger.error("Unable to acquire GPS position fix, aborting")
-                        raise GracefulExit
-
-
         # Loop through each process starting it (unless it's already been started)
         for p in processes:
             if not p.is_alive():

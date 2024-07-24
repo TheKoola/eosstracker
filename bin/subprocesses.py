@@ -136,14 +136,17 @@ class SubProcess:
                 "altitude" : 0.0,
                 "latitude" : 0.0,
                 "longitude" : 0.0,
-                "isvalid" : False
+                "isvalid" : False,
+                "source" : None
                 }
 
         try:
-            # Wait for a little while (up to 30 seconds) to try and get our GPS location from the GPS Poller process
+            # Wait for a little while to try and get our GPS location from the GPS Poller process
+            # update:  setting this to try only a few times (trycount < 2) to get the GPS location from the GPS Poller process (which gets it from GPSD)
+            #          only once.  If there's not a 3D fix, then we "punt" and let try and query our last known position from the database
             nofix = True
             trycount = 0
-            while nofix == True and trycount < 30:
+            while nofix == True and trycount < 2:
                 
                 # This retreives the latest GPS data (assuming GPS Poller process is running)
                 g = self.configuration["position"]
@@ -162,6 +165,7 @@ class SubProcess:
                             gpsposition["latitude"] = round(float(position["lat"]),8)
                             gpsposition["longitude"] = round(float(position["lon"]),8)
                             gpsposition["isvalid"] = True
+                            gpsposition["source"] = "gps"
 
                             # sanity check
                             if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
@@ -171,7 +175,7 @@ class SubProcess:
 
                     # we're still waiting on the GPS to obtain a fix so we wait this long
                     seconds = round((1.2) ** trycount) if trycount < 22 else round((1.2) ** 22)
-                    self.logger.info(f"{self.name} Waiting on GPS fix ({trycount=}): {seconds}s")
+                    self.logger.debug(f"{self.name} Waiting on GPS fix ({trycount=}): {seconds}s")
                     self.stopevent.wait(seconds)
 
                     # increment our try counter
@@ -184,7 +188,7 @@ class SubProcess:
         # if we still don't have a GPS fix, then we query the database for our last known location
         if nofix == True:
 
-            self.logger.info(f"{self.name}: Unable to acqure 3D fix from GPS, querying database for last known location")
+            self.logger.debug(f"{self.name}: Unable to acqure 3D fix from GPS, querying database for last known location")
 
             # connect to the database
             dbconn = queries.connectToDatabase(db_connection_string = habconfig.dbConnectionString, logger = self.logger)
@@ -439,7 +443,7 @@ class Direwolf(SubProcess):
         self.setName('direwolf')
         
         # The default command string and arguments for running direwolf.
-        self.setArguments(args = ["-t", "0", "-T", "%D %T", "-c"])
+        self.setArguments(args = ["-t", "0", "-dg", "-T", "%D %T", "-c"])
 
         # Default for the direwolf configuration file
         if not self.config_file:

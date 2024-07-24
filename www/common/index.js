@@ -400,9 +400,16 @@ function getgps() {
         else
             gpsfix = "n/a";
 
+        // if there is an error string included (usually from a GPSD connection fault), then format that and save the HTML string into 'errorstring'
+        var errorstring = "";
+        if (jsonData.error && jsonData.error != "n/a") {
+            errorstring = "<tr><td style=\"text-align: left; padding-right: 10px;\">Error:</td><td>"
+            + "<mark class=\"marginal\">" + jsonData.error + "</mark></td></tr>";
+        }
+
         var theDate = jsonData.utc_time;
         theDate = theDate.replace(/T/g, " "); 
-        theDate = theDate.replace(/.[0-9]*Z$/g, ""); 
+        theDate = theDate.replace(/Z$/g, ""); 
         var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">Host:</td><td><strong>" + jsonData.host + "</strong></td></tr>"
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
@@ -414,7 +421,9 @@ function getgps() {
             + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Status:</td><td>" 
             + (jsonData.status == "normal" ? jsonData.status : "<mark class=\"marginal\">" + jsonData.status + "</mark>")
             + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr></table>";
+            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr>"
+            + errorstring
+            + "</table>";
  
         var i = 0;
         var satellites = jsonData.satellites;
