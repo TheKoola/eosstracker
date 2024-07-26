@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2023 Jeff Deaton (N6BA)
+#    Copyright (C) 2019,2020,2023 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,63 +23,87 @@
 *
  */
 
-    header("X-Accel-Buffering: no"); // disable ngnix webServer buffering
-    header("Content-Type: text/event-stream");
-    header("Cache-Control: no-cache");
-
+    $pagetitle="Testing SSE";
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
     else
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
 
-    include $documentroot . '/common/functions.php';
-
-    // Connect to the database
-    $link = connect_to_database();
-    if (!$link) {
-        db_error(sql_last_error());
-        return 0;
-    }
-
-    // start listening for postgresql NOTIFY events
-    pg_query($link, "LISTEN new_packet; LISTEN new_position;");
-
-    // close PHP output buffering.  We do this so SSE events aren't "queued" up to the browser - we get an event, we send an event.  ;)
-    ob_end_flush();  
-
-    // counter to increment upon each result sent to the browser
-    $inc = 0;
-
-    while (!connection_aborted()) {
-
-        // The result from our postgresql LISTEN command.
-        $result = pg_get_notify($link);
-
-        // check if we got anything back from the postgresql database
-        if ($result) { 
-
-            // the event we've listened to
-            $event = $result["message"];
-
-            // the data
-            $payload = $result["payload"];
-
-            // Send the SSE event to the browser
-            echo "event: $event\n";
-            echo "id: $inc\n";
-            echo "data: " . $payload . "\n\n";
-
-            // flush any output to the browser
-            flush(); 
-
-            // Increment our counter
-            $inc++;
-        }
-
-        // wait this long before checking for any incoming packets
-        sleep(1); 
-    }
-
-    // done.
-
+    include $documentroot . '/common/header-testmap.php';
 ?>
+<script>
+
+    function startup() {
+
+
+        // backend url
+        let backendurl = "ssestream.php";
+
+        // Create new SSE source
+        let packetsource = new EventSource(backendurl);
+
+        console.log("SSE Started.");
+
+        // listen for generic messages
+        packetsource.addEventListener("message", function(event) {
+
+            // Parse the incoming json
+            const jsondata = event.data;
+
+            // Add the output to the "data" element
+            let data = document.getElementById("heartbeats");
+            let ts = new Date(Date.now());
+            data.innerHTML += "<pre>" + ts.toLocaleString() + ", " + jsondata + "</pre>";
+        });
+
+
+        // listen for new positions
+        packetsource.addEventListener("new_position", function(event) {
+
+            // Parse the incoming json
+            const jsondata = event.data;
+            //console.log("new_position: ", event);
+
+            // Add the output to the "data" element
+            let data = document.getElementById("positionupdates");
+            let ts = new Date(Date.now());
+            data.innerHTML += "<pre>" + ts.toLocaleString() + ", " + jsondata + "</pre>";
+        });
+
+        // listen for new packets
+        packetsource.addEventListener("new_packet", function(event) {
+
+            // Parse the incoming json
+            const jsondata = event.data;
+
+            // Add the output to the "data" element
+            let data = document.getElementById("packetupdates");
+            let ts = new Date(Date.now());
+            data.innerHTML += "<pre>" + ts.toLocaleString() + ", " + jsondata + "</pre>";
+        });
+
+    }
+
+
+
+    // starting point for everything 
+    document.addEventListener("DOMContentLoaded", startup);
+</script>
+<hr>
+<h2>Keep Alive Messages</h2>
+<hr>
+<div id="heartbeats">
+</div>
+<hr>
+<h2>Position Updates</h2>
+<hr>
+<div id="positionupdates">
+</div>
+<hr>
+<h2>Packet Updates</h2>
+<hr>
+<div id="packetupdates">
+<hr>
+</div>
+</body>
+</html>

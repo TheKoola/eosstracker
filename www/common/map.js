@@ -101,6 +101,32 @@
     // is this an apple platform?  So we know to send user's to Google Maps or Apple Maps when clicking coordinate links.
     let isApplePlatform = false;
 
+    // return a string represenation of a number, but padded with a leading zero.  Primarily used with times/dates.
+    function padNumber(n) {
+        n = Math.floor(Math.abs(n));
+        return n.toString().padStart(2, '0');
+    }
+
+    // Return the date/time object as an ISO formated string (YYYY-MM-DD HH:MM:SS)
+    function getISODateTimeString(thedate) {
+        var ts;
+        
+        if (thedate)
+            ts = thedate;
+        else
+            ts = new Date(Date.now());
+
+        var str = 
+            ts.getFullYear() + 
+            "-" + padNumber(ts.getMonth()+1) + 
+            "-" + padNumber(ts.getDate()) + 
+            " " + padNumber(ts.getHours()) + 
+            ":" + padNumber(ts.getMinutes()) + 
+            ":" + padNumber(ts.getSeconds());
+        return str;
+    }
+
+
     /***********
     * getChartWidth
     *
@@ -715,7 +741,7 @@
     * This is called from getgps() and updateSideBar() to update the relative position fields and gauges for each flight
     * getgps() is called at every update (every ~5 secs) and updateSideBar() is called whenever new packets from the flight are available.
     **********/
-    function updateRelativePosition(positionJSON, fid) {
+    function updateRelativePosition(featurecollection, fid) {
 
         // by default we'll loop through each flight in the flightList
         var theflightlist = flightList;
@@ -725,6 +751,23 @@
             if (fid) {
                 theflightlist = [{"flightid" : fid}];
             }
+
+        // Determine the geojson feature from the provided arguments
+        var positionJSON = null;
+        if (featurecollection && featurecollection.type) {
+            if (featurecollection.type == "FeatureCollection") {
+                if (featurecollection.features)
+                    positionJSON = featurecollection.features[0];
+            }
+            else if (featurecollection.type == "Feature") {
+                positionJSON = featurecollection;
+            }
+        }
+
+        // if there isn't a local position, then we can't calculate relative positions to flights.
+        if (!positionJSON) {
+            return;
+        }
 
         // Loop through each flight updating relative position stuffs
         theflightlist.forEach(function(f) {
@@ -748,10 +791,10 @@
             if (feature && positionJSON) {
 
                 // the GPS position and heading
-                var gps_heading = positionJSON.bearing * 1.0;
-                var gps_lat = positionJSON.lat * 1.0;
-                var gps_lon = positionJSON.lon * 1.0;
-                var gps_alt = positionJSON.altitude * 1.0;
+                var gps_heading = positionJSON.properties.bearing * 1.0;
+                var gps_lat = positionJSON.geometry.coordinates[1] * 1.0;
+                var gps_lon = positionJSON.geometry.coordinates[0] * 1.0;
+                var gps_alt = positionJSON.properties.altitude * 1.0;
 
                 // The flight's last location
                 var flight_lat = feature.geometry.coordinates[1] * 1.0;
@@ -2052,7 +2095,7 @@ function getTrackers() {
         // Add the GPS status box to the top right
         gpsStatusBox = L.control.gpsbox().addTo(map);
 
-        // get the current GPS location and update the GPS status box.  Input variable is true so as to pan the map to the GPS location - to set the initial location of the map.
+        // get the current GPS location and update the GPS status box.  Input variable is true so as to update the map with the initial GPS location 
         setTimeout( function() {
             getgps(true);
         }, 10);
@@ -2092,70 +2135,6 @@ function getTrackers() {
             osmliberty.addTo(map);
         });
 
-/*        // Add OSM-bright to the map
-        $.get("/tileserver/osm-bright/style.json", function(d) {
-            let stylejson = d;
-            let myhostname = window.location.hostname;
-
-            // update the hostname within the URL of for the map styling
-            if (d.sources) 
-                if (d.sources.openmaptiles) 
-                    if (d.sources.openmaptiles.url) {
-                        let url = new URL(d.sources.openmaptiles.url);
-                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
-                    }
-            if (d.sprite) {
-                let url = new URL(d.sprite);
-                d.sprite = d.sprite.replace(url.hostname, myhostname);
-            }
-
-            if (d.glyphs) {
-                let url = new URL(d.glyphs);
-                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
-            }
-
-            osmbrightstyle = d;
-            osmbright = L.maplibreGL({
-                style: osmbrightstyle,
-                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
-            });
-
-            layerControl.addBaseLayer(osmbright, "OSM Bright");
-            osmbright.addTo(map);
-        });
-
-
-        // Add basic to the map
-        $.get("/tileserver/basic/style.json", function(d) {
-            let stylejson = d;
-            let myhostname = window.location.hostname;
-
-            // update the hostname within the URL of for the map styling
-            if (d.sources) 
-                if (d.sources.openmaptiles) 
-                    if (d.sources.openmaptiles.url) {
-                        let url = new URL(d.sources.openmaptiles.url);
-                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
-                    }
-            if (d.sprite) {
-                let url = new URL(d.sprite);
-                d.sprite = d.sprite.replace(url.hostname, myhostname);
-            }
-
-            if (d.glyphs) {
-                let url = new URL(d.glyphs);
-                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
-            }
-
-            basicstyle = d;
-            basic = L.maplibreGL({
-                style: basicstyle,
-                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
-            });
-
-            layerControl.addBaseLayer(basic, "Basic");
-        });
-*/
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
@@ -2183,6 +2162,9 @@ function getTrackers() {
 
         // Add the HUD to the bottom center
         hud = L.control.flighthud({ position: "centerbottom", flights: flightids});
+
+        // startup SSE operations.
+        setupSSE("ssestream.php");
     }
 
     /*********
@@ -2233,6 +2215,11 @@ function getTrackers() {
         trackersAtLargeLayer = createRealtimeLayer("", false, trackersatlarge, 5 * 1000, mapStyle);
         weatherStationsLayer = createRealtimeLayer("", false, wxstations, 5 * 1000, mapStyle);
         myPositionLayer.addTo(map);
+
+        // Add our current position to the map if available, otherwise, it'll get added to the map as position updates come in.
+        if (lastposition) 
+            myPositionLayer.update(lastposition);
+
         trackersAtLargeLayer.addTo(map);
 
         layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
@@ -2430,20 +2417,99 @@ function getTrackers() {
 
     }
 
+
+/***********
+* setupSSE function
+*
+* This function will setup an SSE connection to the backend packet source (backendurl) and use the handler as the callback function.
+***********/
+function setupSSE(backendurl) {
+    if(typeof(EventSource) !== "undefined") {
+
+        // Create new SSE source
+        packetsource = new EventSource(backendurl);
+
+        // listen for new gps position alerts
+        packetsource.addEventListener("new_position", function(event) {
+
+            // Parse the incoming json
+            var gpsjson = JSON.parse(event.data);
+
+            // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
+            if (gpsjson && gpsjson.properties && gpsjson.geometry) {
+
+                var ts = new Date(gpsjson.properties.tm);
+                var tmstring = getISODateTimeString(ts);
+
+                // Create a feature collection object out of gpsjson
+                // set the lastlocation variable to output
+                lastposition = {
+                    "type": "FeatureCollection",
+                    "properties": {
+                      "name": "My station"
+                    },
+                    "features": [
+                      {
+                        "type": "Feature",
+                        "properties": {
+                            "type": "Feature",
+                            "speed_mph": (gpsjson.properties.speed_math ? Math.floor(gpsjson.properties.speed_mph) : 0),
+                            "altitude": gpsjson.properties.altitude_ft,
+                            "bearing": (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 ),
+                            "time": tmstring,
+                            "gps": (gpsjson.properties.gps ? gpsjson.properties.gps : {}),
+                            "callsign": "My Location",
+                            "tooltip": "",
+                            "id": "My Location",
+                            "symbol": "1x",
+                            "comment": "",
+                            "frequency": "",
+                            "iconsize": "24"
+                        },
+                        "geometry": gpsjson.geometry
+                      }
+                    ]
+                };
+
+                var thisfeature = lastposition.features[0];
+
+                // update the position icon on the map
+                if (myPositionLayer) 
+                    myPositionLayer.update(lastposition);
+
+                // Pan the map to the latest location
+                if (followme) {
+                    dispatchPanToEvent(thisfeature.geometry.coordinates[1] * 1.0, thisfeature.geometry.coordinates[0] * 1.0);
+                }
+
+                // Update the speed status box
+                if (speedStatusBox)
+                    speedStatusBox.show(Math.round(thisfeature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+
+                // Now update the relative position gauges and fields
+                updateRelativePosition(thisfeature);
+
+            }
+        });
+    }
+}
+
+
+
     /***********
     * getgps
     *
     * This function will get the current status of the GPS that's connected to the system and populate the web page with its status/state
     ***********/
-    function getgps(panto) {
+    function getgps(updatelocation) {
 
-        var p = (panto ? true : false);
+        var p = (updatelocation ? true : false);
 
         $.get("getgps.php", function(data) {
             var jsonData = JSON.parse(data);
             var gpsfix;
             var gpsMode;
-            var pan_the_map = p;
+            var updateloc = p;
 
             gpsMode = jsonData.mode * 10 / 10;
 
@@ -2475,20 +2541,63 @@ function getTrackers() {
                 else if (gpsMode == 3) {
                     gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
                     
-                    // set the lastlocation variable to output
-                    lastposition = jsonData;
+                    // if we're asked to update the "blue dot" location on the map
+                    if (updateloc) {
 
-                    // Pan the map to the latest location
-                    if (pan_the_map || followme) {
-                        dispatchPanToEvent(lastposition.lat * 1.0, lastposition.lon * 1.0);
+                        // the current date/time
+                        var ts = new Date(Date.now());
+                        var tmstring = getISODateTimeString(ts);
+
+                        // Create a feature collection object out of gpsjson
+                        // set the lastlocation variable to output
+                        lastposition = {
+                            "type": "FeatureCollection",
+                            "properties": {
+                              "name": "My station"
+                            },
+                            "features": [
+                              {
+                                "type": "Feature",
+                                "properties": {
+                                    "type": "Feature",
+                                    "speed_mph": (jsonData.speed_math ? Math.floor(jsonData.speed_mph) : 0),
+                                    "altitude": jsonData.altitude * 1.0,
+                                    "bearing": (jsonData.bearing ? Math.floor(jsonData.bearing) : 0 ),
+                                    "time": tmstring,
+                                    "gps": {},
+                                    "callsign": "My Location",
+                                    "tooltip": "",
+                                    "id": "My Location",
+                                    "symbol": "1x",
+                                    "comment": "",
+                                    "frequency": "",
+                                    "iconsize": "24"
+                                },
+                                "geometry": { 
+                                    "coordinates": [ jsonData.lon * 1.0, jsonData.lat * 1.0 ],
+                                    "type": "Point"
+                                }
+                              }
+                            ]
+                        };
+
+                        var thisfeature = lastposition.features[0];
+
+                        // update the position icon on the map
+                        if (myPositionLayer) 
+                            myPositionLayer.update(lastposition);
+
+                        if (followme)
+                            dispatchPanToEvent(thisfeature.geometry.coordinates[1] * 1.0, thisfeature.geometry.coordinates[0] * 1.0);
+
+                        // Update the speed status box
+                        if (speedStatusBox)
+                            speedStatusBox.show(Math.round(thisfeature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+
+                        // Now update the relative position gauges and fields
+                        updateRelativePosition(thisfeature);
+
                     }
-
-                    // Update the speed status box
-                    if (speedStatusBox)
-                        speedStatusBox.show(Math.round(lastposition.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
-
-                    // Now update the relative position gauges and fields
-                    updateRelativePosition(lastposition);
                 }
                 else
                     gpsfix = "Unable to get GPS status";
@@ -2507,13 +2616,21 @@ function getTrackers() {
     * This function will center the map over the user's current location and initiate followme mode
     ***********/
     function centerFollow(onoff) {
+        var feature;
 
         // If selected, then pan the map to the current user's location and enable followme mode
         if (onoff) {
             followme = true;
 
-            if (lastposition)
-                dispatchPanToEvent(lastposition.lat, lastposition.lon);
+            if (lastposition && lastposition.type) {
+                if (lastposition.type == "FeatureCollection" && lastposition.features)
+                    feature = lastposition.features[0];
+                else if (lastposition.type = "Feature")
+                    feature = lastposition;
+
+                if (feature)
+                    dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
+            }
         }
 
         // ...otherwise we simply turn off followme mode
@@ -3377,8 +3494,10 @@ function getTrackers() {
                 }
 
             }
-            if (typeof(data.myposition) != "undefined")
-                myPositionLayer.update(data.myposition);
+
+            // We no longer update our location on the map from this periodic poll of the backend.  Position updates are handled through setupSSE now.
+            //if (typeof(data.myposition) != "undefined")
+            //    myPositionLayer.update(data.myposition);
 
             // Prune off any RF, inet, or weather stations
             var cutoff = new Date(Date.now() - lookbackPeriod * 60000);
@@ -3737,8 +3856,20 @@ function getTrackers() {
         // Update the TTL values
         checkTTL();
 
-        // Update the GPS display and the lastposition object
+        // Update the GPS display for fix status (ex. 2D, 3D, etc)
         getgps();
+
+        // pan the map to the last known position if we're in followme mode.
+        var feature;
+        if (followme && lastposition && lastposition.type) {
+            if (lastposition.type == "FeatureCollection" && lastposition.features)
+                feature = lastposition.features[0];
+            else if (lastposition.type == "Feature")
+                feature = lastposition;
+
+            if (feature)
+                dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
+        }
 
         // ...the idea being that ever so often, we should try a special update
         if (globalUpdateCounter > 20) {

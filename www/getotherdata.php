@@ -983,44 +983,6 @@
     else 
         printf("[]");
 
-/******************** my station *****************/
-    printf (", \"myposition\" : ");
-
-    // get the latest position from the gpsposition table
-    $query = 'select date_trunc(\'second\', tm)::timestamp without time zone as time, round(speed_mph) as speed_mph, bearing, round(altitude_ft) as altitude_ft, round(cast(ST_Y(location2d) as numeric), 6) as latitude, round(cast(ST_X(location2d) as numeric), 6) as longitude from gpsposition order by tm desc limit 1;';
-    $result = sql_query($query);
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-    $rows = sql_fetch_array($result);
-    $feature['type'] = "Feature";
-    $feature['properties']['speed_mph'] = $rows['speed_mph'];
-    $feature['properties']['altitude'] = $rows['altitude_ft'];
-    $feature['properties']['bearing'] = $rows['bearing'];
-    $feature['properties']['time'] = $rows['time'];
-    $feature['properties']['callsign'] = "My Location";
-    $feature['properties']['tooltip'] = "";
-    $feature['properties']['id'] = "My Location";
-    $feature['properties']['symbol'] = "1x";
-    $feature['properties']['comment'] = "";
-    $feature['properties']['frequency'] = "";
-    $feature['properties']['iconsize'] = $config["iconsize"];
-    $feature['geometry']['type'] = "Point";
-    $feature['geometry']['coordinates'] = array($rows['longitude'], $rows['latitude']); 
-
-    $myposition = array(
-        "type" => "FeatureCollection",
-        "properties" => array(
-            "name" => "My station"
-        ),
-        "features" => [$feature]
-    );
-
-    printf ("%s", json_encode($myposition));
-
-
     printf ("     }");
     sql_close($link);
 ?>

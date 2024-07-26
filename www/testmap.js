@@ -1218,7 +1218,7 @@ function startup() {
     setupMyLocation();
 
     // startup SSE operations.
-    setupSSE("testsse.php");
+    setupSSE("ssestream.php");
 }
 
 
