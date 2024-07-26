@@ -384,6 +384,7 @@
             and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
             and a.tm > (to_timestamp($2)::timestamp)
             and a.symbol = '/_'
+            and a.ptype = '@'
 
             order by 
             a.tm asc, 
