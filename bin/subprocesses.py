@@ -174,7 +174,7 @@ class SubProcess:
                 if nofix == True:
 
                     # we're still waiting on the GPS to obtain a fix so we wait this long
-                    seconds = round((1.2) ** trycount) if trycount < 22 else round((1.2) ** 22)
+                    seconds = round((1.2) ** trycount)
                     self.logger.debug(f"{self.name} Waiting on GPS fix ({trycount=}): {seconds}s")
                     self.stopevent.wait(seconds)
 
