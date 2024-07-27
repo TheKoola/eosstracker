@@ -103,7 +103,7 @@
     $sleepcounter = 0;
 
     // how long we wait (approximately in seconds) before sending a heartbeat packet to the browser
-    $threshold = 5;
+    $threshold = 15;
 
     while (!connection_aborted()) {
 
