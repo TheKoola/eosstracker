@@ -277,7 +277,7 @@ class GPSPoller(object):
     def createDateString(self, gpstime: str = None)->str:
 
         # Current system datetime                
-        utc_datetime = datetime.datetime.now(datetime.UTC)
+        utc_datetime = datetime.datetime.now(datetime.timezone.utc)
 
         if not gpstime:
             return utc_datetime.isoformat(timespec='seconds') + 'Z'
@@ -644,7 +644,7 @@ class GPSPoller(object):
         prevlat = 0
         prevlon = 0
         timeprev = ""
-        last_insert_time = datetime.datetime.now(datetime.UTC)
+        last_insert_time = datetime.datetime.now(datetime.timezone.utc)
         lastmode = 0
         gpsd_timeout = 0.5
         tiny_delay = 0.5
@@ -717,7 +717,7 @@ class GPSPoller(object):
 
                     # calculate the elapsed time between the last database position insert.  If it's been longer than some minimum interval then we want to add 
                     # a new row to the database regardless if our position has moved or not.
-                    elapsed_time = datetime.datetime.now(datetime.UTC) - last_insert_time
+                    elapsed_time = datetime.datetime.now(datetime.timezone.utc) - last_insert_time
 
                     # If our position has changed by .0001 of a lat/lon degree, then we consider it significant enough to add a row to the database
                     if (round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon) or elapsed_time.total_seconds() > 7200:
@@ -777,7 +777,7 @@ class GPSPoller(object):
                                     prevlon = round(gpsd.fix.longitude,4)
 
                                     # log the time of this database insert
-                                    last_insert_time = datetime.datetime.now(datetime.UTC)
+                                    last_insert_time = datetime.datetime.now(datetime.timezone.utc)
                        
                                 # If a database error occured, print the error, the set the variable so that this loop ends.
                                 except pg.DatabaseError as error:
