@@ -70,7 +70,7 @@ if [ $? -eq 0 ]; then
     let num_procs=$(ps -ef | grep "habtracker-daemon" | grep -v grep | wc -l)
     if [ $num_procs -gt 0 ]; then
         echo "Kill -9'ing remaining habtracker-daemon processes..." >> ${LOGFILE}
-        pkill -9 habtracker-daemon >> ${LOGFILE}
+        pkill -9 habtracker >> ${LOGFILE}
     fi
 fi
 
@@ -88,6 +88,9 @@ if [ $? -eq 0 ]; then
     echo "killing direwolf..." >> ${LOGFILE}
     pkill direwolf >> ${LOGFILE}
 fi
+
+# delete the daemonstatus.json file
+rm ${HOMEDIR}/www/daemonstatus.json
 
 echo "#####################" >> $LOGFILE
 echo >> $LOGFILE
