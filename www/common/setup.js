@@ -791,7 +791,17 @@
     ***********/
     function gitPullFiles() {
         $.get("gitpull.php", function(data) {
-            var myresults = data.result;
+
+            if (data.output) {
+
+                // form up our status message
+                var color = "lightgray";
+                var statushtml = "<p class=\"normal-italic\" style=\"margin-left: 40px; margin-bottom: 10px;\"><mark style=\"background-color: " + color + ";\">" + data.output + "</mark></p>";
+
+                // Append our status to the sync status element.
+                document.getElementById("syncup-status").innerHTML += statushtml;
+            }
+
         });
     }
 
@@ -2024,10 +2034,13 @@
 
         $.get("syncconfiguration.php", function(data) {
 
+            var ts = new Date();
+            var tmhtml = "<p class=\"normal-italic\">Sync Attempt: " + ts.toLocaleString() + "</p>"
             var color = (data.result > 0 ? "lightgreen" : "yellow");
-            var statushtml = "<mark style=\"background-color: " + color + ";\">" + data.error + "</mark>";
+            var statushtml = "<p class=\"normal-italic\" style=\"margin-left: 40px;\"><mark style=\"background-color: " + color + ";\">" + data.error + "</mark></p>";
 
-            document.getElementById("syncup-status").innerHTML = statushtml;
+            // Append our new status message to the syncup status element
+            document.getElementById("syncup-status").innerHTML += tmhtml + statushtml;
 
             // Attempt to perform git pull on eosstracker directory
             gitPullFiles();
@@ -2038,9 +2051,11 @@
             // Refresh all data on the page
             refreshPage();
 
-            setTimeout(function() {
+            // Don't clear the history of syncs (until the user reloads the page...obviously).
+            /*setTimeout(function() {
                 document.getElementById("syncup-status").innerHTML = "";
-            }, 3000);
+            }, 10000);
+            */
 
         });
     }
