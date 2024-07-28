@@ -443,7 +443,7 @@ class Direwolf(SubProcess):
         self.setName('direwolf')
         
         # The default command string and arguments for running direwolf.
-        self.setArguments(args = ["-t", "0", "-dg", "-T", "%D %T", "-c"])
+        self.setArguments(args = ["-t", "0", "-T", "%D %T", "-c"])
 
         # Default for the direwolf configuration file
         if not self.config_file:
