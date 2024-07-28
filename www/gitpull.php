@@ -31,6 +31,26 @@
     
     $gitpull_script = "/eosstracker/sbin/gitpullupdate.bash";
 
-    $output = shell_exec('sudo -H -u eosstracker ' . $gitpull_script);
-    printf ("%s", $output);
+    try {
+        $output = shell_exec('sudo -H -u eosstracker ' . $gitpull_script);
+        if ($output) {
+            // If there was output from the command, the strip off newlines and carrage returns. 
+            $output = str_replace("\n", "", $output);
+            $output = str_replace("\r", "", $output);
+        }
+        else {
+            $output = "Unable to run 'git pull'";
+        }
+
+        // form up a JSON structure to send back to the client
+        $json = array("output" => $output);
+
+        // print out our JSON
+        printf ("%s", json_encode($json));
+    }
+    catch (Exception $e) {
+        $json = array("output" => $e->getMessage());
+        printf ("%s", json_encode($json));
+    }
+
 ?>
