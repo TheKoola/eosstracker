@@ -2418,81 +2418,111 @@ function getTrackers() {
     }
 
 
-/***********
-* setupSSE function
-*
-* This function will setup an SSE connection to the backend packet source (backendurl) and use the handler as the callback function.
-***********/
-function setupSSE(backendurl) {
-    if(typeof(EventSource) !== "undefined") {
+    /***********
+    * setupSSE function
+    *
+    * This function will setup an SSE connection to the backend packet source (backendurl) and use the handler as the callback function.
+    ***********/
+    function setupSSE(backendurl) {
+        if(typeof(EventSource) !== "undefined") {
 
-        // Create new SSE source
-        packetsource = new EventSource(backendurl);
+            // Create new SSE source
+            packetsource = new EventSource(backendurl);
 
-        // listen for new gps position alerts
-        packetsource.addEventListener("new_position", function(event) {
+            // listen for new gps position alerts
+            packetsource.addEventListener("new_position", function(event) {
 
-            // Parse the incoming json
-            var gpsjson = JSON.parse(event.data);
+                // Parse the incoming json
+                var gpsjson = JSON.parse(event.data);
 
-            // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
-            if (gpsjson && gpsjson.properties && gpsjson.geometry) {
+                // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
+                if (gpsjson && gpsjson.properties && gpsjson.geometry) {
 
-                var ts = new Date(gpsjson.properties.tm);
-                var tmstring = getISODateTimeString(ts);
+                    var ts = new Date(gpsjson.properties.tm);
+                    var tmstring = getISODateTimeString(ts);
 
-                // Create a feature collection object out of gpsjson
-                // set the lastlocation variable to output
-                lastposition = {
-                    "type": "FeatureCollection",
-                    "properties": {
-                      "name": "My station"
-                    },
-                    "features": [
-                      {
-                        "type": "Feature",
+                    // Create a feature collection object out of gpsjson
+                    // set the lastlocation variable to output
+                    lastposition = {
+                        "type": "FeatureCollection",
                         "properties": {
-                            "type": "Feature",
-                            "speed_mph": (gpsjson.properties.speed_math ? Math.floor(gpsjson.properties.speed_mph) : 0),
-                            "altitude": gpsjson.properties.altitude_ft,
-                            "bearing": (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 ),
-                            "time": tmstring,
-                            "gps": (gpsjson.properties.gps ? gpsjson.properties.gps : {}),
-                            "callsign": "My Location",
-                            "tooltip": "",
-                            "id": "My Location",
-                            "symbol": "1x",
-                            "comment": "",
-                            "frequency": "",
-                            "iconsize": "24"
+                          "name": "My station"
                         },
-                        "geometry": gpsjson.geometry
-                      }
-                    ]
-                };
+                        "features": [
+                          {
+                            "type": "Feature",
+                            "properties": {
+                                "type": "Feature",
+                                "speed_mph": (gpsjson.properties.speed_math ? Math.floor(gpsjson.properties.speed_mph) : 0),
+                                "altitude": gpsjson.properties.altitude_ft,
+                                "bearing": (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 ),
+                                "time": tmstring,
+                                "gps": (gpsjson.properties.gps ? gpsjson.properties.gps : {}),
+                                "callsign": "My Location",
+                                "tooltip": "",
+                                "id": "My Location",
+                                "symbol": "1x",
+                                "comment": "",
+                                "frequency": "",
+                                "iconsize": "24"
+                            },
+                            "geometry": gpsjson.geometry
+                          }
+                        ]
+                    };
 
-                var thisfeature = lastposition.features[0];
-
-                // update the position icon on the map
-                if (myPositionLayer) 
-                    myPositionLayer.update(lastposition);
-
-                // Pan the map to the latest location
-                if (followme) {
-                    dispatchPanToEvent(thisfeature.geometry.coordinates[1] * 1.0, thisfeature.geometry.coordinates[0] * 1.0);
+                    // update everything that depends upon our location
+                    updateMyLocation(lastposition);
                 }
-
-                // Update the speed status box
-                if (speedStatusBox)
-                    speedStatusBox.show(Math.round(thisfeature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
-
-                // Now update the relative position gauges and fields
-                updateRelativePosition(thisfeature);
-
-            }
-        });
+            });
+        }
     }
-}
+
+
+    /***********
+    * updateMyLocation
+    *
+    * accepts a geojson FeatureCollection object and updates the global, lastposition, and finally updates the various elements on the map (the myPositionLayer, relative position dials, the speedometer box, etc.)
+    ***********/
+    function updateMyLocation(geojson) {
+
+        // Determine the geojson feature from the provided arguments
+        var feature = null;
+        var featurecollection = null;
+        if (geojson && geojson.type) {
+            if (geojson.type == "FeatureCollection") {
+                featurecollection = geojson;
+                if (geojson.features)
+                    feature = geojson.features[0];
+            }
+            else if (geojson.type == "Feature") {
+                feature = geojson;
+            }
+        }
+
+        // if there isn't any geojson to process then we return
+        if (!feature || !featurecollection) {
+            return;
+        }
+
+        // update the position icon on the map
+        if (myPositionLayer)
+            myPositionLayer.update(featurecollection);
+
+        // Pan the map to the latest location
+        if (followme) {
+            dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
+        }
+
+        // Update the speed status box
+        if (speedStatusBox)
+            speedStatusBox.show(Math.round(feature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+
+        // Now update the relative position gauges and fields
+        updateRelativePosition(feature);
+
+    }
+
 
 
 
@@ -2517,27 +2547,12 @@ function setupSSE(backendurl) {
                 gpsStatusBox.show("GPS: <mark class=\"notokay\">[ NO DEVICE ]</mark>");
             }
             else {
-                if (gpsMode == 0) {
+                if (gpsMode == 0) 
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO DATA ]</mark>";
-
-                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
-                    if (speedStatusBox)
-                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
-                }
-                else if (gpsMode == 1) {
+                else if (gpsMode == 1) 
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO FIX ]</mark>";
-
-                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
-                    if (speedStatusBox)
-                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
-                }
-                else if (gpsMode == 2) {
+                else if (gpsMode == 2) 
                     gpsfix = "GPS: <mark class=\"marginal\">[ 2D ]</mark>";
-
-                    // Update the speed status box with no speed as we don't have a 3D fix from the GPS
-                    if (speedStatusBox)
-                        speedStatusBox.show("--<font style=\"font-size: .2em;\"> mph</font>");
-                }
                 else if (gpsMode == 3) {
                     gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
                     
@@ -2581,22 +2596,8 @@ function setupSSE(backendurl) {
                             ]
                         };
 
-                        var thisfeature = lastposition.features[0];
-
-                        // update the position icon on the map
-                        if (myPositionLayer) 
-                            myPositionLayer.update(lastposition);
-
-                        if (followme)
-                            dispatchPanToEvent(thisfeature.geometry.coordinates[1] * 1.0, thisfeature.geometry.coordinates[0] * 1.0);
-
-                        // Update the speed status box
-                        if (speedStatusBox)
-                            speedStatusBox.show(Math.round(thisfeature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
-
-                        // Now update the relative position gauges and fields
-                        updateRelativePosition(thisfeature);
-
+                        // update everything that depends upon our location
+                        updateMyLocation(lastposition);
                     }
                 }
                 else
