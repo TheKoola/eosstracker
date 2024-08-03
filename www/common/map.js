@@ -2453,7 +2453,7 @@ function getTrackers() {
                             "type": "Feature",
                             "properties": {
                                 "type": "Feature",
-                                "speed_mph": (gpsjson.properties.speed_math ? Math.floor(gpsjson.properties.speed_mph) : 0),
+                                "speed_mph": (gpsjson.properties.speed_mph ? Math.floor(gpsjson.properties.speed_mph) : 0),
                                 "altitude": gpsjson.properties.altitude_ft,
                                 "bearing": (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 ),
                                 "time": tmstring,
@@ -2575,7 +2575,7 @@ function getTrackers() {
                                 "type": "Feature",
                                 "properties": {
                                     "type": "Feature",
-                                    "speed_mph": (jsonData.speed_math ? Math.floor(jsonData.speed_mph) : 0),
+                                    "speed_mph": (jsonData.speed_mph ? Math.floor(jsonData.speed_mph) : 0),
                                     "altitude": jsonData.altitude * 1.0,
                                     "bearing": (jsonData.bearing ? Math.floor(jsonData.bearing) : 0 ),
                                     "time": tmstring,
