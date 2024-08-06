@@ -90,7 +90,10 @@ if [ $? -eq 0 ]; then
 fi
 
 # delete the daemonstatus.json file
-rm ${HOMEDIR}/www/daemonstatus.json
+rm -f ${HOMEDIR}/www/daemonstatus.json
+
+# delete the gpsstatus.json file
+rm -f ${HOMEDIR}/www/gpsstatus.json
 
 echo "#####################" >> $LOGFILE
 echo >> $LOGFILE
