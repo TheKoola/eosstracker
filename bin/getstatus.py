@@ -75,7 +75,7 @@ def isProcRunning(procs: list, name: str)->bool:
 
         # we want to single out if the process is running
         if p["process"] == name:
-            return True if p["status"] > 0 else False
+            return p["status"] > 0
 
     # we didn't find the process
     return None
