@@ -29,7 +29,7 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    $defaultstatus = array("status" => "no device",  "devicepath" => "", "speed_mph" => 0.0,  "mode" => 0, "lat" => "NaN", "altitude" => "NaN", "lon" => "NaN", "utc_time" => "", "satellites" => array());
+    $defaultstatus = array("status" => "no device",  "host" => "n/a", "devicepath" => "", "speed_mph" => 0.0,  "mode" => 0, "lat" => "NaN", "altitude" => "NaN", "lon" => "NaN", "utc_time" => "", "satellites" => array());
 
     $cmdoutput = file_get_contents($documentroot . "/gpsstatus.json");
     if ($cmdoutput == null) {

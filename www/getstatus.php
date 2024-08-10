@@ -30,7 +30,7 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    $cmdoutput = shell_exec('/eosstracker/bin/procstatus.py');
+    $cmdoutput = shell_exec('/eosstracker/bin/getstatus.py');
     if ($cmdoutput == null) {
         printf ("[]");
         return 0;
