@@ -59,7 +59,7 @@ elif [ -d ${ALTMAPSDIR2}/maps ]; then
 fi
 
 # Check if things are running:
-let num_procs=$(${BINDIR}/procstatus.py  | python3 -m json.tool | awk '/"status":/ { s+=$2;} END {print s}')
+let num_procs=$(${BINDIR}/getstatus.py  | python3 -m json.tool | awk '/"status":/ { s+=$2;} END {print s}')
 
 # Check if it's just GPSD that is still running
 if [ $num_procs -eq 1 ]; then
@@ -80,6 +80,10 @@ date >> ${LOGFILE}
 echo "###################" >> ${LOGFILE}
 
 rm -f ${LOGDIR}/direwolf.out
+
+# delete any left over JSON status files as they'll be recreated/updated when the habtracker-daemon.py process starts
+rm -f ${HOMEDIR}/www/daemonstatus.json
+rm -f ${HOMEDIR}/www/gpsstatus.json
 
 echo "Starting habtracker-daemon.py..." >> ${LOGFILE}
 nohup ${HABTRACKERCMD} --callsign=${CALLSIGN} >> ${LOGFILE} 2>${STDERR} &

@@ -137,6 +137,10 @@ function getrecentdata() {
           "backend" : false
       };
 
+      // update the GPS status box
+      if (typeof(statusJson.gps) != "undefined")
+          setgps(statusJson.gps);
+
       // is the backend active?
       var isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
 
@@ -379,65 +383,84 @@ function getrecentdata() {
 
 
 /***********
-* getgps
+* setgps
 *
-* This function will get the current status of the GPS that's connected to the system and populate the web page with its status/state
+* This function will populate the web page with the GPS status/state in the 'jsonData' argument
 ***********/
-function getgps() {
-    $.get("getgps.php", function(data) {
-        var jsonData = JSON.parse(data);
-        var gpsfix;
+function setgps(jsonData) {
+    var gpsfix;
 
-        gpsMode = jsonData.mode * 10 / 10;
-        if (gpsMode == 0)
-            gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ no data ]</mark>";
-        else if (gpsMode == 1)
-            gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ NO FIX ]</mark>";
-        else if (gpsMode == 2)
-            gpsfix = "<mark class=\"marginal\" style=\"font-size: .9em;\">[ 2D FIX ]</mark>";
-        else if (gpsMode == 3) 
-            gpsfix = "<mark class=\"okay\" style=\"font-size: .9em;\">[ 3D FIX ]</mark>";
-        else
-            gpsfix = "n/a";
+    // if the backend processes are NOT running, then we need to "blank" out the GPS status section.  We do that by setting the jsonData variable to 
+    // the default set.  We do this because if the backend crashed or the system rebooted, etc., then the gpsstatus.json file is likely stale and does
+    // not reflect reality.
+    /*
+    if (!isRunning) {
+        jsonData = {
+            "utc_time": "n/a",
+            "mode": 0,
+            "host": jsonData.host,
+            "status": "n/a",
+            "devicepath": "n/a",
+            "lat": 0.0,
+            "lon": 0.0,
+            "satellites": [],
+            "bearing": 0.0,
+            "speed_mph": 0.0,
+            "altitude": 0.0,
+            "error": "n/a" 
+        };
+    }
+    */
 
-        // if there is an error string included (usually from a GPSD connection fault), then format that and save the HTML string into 'errorstring'
-        var errorstring = "";
-        if (jsonData.error && jsonData.error != "n/a") {
-            errorstring = "<tr><td style=\"text-align: left; padding-right: 10px;\">Error:</td><td>"
-            + "<mark class=\"marginal\">" + jsonData.error + "</mark></td></tr>";
-        }
+    gpsMode = jsonData.mode * 10 / 10;
+    if (gpsMode == 0)
+        gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ no data ]</mark>";
+    else if (gpsMode == 1)
+        gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ NO FIX ]</mark>";
+    else if (gpsMode == 2)
+        gpsfix = "<mark class=\"marginal\" style=\"font-size: .9em;\">[ 2D FIX ]</mark>";
+    else if (gpsMode == 3) 
+        gpsfix = "<mark class=\"okay\" style=\"font-size: .9em;\">[ 3D FIX ]</mark>";
+    else
+        gpsfix = "n/a";
 
-        var theDate = jsonData.utc_time;
-        theDate = theDate.replace(/T/g, " "); 
-        theDate = theDate.replace(/Z$/g, ""); 
-        var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Host:</td><td><strong>" + jsonData.host + "</strong></td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Status:</td><td>" 
-            + (jsonData.status == "normal" ? jsonData.status : "<mark class=\"marginal\">" + jsonData.status + "</mark>")
-            + "</td></tr>"
-            + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr>"
-            + errorstring
-            + "</table>";
- 
-        var i = 0;
-        var satellites = jsonData.satellites;
-        var satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
-        for (i = 0; i < satellites.length; i++) {
-                satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
-        }
-        
-        satellite_html = satellite_html + "</table>";
+    // if there is an error string included (usually from a GPSD connection fault), then format that and save the HTML string into 'errorstring'
+    var errorstring = "";
+    if (jsonData.error && jsonData.error != "n/a") {
+        errorstring = "<tr><td style=\"text-align: left; padding-right: 10px;\">Error:</td><td>"
+        + "<mark class=\"marginal\">" + jsonData.error + "</mark></td></tr>";
+    }
 
-        if (satellites.length > 0)
-        gpshtml = gpshtml + satellite_html;
-        $("#gpsdata").html(gpshtml);
-    });
+    var theDate = jsonData.utc_time;
+    theDate = theDate.replace(/T/g, " "); 
+    theDate = theDate.replace(/Z$/g, ""); 
+    var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Host:</td><td><strong>" + jsonData.host + "</strong></td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Longitude:</td><td>" + jsonData.lon + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Speed MPH:</td><td>" + jsonData.speed_mph + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Altitude (ft):</td><td>" + jsonData.altitude + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">GPS Fix:</td><td>" + gpsfix + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Status:</td><td>" 
+        + (jsonData.status == "normal" ? jsonData.status : "<mark class=\"marginal\">" + jsonData.status + "</mark>")
+        + "</td></tr>"
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr>"
+        + errorstring
+        + "</table>";
+
+    var i = 0;
+    var satellites = jsonData.satellites;
+    var satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
+    for (i = 0; i < satellites.length; i++) {
+            satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
+    }
+    
+    satellite_html = satellite_html + "</table>";
+
+    if (satellites.length > 0)
+    gpshtml = gpshtml + satellite_html;
+    $("#gpsdata").html(gpshtml);
 }
 
 /***********
@@ -494,7 +517,6 @@ function gainFocus() {
         interval = setInterval(function() {
             updateMapLink();
             getrecentdata();
-            getgps();
             getConfiguration();
         }, 5000);
     }
@@ -515,11 +537,9 @@ $(document).ready(function () {
     updateMapLink();
     getrecentdata();
     getConfiguration();
-    getgps();
     interval = setInterval(function() {
         updateMapLink();
         getrecentdata();
-        getgps();
         getConfiguration();
     }, 5000);
 });
