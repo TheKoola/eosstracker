@@ -1,4 +1,6 @@
 flight,beacons,day,balloonsize,liftfactor,h2fill,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
+EOSS-364,"['KC0D-1', 'AE0SS-3']",2024-11-16,3000gm,1.20,370,11.03,3.47,1.70,16.21,6.61,22.82,20.77
+EOSS-363,"['KC0D-3', 'AE0SS-4']",2024-11-16,3000gm,1.20,443,15.62,3.31,1.81,20.74,6.61,27.35,26.21
 EOSS-362,"['KC0D-3', 'AE0SS-1', 'KC0D-2']",2024-10-20,2000gm,1.25,290,5.81,5.12,1.81,12.74,4.41,17.15,17.02
 EOSS-361,"['KC0D-2', 'AE0SS-4', 'AE0SS-2']",2024-08-03,3000gm,1.20,415,12.29,5.02,1.70,19.01,6.61,25.62,24.13
 EOSS-360,"['AE0SS-1', 'AE0SS-4', 'KC0D-3', 'KC0D-1']",2024-05-18,3000gm,1.20,482,14.79,6.65,1.70,23.14,6.61,29.76,29.09
