@@ -113,7 +113,12 @@
                     round(cast((h.longitude - h.previous_lon) / extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))) as numeric), 10)
                 else
                     0
-                end as lon_rate_deg
+                end as lon_rate_deg,
+                h.temperature_k,
+                round((h.temperature_k - 273.15), 2) as temperature_c,
+                round((h.temperature_k - 273.15) * 9 / 5 + 32, 2) as temperature_f,
+                h.pressure_pa,
+                round(h.pressure_pa / 101325, 4) as pressure_atm
 
             from (
                 select
@@ -135,6 +140,17 @@
                     lag(cast(st_y(a.location2d) as numeric(12,8)), 1) over (order by a.tm) as previous_lat,
                     lag(cast(st_x(a.location2d) as numeric(12,8)), 1) over (order by a.tm) as previous_lon,
                     lag(round(a.altitude, 0), 1) over (order by a.tm) as previous_alt
+                    case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                        round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
+                    else
+                        NULL
+                    end as temperature_k,
+                    case
+                        when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
+                            round(cast(substring(substring(a.raw from '[0-9]{1,6}P') from '[0-9]{1,6}') as decimal) * 10.0, 2)
+                        else
+                            NULL
+                    end as pressure_pa
 
                 from
                     packets a
