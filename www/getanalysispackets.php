@@ -207,8 +207,12 @@
                         # the resulting packets for this callsign
                         $ray = json_decode($rows[0]["json"]);
 
-                        # merge these results with those from other callsigns on this flight.
-                        $allrows = array_merge($allrows, $ray);
+                        # make sure we've got valid data before trying to merge it into the entire batch for the flight
+                        if (is_array($ray)) {
+                            if (sizeof($ray) > 0)
+                                # merge these results with those from other callsigns on this flight.
+                                $allrows = array_merge($allrows, $ray);
+                        }
                     }
                 }
 
