@@ -139,7 +139,7 @@
                     cast(st_x(a.location2d) as numeric(12,8)) as longitude,
                     lag(cast(st_y(a.location2d) as numeric(12,8)), 1) over (order by a.tm) as previous_lat,
                     lag(cast(st_x(a.location2d) as numeric(12,8)), 1) over (order by a.tm) as previous_lon,
-                    lag(round(a.altitude, 0), 1) over (order by a.tm) as previous_alt
+                    lag(round(a.altitude, 0), 1) over (order by a.tm) as previous_alt,
                     case when a.raw similar to '%% [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P%%' then
                         round(273.15 + cast(substring(substring(substring(a.raw from ' [-]{0,1}[0-9]{1,6}T[-]{0,1}[0-9]{1,6}P') from ' [-]{0,1}[0-9]{1,6}T') from ' [-]{0,1}[0-9]{1,6}') as decimal) / 10.0, 2)
                     else
