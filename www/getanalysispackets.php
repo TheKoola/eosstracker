@@ -100,6 +100,11 @@
                 h.latitude as lat_deg,
                 h.longitude as lon_deg,
                 case when extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))) > 0 then
+                    round(((h.altitude - h.previous_alt) / extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))))::numeric)
+                else
+                    0
+                end as vert_rate_fts,
+                case when extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))) > 0 then
                     round((60 * (h.altitude - h.previous_alt) / extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))))::numeric)
                 else
                     0
