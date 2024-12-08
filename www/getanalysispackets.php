@@ -123,7 +123,8 @@
                 round((h.temperature_k - 273.15), 2) as temperature_c,
                 round((h.temperature_k - 273.15) * 9 / 5 + 32, 2) as temperature_f,
                 h.pressure_pa,
-                round(h.pressure_pa / 101325, 4) as pressure_atm
+                round(h.pressure_pa / 101325, 4) as pressure_atm,
+                extract ('epoch' from (h.packet_time - lag(h.packet_time, 1) over (order by h.packet_time))) as delta_secs
 
             from (
                 select
