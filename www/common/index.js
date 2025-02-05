@@ -22,9 +22,15 @@
 *
  */
 
-var processInTransition = 0;
-var interval;
-var isRunning = 0;
+// process state globals
+let processInTransition = 0;
+let interval;
+let isRunning = 0;
+let waitingOnStatus = false;
+
+// SSE event handler
+let eventsource;
+
 
 /***********
 * escapeHtml
@@ -32,7 +38,7 @@ var isRunning = 0;
 * This function will escape HTML special chars
 ***********/
 function escapeHtml(s) {
-    var map = {
+    let map = {
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
@@ -48,37 +54,61 @@ function escapeHtml(s) {
 *
 * This function will read the current configuration
 ***********/
-function getConfiguration() {
-    $.get("readconfiguration.php", function(data) {
-        var jsonData = JSON.parse(data);
+async function getConfiguration() {
 
-        var callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
-        var timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
-        var audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
-        var igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
-        var i = (igating == "true" ? "yes" : "no");
-        var i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
-        var beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
-        var eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
-        var b = (beaconing == "true" ? "yes" : "no");
-        var b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
-        var ssid = jsonData.ssid;
-        var ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
-        var ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
+    try {
+
+        // if we're already waiting on backend status, don't continue
+        if (waitingOnStatus)
+            throw new Error("A getConfiguration call is outstanding, aborting this call.");
+
+        // set the waiting flag
+        waitingOnStatus = true;
+
+        // the url for getting the backend configuration
+        let url = "readconfiguration.php";
+
+        // read the configuration from the backend
+        const response = await fetch(url);
+        const jsonData = await response.json();
+
+        let callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
+        let timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
+        let audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
+        let igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
+        let i = (igating == "true" ? "yes" : "no");
+        let i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
+        let beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
+        let eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
+        let b = (beaconing == "true" ? "yes" : "no");
+        let b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
+        let ssid = jsonData.ssid;
+        let ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
+        let ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
 
         // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
         if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
             ssid = "";
 
-        //var ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
+        //let ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
 
+        // update status elements
         document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
         document.getElementById("timezone").innerHTML = timezone;
         document.getElementById("igating").innerHTML = i2;
         document.getElementById("beaconing").innerHTML = b2;
         document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
         document.getElementById("ka9qradio").innerHTML = ka9qhtml;
-    });
+
+        // set the waiting flag
+        waitingOnStatus = false;
+
+    } catch (error) {
+        console.log({"function": "getConfiguration", "error": error});
+
+        // set the waiting flag
+        waitingOnStatus = false;
+    }
 }
 
 
@@ -87,14 +117,25 @@ function getConfiguration() {
 *
 * This function will submit a request to the backend web system to start the various daemons for the system.
 ***********/
-function startUpProcesses() {
+async function startUpProcesses() {
     if (processInTransition == 0 && isRunning == 0) {
         processInTransition = 1;
-        var startinghtml = "<p><mark class=\"marginal\">Starting...</mark></p>";
+        let startinghtml = "<p><mark class=\"marginal\">Starting...</mark></p>";
         document.getElementById("antenna-data").innerHTML = startinghtml;
-        $.get("startup.php", function(data) { 
+
+        try {
+
+            // signal to the backend that it's time to startup 
+            const response = await fetch("startup.php");
+            const data = response.json();
+
+            // get the latest status from the backend.
             getrecentdata(); 
-        });
+
+        } catch (error) {
+            console.log({"function": "startUpProcesses", "error": error});
+            document.getElementById("error").innerHTML = "<pre>startUpProcesses error: " + error.message + "</pre>";
+        }
     }
 
     return false;
@@ -106,13 +147,26 @@ function startUpProcesses() {
 *
 * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
 ***********/
-function shutDownProcesses() {
-    var stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
+async function shutDownProcesses() {
+    let stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
     document.getElementById("antenna-data").innerHTML = stoppinghtml;
-    $.get("shutdown.php", function(data) {
+
+    try {
+
+        // signal to the backend that it should shutdown
+        const response = await fetch("shutdown.php");
+        const data = response.json();
+
+        // set the process transition flag
         processInTransition = 2;
+
+        // get latest updates on status of the backend.
         getrecentdata();
-    });
+
+    } catch (error) {
+        console.log({"function": "shutDownProcesses", "error": error});
+        document.getElementById("error").innerHTML = "<pre>shutDownProcesses error: " + error.message + "</pre>";
+    }
 
     return false;
 }
@@ -125,12 +179,12 @@ function shutDownProcesses() {
 ***********/
 function getrecentdata() {
   $.get("getstatus.php", function(data) { 
-      var statusJson = data;
-      var keys = Object.keys(statusJson.processes);
-      var antennas = statusJson.antennas
-      var i = 0;
-      var procs = 0;
-      var procstatus = {
+      let statusJson = data;
+      let keys = Object.keys(statusJson.processes);
+      let antennas = statusJson.antennas
+      let i = 0;
+      let procs = 0;
+      let procstatus = {
           "direwolf" : false,
           "gpsd" : false,
           "aprsc" : false,
@@ -138,27 +192,27 @@ function getrecentdata() {
       };
 
       // update the GPS status box
-      if (typeof(statusJson.gps) != "undefined")
-          setgps(statusJson.gps);
+      //if (typeof(statusJson.gps) != "undefined")
+      //    updateGPSDisplay(statusJson.gps);
 
       // is the backend active?
-      var isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
+      let isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
 
       // is the backend beaconing?
-      var isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
+      let isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
 
       // are we igating?
-      var isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
+      let isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
 
       // is the backend connected to an SDR dongle?
-      var isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
+      let isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
 
       // are we listening for packets from an instance of KA9Q-Radio running on the local network?
-      var isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
+      let isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
 
       // should we be expecting gpsd to be running?  Is the gpshost set to the local system?
-      var gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
-      var expectGPSD = (gpsHost == "" || gpsHost == "local" || gpsHost == "localhost" || gpsHost == "127.0.0.1" || gpsHost == "127.0.1.1" ? true : false);
+      let gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
+      let expectGPSD = (gpsHost == "" || gpsHost == "local" || gpsHost == "localhost" || gpsHost == "127.0.0.1" || gpsHost == "127.0.1.1" ? true : false);
 
 
       // Loop through the processes and update their status 
@@ -167,8 +221,8 @@ function getrecentdata() {
               (statusJson.processes[i].status > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
           procs += statusJson.processes[i].status; 
 
-          var procname = statusJson.processes[i].process.toLowerCase();
-          var proc_status = statusJson.processes[i].status;
+          let procname = statusJson.processes[i].process.toLowerCase();
+          let proc_status = statusJson.processes[i].status;
 
           if (procname.startsWith("direwolf")) {
               procstatus.direwolf = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
@@ -279,19 +333,19 @@ function getrecentdata() {
 
               // if there are antennas/SDR detailed being reported then we display that
               if (antennas.length > 0) {
-                  var antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
+                  let antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
 
                   for (i = 0; i < antennas.length; i++) {
-                      var frequencies = antennas[i].frequencies;  
-                      var rtl_id = antennas[i].rtl_id;
-                      var k = 0;
-                      var freqhtml = "";
-                      var callsign_html = "";
+                      let frequencies = antennas[i].frequencies;  
+                      let rtl_id = antennas[i].rtl_id;
+                      let k = 0;
+                      let freqhtml = "";
+                      let callsign_html = "";
                       //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
                       //
 
-                      var product_name_lower = antennas[i].rtl_product.toLowerCase();
-                      var instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
+                      let product_name_lower = antennas[i].rtl_product.toLowerCase();
+                      let instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
 
                       for (k = 0; k < frequencies.length; k++) 
                           freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
@@ -330,7 +384,7 @@ function getrecentdata() {
                   $("#antenna-data").html(antenna_html);
               }
               else {  // no antenna info...which is odd, since we're supposed to be in RF mode...but...
-                  var donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
+                  let donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
 
                   // Update the onscreen status
                   $("#antenna-data").html(donehtml);
@@ -346,7 +400,7 @@ function getrecentdata() {
               $("#antenna-data").html(donehtml);
           }
           else {  // we're not running
-              var donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
+              let donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
 
               // Update the onscreen status
               $("#antenna-data").html(donehtml);
@@ -355,27 +409,27 @@ function getrecentdata() {
   });
 
   $.get("getlogs.php", function(data) {
-      var logsJson = JSON.parse(data);
+      let logsJson = data;
       
       $("#logfile").html("");
-  for (a in logsJson.log) 
+      for (a in logsJson.log) 
           $("#logfile").append(escapeHtml(logsJson.log[a]));
 
       $("#errfile").html("");
-  for (a in logsJson.err) 
+      for (a in logsJson.err) 
           $("#errfile").append(escapeHtml(logsJson.err[a]));
 
-  $("#beacons").html("");
-  for (a in logsJson.beacons) 
+      $("#beacons").html("");
+      for (a in logsJson.beacons) 
           $("#beacons").append(escapeHtml(logsJson.beacons[a]));
 
       $("#direwolf").html("");
-  for (a in logsJson.direwolf) 
+      for (a in logsJson.direwolf) 
           $("#direwolf").append(escapeHtml(logsJson.direwolf[a]));
 
-  if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
+      if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
           $("#direwolferror").html(" &nbsp; <mark class=\"notokay\">[ audio error ]</mark>");
-  else
+      else
           $("#direwolferror").html("");
 
   });
@@ -383,35 +437,134 @@ function getrecentdata() {
 
 
 /***********
-* setgps
+* Return the date/time object as an ISO formated string (YYYY-MM-DD HH:MM:SS)
+***********/
+function getISODateTimeString(thedate) {
+    let ts;
+
+    if (thedate)
+        ts = thedate;
+    else
+        ts = new Date(Date.now());
+
+    let str =
+        ts.getFullYear() +
+        "-" + padNumber(ts.getMonth()+1) +
+        "-" + padNumber(ts.getDate()) +
+        " " + padNumber(ts.getHours()) +
+        ":" + padNumber(ts.getMinutes()) +
+        ":" + padNumber(ts.getSeconds());
+    return str;
+}
+
+/***********
+* return a string represenation of a number, but padded with a leading zero.  Primarily used with times/dates.
+***********/
+function padNumber(n) {
+    n = Math.floor(Math.abs(n));
+    return n.toString().padStart(2, '0');
+}
+
+/***********
+* setupSSE function
+*
+* This function will setup an SSE connection to the backend packet source (backendurl)
+***********/
+function setupSSE(backendurl) {
+
+    if(typeof(EventSource) !== "undefined") {
+
+        try {
+
+            // Create new SSE source
+            eventsource = new EventSource(backendurl);
+
+            // listen for new gps position alerts
+            eventsource.addEventListener("gps_status", function(event) {
+
+                // Parse the incoming json
+                let gpsjson = JSON.parse(event.data);
+
+                // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
+                if (gpsjson && gpsjson.features && gpsjson.features[0].properties && gpsjson.features[0].geometry) {
+
+                    let ts = new Date(gpsjson.features[0].properties.time);
+                    let tmstring = getISODateTimeString(ts);
+                    
+                    // update the time value to be a nicer string.
+                    gpsjson.features[0].properties.time = tmstring;
+
+                    // update the GPS status box
+                    updateGPSDisplay(gpsjson);
+
+                    // update the "Map" link with our latest location.  So when the user clicks on the "Map" link, the map will open, centered on our last location.
+                    updateMapLink(gpsjson);
+
+                }
+            });
+
+            // listen for any errors, try and restart the connection if there were any
+            eventsource.addEventListener("error", function(event) {
+
+                // close the event source
+                eventsource.close();
+
+                // wait for one second then restart SSE 
+                setTimeout(initializeSSE, 1000);
+            });
+
+        } catch(error) {
+            console.log({"function": "setupSSE", "error": error});
+        }
+    }
+}
+
+/***********
+* initializeSSE
+*
+* restart the SSE stream
+***********/
+function initializeSSE() {
+    setupSSE("ssestream.php");
+}
+
+
+/***********
+* updateGPSDisplay
 *
 * This function will populate the web page with the GPS status/state in the 'jsonData' argument
 ***********/
-function setgps(jsonData) {
-    var gpsfix;
+function updateGPSDisplay(geojson) {
 
-    // if the backend processes are NOT running, then we need to "blank" out the GPS status section.  We do that by setting the jsonData variable to 
-    // the default set.  We do this because if the backend crashed or the system rebooted, etc., then the gpsstatus.json file is likely stale and does
-    // not reflect reality.
-    /*
-    if (!isRunning) {
-        jsonData = {
-            "utc_time": "n/a",
-            "mode": 0,
-            "host": jsonData.host,
-            "status": "n/a",
-            "devicepath": "n/a",
-            "lat": 0.0,
-            "lon": 0.0,
-            "satellites": [],
-            "bearing": 0.0,
-            "speed_mph": 0.0,
-            "altitude": 0.0,
-            "error": "n/a" 
-        };
+    let feature = null;
+    let featurecollection = null;
+
+    // Determine the geojson feature from the provided arguments
+    if (geojson && geojson.type) {
+        if (geojson.type == "FeatureCollection") {
+            featurecollection = geojson;
+            if (geojson.features)
+                feature = geojson.features[0];
+        }
+        else if (geojson.type == "Feature") {
+            feature = geojson;
+        }
     }
-    */
 
+    // if there isn't any geojson to process then we return
+    if (!feature || !featurecollection) {
+        return;
+    }
+
+    // The GPS status information (fix mode, satellites, etc.)
+    let jsonData = feature.properties.gps;
+    let gpsfix;
+
+    // make sure we were provided GPS status data before proceeding
+    if (!jsonData)
+        return;
+
+    // Get the GPS fix status
     gpsMode = jsonData.mode * 10 / 10;
     if (gpsMode == 0)
         gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ no data ]</mark>";
@@ -425,16 +578,17 @@ function setgps(jsonData) {
         gpsfix = "n/a";
 
     // if there is an error string included (usually from a GPSD connection fault), then format that and save the HTML string into 'errorstring'
-    var errorstring = "";
+    let errorstring = "";
     if (jsonData.error && jsonData.error != "n/a") {
         errorstring = "<tr><td style=\"text-align: left; padding-right: 10px;\">Error:</td><td>"
         + "<mark class=\"marginal\">" + jsonData.error + "</mark></td></tr>";
     }
 
-    var theDate = jsonData.utc_time;
+    // Construct the GPS status info box
+    let theDate = jsonData.utc_time;
     theDate = theDate.replace(/T/g, " "); 
     theDate = theDate.replace(/Z$/g, ""); 
-    var gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
+    let gpshtml = "<table cellpadding=0 cellspacing=0 border=0>" 
         + "<tr><td style=\"text-align: left; padding-right: 10px;\">Host:</td><td><strong>" + jsonData.host + "</strong></td></tr>"
         + "<tr><td style=\"text-align: left; padding-right: 10px;\">UTC Time:</td><td>" + theDate + "</td></tr>"
         + "<tr><td style=\"text-align: left; padding-right: 10px;\">Latitude:</td><td>" + jsonData.lat + "</td></tr>"
@@ -449,41 +603,68 @@ function setgps(jsonData) {
         + errorstring
         + "</table>";
 
-    var i = 0;
-    var satellites = jsonData.satellites;
-    var satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
+
+    // Compile the list of satellites
+    let satellites = jsonData.satellites;
+    let satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
+
+    let i = 0;
     for (i = 0; i < satellites.length; i++) {
             satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
     }
     
     satellite_html = satellite_html + "</table>";
 
+    // only add the satellite HTML listing if there were satellites reported.
     if (satellites.length > 0)
-    gpshtml = gpshtml + satellite_html;
-    $("#gpsdata").html(gpshtml);
+        gpshtml = gpshtml + satellite_html;
+
+    // update the GPS status box on the web page with everything we've compiled from the GPS JSON we receieved.
+    let elem = document.getElementById("gpsdata");
+    if (elem)
+        elem.innerHTML = gpshtml;
 }
+
+
 
 /***********
 * updateMapLink
 *
-* This function will query the server for the latest GPS position and update the Map link in the menubar accordingly.
+* update the map link so that when a user clicks on "Map", the map will open, centered on this location.
 ***********/
-function updateMapLink() {
-    // Get the position from GPS and update the "Map" link in the main menu with the current lat/lon.
-    //     The idea is that this will open the map screen centered on the current location preventing the map from having to "recenter" 
-    //     itself thus improving the user map experience.
-    setTimeout (function () {
-        $.get("getposition.php", function(data) { 
-            var lastposition = JSON.parse(data);
-            var lat = lastposition.geometry.coordinates[1];
-            var lon = lastposition.geometry.coordinates[0];
-            var zoom = 10;
+function updateMapLink(geojson) {
 
-            var maplink = document.getElementById("maplink");
-            var url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
-            maplink.setAttribute("href", url);
-        });
-    }, 10);
+    let feature = null;
+    let featurecollection = null;
+
+    // Determine the geojson feature from the provided arguments
+    if (geojson && geojson.type) {
+        if (geojson.type == "FeatureCollection") {
+            featurecollection = geojson;
+            if (geojson.features)
+                feature = geojson.features[0];
+        }
+        else if (geojson.type == "Feature") {
+            feature = geojson;
+        }
+    }
+
+    // if there isn't any geojson to process then we return
+    if (!feature || !featurecollection) {
+        return;
+    }
+
+    // make sure this feature has coordinates for a Point geojson object.
+    if (!feature.geometry || !feature.geometry.type == "Point" || !feature.geometry.coordinates)
+        return;
+
+    let lat = feature.geometry.coordinates[1];
+    let lon = feature.geometry.coordinates[0];
+    let zoom = 10;
+
+    let maplink = document.getElementById("maplink");
+    let url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+    maplink.setAttribute("href", url);
 }
 
 
@@ -493,8 +674,8 @@ function updateMapLink() {
 * This function is called when the browser tab loses focus
 ***********/
 function lostFocus() {
-    var isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
-    var isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
+    let isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
+    let isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
 
     // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
     if ((isiPad || isMobile) && interval) {
@@ -515,7 +696,6 @@ function gainFocus() {
     if (interval) {
         clearInterval(interval);
         interval = setInterval(function() {
-            updateMapLink();
             getrecentdata();
             getConfiguration();
         }, 5000);
@@ -534,12 +714,13 @@ $(document).ready(function () {
     window.onfocus = gainFocus;
     window.onblur = lostFocus;
 
-    updateMapLink();
     getrecentdata();
     getConfiguration();
+    initializeSSE();
+
     interval = setInterval(function() {
-        updateMapLink();
         getrecentdata();
         getConfiguration();
     }, 5000);
 });
+

@@ -29,7 +29,10 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include $documentroot . '/common/functions.php';
 
-    header("Content-type: text/plain;");
+    //header("Content-type: text/plain;");
+    header("Content-Type:  application/json;");
+
+
     $logfile = "/eosstracker/logs/start_session.log";
     $errfile = "/eosstracker/logs/start_session.log.stderr";
     $direwolffile = "/eosstracker/logs/direwolf.out";

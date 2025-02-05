@@ -58,7 +58,7 @@
 
 
         // listen for new positions
-        packetsource.addEventListener("new_position", function(event) {
+        packetsource.addEventListener("gps_status", function(event) {
 
             // Parse the incoming json
             const jsondata = event.data;

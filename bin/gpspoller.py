@@ -24,6 +24,7 @@ import math
 from math import radians, cos, sin, asin, sqrt
 import time
 import datetime
+from dateutil import tz
 import psycopg2 as pg
 import sys
 import numpy as np
@@ -36,6 +37,12 @@ from inspect import getframeinfo, stack
 import logging
 from logging.handlers import QueueHandler, QueueListener
 from dataclasses import dataclass, field
+
+# for memcache
+from pymemcache.client.base import Client
+from pymemcache.client.retrying import RetryingClient
+from pymemcache.exceptions import MemcacheUnexpectedCloseError
+from pymemcache import serde
 
 #import local configuration items
 import habconfig
@@ -206,6 +213,114 @@ class GPSPoller(object):
         if os.path.isfile(self.GPSStatusTempFile):
             os.rename(self.GPSStatusTempFile, self.GPSStatusFile)
 
+    ##################################################
+    # Save GPS status to a memcache object
+    # ...saves the GPS data (JSON) to a status file that the web frontend reads
+    ##################################################
+    def _saveGPSMemcache(self, objname: str = "gps_status", gs: dict = None)->None:
+
+        gpsstats = self.gpsstatus
+        if gs:
+            gpsstats = gs
+
+        
+        # convert the gps stats object to the geojson format
+        geojson = self.toGeoJson(gpsstats)
+        if geojson is None:
+            return None
+
+        # if we've got a valid position object then update memcache with the latest GPS state
+        if self.position is not None:
+
+            try:
+                # connect to the memcache server running locally on the default port
+                base_client = Client(("localhost", 11211))
+
+                # wrap the base_client so that our operations will "retry" within some limits.
+                client = RetryingClient(
+                    base_client,
+                    attempts=3,
+                    retry_delay=0.01,
+                    retry_for=[MemcacheUnexpectedCloseError]
+                )
+
+
+                # string version of json object
+                js = json.dumps(geojson)
+
+                # update the memcache object with the GPS state
+                client.set(objname, js, expire = 300)
+
+                # close the connection
+                client.close()
+
+            except Exception as e:
+                self.logger.error(f"Memcache error: {e}")
+
+
+    ##################################################
+    # convert the gpsstats dictionary into a geojson object
+    ##################################################
+    def toGeoJson(self, gpsstats: dict = None)->dict:
+
+        if gpsstats is None:
+            return None
+
+        geojson = None
+        try:
+
+            # change the "time" for the geojson object from UTC to the local timezone
+            if gpsstats['utc_time'] == 'n/a' or gpsstats['utc_time'] is None:
+                localtm_string = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            else:
+                utctime = datetime.datetime.strptime(gpsstats['utc_time'], "%Y-%m-%dT%H:%M:%SZ")
+                utctime = utctime.replace(tzinfo=tz.gettz('UTC'))
+                localtm_string = utctime.astimezone(tz.gettz(self.timezone)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            # Get the number of microseconds (as a floating pointing value) since the epoch
+            # ...the web frontend will can use this value to determine if the GPS state has changed.
+            #
+            # time_ns() returns nanoseconds, divide by 1000 to get microsecs, then floor that and divide by one million to finally 
+            # get to a floating point for microsecs.
+            one_million = 1000000.0
+            t = math.floor(time.time_ns() / 1000.0) / one_million 
+
+            # geojson object
+            geojson = {
+                "type": "FeatureCollection",
+                "properties": {
+                  "name": "My station",
+                  "microsecs": round(t,3)
+                },
+                "features": [
+                  {
+                    "type": "Feature",
+                    "properties": {
+                        "speed_mph": gpsstats['speed_mph'],
+                        "altitude": gpsstats['altitude'],
+                        "bearing": gpsstats['bearing'],
+                        "time": localtm_string,
+                        "gps": gpsstats,
+                        "callsign": "My Location",
+                        "tooltip": "",
+                        "id": "My Location",
+                        "symbol": "1x",
+                        "comment": "",
+                        "frequency": "",
+                        "iconsize": "24"
+                    },
+                    "geometry": { 
+                        "coordinates": [ gpsstats['lon'], gpsstats['lat'] ],
+                        "type": "Point"
+                    }
+                  }
+                ]
+            }
+        except Exception as e:
+            self.logger.error(f"toGeoJson error:  {e}")
+
+        return geojson
+
 
     ##################################################
     # update the shared (between processes) dictionary
@@ -234,9 +349,10 @@ class GPSPoller(object):
 
         self.logger.debug(f"GPS status: {gpsstats=}")
 
-        # Save the GPS stats to the JSON status file
-        self._saveGPSStatus(gpsstats)
+        # Save the GPS stats to the JSON status file, the shared memory object, and to memcache
+        self._saveGPSStatus(self.toGeoJson(gpsstats))
         self._updatePosition(gpsstats)
+        self._saveGPSMemcache("gps_status", gpsstats)
 
 
     #####################################
@@ -245,7 +361,7 @@ class GPSPoller(object):
     def newGPSStatus(self, errmessage: str = None)->dict:
 
         # default GPS status object
-        gpsstats = { "utc_time" : "n/a", 
+        gpsstats = { "utc_time" : self.createDateString(),
                      "mode" : int(0), 
                      "host" : self.gpshost,
                      "status" : "no device", 
@@ -280,7 +396,7 @@ class GPSPoller(object):
         utc_datetime = datetime.datetime.now(datetime.timezone.utc)
 
         if not gpstime:
-            return utc_datetime.isoformat(timespec='seconds') + 'Z'
+            return utc_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         try:
             # convert the incoming datetime string to a datetime object
@@ -288,13 +404,13 @@ class GPSPoller(object):
 
             # make sure the year is correct.  If not, then just return the system's datetime
             if gpsdatetime.year == utc_datetime.year:
-                return gpsdatetime.isoformat(timespec='seconds') + 'Z'
+                return gpsdatetime.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         except ValueError:
             pass
 
         # there was an error of some kind so just use the system's datetime instead
-        return utc_datetime.isoformat(timespec='seconds') + 'Z'
+        return utc_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
     #####################################
@@ -647,7 +763,7 @@ class GPSPoller(object):
         last_insert_time = datetime.datetime.now(datetime.timezone.utc)
         lastmode = 0
         gpsd_timeout = 0.5
-        tiny_delay = 0.5
+        tiny_delay = 0.3
         short_delay = 1
         long_delay = 5
         report = {'class': None}
@@ -951,7 +1067,7 @@ def runGPSPoller(config, logginglevel: int = logging.INFO):
 if __name__ == "__main__":
 
     # the logging level we want to use for debugging
-    logginglevel = logging.DEBUG
+    logginglevel = logging.INFO
 
     # setup logging
     logger = logging.getLogger(__name__)

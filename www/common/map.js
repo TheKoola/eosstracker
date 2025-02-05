@@ -738,8 +738,8 @@
     /*********
     * updateRelativePosition
     *
-    * This is called from getgps() and updateSideBar() to update the relative position fields and gauges for each flight
-    * getgps() is called at every update (every ~5 secs) and updateSideBar() is called whenever new packets from the flight are available.
+    * This is called from updateMyLocation and updateSideBar() to update the relative position fields and gauges for each flight
+    * every update (every ~5 secs) and updateSideBar() is called whenever new packets from the flight are available.
     **********/
     function updateRelativePosition(featurecollection, fid) {
 
@@ -2095,11 +2095,6 @@ function getTrackers() {
         // Add the GPS status box to the top right
         gpsStatusBox = L.control.gpsbox().addTo(map);
 
-        // get the current GPS location and update the GPS status box.  Input variable is true so as to update the map with the initial GPS location 
-        setTimeout( function() {
-            getgps(true);
-        }, 10);
-
         // use the grouped layers plugin so the layer selection widget shows layers categorized
         layerControl = L.control.groupedLayers({}, {}, { groupCheckboxes: true}).addTo(map);
 
@@ -2421,7 +2416,7 @@ function getTrackers() {
     /***********
     * setupSSE function
     *
-    * This function will setup an SSE connection to the backend packet source (backendurl) and use the handler as the callback function.
+    * This function will setup an SSE connection to the backend packet source (backendurl) 
     ***********/
     function setupSSE(backendurl) {
         if(typeof(EventSource) !== "undefined") {
@@ -2430,49 +2425,22 @@ function getTrackers() {
             packetsource = new EventSource(backendurl);
 
             // listen for new gps position alerts
-            packetsource.addEventListener("new_position", function(event) {
+            packetsource.addEventListener("gps_status", function(event) {
 
                 // Parse the incoming json
                 var gpsjson = JSON.parse(event.data);
-
+                
                 // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
-                if (gpsjson && gpsjson.properties && gpsjson.geometry) {
+                if (gpsjson && gpsjson.features && gpsjson.features[0].properties && gpsjson.features[0].geometry) {
 
-                    var ts = new Date(gpsjson.properties.tm);
+                    var ts = new Date(gpsjson.features[0].properties.time);
                     var tmstring = getISODateTimeString(ts);
+                    
+                    // update the time value to be a nicer string.
+                    gpsjson.features[0].properties.time = tmstring;
 
-                    // Create a feature collection object out of gpsjson
-                    // set the lastlocation variable to output
-                    lastposition = {
-                        "type": "FeatureCollection",
-                        "properties": {
-                          "name": "My station"
-                        },
-                        "features": [
-                          {
-                            "type": "Feature",
-                            "properties": {
-                                "type": "Feature",
-                                "speed_mph": (gpsjson.properties.speed_mph ? Math.floor(gpsjson.properties.speed_mph) : 0),
-                                "altitude": gpsjson.properties.altitude_ft,
-                                "bearing": (gpsjson.properties.bearing ? Math.floor(gpsjson.properties.bearing) : 0 ),
-                                "time": tmstring,
-                                "gps": (gpsjson.properties.gps ? gpsjson.properties.gps : {}),
-                                "callsign": "My Location",
-                                "tooltip": "",
-                                "id": "My Location",
-                                "symbol": "1x",
-                                "comment": "",
-                                "frequency": "",
-                                "iconsize": "24"
-                            },
-                            "geometry": gpsjson.geometry
-                          }
-                        ]
-                    };
-
-                    // update everything that depends upon our location
-                    updateMyLocation(lastposition);
+                    // update the out position
+                    updateMyLocation(gpsjson);
                 }
             });
         }
@@ -2496,7 +2464,13 @@ function getTrackers() {
                     feature = geojson.features[0];
             }
             else if (geojson.type == "Feature") {
-                feature = geojson;
+                feature = {
+                    "type": "FeatureCollection",
+                    "properties": {
+                      "name": "My station"
+                    },
+                    "features": [geojson]
+                };
             }
         }
 
@@ -2504,6 +2478,9 @@ function getTrackers() {
         if (!feature || !featurecollection) {
             return;
         }
+
+        // update the lastposition global variable
+        lastposition = feature;
 
         // update the position icon on the map
         if (myPositionLayer)
@@ -2518,32 +2495,13 @@ function getTrackers() {
         if (speedStatusBox)
             speedStatusBox.show(Math.round(feature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
 
-        // Now update the relative position gauges and fields
-        updateRelativePosition(feature);
+        // Now update the GPS status box
+        if (gpsStatusBox) {
 
-    }
-
-
-
-
-    /***********
-    * getgps
-    *
-    * This function will get the current status of the GPS that's connected to the system and populate the web page with its status/state
-    ***********/
-    function getgps(updatelocation) {
-
-        var p = (updatelocation ? true : false);
-
-        $.get("getgps.php", function(data) {
-            var jsonData = JSON.parse(data);
+            var gpsMode = feature.properties.gps.mode * 1.0;
             var gpsfix;
-            var gpsMode;
-            var updateloc = p;
 
-            gpsMode = jsonData.mode * 10 / 10;
-
-            if (jsonData.status == "no device") {
+            if (feature.properties.gps.status == "no device") {
                 gpsStatusBox.show("GPS: <mark class=\"notokay\">[ NO DEVICE ]</mark>");
             }
             else {
@@ -2553,61 +2511,18 @@ function getTrackers() {
                     gpsfix = "GPS: <mark class=\"notokay\">[ NO FIX ]</mark>";
                 else if (gpsMode == 2) 
                     gpsfix = "GPS: <mark class=\"marginal\">[ 2D ]</mark>";
-                else if (gpsMode == 3) {
+                else if (gpsMode == 3) 
                     gpsfix = "GPS: <mark class=\"okay\">[ 3D ]</mark>";
-                    
-                    // if we're asked to update the "blue dot" location on the map
-                    if (updateloc) {
-
-                        // the current date/time
-                        var ts = new Date(Date.now());
-                        var tmstring = getISODateTimeString(ts);
-
-                        // Create a feature collection object out of gpsjson
-                        // set the lastlocation variable to output
-                        lastposition = {
-                            "type": "FeatureCollection",
-                            "properties": {
-                              "name": "My station"
-                            },
-                            "features": [
-                              {
-                                "type": "Feature",
-                                "properties": {
-                                    "type": "Feature",
-                                    "speed_mph": (jsonData.speed_mph ? Math.floor(jsonData.speed_mph) : 0),
-                                    "altitude": jsonData.altitude * 1.0,
-                                    "bearing": (jsonData.bearing ? Math.floor(jsonData.bearing) : 0 ),
-                                    "time": tmstring,
-                                    "gps": {},
-                                    "callsign": "My Location",
-                                    "tooltip": "",
-                                    "id": "My Location",
-                                    "symbol": "1x",
-                                    "comment": "",
-                                    "frequency": "",
-                                    "iconsize": "24"
-                                },
-                                "geometry": { 
-                                    "coordinates": [ jsonData.lon * 1.0, jsonData.lat * 1.0 ],
-                                    "type": "Point"
-                                }
-                              }
-                            ]
-                        };
-
-                        // update everything that depends upon our location
-                        updateMyLocation(lastposition);
-                    }
-                }
                 else
                     gpsfix = "Unable to get GPS status";
-                
-                // Now update the GPS status box
-                if (gpsStatusBox)
-                    gpsStatusBox.show(gpsfix);
+
+                gpsStatusBox.show(gpsfix);
             }
-        });
+        }
+
+        // Now update the relative position gauges and fields
+        updateRelativePosition(feature);
+
     }
 
 
@@ -2740,7 +2655,7 @@ function getTrackers() {
         for (flight in flightids) {
             var altElement = "#" + flightids[flight].flightid + "_altitudechart";
             var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
-            
+
             var vchart = $(vertElement).data('verticalChart');
             var achart = $(altElement).data('altitudeChart');
 
@@ -2756,17 +2671,16 @@ function getTrackers() {
         }
     }
 
-
     /************
      * buildGauges
      *
      * This function creates the gauges/instrumentation for the individual flight tabs.
     *************/
     function buildGauges () {
-	var altimeter;
-	var variometer;
-	var heading;
-	var airspeed;
+    var altimeter;
+    var variometer;
+    var heading;
+    var airspeed;
         var relativebearing;
         var relativeangle;
         var flights = [];
@@ -2800,7 +2714,7 @@ function getTrackers() {
             $(speedValue).data('airspeed', airspeed);
             $(relativeBearingValue).data('relativebearing', relativebearing);
             $(relativeElevationValue).data('relativeangle', relativeangle);
-	    }
+        }
     }
 
 
@@ -2870,155 +2784,6 @@ function getTrackers() {
         }
     }
 
-
-    /************
-     * clearRealtimeLayer
-     *
-     * This function will remove all features from a Realtime layer.
-     *
-    *************/
-    function clearRealtimeLayer(rl) {
-
-        // This is the LeafletJS layer group 
-        var group = rl.options.container;
-        var features = [];
-
-        // for each feature/item within that layer group, execute this function...
-        group.eachLayer(function(l) {
-            features.push({ "properties": { "id": l.feature.properties.id}});
-        });
-
-        if (features.length > 0) {
-            rl.remove({"features": features});
-        }
-    }
-
-
-    /************
-     * pruneRealtimeLayer
-     *
-     * This function will remove those features from a realtime layer that are older than the cutoff timestamp
-     *
-    *************/
-    function pruneRealtimeLayer(rl, cutoff) {
-
-        // This is the LeafletJS layer group 
-        var group = rl.options.container;
-        var features = [];
-
-        // for each feature/item within that layer group, execute this function...
-        group.eachLayer(function(l) {
-
-            // Only look at those items that have a "time" property set
-            if (typeof(l.feature.properties.time) != "undefined") {
-
-                // The timestamp of the item
-                var layer_ts = parseDate(l.feature.properties.time);
-
-                // Check how old this feature is...and add it to the list for removal
-                if (layer_ts && layer_ts < cutoff) {
-                    features.push({ "properties": { "id": l.feature.properties.id}});
-                }
-            }
-        });
-
-        if (features.length > 0) {
-            rl.remove({"features": features});
-        }
-    }
-
-
-    /************
-     * removeBalloonMarkers
-     *
-     * This function removes all balloonmarker objects from a Realtime layer
-    *************/
-    function removeBalloonMarkers(rl) {
-        // This is the LeafletJS layer group
-        var group = rl.options.container;
-
-        // where we collect objects to remove
-        var delthese = [];
-
-        // for each feature/item within the layer group, execute this function...
-        group.eachLayer(function(l) {
-
-            // If a layer is a balloonmarker object add it to our list for deletion
-            if (l.feature.properties.objecttype == "balloonmarker")
-                delthese.push({ "properties": { "id": l.feature.properties.id}});
-        });
-
-        // If we collected objects to delete, them remove them from the Realtime layer
-        if (delthese.length > 0) {
-            rl.remove({"features": delthese});
-        }
-    }
-
-
-
-
-    /************
-     * updateLastestPackets
-     *
-     * This function updates sidebar latest packets list
-    *************/
-    function updateLatestPackets(json) {
-
-        var positionpackets = json;
-        var i = 0;
-        var keys = Object.keys(positionpackets);
-
-        // We only do this 5 times
-        var max = (keys.length < 5 ? keys.length : 5);
-
-        // Loop through each packet
-        for (i = 0; i < max; i++) {
-            var p = positionpackets[i];
-            var time_string = p.time.split(" ")[1];
-
-            if (time_string.indexOf(".") !== -1)
-                time_string = time_string.split(".")[0];
-
-
-            $("#" + p.flightid + "_lasttime_" + i).text(time_string);
-            $("#" + p.flightid + "_lastcallsign_" + i).html(
-                "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + p.latitude + "', '" + p.longitude + "');\">" +  p.callsign + "</a>"
-            );
-            $("#" + p.flightid + "_lastspeed_" + i).text(Math.round(p.speed * 1.0) + " mph");
-            $("#" + p.flightid + "_lastvertrate_" + i).text(Math.round(p.verticalrate * 1.0).toLocaleString() + " ft/min");
-            $("#" + p.flightid  + "_lastaltitude_" + i).text(Math.round(p.altitude * 1.0).toLocaleString() + " ft");
-        }
-    }
-
-
-    /************
-     * updateStatusPackets
-     *
-     * This function updates sidebar latest status packets list
-    *************/
-    function updateStatusPackets(json) {
-
-        var statuspackets = json;
-        var i = 0;
-        var keys = Object.keys(statuspackets);
-
-        // We only do this 5 times
-        var max = (keys.length < 5 ? keys.length : 5);
-
-        // Loop through each packet
-        for (i = 0; i < max; i++) {
-            var p = statuspackets[i];
-            var time_string = p.time.split(" ")[1];
-
-            if (time_string.indexOf(".") !== -1)
-                time_string = time_string.split(".")[0];
-
-            $("#" + p.flightid + "_statustime_" + i).text(time_string);
-            $("#" + p.flightid + "_statuscallsign_" + i).text(p.callsign);
-            $("#" + p.flightid + "_statuspacket_" + i).text(p.packet);
-        }
-
-    }
 
 
     /************
@@ -3117,6 +2882,89 @@ function getTrackers() {
                 if ($(elements[elem]).length)
                     $(elements[elem]).text("");
             }
+        }
+    }
+
+    /************
+     * clearRealtimeLayer
+     *
+     * This function will remove all features from a Realtime layer.
+     *
+    *************/
+    function clearRealtimeLayer(rl) {
+
+        // This is the LeafletJS layer group 
+        var group = rl.options.container;
+        var features = [];
+
+        // for each feature/item within that layer group, execute this function...
+        group.eachLayer(function(l) {
+            features.push({ "properties": { "id": l.feature.properties.id}});
+        });
+
+        if (features.length > 0) {
+            rl.remove({"features": features});
+        }
+    }
+
+
+    /************
+     * pruneRealtimeLayer
+     *
+     * This function will remove those features from a realtime layer that are older than the cutoff timestamp
+     *
+    *************/
+    function pruneRealtimeLayer(rl, cutoff) {
+
+        // This is the LeafletJS layer group 
+        var group = rl.options.container;
+        var features = [];
+
+        // for each feature/item within that layer group, execute this function...
+        group.eachLayer(function(l) {
+
+            // Only look at those items that have a "time" property set
+            if (typeof(l.feature.properties.time) != "undefined") {
+
+                // The timestamp of the item
+                var layer_ts = parseDate(l.feature.properties.time);
+
+                // Check how old this feature is...and add it to the list for removal
+                if (layer_ts && layer_ts < cutoff) {
+                    features.push({ "properties": { "id": l.feature.properties.id}});
+                }
+            }
+        });
+
+        if (features.length > 0) {
+            rl.remove({"features": features});
+        }
+    }
+
+
+    /************
+     * removeBalloonMarkers
+     *
+     * This function removes all balloonmarker objects from a Realtime layer
+    *************/
+    function removeBalloonMarkers(rl) {
+        // This is the LeafletJS layer group
+        var group = rl.options.container;
+
+        // where we collect objects to remove
+        var delthese = [];
+
+        // for each feature/item within the layer group, execute this function...
+        group.eachLayer(function(l) {
+
+            // If a layer is a balloonmarker object add it to our list for deletion
+            if (l.feature.properties.objecttype == "balloonmarker")
+                delthese.push({ "properties": { "id": l.feature.properties.id}});
+        });
+
+        // If we collected objects to delete, them remove them from the Realtime layer
+        if (delthese.length > 0) {
+            rl.remove({"features": delthese});
         }
     }
 
@@ -3502,7 +3350,8 @@ function getTrackers() {
 
             // Prune off any RF, inet, or weather stations
             var cutoff = new Date(Date.now() - lookbackPeriod * 60000);
-            var layers = [allStationsLayer, rfStationsLayer, weatherStationsLayer, myPositionLayer, trackersAtLargeLayer];
+            //var layers = [allStationsLayer, rfStationsLayer, weatherStationsLayer, myPositionLayer, trackersAtLargeLayer];
+            var layers = [allStationsLayer, rfStationsLayer, weatherStationsLayer, trackersAtLargeLayer];
 
             layers.forEach( function(l) {
                 pruneRealtimeLayer(l, cutoff);
@@ -3856,9 +3705,6 @@ function getTrackers() {
 
         // Update the TTL values
         checkTTL();
-
-        // Update the GPS display for fix status (ex. 2D, 3D, etc)
-        getgps();
 
         // pan the map to the last known position if we're in followme mode.
         var feature;
