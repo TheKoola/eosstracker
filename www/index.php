@@ -76,26 +76,10 @@ include $documentroot . '/common/header.php';
     </div>
 
     <!-- System processes -->
-    <div class="div-table" style="float: left;">
+    <div class="div-table" style="float: left;" id="processtable">
         <div class="table-row">
             <div class="table-cell header toprow">Process</div>
             <div class="table-cell header toprow" style="border-left: none; text-align: center;">Status</div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">direwolf</div>
-            <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolferror"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">gpsd</div>
-            <div class="table-cell" style="text-align: right;"><span id="gpsd-status"><mark class="notokay">Not okay</mark></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">aprsc</div>
-            <div class="table-cell" style="text-align: right;"><span id="aprsc-status"><mark class="notokay">Not okay</mark></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell">backend daemon</div>
-            <div class="table-cell" style="text-align: right;"><span id="habtracker-d-status"><mark class="notokay">Not okay</mark></span></div>
         </div>
     </div>
 

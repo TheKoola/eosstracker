@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025, Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 *
  */
 
+    header("Content-Type:  application/json;");
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
     else
@@ -32,7 +33,9 @@
     $startup_script = "/eosstracker/bin/start_session.bash";
 
     $output = shell_exec('sudo -H -b -u eosstracker ' . $startup_script);
-    //printf ("%s", json_encode($output));
-    //printf ("[]");
-    printf ("%s", $output);
+    //$json = [];
+    //$json["output"] = $output;
+    //printf ("%s", json_encode($json));
+    printf ("[]");
+    //printf ("%s", $output);
 ?>

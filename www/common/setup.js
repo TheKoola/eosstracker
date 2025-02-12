@@ -997,7 +997,7 @@
 	    var form_data = new FormData();
 	    form_data.append("timezone", mytz);
             $.ajax({
-                url: "setconfiguration.php",
+                url: "setconfiguration-memcache.php",
                 dataType: 'json',
                 cache: false,
                 contentType: false,
@@ -1493,8 +1493,8 @@
     * This function will get the current system configuration settings
     ***********/
     function getConfiguration() {
-        $.get("readconfiguration.php", function(data) {
-            var jsonData = JSON.parse(data);
+        $.get("readconfiguration-memcache.php", function(jsonData) {
+            //var jsonData = JSON.parse(data);
             var keys = Object.keys(jsonData);
             var i;
             var ssid = document.getElementById("ssid");
@@ -1800,7 +1800,7 @@
         form_data.append("gpshost", gpshost.value);
         form_data.append("timezone", timezone.options[timezone.selectedIndex].value); 
         $.ajax({
-            url: "setconfiguration.php",
+            url: "setconfiguration-memcache.php",
             dataType: 'json',
             cache: false,
             contentType: false,

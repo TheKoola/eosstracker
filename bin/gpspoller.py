@@ -271,11 +271,11 @@ class GPSPoller(object):
 
             # change the "time" for the geojson object from UTC to the local timezone
             if gpsstats['utc_time'] == 'n/a' or gpsstats['utc_time'] is None:
-                localtm_string = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                localtm_string = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             else:
                 utctime = datetime.datetime.strptime(gpsstats['utc_time'], "%Y-%m-%dT%H:%M:%SZ")
                 utctime = utctime.replace(tzinfo=tz.gettz('UTC'))
-                localtm_string = utctime.astimezone(tz.gettz(self.timezone)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                localtm_string = utctime.astimezone(tz.gettz(self.timezone)).strftime("%Y-%m-%d %H:%M:%S")
 
             # Get the number of microseconds (as a floating pointing value) since the epoch
             # ...the web frontend will can use this value to determine if the GPS state has changed.

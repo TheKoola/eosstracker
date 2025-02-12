@@ -50,65 +50,38 @@ function escapeHtml(s) {
 }
 
 /***********
-* getConfiguration
+* processConfiguration
 *
 * This function will read the current configuration
 ***********/
-async function getConfiguration() {
+function processConfiguration(jsonData) {
+    let callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
+    let timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
+    let audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
+    let igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
+    let i = (igating == "true" ? "yes" : "no");
+    let i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
+    let beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
+    let eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
+    let b = (beaconing == "true" ? "yes" : "no");
+    let b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
+    let ssid = jsonData.ssid;
+    let ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
+    let ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
 
-    try {
+    // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
+    if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
+        ssid = "";
 
-        // if we're already waiting on backend status, don't continue
-        if (waitingOnStatus)
-            throw new Error("A getConfiguration call is outstanding, aborting this call.");
+    //let ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
 
-        // set the waiting flag
-        waitingOnStatus = true;
-
-        // the url for getting the backend configuration
-        let url = "readconfiguration.php";
-
-        // read the configuration from the backend
-        const response = await fetch(url);
-        const jsonData = await response.json();
-
-        let callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
-        let timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
-        let audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
-        let igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
-        let i = (igating == "true" ? "yes" : "no");
-        let i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
-        let beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
-        let eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
-        let b = (beaconing == "true" ? "yes" : "no");
-        let b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
-        let ssid = jsonData.ssid;
-        let ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
-        let ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
-
-        // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
-        if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
-            ssid = "";
-
-        //let ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
-
-        // update status elements
-        document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
-        document.getElementById("timezone").innerHTML = timezone;
-        document.getElementById("igating").innerHTML = i2;
-        document.getElementById("beaconing").innerHTML = b2;
-        document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
-        document.getElementById("ka9qradio").innerHTML = ka9qhtml;
-
-        // set the waiting flag
-        waitingOnStatus = false;
-
-    } catch (error) {
-        console.log({"function": "getConfiguration", "error": error});
-
-        // set the waiting flag
-        waitingOnStatus = false;
-    }
+    // update status elements
+    document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
+    document.getElementById("timezone").innerHTML = timezone;
+    document.getElementById("igating").innerHTML = i2;
+    document.getElementById("beaconing").innerHTML = b2;
+    document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
+    document.getElementById("ka9qradio").innerHTML = ka9qhtml;
 }
 
 
@@ -127,14 +100,10 @@ async function startUpProcesses() {
 
             // signal to the backend that it's time to startup 
             const response = await fetch("startup.php");
-            const data = response.json();
-
-            // get the latest status from the backend.
-            getrecentdata(); 
+            const data = await response.json();
 
         } catch (error) {
             console.log({"function": "startUpProcesses", "error": error});
-            document.getElementById("error").innerHTML = "<pre>startUpProcesses error: " + error.message + "</pre>";
         }
     }
 
@@ -155,17 +124,13 @@ async function shutDownProcesses() {
 
         // signal to the backend that it should shutdown
         const response = await fetch("shutdown.php");
-        const data = response.json();
+        const data = await response.json();
 
         // set the process transition flag
         processInTransition = 2;
 
-        // get latest updates on status of the backend.
-        getrecentdata();
-
     } catch (error) {
         console.log({"function": "shutDownProcesses", "error": error});
-        document.getElementById("error").innerHTML = "<pre>shutDownProcesses error: " + error.message + "</pre>";
     }
 
     return false;
@@ -173,266 +138,274 @@ async function shutDownProcesses() {
 
 
 /***********
-* getrecentdata
+* processStatus
 *
 * This function will fetch current status of processes, system status, SDR info, logs, etc. and populate the web page as needed.
 ***********/
-function getrecentdata() {
-  $.get("getstatus.php", function(data) { 
-      let statusJson = data;
-      let keys = Object.keys(statusJson.processes);
-      let antennas = statusJson.antennas
-      let i = 0;
-      let procs = 0;
-      let procstatus = {
-          "direwolf" : false,
-          "gpsd" : false,
-          "aprsc" : false,
-          "backend" : false
-      };
+function processStatus(json) {
 
-      // update the GPS status box
-      //if (typeof(statusJson.gps) != "undefined")
-      //    updateGPSDisplay(statusJson.gps);
+    let statusJson = json.backend;
+    let antennas = statusJson.antennas
 
-      // is the backend active?
-      let isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
+    // the processes that we're expecting to be reported on.  By default we set them all to in-active.
+    let processes = [
+        { "process": "direwolf", "elementid": "direwolf-status", "active": 0 },
+        { "process": "aprsc", "elementid": "aprsc-status", "active": 0 },
+        { "process": "habtracker", "elementid": "habtracker-status", "active": 0 },
+        { "process": "gpsd", "elementid": "gpsd-status", "active": 0 }
+    ];
 
-      // is the backend beaconing?
-      let isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
+    // loop through each expected process comparing that to the list of active processes 
+    processes.forEach(function(item) {
+        for (p in json.processes) {
+            if (json.processes[p].process.startsWith(item.process)) {
+                item.active = (json.processes[p].active == 1 || json.processes[p].active == "true" || json.processes[p].active == true ? 1 : 0);
+                break;
+            }
+        }
+    });
 
-      // are we igating?
-      let isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
+    // status of various processes
+    const direwolf = (processes.filter((a) => a.process.startsWith("direwolf")).reduce((a, c) => a + c.active, 0) ? true : false);
+    const aprsc = (processes.filter((a) => a.process.startsWith("aprsc")).reduce((a, c) => a + c.active, 0) ? true : false);
+    const backend = (processes.filter((a) => a.process.startsWith("habtracker")).reduce((a, c) => a + c.active, 0) ? true : false);
+    const gpsd = (processes.filter((a) => a.process.startsWith("gpsd")).reduce((a, c) => a + c.active, 0) ? true : false);
 
-      // is the backend connected to an SDR dongle?
-      let isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
+    // is the backend active?
+    let isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
 
-      // are we listening for packets from an instance of KA9Q-Radio running on the local network?
-      let isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
+    // is the backend beaconing?
+    let isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
 
-      // should we be expecting gpsd to be running?  Is the gpshost set to the local system?
-      let gpsHost = (typeof(statusJson.gpshost) != "undefined" ? statusJson.gpshost.toLowerCase() : "");
-      let expectGPSD = (gpsHost == "" || gpsHost == "local" || gpsHost == "localhost" || gpsHost == "127.0.0.1" || gpsHost == "127.0.1.1" ? true : false);
+    // are we igating?
+    let isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
 
+    // is the backend connected to an SDR dongle?
+    let isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
 
-      // Loop through the processes and update their status 
-      for (i = 0; i < keys.length; i++) {
-          document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-              (statusJson.processes[i].status > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-          procs += statusJson.processes[i].status; 
+    // are we listening for packets from an instance of KA9Q-Radio running on the local network?
+    let isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
 
-          let procname = statusJson.processes[i].process.toLowerCase();
-          let proc_status = statusJson.processes[i].status;
+    // Loop through the processes, updating the browser page to reflect status (running or not).
+    processes.forEach(function(proc) {
+        let element = document.getElementById(proc.process + "-status");
 
-          if (procname.startsWith("direwolf")) {
-              procstatus.direwolf = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-                  (procstatus.direwolf ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-          }
-          else if (procname.startsWith("aprs")) {
-              procstatus.aprsc = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-                  (procstatus.aprsc ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-          }
-          else if (procname.startsWith("gpsd")) {
-              procstatus.gpsd = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
-              if (expectGPSD) {
-                  document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-                      (procstatus.gpsd ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-              }
-              else {
-                  // we are not expecting that GPSD is running on this system as we're using a non-local hostname for the gpshost.  So we just mark this status as "n/a".
-                  document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "n/a";
-              }
-          }
-          else if (procname.startsWith("habtrack")) {
-              procstatus.backend = (proc_status == 1 || proc_status == 1 || proc_status == "true" || proc_status == true ? true : false);
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = 
-                  (procstatus.backend ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-          }
-      }
+        // the element already exists on the web page, so just update that section with this process's status
+        if (element) {
+            element.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+        }
 
-      // determine if the backend is actually running.  
-      // isRunning:
-      // 0 - not running
-      // 1 - running
-      // -1 - transitioning or some odd state
-      //
-      // backend is "active", we've found an SDR dongle attached
-      if (isActive && isRFMode) {
+        // otherwise we need to add an entry to the <div> table for this process
+        else {
+            /**** example HTML for the process table row *****
+                <div class="table-row">
+                    <div class="table-cell">direwolf</div>
+                    <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolf-error"></span></div>
+                </div>
+            ***************************************************/
 
-          // ...then we'd expect to find direwolf, aprsc, and the backend running
-          if (procstatus.direwolf && procstatus.aprsc && procstatus.backend)
-              isRunning = 1;
-          else
-              // huh...the backend says that we're "active" and in "rf_mode", but yet the [some of the] processes we were expecting aren't running?
-              isRunning = -1;
-      }
-      // backend is "active", but there wasn't an SDR dongle attached...so we're presumably running in "online" mode
-      else if (isActive && !isRFMode) {
+            // if the process table exists...then add a row for this process
+            let table = document.getElementById("processtable");
+            if (table) {
+                let rowdiv = document.createElement("div");      // for the entire row itself
+                let leftcell = document.createElement("div");    // the leftmost cell of the row
+                let rightcell = document.createElement("div");   // the rightmost cell of the row
+                let statusspan = document.createElement("span"); // location where we stuff the status of the process
+                let errspan = document.createElement("span");    // location where we can post a short error message for the individual process if need be
 
-          // ...then we'd expect to find just aprsc and the backend running.  Although direwolf might be running, but just for beaconing via an external radio.
-          if (procstatus.aprsc && procstatus.backend)
-              isRunning = 1;
-          else
-              isRunning = -1;
-      }
-      // the backend is not active as it doesn't think it's running.
-      else if (!isActive) {
+                rowdiv.className = "table-row";  
+                leftcell.className = "table-cell";  
+                rightcell.className = "table-cell";
+                rightcell.setAttribute("style", "text-align: right;");
+                statusspan.id = proc.process + "-status";
+                errspan.id = proc.process + "-error";
 
-          //...then we'd expect that no processes are running, except maybe GPSD
-          if (!procstatus.direwolf && !procstatus.aprsc && !procstatus.backend)
-              isRunning = 0;
-          else
-              isRunning = -1;
-      }
-      // Shouldn't get here, but just in case
-      else
-          isRunning = 0;
+                leftcell.innerHTML = proc.process.toLowerCase();
+                statusspan.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+                rightcell.appendChild(statusspan);
+                rightcell.appendChild(errspan);
+                rowdiv.appendChild(leftcell);
+                rowdiv.appendChild(rightcell);
+                table.appendChild(rowdiv);
+            }
+        }
+    });
 
+    // determine if the backend is actually running.  
+    // isRunning:
+    //  0 - not running
+    //  1 - running
+    // -1 - transitioning or some odd state
+    
+    // backend is "active", we've found an SDR dongle attached
+    if (isActive && isRFMode) {
 
-      // debugging
-      //document.getElementById("error").innerHTML = "<pre>isRunning: " + isRunning + "\nprocstatus: " + JSON.stringify(procstatus) + "\nstatusJson: " + JSON.stringify(statusJson)
-      //    + "\nexpectGPSD: " + expectGPSD
-      //    + "</pre>";
+        // ...then we'd expect to find direwolf, aprsc, and the backend running...at least.
+        if (direwolf && aprsc && backend)
+            isRunning = 1;
+        else
+            // huh...the backend says that we're "active" and in "rf_mode", but yet the [some of the] processes we were expecting aren't running?
+            isRunning = -1;
+    }
+    // backend is "active", but there wasn't an SDR dongle attached...so we're presumably running in "online" mode
+    else if (isActive && !isRFMode) {
 
-      // find out what state we're in... and update the onscreen status
-      //
+        // ...then we'd expect to find just aprsc and the backend running.  Although direwolf might be running, but just for beaconing via an external radio, so we don't count that.
+        if (aprsc && backend)
+            isRunning = 1;
+        else
+            isRunning = -1;
+    }
+    // the backend is not active as it doesn't think it's running.
+    else if (!isActive) {
 
-      if (processInTransition == 1) {    // we're starting up...
+        //...then we'd expect that no processes are running, except maybe GPSD, but we don't count that.
+        if (!direwolf && !aprsc && !backend)
+            isRunning = 0;
+        else
+            isRunning = -1;
+    }
+    // Shouldn't get here, but just in case
+    else
+        isRunning = 0;
 
-          if (isRunning == 1)
-              processInTransition = 0;
+    // debugging
+    //console.log("direwolf: " + direwolf + ", backend: " + backend + ", aprsc: " + aprsc + ", gpsd: " + gpsd + ", isActive: " + isActive + ", isRFMode: " + isRFMode + ", isRunning: " + isRunning + ", processInTransition: " + processInTransition);
 
-          else if (isRunning == 0)
-              // we must have tried to start, but hit a failure and now nothing is running.
-              processInTransition = 0;
+    // find out what state we're in... and update the onscreen status
+    if (processInTransition == 1) {    // we're starting up...
 
-          // blank the direwolf error section since we're in transition.  This is updated further below
-          $("#direwolferror").html("");
+        if (isRunning == 1)
+            processInTransition = 0;
 
-      }
-      else if (processInTransition == 2) {     // we're shutting down...
-          if (isRunning == 0)
-              processInTransition = 0; 
+        else if (isRunning == 0)
+            // we must have tried to start, but hit a failure and now nothing is running.
+            processInTransition = 0;
 
-          // blank the direwolf error section since we're in transition.  This is updated further below
-          $("#direwolferror").html("");
+        // blank the direwolf error section since we're in transition.  This is updated further below
+        document.getElementById("direwolf-error").innerHTML = "";
 
-      }
+    }
+    else if (processInTransition == 2) {     // we're shutting down...
+        if (isRunning == 0)
+            processInTransition = 0; 
 
+        // blank the direwolf error section since we're in transition.  This is updated further below
+        document.getElementById("direwolf-error").innerHTML = "";
 
-      // we're either up or shutdown, but we're NOT in transition
-      // if we're no longer in transition, update the status screens 
-      //
-      // We only want to update the status screen if we're NOT in transition
-      if (processInTransition == 0) {   
+    }
 
-          // if we're running and connected to an SDR, then udpate the status area with the antenna/SDR details
-          if (isRunning && isRFMode) { 
+    // we're either up or shutdown, but we're NOT in transition
+    // if we're no longer in transition, update the status screens 
+    //
+    // We only want to update the status screen if we're NOT in transition
+    if (processInTransition == 0) {   
 
-              // if there are antennas/SDR detailed being reported then we display that
-              if (antennas.length > 0) {
-                  let antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
+        // if we're running and connected to an SDR, then udpate the status area with the antenna/SDR details
+        if (isRunning && isRFMode) { 
 
-                  for (i = 0; i < antennas.length; i++) {
-                      let frequencies = antennas[i].frequencies;  
-                      let rtl_id = antennas[i].rtl_id;
-                      let k = 0;
-                      let freqhtml = "";
-                      let callsign_html = "";
-                      //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
-                      //
+            // if there are antennas/SDR detailed being reported then we display that
+            if (antennas.length > 0) {
+                let antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
 
-                      let product_name_lower = antennas[i].rtl_product.toLowerCase();
-                      let instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
+                for (i = 0; i < antennas.length; i++) {
+                    let frequencies = antennas[i].frequencies;  
+                    let rtl_id = antennas[i].rtl_id;
+                    let k = 0;
+                    let freqhtml = "";
+                    let callsign_html = "";
+                    //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
+                    //
 
-                      for (k = 0; k < frequencies.length; k++) 
-                          freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
+                    let product_name_lower = antennas[i].rtl_product.toLowerCase();
+                    let instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
 
-                      antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
-                          + "<div class=\"antenna-table\">"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
-                          + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
-                          + "</div>"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell\">Frequencies</div>"
-                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
-                          + "</div>"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell\">GnuRadio Status</div>"
-                          + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
-                          + "</div>"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell\">SDR Information</div>"
-                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
-                          + "</div>"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell\">Igating Status</div>"
-                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isIgating ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-                          + "</div>"
-                          + "<div class=\"table-row\">"
-                          + "    <div class=\"table-cell\">Beaconing Status</div>"
-                          + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isBeaconing ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-                          + "</div>"
-                          + "</div>"
-                          + "</div>";
-                  }
+                    for (k = 0; k < frequencies.length; k++) 
+                        freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
 
-                  // update the status screen area
-                  $("#antenna-data").html(antenna_html);
-              }
-              else {  // no antenna info...which is odd, since we're supposed to be in RF mode...but...
-                  let donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
+                    antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
+                        + "<div class=\"antenna-table\">"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
+                        + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
+                        + "</div>"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell\">Frequencies</div>"
+                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
+                        + "</div>"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell\">GnuRadio Status</div>"
+                        + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
+                        + "</div>"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell\">SDR Information</div>"
+                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
+                        + "</div>"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell\">Igating Status</div>"
+                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isIgating ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
+                        + "</div>"
+                        + "<div class=\"table-row\">"
+                        + "    <div class=\"table-cell\">Beaconing Status</div>"
+                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isBeaconing ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
+                        + "</div>"
+                        + "</div>"
+                        + "</div>";
+                }
 
-                  // Update the onscreen status
-                  $("#antenna-data").html(donehtml);
-              }
-          }
-          else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
-              if (isKa9qradio) 
-                  donehtml = "<p><mark class=\"okay\">Listening for packets from KA9Q-Radio</mark></p>";
-              else
-                  donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
+                // update the status screen area
+                $("#antenna-data").html(antenna_html);
+            }
+            else {  // no antenna info...which is odd, since we're supposed to be in RF mode...but...
+                let donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
 
-              // Update the onscreen status
-              $("#antenna-data").html(donehtml);
-          }
-          else {  // we're not running
-              let donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
+                // Update the onscreen status
+                $("#antenna-data").html(donehtml);
+            }
+        }
+        else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
+            if (isKa9qradio) 
+                donehtml = "<p><mark class=\"okay\">Listening for packets from KA9Q-Radio</mark></p>";
+            else
+                donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
 
-              // Update the onscreen status
-              $("#antenna-data").html(donehtml);
-          }
-      }
-  });
+            // Update the onscreen status
+            $("#antenna-data").html(donehtml);
+        }
+        else {  // we're not running
+            let donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
 
-  $.get("getlogs.php", function(data) {
-      let logsJson = data;
-      
-      $("#logfile").html("");
-      for (a in logsJson.log) 
-          $("#logfile").append(escapeHtml(logsJson.log[a]));
+            // Update the onscreen status
+            $("#antenna-data").html(donehtml);
+        }
+    }
+}
 
-      $("#errfile").html("");
-      for (a in logsJson.err) 
-          $("#errfile").append(escapeHtml(logsJson.err[a]));
+/***********
+* process logs 
+***********/
+function processLogs(logsJson) {
 
-      $("#beacons").html("");
-      for (a in logsJson.beacons) 
-          $("#beacons").append(escapeHtml(logsJson.beacons[a]));
+  $("#logfile").html("");
+  for (a in logsJson.log) 
+      $("#logfile").append(escapeHtml(logsJson.log[a]));
 
-      $("#direwolf").html("");
-      for (a in logsJson.direwolf) 
-          $("#direwolf").append(escapeHtml(logsJson.direwolf[a]));
+  $("#errfile").html("");
+  for (a in logsJson.err) 
+      $("#errfile").append(escapeHtml(logsJson.err[a]));
 
-      if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
-          $("#direwolferror").html(" &nbsp; <mark class=\"notokay\">[ audio error ]</mark>");
-      else
-          $("#direwolferror").html("");
+  $("#beacons").html("");
+  for (a in logsJson.beacons) 
+      $("#beacons").append(escapeHtml(logsJson.beacons[a]));
 
-  });
+  $("#direwolf").html("");
+  for (a in logsJson.direwolf) 
+      $("#direwolf").append(escapeHtml(logsJson.direwolf[a]));
+
+  if ((logsJson.direwolf + " ").indexOf("Could not open audio device") >= 0)
+      document.getElementById("direwolf-error").innerHTML = " &nbsp; <mark class=\"notokay\">[ audio error ]</mark>";
+  else
+          document.getElementById("direwolf-error").innerHTML = "";
 }
 
 
@@ -480,10 +453,15 @@ function setupSSE(backendurl) {
             eventsource = new EventSource(backendurl);
 
             // listen for new gps position alerts
-            eventsource.addEventListener("gps_status", function(event) {
+            eventsource.addEventListener("gpsstatus", function(event) {
 
+                let gpsjson;
+                
                 // Parse the incoming json
-                let gpsjson = JSON.parse(event.data);
+                try { gpsjson = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "GPS JSON parse error", "event": event, "error": e.message, "gpsjson": gpsjson});
+                }
 
                 // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
                 if (gpsjson && gpsjson.features && gpsjson.features[0].properties && gpsjson.features[0].geometry) {
@@ -497,14 +475,48 @@ function setupSSE(backendurl) {
                     // update the GPS status box
                     updateGPSDisplay(gpsjson);
 
-                    // update the "Map" link with our latest location.  So when the user clicks on the "Map" link, the map will open, centered on our last location.
+                    // update the "Map" link with our latest location.  So when the user clicks on the "Map" link, 
+                    // the map will open, centered on our last location.   
                     updateMapLink(gpsjson);
 
                 }
             });
 
+            eventsource.addEventListener("configuration", function(event) {
+
+                let configjson;
+                
+                // Parse the incoming json
+                try { configjson = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "configuration JSON parse error", "event": event, "error": e.message, "gpsjson": configjson});
+                }
+                
+                if (configjson)
+                    processConfiguration(configjson);
+            });
+
+            eventsource.addEventListener("backendstatus", function(event) {
+
+                let statusjson;
+                
+                // Parse the incoming json
+                try { statusjson = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "backend status JSON parse error", "event": event, "error": e.message, "gpsjson": statusjson});
+                }
+
+                if (statusjson)
+                    processStatus(statusjson);
+            });
+                
+
+
+
             // listen for any errors, try and restart the connection if there were any
             eventsource.addEventListener("error", function(event) {
+
+                //console.log({"function": "event source error", "error": event});
 
                 // close the event source
                 eventsource.close();
@@ -525,7 +537,7 @@ function setupSSE(backendurl) {
 * restart the SSE stream
 ***********/
 function initializeSSE() {
-    setupSSE("ssestream.php");
+    setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true");
 }
 
 
@@ -565,7 +577,7 @@ function updateGPSDisplay(geojson) {
         return;
 
     // Get the GPS fix status
-    gpsMode = jsonData.mode * 10 / 10;
+    let gpsMode = jsonData.mode * 10 / 10;
     if (gpsMode == 0)
         gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ no data ]</mark>";
     else if (gpsMode == 1)
@@ -576,6 +588,11 @@ function updateGPSDisplay(geojson) {
         gpsfix = "<mark class=\"okay\" style=\"font-size: .9em;\">[ 3D FIX ]</mark>";
     else
         gpsfix = "n/a";
+
+    // location validity
+    let locvalidity ="<mark class=\"notokay\" style=\"font-size: .9em;\">[ NO ]</mark>";
+    if (gpsMode > 2) 
+        locvalidity ="<mark class=\"okay\" style=\"font-size: .9em;\">[ YES ]</mark>";
 
     // if there is an error string included (usually from a GPSD connection fault), then format that and save the HTML string into 'errorstring'
     let errorstring = "";
@@ -601,6 +618,7 @@ function updateGPSDisplay(geojson) {
         + "</td></tr>"
         + "<tr><td style=\"text-align: left; padding-right: 10px;\">Device Path:</td><td>" + jsonData.devicepath + "</td></tr>"
         + errorstring
+        + "<tr><td style=\"text-align: left; padding-right: 10px;\">Location Valid:</td><td>" + locvalidity + "</td></tr>"
         + "</table>";
 
 
@@ -658,49 +676,20 @@ function updateMapLink(geojson) {
     if (!feature.geometry || !feature.geometry.type == "Point" || !feature.geometry.coordinates)
         return;
 
-    let lat = feature.geometry.coordinates[1];
-    let lon = feature.geometry.coordinates[0];
-    let zoom = 10;
+    // Get the GPS fix status
+    let gpsMode = 0;
+    if (feature.properties && feature.properties.gps)
+        gpsMode = feature.properties.gps.mode * 1.0;
 
-    let maplink = document.getElementById("maplink");
-    let url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
-    maplink.setAttribute("href", url);
-}
+    if (gpsMode > 2) {
+        let lat = feature.geometry.coordinates[1];
+        let lon = feature.geometry.coordinates[0];
+        let zoom = 10;
 
-
-/***********
-* lostFocus
-*
-* This function is called when the browser tab loses focus
-***********/
-function lostFocus() {
-    let isiPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 0) || navigator.platform === 'iPad';
-    let isMobile = 'ontouchstart' in document.documentElement ||  navigator.maxTouchPoints > 1;
-
-    // If this is a mobile device then stop periodic updates...at least until the browser tab is in focus again.
-    if ((isiPad || isMobile) && interval) {
-        clearInterval(interval);
+        let maplink = document.getElementById("maplink");
+        let url = "/map.php?latitude=" + lat + "&longitude=" + lon + "&zoom=" + zoom;
+        maplink.setAttribute("href", url);
     }
-
-    return 0;
-}
-
-
-/***********
-* gainFocus
-*
-* This function is called when the browser tab regains focus
-***********/
-function gainFocus() {
-    // if we're regaining focus, then restart periodic page updates.
-    if (interval) {
-        clearInterval(interval);
-        interval = setInterval(function() {
-            getrecentdata();
-            getConfiguration();
-        }, 5000);
-    }
-    return 0;
 }
 
 
@@ -711,16 +700,7 @@ function gainFocus() {
 ***********/
 $(document).ready(function () {
 
-    window.onfocus = gainFocus;
-    window.onblur = lostFocus;
-
-    getrecentdata();
-    getConfiguration();
     initializeSSE();
 
-    interval = setInterval(function() {
-        getrecentdata();
-        getConfiguration();
-    }, 5000);
 });
 

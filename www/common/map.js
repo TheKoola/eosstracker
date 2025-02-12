@@ -1550,7 +1550,6 @@
     function setConfiguration() {
             var iconsize = document.getElementById("iconsize");
             var lookbackperiod = document.getElementById("lookbackperiod");
-            //var plottracks = document.getElementById("plottracks").checked;
             var airdensity = document.getElementById("airdensity").checked;
             var form_data = new FormData();
 
@@ -1566,10 +1565,9 @@
 
             form_data.append("iconsize", iconsize.value);
             form_data.append("lookbackperiod", lookbackperiod.value);
-            //form_data.append("plottracks", (plottracks == true ? "on" : "off"));
             form_data.append("airdensity", (airdensity == true ? "on" : "off"));
             $.ajax({
-                url: "setconfiguration.php",
+                url: "setconfiguration-memcache.php",
                 dataType: 'json',
                 cache: false,
                 contentType: false,
@@ -1587,11 +1585,6 @@
                     if (hud)
                         hud.setCutoff(lookbackPeriod);
 
-		            /*if (jsonData.plottracks == "on")
-			            document.getElementById("plottracks").checked = true;
-		            else
-			            document.getElementById("plottracks").checked = false;
-                    */
 		            if (jsonData.airdensity == "on")
 			            document.getElementById("airdensity").checked = true;
 		            else
@@ -1613,35 +1606,27 @@
     }
 
     /***********
-    * getConfiguration function
+    * processConfiguration function
     *
-    * This function will call the backend PHP script to get the configuration for the system
+    * process JSON that represents the configuration settings from the backend
     ***********/
-    function getConfiguration() {
-	    $.get("readconfiguration.php", function(data) {
-		    var jsonData = JSON.parse(data);
+    function processConfiguration(jsonData) {
 
-		    document.getElementById("iconsize").value = jsonData.iconsize;
-		    document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
-            lookbackPeriod = jsonData.lookbackperiod * 1.0;
+        document.getElementById("iconsize").value = jsonData.iconsize;
+        document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
+        lookbackPeriod = jsonData.lookbackperiod * 1.0;
 
-            if (hud)
-                hud.setCutoff(lookbackPeriod);
+        if (hud)
+            hud.setCutoff(lookbackPeriod);
 
-            if (typeof(jsonData.callsign) != "undefined" && typeof(jsonData.ssid) != "undefined")
-                if (jsonData.callsign != "" && jsonData.ssid != "")
-                    mycallsign = jsonData.callsign.toUpperCase() + "-" + jsonData.ssid;
+        if (typeof(jsonData.callsign) != "undefined" && typeof(jsonData.ssid) != "undefined")
+            if (jsonData.callsign != "" && jsonData.ssid != "")
+                mycallsign = jsonData.callsign.toUpperCase() + "-" + jsonData.ssid;
 
-		    /*if (jsonData.plottracks == "on")
-			    document.getElementById("plottracks").checked = true;
-		    else
-			    document.getElementById("plottracks").checked = false;
-            */
-		    if (jsonData.airdensity == "on")
-			    document.getElementById("airdensity").checked = true;
-		    else
-			    document.getElementById("airdensity").checked = false;
-            });
+        if (jsonData.airdensity == "on")
+            document.getElementById("airdensity").checked = true;
+        else
+            document.getElementById("airdensity").checked = false;
     }
 
 
@@ -2153,13 +2138,16 @@ function getTrackers() {
 	    map.addControl(marker_control);
 
         // Add the speed box
-        speedStatusBox = L.control.box({ callback: centerFollow, position: "centertop" });
+        speedStatusBox = L.control.box({ 
+            callback: function(onoff) { followme = onoff; },
+            position: "centertop" 
+        });
 
         // Add the HUD to the bottom center
         hud = L.control.flighthud({ position: "centerbottom", flights: flightids});
 
         // startup SSE operations.
-        setupSSE("ssestream.php");
+        setupSSE("ssestream.php?gpsstatus=true&configuration=true");
     }
 
     /*********
@@ -2212,8 +2200,8 @@ function getTrackers() {
         myPositionLayer.addTo(map);
 
         // Add our current position to the map if available, otherwise, it'll get added to the map as position updates come in.
-        if (lastposition) 
-            myPositionLayer.update(lastposition);
+        //if (lastposition) 
+        //    myPositionLayer.update(lastposition);
 
         trackersAtLargeLayer.addTo(map);
 
@@ -2224,10 +2212,7 @@ function getTrackers() {
         layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
         // Get an update from the all, rf, and weather stations
-        setTimeout( function() {
-            updateOtherStations("full");
-        }, 20);
-
+        updateOtherStations("full");
 
         /*
         * This sets up all the flight layers.
@@ -2301,9 +2286,7 @@ function getTrackers() {
          }
 
         // Call update flight function to populate data...  
-        setTimeout( function() {
-            updateFlightData("full");
-        }, 20);
+        updateFlightData("full");
     }
 
 
@@ -2320,77 +2303,73 @@ function getTrackers() {
         // initialize the map and its layers
         initialize_map();
 
-        setTimeout(function() {
-            // Update the flight sidebar content
-            var flight;
-            var allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flightLivePacketStream\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
-            //var livePacketStreamHTML = "<form>" + allHtml;
-            var i = 0;
-            for (flight in flightids) {
-                var pos_a = "#" + flightids[flight].flightid + "_positionpacketlistlink";
-                var pos_l = "#" + flightids[flight].flightid + "_positionpacketlistsign";
-                var pos_e = "#" + flightids[flight].flightid + "_positionpacketlist";
+        // Update the flight sidebar content
+        let flight;
+        let allHtml = "<input type=\"radio\" id=\"allpackets\" name=\"flightLivePacketStream\" value=\"allpackets\" checked > All packets (< 3hrs) &nbsp; &nbsp;";
+        //var livePacketStreamHTML = "<form>" + allHtml;
+        let i = 0;
+        for (flight in flightids) {
+            var pos_a = "#" + flightids[flight].flightid + "_positionpacketlistlink";
+            var pos_l = "#" + flightids[flight].flightid + "_positionpacketlistsign";
+            var pos_e = "#" + flightids[flight].flightid + "_positionpacketlist";
 
-                var stat_a = "#" + flightids[flight].flightid + "_statuspacketlistlink";
-                var stat_l = "#" + flightids[flight].flightid + "_statuspacketlistsign";
-                var stat_e = "#" + flightids[flight].flightid + "_statuspacketlist";
+            var stat_a = "#" + flightids[flight].flightid + "_statuspacketlistlink";
+            var stat_l = "#" + flightids[flight].flightid + "_statuspacketlistsign";
+            var stat_e = "#" + flightids[flight].flightid + "_statuspacketlist";
 
-                var inst_a = "#" + flightids[flight].flightid + "_instrumentpanellink";
-                var inst_l = "#" + flightids[flight].flightid + "_instrumentpanelsign";
-                var inst_e = "#" + flightids[flight].flightid + "_instrumentpanel";
+            var inst_a = "#" + flightids[flight].flightid + "_instrumentpanellink";
+            var inst_l = "#" + flightids[flight].flightid + "_instrumentpanelsign";
+            var inst_e = "#" + flightids[flight].flightid + "_instrumentpanel";
 
-                var alt_a = "#" + flightids[flight].flightid + "_altitudechartlink";
-                var alt_l = "#" + flightids[flight].flightid + "_altitudechartsign";
-                var alt_e = "#" + flightids[flight].flightid + "_altitudechart";
+            var alt_a = "#" + flightids[flight].flightid + "_altitudechartlink";
+            var alt_l = "#" + flightids[flight].flightid + "_altitudechartsign";
+            var alt_e = "#" + flightids[flight].flightid + "_altitudechart";
 
-                var vert_a = "#" + flightids[flight].flightid + "_verticalchartlink";
-                var vert_l = "#" + flightids[flight].flightid + "_verticalchartsign";
-                var vert_e = "#" + flightids[flight].flightid + "_verticalchart";
+            var vert_a = "#" + flightids[flight].flightid + "_verticalchartlink";
+            var vert_l = "#" + flightids[flight].flightid + "_verticalchartsign";
+            var vert_e = "#" + flightids[flight].flightid + "_verticalchart";
 
-                var rel_a = "#" + flightids[flight].flightid + "_relativepositionlink";
-                var rel_l = "#" + flightids[flight].flightid + "_relativepositionsign";
-                var rel_e = "#" + flightids[flight].flightid + "_relativeposition";
+            var rel_a = "#" + flightids[flight].flightid + "_relativepositionlink";
+            var rel_l = "#" + flightids[flight].flightid + "_relativepositionsign";
+            var rel_e = "#" + flightids[flight].flightid + "_relativeposition";
 
-                var lpp_a = "#" + flightids[flight].flightid + "_lastpacketpathlink";
-                var lpp_l = "#" + flightids[flight].flightid + "_lastpacketpathsign";
-                var lpp_e = "#" + flightids[flight].flightid + "_lastpacketpath";
+            var lpp_a = "#" + flightids[flight].flightid + "_lastpacketpathlink";
+            var lpp_l = "#" + flightids[flight].flightid + "_lastpacketpathsign";
+            var lpp_e = "#" + flightids[flight].flightid + "_lastpacketpath";
 
-                $(pos_a).click({element: pos_e, link: pos_l }, toggle);
-                $(stat_a).click({element: stat_e, link: stat_l }, toggle);
-                $(inst_a).click({element: inst_e, link: inst_l }, toggle);
-                $(alt_a).click({element: alt_e, link: alt_l }, toggle);
-                $(vert_a).click({element: vert_e, link: vert_l }, toggle);
-                $(rel_a).click({element: rel_e, link: rel_l }, toggle);
-                $(lpp_a).click({element: lpp_e, link: lpp_l }, toggle);
+            $(pos_a).click({element: pos_e, link: pos_l }, toggle);
+            $(stat_a).click({element: stat_e, link: stat_l }, toggle);
+            $(inst_a).click({element: inst_e, link: inst_l }, toggle);
+            $(alt_a).click({element: alt_e, link: alt_l }, toggle);
+            $(vert_a).click({element: vert_e, link: vert_l }, toggle);
+            $(rel_a).click({element: rel_e, link: rel_l }, toggle);
+            $(lpp_a).click({element: lpp_e, link: lpp_l }, toggle);
 
-                // We use this to determine when the last packet came in for a given flight.
-                $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
-                $("#" + flightids[flight].flightid + "_sidebar").data("feature", "");
-                var d = $("#" + flightids[flight].flightid + "_sidebar").data().lastpacket;
-                
-                i += 1;
-            }
-        },10);
+            // We use this to determine when the last packet came in for a given flight.
+            $("#" + flightids[flight].flightid + "_sidebar").data("lastpacket", new Date("1970-01-01T00:00:00"));
+            $("#" + flightids[flight].flightid + "_sidebar").data("feature", "");
+            var d = $("#" + flightids[flight].flightid + "_sidebar").data().lastpacket;
+            
+            i += 1;
+        }
 
         // The idea is to stagger the loading of these so that the browser isn't bogged down at first load.
         //
         // Build the gauges and charts
-        setTimeout(function() { buildGauges(); buildCharts() }, 10);
+        buildGauges(); 
+        buildCharts();
 
         // load map layers
-        setTimeout(function() { initialize_layers(); }, 15);
+        initialize_layers();
 
         // Read in the configuration
-	    setTimeout(function() { getConfiguration(); }, 20);
+	    //getConfiguration();
 
         // Get the status of running processes
-        setTimeout(function() { getProcessStatus(); }, 30);
-
-        // Build the charts
-        //setTimeout(function() { buildCharts(); }, 35);
+        getProcessStatus();
 
         // build the Trackers table
-        setTimeout(function() { getTrackers(); }, 40);
+        getTrackers();
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
         if (updateTimeout)
@@ -2401,12 +2380,8 @@ function getTrackers() {
         window.onfocus = gainFocus;
         window.onblur = lostFocus;
 
-        //document.getElementById("screenw").innerHTML = window.innerWidth;
-        //document.getElementById("screenh").innerHTML = window.innerHeight;
         // Listener so that the charts for flights are resized when the screen changes size.
         window.addEventListener("resize", function() {
-            //document.getElementById("screenw").innerHTML = window.innerWidth;
-            //document.getElementById("screenh").innerHTML = window.innerHeight;
             resizeCharts();
         });
 
@@ -2425,11 +2400,16 @@ function getTrackers() {
             packetsource = new EventSource(backendurl);
 
             // listen for new gps position alerts
-            packetsource.addEventListener("gps_status", function(event) {
+            packetsource.addEventListener("gpsstatus", function(event) {
 
-                // Parse the incoming json
-                var gpsjson = JSON.parse(event.data);
+                let gpsjson;
                 
+                // Parse the incoming json
+                try { gpsjson = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "GPS JSON parse error", "event": event, "error": e.message, "gpsjson": gpsjson});
+                }
+
                 // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
                 if (gpsjson && gpsjson.features && gpsjson.features[0].properties && gpsjson.features[0].geometry) {
 
@@ -2439,9 +2419,23 @@ function getTrackers() {
                     // update the time value to be a nicer string.
                     gpsjson.features[0].properties.time = tmstring;
 
-                    // update the out position
+                    // update our position
                     updateMyLocation(gpsjson);
                 }
+            });
+
+            packetsource.addEventListener("configuration", function(event) {
+                let configjson;
+
+                // Parse the incoming json
+                try { configjson = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "Configuration JSON parse error", "event": event, "error": e.message, "configjson": configjson});
+                }
+
+                // process the incoming JSON
+                if (configjson) 
+                    processConfiguration(configjson);
             });
         }
     }
@@ -2455,8 +2449,8 @@ function getTrackers() {
     function updateMyLocation(geojson) {
 
         // Determine the geojson feature from the provided arguments
-        var feature = null;
-        var featurecollection = null;
+        let feature = null;
+        let featurecollection = null;
         if (geojson && geojson.type) {
             if (geojson.type == "FeatureCollection") {
                 featurecollection = geojson;
@@ -2479,27 +2473,38 @@ function getTrackers() {
             return;
         }
 
+        // the current GPS fix mode
+        let gpsMode = feature.properties.gps.mode * 1.0;
+
         // update the lastposition global variable
         lastposition = feature;
 
-        // update the position icon on the map
-        if (myPositionLayer)
-            myPositionLayer.update(featurecollection);
+        // only update those items that depend on location data IF the location data provided is considered valid
+        if (gpsMode > 2) {
 
-        // Pan the map to the latest location
-        if (followme) {
-            dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
+            // update the position icon on the map
+            if (myPositionLayer)
+                myPositionLayer.update(featurecollection);
+
+            // Pan the map to the latest GPS location
+            if (followme) {
+                dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
+                console.log("panning:  ", feature);
+            }
+
+            // Update the speed status box
+            if (speedStatusBox)
+                speedStatusBox.show(Math.round(feature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
+
+            // Now update the relative position gauges and fields
+            updateRelativePosition(feature);
         }
 
-        // Update the speed status box
-        if (speedStatusBox)
-            speedStatusBox.show(Math.round(feature.properties.speed_mph * 1.0).toLocaleString() + "<font style=\"font-size: .2em;\"> mph</font>");
-
-        // Now update the GPS status box
+        // Update the GPS status box
         if (gpsStatusBox) {
 
-            var gpsMode = feature.properties.gps.mode * 1.0;
-            var gpsfix;
+            // string where we'll hold the HTML used to update the GPS status box.
+            let gpsfix;
 
             if (feature.properties.gps.status == "no device") {
                 gpsStatusBox.show("GPS: <mark class=\"notokay\">[ NO DEVICE ]</mark>");
@@ -2518,40 +2523,6 @@ function getTrackers() {
 
                 gpsStatusBox.show(gpsfix);
             }
-        }
-
-        // Now update the relative position gauges and fields
-        updateRelativePosition(feature);
-
-    }
-
-
-    /***********
-    * centerFollow
-    *
-    * This function will center the map over the user's current location and initiate followme mode
-    ***********/
-    function centerFollow(onoff) {
-        var feature;
-
-        // If selected, then pan the map to the current user's location and enable followme mode
-        if (onoff) {
-            followme = true;
-
-            if (lastposition && lastposition.type) {
-                if (lastposition.type == "FeatureCollection" && lastposition.features)
-                    feature = lastposition.features[0];
-                else if (lastposition.type = "Feature")
-                    feature = lastposition;
-
-                if (feature)
-                    dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
-            }
-        }
-
-        // ...otherwise we simply turn off followme mode
-        else {
-            followme = false;
         }
     }
 
@@ -2966,6 +2937,68 @@ function getTrackers() {
         if (delthese.length > 0) {
             rl.remove({"features": delthese});
         }
+    }
+
+    /************
+     * updateLastestPackets
+     *
+     * This function updates sidebar latest packets list
+    *************/
+    function updateLatestPackets(json) {
+
+        var positionpackets = json;
+        var i = 0;
+        var keys = Object.keys(positionpackets);
+
+        // We only do this 5 times
+        var max = (keys.length < 5 ? keys.length : 5);
+
+        // Loop through each packet
+        for (i = 0; i < max; i++) {
+            var p = positionpackets[i];
+            var time_string = p.time.split(" ")[1];
+
+            if (time_string.indexOf(".") !== -1)
+                time_string = time_string.split(".")[0];
+
+
+            $("#" + p.flightid + "_lasttime_" + i).text(time_string);
+            $("#" + p.flightid + "_lastcallsign_" + i).html(
+                "<a href=\"#\"  onclick=\"dispatchPanToEvent('" + p.latitude + "', '" + p.longitude + "');\">" +  p.callsign + "</a>"
+            );
+            $("#" + p.flightid + "_lastspeed_" + i).text(Math.round(p.speed * 1.0) + " mph");
+            $("#" + p.flightid + "_lastvertrate_" + i).text(Math.round(p.verticalrate * 1.0).toLocaleString() + " ft/min");
+            $("#" + p.flightid  + "_lastaltitude_" + i).text(Math.round(p.altitude * 1.0).toLocaleString() + " ft");
+        }
+    }
+
+    /************
+     * updateStatusPackets
+     *
+     * This function updates sidebar latest status packets list
+    *************/
+    function updateStatusPackets(json) {
+
+        var statuspackets = json;
+        var i = 0;
+        var keys = Object.keys(statuspackets);
+
+        // We only do this 5 times
+        var max = (keys.length < 5 ? keys.length : 5);
+
+        // Loop through each packet
+        for (i = 0; i < max; i++) {
+            var p = statuspackets[i];
+            var time_string = p.time.split(" ")[1];
+
+            if (time_string.indexOf(".") !== -1)
+                time_string = time_string.split(".")[0];
+
+            $("#" + p.flightid + "_statustime_" + i).text(time_string);
+            $("#" + p.flightid + "_statuscallsign_" + i).text(p.callsign);
+            $("#" + p.flightid + "_statuspacket_" + i).text(p.packet);
+        }
+
     }
 
 
@@ -3690,7 +3723,7 @@ function getTrackers() {
     function updateAllItems(fullupdate) {
 
         // Update process status
-        setTimeout(function() { getProcessStatus(); }, 20);
+        getProcessStatus();
 
         // Update all, rf, and weather stations
         updateOtherStations(fullupdate);
@@ -3699,24 +3732,10 @@ function getTrackers() {
         updateFlightData(fullupdate);
 
         // Update the tracker list only if this is a full update
-        setTimeout (function() {
-            getTrackers();
-        }, 10);
+        getTrackers();
 
         // Update the TTL values
         checkTTL();
-
-        // pan the map to the last known position if we're in followme mode.
-        var feature;
-        if (followme && lastposition && lastposition.type) {
-            if (lastposition.type == "FeatureCollection" && lastposition.features)
-                feature = lastposition.features[0];
-            else if (lastposition.type == "Feature")
-                feature = lastposition;
-
-            if (feature)
-                dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
-        }
 
         // ...the idea being that ever so often, we should try a special update
         if (globalUpdateCounter > 20) {
