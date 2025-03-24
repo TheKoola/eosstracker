@@ -1,5 +1,25 @@
 [
     {
+        "flight": "EOSS-369",
+        "beacons": [
+            "KC0D-3",
+            "AE0SS-4"
+        ],
+        "day": "2025-03-23",
+        "balloonsize": "2000gm",
+        "weights": {
+            "client": "8.99",
+            "eoss": "4.48",
+            "parachute": "1.81",
+            "neckload": "15.28",
+            "balloon": "4.41",
+            "gross": "19.69",
+            "necklift": "20.21"
+        },
+        "liftfactor": "1.25",
+        "h2fill": "333"
+    },
+    {
         "flight": "EOSS-368",
         "beacons": [
             "KC0D-1",
