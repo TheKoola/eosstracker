@@ -291,7 +291,7 @@ class GPSPoller(object):
                 return gpsdatetime.isoformat(timespec='seconds') + 'Z'
 
         except ValueError:
-            pass
+            self.logger.debug(f"Error parsing datetime from the GPS: {gpstime}");
 
         # there was an error of some kind so just use the system's datetime instead
         return utc_datetime.isoformat(timespec='seconds') + 'Z'
