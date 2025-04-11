@@ -166,6 +166,7 @@
                     and a.tm > $2 and a.tm < $3
                     and a.altitude > 0
                     and a.callsign = $4
+                    and a.raw not like '%WA0GEH-10%'
 
                 order by
                     a.tm asc
