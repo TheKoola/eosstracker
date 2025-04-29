@@ -28,135 +28,80 @@
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
     else
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
-    include $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/trackers.php';
 
-    // Check the tactical HTML GET variable
-    if (isset($_GET["tactical"])) {
-        $get_tactical = check_string($_GET["tactical"], 20);
-    }
-    else
-        $get_tactical = "";
+    /**********
+     * processInputs
+     *
+     * This will process the GET arguments and return an object with the found variables or null if there was an error
+     **********/
+    function processInputs(array $getarray): ?object {
 
-    // Check the callsign HTML GET variable
-    if (isset($_GET["callsign"])) {
-        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
-    }
-    else
-        $get_callsign = "";
+        // default object that we'll return
+        $obj = new stdClass();
+        $obj->result = 0;
+        $obj->error = "";
 
+        // Check the notes HTML GET variable
+        if (isset($getarray["tactical"])) {
+            $get_tactical = check_string($getarray["tactical"], 20);
+        }
+        else
+            $get_tactical = "";
 
-    ## if any of the GET parameters are not supplied, then exit...
-    if ($get_callsign == "" || $get_tactical == "") {
-        printf ("[]");
-        return 0;
+        // Check the callsign HTML GET variable
+        if (isset($getarray["callsign"])) {
+            $get_callsign = strtoupper(check_string($getarray["callsign"], 20));
+        }
+        else
+            $get_callsign = "";
+
+        // if any of the GET parameters are not supplied, then exit...
+        if ($get_tactical == "" || $get_callsign == "") {
+            $obj->error = "HTML form error";
+            return $obj;
+        }
+
+        // update the object with the results
+        $obj->callsign = $get_callsign;
+        $obj->tactical = $get_tactical;
+        $obj->result = 1;
+        $obj->error = "";
+
+        return $obj;
     }
   
+     
+    /************
+    * main code below
+    *************/
 
-    ## Connect to the database
-    $link = connect_to_database();
-    if (!$link) {
-        db_error(sql_last_error());
-        return 0;
+    // parse any GET arguments
+    $arguments = processInputs($_GET);
+
+    // if all supplied arguments checkout...then proceed to insert the data into the database
+    if ($arguments->result == 1) {
+
+        // insert the new tracker
+        $results = changeTrackerTeam($arguments->callsign, $arguments->tactical);
+
+        // if successful, then delete the memcache tracker key so it will re-cache the results upon next read by the browser.
+        if ($results)
+            deleteTrackerKey();
+
+        // refetch trackers list
+        $js = getTrackers();
+
+        if ($js)
+            // send results of SQL insert to browser
+            printf("%s", json_encode($js));
+        else
+            printf("[]");
     }
-
-    ## Query to determine if the original callsign is in the trackers table
-    $query = "select
-     tm.callsign,
-     tm.tactical,
-     tm.notes
-
-     from
-     trackers tm
-   
-     where
-     tm.callsign = $1
-     ;";
-
-    ## Execute the query...
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_callsign)));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-
-    ## if the number of rows is zero, then we couldn't find this original callsign in the trackers table...so we exit.
-    $num = sql_num_rows($result);
-    if ($num == 0) {
-        printf ("[]");
-        sql_close($link);
-        return 0;
-    }
-
-    ## We're here, so we now update this record for the original callsign...
-    $query = "update trackers set tactical=$1 where callsign=$2;";
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_tactical), sql_escape_string($get_callsign)));
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-    
-    ## if we've made it this far, return the list of trackers including the record just updated...
-    $query = "select
-     t.tactical,
-     tm.callsign,
-     tm.notes,
-     case
-         when t.flightid = '' or t.flightid is null then 'At Large'
-         else t.flightid
-     end as flightid
-
-     from
-     teams t,
-     trackers tm
-
-     where
-     tm.tactical = t.tactical 
-
-     order by
-     t.tactical asc,
-     tm.callsign asc
-     ;";
-
-    $result = sql_query($query);
-
-    if (!$result) {
-        db_error(sql_last_error());
-        sql_close($link);
-        return 0;
-    }
-
-    $trackers = [];
-    $teams = [];
-
-    while ($row = sql_fetch_array($result)) {
-        $trackers[$row["tactical"]][] = array("tactical" => $row['tactical'], "callsign" => $row['callsign'], "notes" => $row['notes']);
-        $teams[$row["tactical"]] = $row["flightid"];
-    }
-
-    $outerfirsttime = 0;
-    printf ("[ ");
-    foreach ($trackers as $tactical => $ray) {
-        if ($outerfirsttime == 1)
-            printf (", ");
-        $outerfirsttime = 1;
-        printf ("{ \"tactical\" : %s, \"flightid\" : %s, \"trackers\" : [ ", json_encode($tactical), json_encode($teams[$tactical]));
-        $firsttime = 0;
-        foreach ($ray as $k => $list) {
-            if ($firsttime == 1)
-                printf (", ");
-            $firsttime = 1;
-            printf ("{\"tactical\" : %s, \"callsign\" : %s, \"notes\" : %s }", 
-                json_encode($list["tactical"]), 
-                json_encode($list["callsign"]), 
-                json_encode(($list["notes"] == "" ? "n/a" : $list["notes"])) 
-            );
-        }
-        printf (" ] } ");
-    }
-    printf (" ]");
-
-    sql_close($link);
-
+    else
+        // there was an error with the arguments...just send back blank JSON
+        printf("[]");
 ?>
+
+

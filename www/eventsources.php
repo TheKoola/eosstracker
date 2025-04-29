@@ -1,5 +1,15 @@
 <?php
 
+// we need the database functions 
+if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+    $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+else
+    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+
+include_once $documentroot . '/common/functions.php';
+include_once $documentroot . '/common/trackers.php';
+
+
 /***************
  * Base class for those SSE events that we regularly send to the browser
  ***************/
@@ -42,6 +52,12 @@ class BaseSSEEvent {
         return $this->_formSSE(json_encode($jsondata));
     }
 
+    // default function.  To be overloaded by sub-classes
+    // Should return true on success, false on some error.
+    function close(): ?bool {
+        return True;
+    }
+
     // helper function to construct the text for an SSE event.  
     protected function _formSSE(string $jsonstring): ?string {
 
@@ -80,8 +96,6 @@ class BaseSSEEvent {
     }
 
 }
-
-
 
 
 /*********************
@@ -279,6 +293,22 @@ class GPSEvent extends BaseSSEEvent {
 
         // convert the returned JSON to a PHP object
         $js = json_decode($cmdoutput, false);
+
+        // the current time.  Which we'll use to compare to the timestamp (in the GPS json) to determine if the results are stale or not.
+        $currenttime = microtime(true);
+
+        // extract the EPOCH seconds from the returned geojson
+        $gpstimestamp = $this->getMicroSecs($js);
+
+        // determine if the timestamp from the gpsstatus.json file is stale.
+        $staledata = (($currenttime - $gpstimestamp) > $this->threshold * 2 ? true : false);
+
+        // if the status file is stale (i.e. been laying around since a prior system crash or other issue) then we just return null as the
+        // data is unusable
+        if ($staledata)
+            return null;
+
+        // set the source
         $js = $this->setSourceText($js, "gpsstatus file");
 
         return $js;
@@ -446,7 +476,7 @@ class ConfigEvent extends BaseSSEEvent {
         $fallbackJSON = json_encode($ray);
 
         // Defaults
-        $defaultsJSON = file_get_contents($this->configfile);
+        $defaultsJSON = file_get_contents($this->defaultsfile);
         if ($defaultsJSON === false)
             $defaults = json_decode($fallbackJSON, true);
         else 
@@ -454,7 +484,7 @@ class ConfigEvent extends BaseSSEEvent {
 
 
         // Get the configuration data from config.txt
-        $configJSON = file_get_contents($this->defaultsfile);
+        $configJSON = file_get_contents($this->configfile);
         if ($configJSON === false)
             $configuration = $defaults;
         else 
@@ -510,6 +540,54 @@ class ConfigEvent extends BaseSSEEvent {
 
         return $js;
     }
+   
+
+    /************
+     * updateMemcache
+     *
+     * update the 'configuration' memcache key with the provided JSON data
+     ***********/
+    private function updateMemcache($jsondata): ?bool {
+
+        // default results
+        $results = false;
+
+        try {
+
+            // create a new memcache object and connect to the backend daemon
+            $memcache = new Memcache;
+            $connectionresult = $memcache->connect('localhost', 11211);
+            if (!$connectionresult)
+                throw new Exception("memcache fail");
+
+            // attempt to get the configuration key from memcache
+            $getresult = $memcache->get('configuration');
+
+            // if the key already exists within memcache, then we replace what's there
+            if ($getresult) {
+                // now add this to memcache with a TTL of 900 seconds.
+                $results = $memcache->replace('configuration', $jsondata, false, 900);
+            }
+
+            // otherwise, we add this key
+            else {
+
+                // now add this to memcache with a TTL of 900 seconds.
+                $results = $memcache->add('configuration', $jsondata, false, 900);
+            }
+
+            // close the memcache connection.
+            $memcache->close();
+
+        } catch (Exception $e) {
+
+            // close the memcache object, just in case
+            $memcache->close();
+        }
+
+        return $results;
+    }
+
 
 
     /************
@@ -532,6 +610,10 @@ class ConfigEvent extends BaseSSEEvent {
         // if memcache was unsuccessful, read from disk
         if (!$js) {
             $js = $this->getConfigFile();
+
+            // since the configuration data wasn't within memcache, we add it now...
+            $this->updateMemcache(json_encode($js));
+
             $js->memcache_status = "cache miss";
         }
     
@@ -714,12 +796,383 @@ class StatusEvent extends BaseSSEEvent {
         }
 
         // convert the returned JSON to a PHP object
-        return json_decode($cmdoutput, false);
+        $js = json_decode($cmdoutput, false);
+
+        return $js;
     }
 
 }
 
+/*********************
+ * LogEvent class that checks for updates to the backend logs
+ *
+ * Usage:
+ * $mylogs = new LogEvent("direwolf.out");
+ * $ssetext = $mylogs->generateSSEEvent();
+ * if ($ssetext)
+ *     sendSSEText($ssetext);
+ *
+ *********************/
+class LogEvent extends BaseSSEEvent {
+
+    // properties
+    private string $logfile;       // file and path to the log file of interest
+    private int $last_location;    // location in bytes of where the last read from the log file ended.
+
+    // constructor
+    function __construct(string $id, string $logfile, int $threshold = 15) {
+        parent::__construct($id, $threshold);
+
+        // log file location
+        $this->logfile = $logfile;
+
+        // initial position within the log file to start reading from
+        $this->last_location = 0;
+    }
+
+    /************
+     * generateSSEText
+     *
+     * construct the SSE text (json) for this event.  Return null if there isn't anything we need to send to the browser.
+     ***********/
+    function generateSSEText(): ?string {
+
+        // checks that the file exists and is readable
+        if (!is_readable($this->logfile))
+            return null;
+
+        // where we store the SSE formed JSON text.
+        $ssestring = null;
+
+        // clear file stats cache and get new data
+        clearstatcache();
+        $stats = stat($this->logfile);
+
+        // determine the log file size in bytes
+        $current_file_size = $stats["size"];
+
+        // if the current file size is < the last_location then something happened to truncate or recreate the log file.  In that
+        // case reset the last_location back to 0 as we're effectively starting over monitoring a new log file.
+        $filechanged = false;
+        if ($current_file_size < $this->last_location) {
+            $filechanged = true;
+            $this->last_location = 0;
+        }
+
+        // read from the log file if this is the first time being called or there is new data available.
+        if ($this->seq == 0 || $current_file_size > $this->last_location) {
+            
+            // grab trailing lines from the log file
+            $logfile_content = $this->readLogFile($this->logfile, $this->last_location);
+
+            // if data was returned 
+            if ($logfile_content) {
+
+                // construct the SSE string if data was returned
+                if ($logfile_content->bytes > 0) {
+
+                    // the content from the log file
+                    $content = $logfile_content->lines;
+
+                    // if the log file has been recreated, then we insert a separater line so the user knows where the new log began
+                    if ($filechanged) 
+                        $content = "=================== log file changed ==================\n" . $content;
+
+                    // create the SSE event string
+                    $ssestring = $this->_formSSE(json_encode($content));
+
+                    // set the last_location to the ending read position within the log file
+                    $this->last_location = $logfile_content->endingloc;
+
+                    // increment the sequence #
+                    $this->seq++;
+                }
+            }
+        }
+
+        return $ssestring;
+    }
+
+    // Read from the end of a log file one small chunk at a time returning at most 100 lines.  
+    //
+    // Optionally can supply a starting location (in bytes) from where to beginning reading from.  The word "starting" is a misnomer as
+    // that actually specifies where to stop reading - will read from EOF (backwards as it were) until hitting the $startingloc 
+    // or 100 lines are read, which ever comes first.
+    //
+    // Returns an object if successful:
+    //    obj->endingloc  // byte location within the file where reading ended
+    //    obj->lines      // the data being returned 
+    //    obj->numlines   // number of lines being returned (more accurately, the number of newline characters counted in the output)
+    //    obj->bytes      // the number of bytes being returned
+    //
+    // Otherwise, if unable to open or access the file for reading then null is returned
+    //
+	private function readLogFile($filepath, $startingloc = 0) {
+
+        // by default, limit the maximum number of lines returned
+        $MAX_LINES = 100;
+
+		// Open file.  return if we can't open
+		$f = fopen($filepath, "r");
+        if ($f === false) 
+            return null;
+
+        // get size of the file.  
+        $fsize = fstat($f)["size"];
+
+        // sanity check.  boundaries for starting location
+        if ($startingloc > $fsize)
+            $startingloc = $fsize;
+        if ($startingloc < 0)
+            $startingloc = 0;
+
+		// set buffer size to the size we're needing to retrieve from the file, if $startingloc == 0, then just default to some small size
+        $bufsize = ($fsize - $startingloc > 0 && $startingloc > 0 ? ($fsize - $startingloc) * 1.2 : 4096);
+
+        // move to the end of the file
+        fseek($f, 0, SEEK_END);
+
+		// loop initialization variables
+		$output = "";          // cumlative output where we store the lines read from the file
+        $block = "";           // temp location that holds data read from the file each time through the loop
+        $done = false;         // flag that signals to end the loop
+        $lines = 0;            // number of lines read...added to each time through the loop
+
+		// loop, collecting all lines from the file into $output 
+		while (!$done && ftell($f) > 0 && $lines <= $MAX_LINES) {
+
+            // how far away from the specified starting point or the beginning of the file?
+            $seek = min(ftell($f) - $startingloc, $bufsize);
+
+			// position the file pointer backwards by $seek amount
+			fseek($f, -$seek, SEEK_CUR);
+
+            // is this location at our starting position?  If yes, then set the loop ending flag.
+            if (ftell($f) == $startingloc) 
+                $done = true;
+
+			// Read a block from this location and prepend it to $output
+            $block = fread($f, $seek);
+			$output = $block . $output;
+
+            // rewind back to where we started reading from within the prior loop instance.
+			fseek($f, -strlen($block), SEEK_CUR);
+             
+            // count the number of newlines encountered in the block we just read.  We do this so we can limit the lines to $MAX_LINES or less.
+            $n = substr_count($block, "\n");
+
+            // increment the total lines counter
+			$lines += $n;
+		}
+
+		// Close the file
+		fclose($f);
+
+        // find the last newline and remove all text after that newline so we end at a whole line.
+        $output = substr($output, 0, strrpos($output, "\n") + 1);
+
+        // if the starting location was 0, then we want to limit the output to $MAX_LINES
+        // this will trim off lines from the beginning of $output until we get to <= $MAX_LINES
+        if ($startingloc == 0)
+            while ($lines-- > $MAX_LINES + 1) 
+                $output = substr($output, strpos($output, "\n") + 1);
+        //else
+            // otherwise, find the first newline and remove all text before that so we begin at a whole line.
+            //$output = substr($output, strpos($output, "\n") + 1);
+
+        // trim up the output
+        $output = trim($output);
+
+        // create an object to return
+        $contents = new stdClass();
+        $contents->endingloc = $fsize;
+        $contents->lines = $output;
+        $contents->numlines = substr_count($output, "\n");
+        $contents->bytes = strlen($output);
+
+		return $contents;
+	}
+}
+
+/*********************
+ * PacketEvent class that checks for new packets from the backend
+ *
+ * Usage:
+ * $mypackets = new PacketEvent();
+ * $ssetext = $mypackets->generateSSEEvent();
+ * if ($ssetext)
+ *     sendSSEText($ssetext);
+ *
+ *********************/
+class PacketEvent extends BaseSSEEvent {
+
+    // properties
+    protected $dblink;       // postgresql database connection
+
+    // constructor
+    function __construct(int $threshold = 15) {
+        parent::__construct("packets", $threshold);
+
+        // connect to the database
+        $this->dblink = connect_to_database();
+
+        // start listening for postgresql NOTIFY events
+        if ($this->dblink) 
+            pg_query($this->dblink, "LISTEN new_packet;");
+    }
+
+
+    /************
+     * generateSSEText
+     *
+     * construct the SSE text (json) for this event.  Return null if there isn't anything we need to send to the browser.
+     ***********/
+    function generateSSEText(): ?string {
+
+        // where we store the SSE formed JSON text.
+        $ssestring = null;
+        $results = null;
+
+        try {
+            if (!$this->dblink)
+                $this->dblink = connect_to_database();
+
+            // The result from our postgresql LISTEN command.
+            $results = pg_get_notify($this->dblink);
+
+        } catch (Exception $e) {
+            return $this->_formSSE("unable to get nofity results: " . db_error(sql_last_error()));
+        }
+
+        // check if notifications from the postgresql database were sent
+        if ($results) {
+
+            // the JSON content returned from postgresql
+            $content = $results["payload"];
+
+            if ($content) {
+                // create the SSE event string
+                $ssestring = $this->_formSSE($content);
+
+                // increment the sequence #
+                $this->seq++;
+            }
+        }
+
+        return $ssestring;
+    }
+}
+
+
+/*********************
+ * TrackerEvent class
+ *
+ * Usage:
+ * $mytrackers = new TrackerEvent();
+ * $ssetext = $mytrackers->generateSSEEvent();
+ * if ($ssetext)
+ *     sendSSEText($ssetext);
+ *
+ *********************/
+class TrackerEvent extends BaseSSEEvent {
+
+    // properties
+    private float $lasttimestamp;  // timestamp from the trackers data set
+    protected $dblink;             // postgresql database connection
+
+    // constructor
+    function __construct(int $threshold = 15) {
+        parent::__construct("trackers", $threshold);
+
+        // set the lasttimestamp to zero
+        $this->lasttimestamp = 0.0;
+    }
+
+    /************
+     * getBackendTrackers
+     *
+     * Read from the backend database to get a list of tactical teams and the trackers associated with them.
+     ***********/
+    function getBackendTrackers(string $flightid = null): ?object {
+        return getTrackersFromDB($flightid, true);  // add 'true' for the 2nd parameter to instruct the getTrackersFromDB function to leave the DB connection open.
+    }
+
+    /************
+     * generateSSEText
+     *
+     * construct the SSE text (json) for this event.  Return null if there isn't anything we need to send to the browser.
+     ***********/
+    function generateSSEText(): ?string {
+
+        // where we store the SSE formed JSON text.
+        $ssestring = null;
+
+        // where we'll store the results
+        $js = new stdClass();
+
+        // status of our memcache attempt
+        $cache_status = null;
+
+        try {
+
+            // create a new memcache object and connect to the backend daemon
+            $memcache = new Memcache;
+            $connectionresult = $memcache->connect('localhost', 11211);
+            if (!$connectionresult)
+                throw new Exception("memcache fail");
+
+            // attempt to get the key from memcache
+            $getresult = $memcache->get('trackers');
+            if ($getresult) {
+
+                // convert the returned JSON to a PHP object
+                $js = json_decode($getresult, false);
+                $cache_status = "cache hit";
+            }
+            else {
+                // cache miss.  Now get the list of trackers from the backend
+                $js = $this->getBackendTrackers();
+                $cache_status = "cache miss";
+
+                // now add this to memcache with a TTL of 900 seconds.
+                $memcache->set('trackers', json_encode($js), false, 100);
+            }
+
+            // close the memcache connection.
+            $memcache->close();
+
+        } catch (Exception $e) {
+
+            // close the memcache object, just in case
+            $memcache->close();
+
+            // get the list of trackers from the backend
+            $js = getBackendTrackers();
+            $cache_status = "exception:  " . $e;
+        }
+
+        // if there was a timestamp and a trackers key returned...
+        if (property_exists($js, "timestamp") && property_exists($js, "trackers")) {
+
+            // only update the browser if the timestamp from the trackers json is > than the lasttimestamp 
+            if ($js->timestamp > $this->lasttimestamp) {
+
+                // update the lasttimestamp property
+                $this->lasttimestamp = $js->timestamp;
+
+                // add the cache status key/value pair
+                $js->memcache_status = $cache_status;
+
+                // create the SSE event string
+                $ssestring = $this->_formSSE(json_encode($js));
+
+                // increment the sequence #
+                $this->seq++;
+            }
+        }
+
+        return $ssestring;
+    }
+}
+
 ?>
-
-
-

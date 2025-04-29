@@ -47,7 +47,6 @@ def databaseUpdates(logger):
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
         logger.info(f"/******* Starting database checks:  {time_string} ********/")
-        sys.stdout.flush()
 
 
 
@@ -60,7 +59,6 @@ def databaseUpdates(logger):
         # If the number of rows returned is zero, then we need to add the row
         if len(rows) == 0:
             logger.info("Adding the 'ZZ-Not Active' team to the tracker team list.")
-            sys.stdout.flush()
             
             # SQL to add the row
             insert_sql = "insert into teams (tactical, flightid) values ('ZZ-Not Active', NULL);"
@@ -82,7 +80,6 @@ def databaseUpdates(logger):
             # If the number of rows returned is zero, then we need to create the column
             if len(rows) == 0:
                 logger.info(f"Adding landingpredictions::{column} column.")
-                sys.stdout.flush()
                 
                 # SQL to alter the "landingpredictions" table and add the "flightpath" column
                 alter_table_sql = "alter table landingpredictions add column " + column + " " + coltype + ";";
@@ -98,7 +95,6 @@ def databaseUpdates(logger):
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index landingpredictions_tm on landingpredictions(tm);"
                 logger.info("Adding landingpredictions_tm index.")
-                sys.stdout.flush()
                 logger.debug("Adding landingpredictions_tm index to the landingpredictions table: %s" % sql_add)
                 dbcur.execute(sql_add)
                 dbconn.commit()
@@ -117,7 +113,6 @@ def databaseUpdates(logger):
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index packets_tm on packets(tm);"
                 logger.info("Adding packets_tm index.")
-                sys.stdout.flush()
                 logger.debug("Adding packets_tm index to the packets table: %s" % sql_add)
                 dbcur.execute(sql_add)
                 dbconn.commit()
@@ -136,7 +131,6 @@ def databaseUpdates(logger):
             # If the number of rows returned is zero, then we need to create the column
             if len(rows) == 0:
                 logger.info(f"Adding packets::{column} column.")
-                sys.stdout.flush()
 
                 # SQL to alter the "landingpredictions" table and add the "flightpath" column
                 alter_table_sql = "alter table packets add column " + column + " " + coltype + ";";
@@ -152,7 +146,6 @@ def databaseUpdates(logger):
             lp_sql = "select count(*) from landingpredictions;"
 
             logger.info("Checking number of rows in tables...")
-            sys.stdout.flush()
 
             dbcur.execute(packets_sql)
             rows = dbcur.fetchall()
@@ -163,13 +156,11 @@ def databaseUpdates(logger):
             lp_count = rows[0][0]
 
             logger.info(f"Number of rows:  packets={packets_count}, landingpredictions={lp_count}")
-            sys.stdout.flush()
 
 
             # SQL to update the source column to "other" in those cases were it's empty
             sql_source = "update packets set source='other' where source is null;"
             logger.info("Updating packets::source column.")
-            sys.stdout.flush()
             logger.debug("Updating source column: %s" % sql_source);
             dbcur.execute(sql_source)
             dbconn.commit()
@@ -177,7 +168,6 @@ def databaseUpdates(logger):
             # SQL to update the channel column to "-1" in those cases were it's empty
             sql_channel = "update packets set channel=-1 where channel is null;"
             logger.info("Updating packets::channel column.")
-            sys.stdout.flush()
             logger.debug("Updating channel column: %s" % sql_channel);
             dbcur.execute(sql_channel)
             dbconn.commit()
@@ -197,7 +187,6 @@ def databaseUpdates(logger):
             # Now add back an updated primary index
             sql_add = "alter table packets add primary key (tm, source, channel, callsign, hash);"
             logger.info("Adding primary key to packets table.")
-            sys.stdout.flush()
             logger.debug("Adding new primary key: %s" % sql_add);
             try:
                 dbcur.execute(sql_add)
@@ -209,7 +198,6 @@ def databaseUpdates(logger):
                 # SQL to truncate rows older than one month.
                 sql_source = "truncate table packets;"
                 logger.error("Unable to create index on packets table, deleteing all rows...sorry, only way.  :(")
-                sys.stdout.flush()
                 logger.debug("Deleting all rows from packets table: %s" % sql_source);
                 dbcur.execute(sql_source)
                 dbconn.commit()
@@ -228,7 +216,6 @@ def databaseUpdates(logger):
                 # Add the index since it didn't seem to exist.
                 sql_add = "create index packets_tm_source_ptype on packets(tm, source, ptype);"
                 logger.info("Adding packets_tm_source_ptype index.")
-                sys.stdout.flush()
                 logger.debug("Adding packets_tm_source_ptype index to the packets table: %s" % sql_add)
                 dbcur.execute(sql_add)
                 dbconn.commit()
@@ -278,7 +265,6 @@ def databaseUpdates(logger):
         if len(rows) <= 0:
             # Add the function since it doesn't exist
             logger.info("Adding notify_v1 function to database.")
-            sys.stdout.flush()
             logger.debug("Adding notify_v1 function to database.")
             dbcur.execute(sql_function)
             dbconn.commit()
@@ -289,7 +275,6 @@ def databaseUpdates(logger):
         if len(rows) <= 0:
             # Add the trigger since it doesn't exist
             logger.info("Adding after_new_packet_v1 trigger to the packets table.")
-            sys.stdout.flush()
             logger.debug("Adding after_new_packet_v1 trigger to the packets table.")
             dbcur.execute(sql_trigger_newpacket)
             dbconn.commit()
@@ -300,17 +285,24 @@ def databaseUpdates(logger):
         if len(rows) <= 0:
             # Add the trigger since it doesn't exist
             logger.info("Adding after_new_position_v1 trigger to the packets table.")
-            sys.stdout.flush()
             logger.debug("Adding after_new_position_v1 trigger to the packets table.")
             dbcur.execute(sql_trigger_newposition)
             dbconn.commit()
 
         #------------------- triggers and notifications ------------------#
 
+
+        #------------------- reset flight assignments ------------------#
+        sql_query = "update teams set flightid=NULL;"
+        logger.info("Resetting all tracker team assignments to 'At Large'");
+        dbcur.execute(sql_query);
+        dbconn.commit();
+        #------------------- reset flight assignments ------------------#
+
+
         ts = datetime.datetime.now()
         time_string = ts.strftime("%Y-%m-%d %H:%M:%S")
         logger.info(f"/******* Completed database checks: {time_string} ********/")
-        sys.stdout.flush()
 
         # Close DB connection
         dbcur.close()

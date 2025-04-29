@@ -20,66 +20,92 @@
 #    along with HABTracker.  If not, see <https://www.gnu.org/licenses/>.
 #
 ##################################################
-*
- */
+*/
 
-    ###  This will query the database for the n most recent packets.  
-
+    header("Content-Type:  application/json;");
     if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
         $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
     else
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
-    include $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/trackers.php';
 
 
-    // Check the notes HTML GET variable
-    if (isset($_GET["notes"])) {
-        $get_notes = check_string($_GET["notes"], 64);
-    }
-    else
-        $get_notes = "";
+    /**********
+     * processInputs
+     *
+     * This will process the GET arguments and return an object with the found variables or null if there was an error
+     **********/
+    function processInputs(array $getarray): ?object {
 
-    // Check the callsign HTML GET variable
-    if (isset($_GET["callsign"])) {
-        $get_callsign = strtoupper(check_string($_GET["callsign"], 20));
-    }
-    else
-        $get_callsign = "";
+        // default object that we'll return
+        $obj = new stdClass();
+        $obj->result = 0;
+        $obj->error = "";
+
+        // Check the notes HTML GET variable
+        if (isset($getarray["notes"])) {
+            $get_notes = check_string($getarray["notes"], 64);
+        }
+        else
+            $get_notes = "";
+
+        // Check the callsign HTML GET variable
+        if (isset($getarray["callsign"])) {
+            $get_callsign = strtoupper(check_string($getarray["callsign"], 20));
+        }
+        else
+            $get_callsign = "";
 
 
-    // Check the team HTML GET variable
-    if (isset($_GET["team"])) {
-        $get_team = check_string($_GET["team"], 20);
-    }
-    else
-        $get_team = "";
+        // Check the team HTML GET variable
+        if (isset($getarray["team"])) {
+            $get_team = check_string($getarray["team"], 20);
+        }
+        else
+            $get_team = "";
 
 
-    ## if any of the GET parameters are not supplied, then exit...
-    if ($get_team == "" || $get_callsign == "" || $get_notes == "") {
-        printf ("{\"result\" : 0, \"error\": \"HTML form error\"}");
-        return 0;
+        // if any of the GET parameters are not supplied, then exit...
+        if ($get_team == "" || $get_callsign == "" || $get_notes == "") {
+            $obj->error = "HTML form error";
+            return $obj;
+        }
+
+        // update the object with the results
+        $obj->callsign = $get_callsign;
+        $obj->team = $get_team;
+        $obj->notes = $get_notes;
+        $obj->result = 1;
+        $obj->error = "";
+
+        return $obj;
     }
   
 
-    ## Connect to the database
-    $link = connect_to_database();
-    if (!$link) {
-        printf ("{\"result\" : 0, \"error\": %s}", json_encode(sql_last_error()));
-        return 0;
+    /************
+    * main code below
+    *************/
+
+    // parse any GET arguments
+    $arguments = processInputs($_GET);
+
+    // if all supplied arguments checkout...then proceed to insert the data into the database
+    if ($arguments->result == 1) {
+
+        // insert the new tracker
+        $results = insertTracker($arguments->callsign, $arguments->team, $arguments->notes);
+
+        // if successful, then delete the memcache tracker key so it will re-cache the results upon next read by the browser.
+        if ($results->result == 1)
+            deleteTrackerKey();
+
+        // send results of SQL insert to browser
+        printf("%s\n", json_encode($results));
     }
-
-    $query = "insert into trackers (callsign, tactical, notes) values (upper(btrim($1)), $2, $3);";
-    $result = pg_query_params($link, $query, array(sql_escape_string($get_callsign), sql_escape_string($get_team), sql_escape_string($get_notes)));
-    if (!$result) {
-        printf ("{\"result\" : 0, \"error\": %s}", json_encode(sql_last_error()));
-        sql_close($link);
-        return 0;
-    }
-    
-    // If we've made it this far then sucess!!
-    printf ("{\"result\" : 1, \"error\": \"\"}");
-
-    sql_close($link);
-
+    else
+        // there was an error with the arguments...send the results back to the browser.
+        printf("%s\n", json_encode($arguments));
 ?>
+
+

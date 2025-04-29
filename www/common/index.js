@@ -25,7 +25,7 @@
 // process state globals
 let processInTransition = 0;
 let interval;
-let isRunning = 0;
+let isRunning = false;
 let waitingOnStatus = false;
 
 // SSE event handler
@@ -55,6 +55,7 @@ function escapeHtml(s) {
 * This function will read the current configuration
 ***********/
 function processConfiguration(jsonData) {
+
     let callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
     let timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
     let audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
@@ -91,16 +92,29 @@ function processConfiguration(jsonData) {
 * This function will submit a request to the backend web system to start the various daemons for the system.
 ***********/
 async function startUpProcesses() {
-    if (processInTransition == 0 && isRunning == 0) {
-        processInTransition = 1;
+
+    if (processInTransition == 0 && !isRunning) {
         let startinghtml = "<p><mark class=\"marginal\">Starting...</mark></p>";
         document.getElementById("antenna-data").innerHTML = startinghtml;
 
         try {
 
+            // blank the main log area
+            let mainlog = document.getElementById("mainlog");
+            if (mainlog)
+                mainlog.innerHTML = "";
+
+            // blank the stderr log area
+            let stderr = document.getElementById("stderr");
+            if (stderr)
+                stderr.innerHTML = "";
+
             // signal to the backend that it's time to startup 
             const response = await fetch("startup.php");
             const data = await response.json();
+
+            // set the process transition flag
+            processInTransition = 1;
 
         } catch (error) {
             console.log({"function": "startUpProcesses", "error": error});
@@ -117,6 +131,7 @@ async function startUpProcesses() {
 * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
 ***********/
 async function shutDownProcesses() {
+
     let stoppinghtml = "<p><mark class=\"marginal\">Shutting down...</mark></p>";
     document.getElementById("antenna-data").innerHTML = stoppinghtml;
 
@@ -149,10 +164,10 @@ function processStatus(json) {
 
     // the processes that we're expecting to be reported on.  By default we set them all to in-active.
     let processes = [
-        { "process": "direwolf", "elementid": "direwolf-status", "active": 0 },
-        { "process": "aprsc", "elementid": "aprsc-status", "active": 0 },
-        { "process": "habtracker", "elementid": "habtracker-status", "active": 0 },
-        { "process": "gpsd", "elementid": "gpsd-status", "active": 0 }
+        { "process": "direwolf", "active": 0 },
+        { "process": "aprsc", "active": 0 },
+        { "process": "habtracker", "active": 0 },
+        { "process": "gpsd", "active": 0 }
     ];
 
     // loop through each expected process comparing that to the list of active processes 
@@ -232,74 +247,20 @@ function processStatus(json) {
     });
 
     // determine if the backend is actually running.  
-    // isRunning:
-    //  0 - not running
-    //  1 - running
-    // -1 - transitioning or some odd state
-    
-    // backend is "active", we've found an SDR dongle attached
-    if (isActive && isRFMode) {
+    const numProcessesRunning = (isRFMode ? direwolf + aprsc + backend : aprsc + backend);
+    const totalProcessesExpected = (isRFMode ? 3 : 2);
+    isRunning = numProcessesRunning == totalProcessesExpected;
 
-        // ...then we'd expect to find direwolf, aprsc, and the backend running...at least.
-        if (direwolf && aprsc && backend)
-            isRunning = 1;
-        else
-            // huh...the backend says that we're "active" and in "rf_mode", but yet the [some of the] processes we were expecting aren't running?
-            isRunning = -1;
-    }
-    // backend is "active", but there wasn't an SDR dongle attached...so we're presumably running in "online" mode
-    else if (isActive && !isRFMode) {
+    // are we starting up or shutting down?
+    const starting = (processInTransition == 1 && totalProcessesExpected - numProcessesRunning > 0 ? true : false);
+    const stopping = (processInTransition == 2 && numProcessesRunning > 0 ? true : false);
 
-        // ...then we'd expect to find just aprsc and the backend running.  Although direwolf might be running, but just for beaconing via an external radio, so we don't count that.
-        if (aprsc && backend)
-            isRunning = 1;
-        else
-            isRunning = -1;
-    }
-    // the backend is not active as it doesn't think it's running.
-    else if (!isActive) {
+    // blank the direwolf error section since we're in transition.  
+    //document.getElementById("direwolf-error").innerHTML = "";
 
-        //...then we'd expect that no processes are running, except maybe GPSD, but we don't count that.
-        if (!direwolf && !aprsc && !backend)
-            isRunning = 0;
-        else
-            isRunning = -1;
-    }
-    // Shouldn't get here, but just in case
-    else
-        isRunning = 0;
-
-    // debugging
-    //console.log("direwolf: " + direwolf + ", backend: " + backend + ", aprsc: " + aprsc + ", gpsd: " + gpsd + ", isActive: " + isActive + ", isRFMode: " + isRFMode + ", isRunning: " + isRunning + ", processInTransition: " + processInTransition);
-
-    // find out what state we're in... and update the onscreen status
-    if (processInTransition == 1) {    // we're starting up...
-
-        if (isRunning == 1)
-            processInTransition = 0;
-
-        else if (isRunning == 0)
-            // we must have tried to start, but hit a failure and now nothing is running.
-            processInTransition = 0;
-
-        // blank the direwolf error section since we're in transition.  This is updated further below
-        document.getElementById("direwolf-error").innerHTML = "";
-
-    }
-    else if (processInTransition == 2) {     // we're shutting down...
-        if (isRunning == 0)
-            processInTransition = 0; 
-
-        // blank the direwolf error section since we're in transition.  This is updated further below
-        document.getElementById("direwolf-error").innerHTML = "";
-
-    }
-
-    // we're either up or shutdown, but we're NOT in transition
-    // if we're no longer in transition, update the status screens 
-    //
     // We only want to update the status screen if we're NOT in transition
-    if (processInTransition == 0) {   
+    if (!starting && !stopping) {
+        processInTransition = 0;
 
         // if we're running and connected to an SDR, then udpate the status area with the antenna/SDR details
         if (isRunning && isRFMode) { 
@@ -364,6 +325,7 @@ function processStatus(json) {
             }
         }
         else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
+
             if (isKa9qradio) 
                 donehtml = "<p><mark class=\"okay\">Listening for packets from KA9Q-Radio</mark></p>";
             else
@@ -438,6 +400,18 @@ function padNumber(n) {
     return n.toString().padStart(2, '0');
 }
 
+
+/***********
+* nthChar
+*
+* find location the nth occurance of a character in a string
+***********/
+function nthChar(str, ch, nth=1, pos=0) {
+    --pos;
+    while ((nth-- > 0) && ((pos=str.indexOf(ch, pos+1)) >= pos));
+    return (nth > 0)? -1 : pos;
+}
+
 /***********
 * setupSSE function
 *
@@ -455,63 +429,65 @@ function setupSSE(backendurl) {
             // listen for new gps position alerts
             eventsource.addEventListener("gpsstatus", function(event) {
 
-                let gpsjson;
+                let json;
                 
                 // Parse the incoming json
-                try { gpsjson = JSON.parse(event.data);}
+                try { json = JSON.parse(event.data);}
                 catch (e) { 
-                    console.log({"what": "GPS JSON parse error", "event": event, "error": e.message, "gpsjson": gpsjson});
+                    console.log({"what": "GPS JSON parse error", "event": event, "error": e.message, "gpsjson": json});
                 }
 
                 // if geojson was returned, then we send it to the "mylocation" layer for updating the map.
-                if (gpsjson && gpsjson.features && gpsjson.features[0].properties && gpsjson.features[0].geometry) {
+                if (json && json.features && json.features[0].properties && json.features[0].geometry) {
 
-                    let ts = new Date(gpsjson.features[0].properties.time);
+                    let ts = new Date(json.features[0].properties.time);
                     let tmstring = getISODateTimeString(ts);
                     
                     // update the time value to be a nicer string.
-                    gpsjson.features[0].properties.time = tmstring;
+                    json.features[0].properties.time = tmstring;
 
                     // update the GPS status box
-                    updateGPSDisplay(gpsjson);
+                    updateGPSDisplay(json);
 
                     // update the "Map" link with our latest location.  So when the user clicks on the "Map" link, 
                     // the map will open, centered on our last location.   
-                    updateMapLink(gpsjson);
+                    updateMapLink(json);
 
                 }
             });
 
             eventsource.addEventListener("configuration", function(event) {
 
-                let configjson;
+                let json;
                 
                 // Parse the incoming json
-                try { configjson = JSON.parse(event.data);}
+                try { json = JSON.parse(event.data);}
                 catch (e) { 
-                    console.log({"what": "configuration JSON parse error", "event": event, "error": e.message, "gpsjson": configjson});
+                    console.log({"what": "configuration JSON parse error", "event": event, "error": e.message, "gpsjson": json});
                 }
                 
-                if (configjson)
-                    processConfiguration(configjson);
+                if (json)
+                    processConfiguration(json);
             });
 
             eventsource.addEventListener("backendstatus", function(event) {
 
-                let statusjson;
+                let json;
                 
                 // Parse the incoming json
-                try { statusjson = JSON.parse(event.data);}
+                try { json = JSON.parse(event.data);}
                 catch (e) { 
-                    console.log({"what": "backend status JSON parse error", "event": event, "error": e.message, "gpsjson": statusjson});
+                    console.log({"what": "backend status JSON parse error", "event": event, "error": e.message, "gpsjson": json});
                 }
 
-                if (statusjson)
-                    processStatus(statusjson);
+                if (json)
+                    processStatus(json);
             });
-                
 
-
+            // listen for log file updates
+            eventsource.addEventListener("mainlog", handleLogEvent);
+            eventsource.addEventListener("stderr", handleLogEvent);
+            eventsource.addEventListener("direwolflog", handleLogEvent);
 
             // listen for any errors, try and restart the connection if there were any
             eventsource.addEventListener("error", function(event) {
@@ -531,13 +507,58 @@ function setupSSE(backendurl) {
     }
 }
 
+
+/***********
+* handleLogEvent
+*
+* handler function for SSE log events.  
+***********/
+function handleLogEvent(event) {
+
+    let json;
+
+    // Parse the incoming json
+    try { json = JSON.parse(event.data);}
+    catch (e) { 
+        console.log({"what": event.type + " log JSON parse error", "event": event, "error": e.message, "json": json});
+    }
+
+    if (json) {
+
+        // get the current log content being displayed on the page
+        let elem = document.getElementById(event.type);
+        let log = elem.innerHTML;
+
+        // append this incoming data to it
+        log = log + (log.length > 0 ? "\r\n" : "") + escapeHtml(json);
+
+        // trim to be <= 100 lines.  Just count the number of newlines in the output....not "perfect", but will be good 
+        // enough to make sure we're not trying to track a jillion lines. ;)
+        const matches = log.match(/\n/g);
+        const n = (matches ? matches.length : 0);
+        if (n > 100) {
+            const loc = nthChar(log, "\n", n - 100);
+
+            // now trim the string
+            log = log.substring(loc+1);
+        }
+
+        // update the data on the page
+        elem.innerHTML = log;
+
+        // now scroll the element to the bottom (so new lines of text are visible)
+        elem.scrollTop = elem.scrollHeight;
+    }
+}
+
+
 /***********
 * initializeSSE
 *
 * restart the SSE stream
 ***********/
 function initializeSSE() {
-    setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true");
+    setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&mainlog=true&stderr=true&direwolflog=true");
 }
 
 

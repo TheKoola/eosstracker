@@ -253,6 +253,10 @@
     }
 
 
+    /*
+     * SKIPPING flight assignments for tracking teams.  3/20/2025.
+     *
+     *
     if (array_key_exists("teams", $data)) {
         #
         #               Table "public.teams"
@@ -283,6 +287,7 @@
             }
         }
     }
+     */
 
 
     if (array_key_exists("trackers", $data)) {

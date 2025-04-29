@@ -147,7 +147,7 @@ li.menubar {
 }
 
 
-pre.packetdata {
+.packetdata {
     color:  #c8c8c8;
     font-family:  "Lucida Console", Monaco, monospace;
     white-space: pre-wrap;
@@ -377,6 +377,7 @@ table.packetlist {
 table.trackerlist {
     text-align: left;
     vertical-align: middle;
+    align-content: center;
     border-collapse:  collapse;
     border:  solid 1px black;
     margin: 0px;
@@ -436,6 +437,7 @@ table.trackerlist {
     white-space: normal;
     word-wrap: break-word;
     vertical-align: middle;
+    align-content: center;
     border-collapse:  collapse;
     border:  solid 1px black;
     margin-top:  3px;
@@ -480,6 +482,8 @@ td.packetlistright {
 .trackerlistheader {
     color: #f8f8f8;
     text-decoration:none;
+    vertical-align: middle;
+    align-content: center;
     white-space: normal;
     word-wrap: break-word;
     font-variant:  small-caps;

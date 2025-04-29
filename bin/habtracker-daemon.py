@@ -44,6 +44,7 @@ import signal
 import psutil
 import json
 import random
+import math
 from inspect import getframeinfo, stack
 
 #import local configuration items
@@ -934,6 +935,11 @@ def main():
         status["gpshost"] = configuration["gpshost"]
         status["ka9qradio"] = configuration["ka9qradio"]
 
+        # time_ns() returns nanoseconds, divide by 1000 to get microsecs, then floor that and divide by one million to finally 
+        # get to a floating point for microsecs.
+        one_million = 1000000.0
+        status["microsecs"] = math.floor(time.time_ns() / 1000.0) / one_million 
+
         # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating unless we're listening
         # to a ka9q-radio backend somewhere on the local network.
         if len(configuration["direwolffreqlist"]) == 0 and status["ka9qradio"] == "false":
@@ -998,6 +1004,12 @@ def main():
     status["active"] = 0
     status["gpshost"] = configuration["gpshost"]
     status["ka9qradio"] = configuration["ka9qradio"]
+
+    # time_ns() returns nanoseconds, divide by 1000 to get microsecs, then floor that and divide by one million to finally 
+    # get to a floating point for microsecs.
+    one_million = 1000000.0
+    status["microsecs"] = math.floor(time.time_ns() / 1000.0) / one_million 
+
     with open(jsonStatusTempFile, "w") as f:
         f.write(json.dumps(status))
     if os.path.isfile(jsonStatusTempFile):

@@ -138,7 +138,6 @@
                 <!-- <li><a href="#screenh" role="tab"><span id="screenh"></span></a></li> -->
                 <li><a href="#home" role="tab"><img src="/images/graphics/home.png" width="30" height="30"></a></li>
                 <li><a href="#profile" role="tab"><img src="/images/graphics/profile.png" width="30" height="30"></a></li>
-                <li><a href="#messages" role="tab"><img src="/images/graphics/messages.png" width="30" height="30"></a></li>
 <?php
     if ($numflights > 0) {
         foreach ($flightlist as $row){
@@ -192,29 +191,13 @@
                         }
                     ?>
                 </div>
-                <div class="div-table" style="margin-top: 30px;">
+                <div class="div-table" id="processtable" style="margin-top: 30px;">
                     <p class="section-header" style="text-decoration: underline;">System Status</p>
                     <p class="normal" style="margin-bottom: 0px;">Current Status: <span id="systemstatus"></span></p>
                     <p class="normal" style="margin-top: 0px; margin-bottom: 20px;">System Name: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?></p>
                     <div class="table-row">
                         <div class="table-cell header toprow">Process</div>
                         <div class="table-cell header toprow">Status</div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">direwolf</div>
-                        <div class="table-cell"><span id="direwolf-status"></span></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">aprsc</div>
-                        <div class="table-cell"><span id="aprsc-status"></span></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">gpsd</div>
-                        <div class="table-cell"><span id="gpsd-status"></span></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-cell">backend daemon</div>
-                        <div class="table-cell"><span id="habtracker-d-status"></span></div>
                     </div>
                 </div>
                 <div id="myerror"></div>
@@ -230,27 +213,6 @@
                 <div id="trackers"></div>
                 <div id="newtrackererror"></div>
             </div>  <!-- end of profile sidebar pane -->
-
-
-            <!-- messages sidebar pane (live packet stream) -->
-            <div class="sidebar-pane" id="messages">
-                <h1 class="sidebar-header">APRS Messages<span class="sidebar-close"><img src="/images/graphics/leftcaret.png" width="30" height="30"></span></h1>
-                <p class="section-header">APRS Message Packets:</p>
-                <p class="lorem">This tab will display all APRS message packets received via RF on today's date.
-                    Packets are displayed in reverse chronological order with the latest packets on top, oldest on bottom.</p>
-                <p class="lorem">Those packets with ARISS in their path are assumed to have come from a satellite digipeater and will 
-                    be denoted with, <mark class="okay" style="white-space: nowrap; word-wrap: nowrap; overflow-wrap: nowrap;">
-                    [ satellite ]</mark>.</p>
-                <p class="lorem">If an APRS message is addressed directly to you then that message will be <mark>highlighted</mark>.</p>
-
-                <p class="section-header">Message Packets</p>
-                <!--<div class="packetdata"><p class="packetdata"><span id="packetdata"></span></p></div>-->
-                <!--<div class="packetdata" id="packetdata"></div>-->
-                <div style="width: 100%; white-space: break-word; word-wrap: break-word; overflow-wrap: break-word;" id="packetdata"></div>
-                <div id="packeterrors"></div>
-            </div> 
-
-            <!-- end of messages sidebar pane -->
 
 
             <!-- settings sidebar pane -->
@@ -278,24 +240,6 @@
                         </div>
                     </div>
                     <div class="table-row">
-                        <div class="table-cell">Icon Size:<br>
-                            <p class="lorem">Changes how large the icons are for APRS objects on the map.</p>
-                        </div>
-                        <div class="table-cell">
-                            <input type="text" name="iconsize" id="iconsize" size="3" maxlength="2" form="userpreferences" pattern="[0-9]{2}" 
-                                min="10" max="99"  placeholder="nn" title="from 10 to 99 pixels"> pixels
-                        </div>
-                    </div>
-                    <!--<div class="table-row">
-                        <div class="table-cell">Plot tracks:<br>
-                            <p class="lorem">Should tracks be displayed for trackers and other mobile APRS stations (tracks are 
-                                always plotted for flights).</p>
-                        </div>
-                        <div class="table-cell">
-                            <input type="checkbox" name="plottracks" id="plottracks" checked form="userpreferences">
-                        </div>
-                    </div> -->
-                    <div class="table-row">
                         <div class="table-cell">Use Temperature and Pressure from KC0D Payloads:<br>
                             <p class="lorem">The KC0D payloads have the ability to measure temperature and pressure.  Enabling this option allows the landing prediction 
                                 routines to use these values to help improve landing predictions for the KC0D payloads.
@@ -319,7 +263,7 @@
                     <p class="lorem">The EOSS Tracker application is licensed under version 3 of the GNU General Public License 
                         (see <a target="_blank" href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>).
                     </p>
-                    <p class="lorem">Copyright (C) 2019, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)</p>
+                    <p class="lorem">Copyright (C) 2019-2025, Jeff Deaton (N6BA), Jeff Shykula (N2XGL)</p>
                 </div>
 
             </div> <!-- end of settings sidebar pane -->

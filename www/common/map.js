@@ -66,6 +66,9 @@
     var updateType = "regular";
     var gpsStatusBox;
 
+    // SSE event handler
+    let eventsource;
+
     // these are for the Live Packet Stream tab
     var updateLivePacketStreamEvent;
     var packetdata;
@@ -79,15 +82,17 @@
     // The list of realtime layers 
     var realtimeflightlayers = [];
     var landingpredictionlayers = [];
-    var realtimelayers = [];
+    var realtimeLayers = [];
     var geturls = [];
     var allStationsLayer;
-    var rfStationsLayer;
     var weatherStationsLayer;
     var trackersAtLargeLayer;
     var myPositionLayer;
     var lastUpdateTime = 0;
     var flightList = [];
+
+    // the trackers
+    var trackersList = [];
 
     // flight HUD
     var hud;
@@ -108,7 +113,7 @@
     }
 
     // Return the date/time object as an ISO formated string (YYYY-MM-DD HH:MM:SS)
-    function getISODateTimeString(thedate) {
+    function getISODateTimeString(thedate, millisecs) {
         var ts;
         
         if (thedate)
@@ -123,6 +128,10 @@
             " " + padNumber(ts.getHours()) + 
             ":" + padNumber(ts.getMinutes()) + 
             ":" + padNumber(ts.getSeconds());
+
+        if (millisecs)
+            str += "." + ts.getMilliseconds();
+
         return str;
     }
 
@@ -1548,22 +1557,15 @@
     * This function will call the backend PHP script to set a SESSION variable to the timezone selected
     ***********/
     function setConfiguration() {
-            var iconsize = document.getElementById("iconsize");
             var lookbackperiod = document.getElementById("lookbackperiod");
             var airdensity = document.getElementById("airdensity").checked;
             var form_data = new FormData();
-
-            if (!iconsize.checkValidity()) {
-                throw iconsize.validationMessage;
-                return false;
-            }
 
             if (!lookbackperiod.checkValidity()) {
                 throw lookbackperiod.validationMessage;
                 return false;
             }
 
-            form_data.append("iconsize", iconsize.value);
             form_data.append("lookbackperiod", lookbackperiod.value);
             form_data.append("airdensity", (airdensity == true ? "on" : "off"));
             $.ajax({
@@ -1577,7 +1579,6 @@
                 success: function(data, textStatus, jqXHR) {
 		            var jsonData = data;
 
-		            document.getElementById("iconsize").value = jsonData.iconsize;
 		            document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
                     lookbackPeriod = jsonData.lookbackperiod * 1.0;
 
@@ -1612,7 +1613,6 @@
     ***********/
     function processConfiguration(jsonData) {
 
-        document.getElementById("iconsize").value = jsonData.iconsize;
         document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
         lookbackPeriod = jsonData.lookbackperiod * 1.0;
 
@@ -1630,48 +1630,14 @@
     }
 
 
-
     /***********
-    * changeAssignedFlight function
+    * processTrackers 
     *
-    * This function will update the assigned flight for a team (ex. Alpha, Bravo, etc.)
+    * Update the trackers display area within the sidebar with updated JSON from the backend
     ***********/
-    function changeAssignedFlight(tactical, element) {
-        var assignedFlight = element.options[element.selectedIndex].value;
-
-
-        $.get("changeassignedflight.php?tactical=" + tactical + "&flightid=" + assignedFlight, function(data) {
-            document.getElementById("newtrackererror").innerHTML = "";
-            getTrackers();
-        });
-    }
-
-    /***********
-    * updateTrackerTeam function
-    *
-    * This function will update a tracker's team assignment
-    ***********/
-    function changeTrackerTeam(call, element) {
-        var tactical = element.options[element.selectedIndex].value;
-
-
-        $.get("changetrackerteam.php?callsign=" + call + "&tactical=" + tactical, function(data) {
-            document.getElementById("newtrackererror").innerHTML = "";
-            getTrackers();
-        });
-    }
-
-
-    /***********
-    * getTrackers function
-    *
-    * This function queries the backend for the list of flights, then the list of trackers and their current flight assignments
-    * ...then will create the table for displaying the tracking teams
-    ***********/
-function getTrackers() {
-    $.get("gettrackers.php", function(data) {
-        //var trackerJson = JSON.parse(data);
-        var trackerJson = data;
+    function processTrackers(data) {
+        var trackerJson = data.trackers;
+        trackersList = data.trackers;
         var keys = Object.keys(trackerJson);
         var i; 
         var j;
@@ -1738,161 +1704,6 @@ function getTrackers() {
         }
         tablediv.innerHTML = "";
         tablediv.appendChild(table);
-    });
-}
-
-
-
-    /***********
-    * startUpProcesses
-    *
-    * This function will submit a request to the backend web system to start the various daemons for the system.
-    ***********/
-    function startUpProcesses() {
-        if (!processInTransition) {
-            processInTransition = 1;
-            var startinghtml = "<mark>Starting...</mark>";
-            $("#systemstatus").html(startinghtml);
-            $.get("startup.php", function(data) {
-                var startedhtml = "<mark>Started.</mark>";
-                $("#systemstatus").html(startedhtml)
-                getProcessStatus();
-                processInTransition = 0;
-            });;
-        }
-    }
-
-
-    /***********
-    * shutDownProcesses
-    *
-    * This function will submit a request to the backend web system to kill/stop the various daemons for the system.
-    ***********/
-    function shutDownProcesses() {
-        if (!processInTransition) {
-            processInTransition = 1;
-            var stoppinghtml = "<mark>Shutting down...</mark>";
-            $("#systemstatus").html(stoppinghtml);
-            $.get("shutdown.php", function(data) { 
-                var stoppedhtml = "<mark>Stopped.</mark>";
-                $("#systemstatus").html(stoppedhtml)
-                getProcessStatus();
-                processInTransition = 0;
-            });
-        }
-    }
-
-
-    /***********
-    * updateLivePacketStream function
-    *
-    * This function queries the lastest packets heard (from anywhere)
-    ***********/
-    function updateLivePacketStream() {
-        if (livePacketStreamState)
-            document.dispatchEvent(updateLivePacketStreamEvent); 
-    }
-
-
-    /***********
-    * clearLivePacketFilters function
-    *
-    * This function clears the filter fields on the Live Packet Stream tab 
-    ***********/
-    function clearLivePacketFilters() {
-        document.getElementById("searchfield").value = "";
-        document.getElementById("searchfield2").value = "";
-        document.getElementById("operation").selectedIndex = 0;
-        document.getElementById("packetdata").innerHTML = "";
-        document.getElementById("packetcount").innerHTML = "0";
-        updateLivePacketStream();
-    }
-
-
-    /***********
-    * displayLivePackets function
-    *
-    * This function updates the Live Packet Stream tab with new packets after applying any user defined filters
-    ***********/
-    function displayLivePackets() {
-        var packets = JSON.parse(packetdata);
-        var html = "";
-        var keys = Object.keys(packets);
-        var key;
-        var searchstring = document.getElementById("searchfield").value;
-        var searchstring2 = document.getElementById("searchfield2").value;
-        var operation = document.getElementById("operation").value;
-        var i = 0;
- 
-        //document.getElementById("debug").innerHTML = operation;
-        for (key in keys) {
-           if (operation == "and") {
-               if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 &&
-                   packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                   i += 1;
-               }
-           }
-           else if (operation == "or") {
-               if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 || 
-                   packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) >= 0) {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                   i += 1;
-               }
-           }
-           else if (operation == "not") {
-               if (searchstring.length > 0 && searchstring2.length > 0) {
-                   if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0 && 
-                       packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                       i += 1;
-                   }
-               }
-               else if (searchstring.length > 0) {
-                   if (packets[key].packet.toLowerCase().indexOf(searchstring.toLowerCase()) >= 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                       i += 1;
-                   }
-               }
-               else if (searchstring2.length > 0) {
-                   if (packets[key].packet.toLowerCase().indexOf(searchstring2.toLowerCase()) < 0) {
-                       html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                       i += 1;
-                   }
-               }
-               else {
-                   html = html + escapeHtml(packets[key].packet.toString()) + "<br>"; 
-                   i += 1;
-               }
-               
-           }
-
-        }
-        document.getElementById("packetdata").innerHTML = html;
-        document.getElementById("packetcount").innerHTML = i.toLocaleString();
-    }
-
-
-    /***********
-    * getLivePackets function
-    *
-    * This function gets the most recent live packets for the Live Packet Stream tab
-    ***********/
-    function getLivePackets() {
-      if (livePacketStreamState) {
-          var url;
-
-          if (currentflight == "allpackets")
-              url = "getallpackets.php";
-          else
-              url = "getpackets.php?flightid=" + currentflight;
- 
-          packetdata = {};
-          $.get(url, function(data) { 
-              packetdata = data;
-              updateLivePacketStream(); 
-          });
-        }
     }
 
 
@@ -1911,34 +1722,122 @@ function getTrackers() {
         return selectedValue;
     }
 
-
-
     /***********
-    * getProcessStatus function
+    * processStatus
     *
-    * This function queries the status of processes
+    * This function will fetch current status of processes, system status, etc. and populate the web page as needed.
     ***********/
-    function getProcessStatus() {
-      $.get("getstatus.php", function(data) {
-          var statusJson = data;
-          var keys = Object.keys(statusJson.processes);
-          var i = 0;
-          var k = 0;
+    function processStatus(json) {
 
-          /* Loop through the processes and update their status */
-          for (i = 0; i < keys.length; i++) {
-              document.getElementById(statusJson.processes[i].process + "-status").innerHTML = "<mark style=\"background-color:  " + (statusJson.processes[i].status > 0 ? "lightgreen;\">[Okay]" : "red;\">[Not okay]") + "</mark>";
-              k += statusJson.processes[i].status;
-          }
+        let statusJson = json.backend;
+        let antennas = statusJson.antennas
 
-          var donehtml = "<mark>Not running.</mark>";
-          if (statusJson.rf_mode == 1 && k >= keys.length)
-              donehtml = "<mark style=\"background-color: lightgreen;\">Running.</mark>";
-          if (statusJson.rf_mode == 0 && k >= keys.length-1)
-              donehtml = "<mark style=\"background-color: lightgreen;\">Running in online mode.</mark>";
-          $("#systemstatus").html(donehtml);
-      });
+        // the processes that we're expecting to be reported on.  By default we set them all to in-active.
+        let processes = [
+            { "process": "direwolf", "active": 0 },
+            { "process": "aprsc", "active": 0 },
+            { "process": "habtracker", "active": 0 },
+            { "process": "gpsd", "active": 0 }
+        ];
+
+        // loop through each expected process comparing that to the list of active processes 
+        processes.forEach(function(item) {
+            for (p in json.processes) {
+                if (json.processes[p].process.startsWith(item.process)) {
+                    item.active = (json.processes[p].active == 1 || json.processes[p].active == "true" || json.processes[p].active == true ? 1 : 0);
+                    break;
+                }
+            }
+        });
+
+        // status of various processes
+        const direwolf = (processes.filter((a) => a.process.startsWith("direwolf")).reduce((a, c) => a + c.active, 0) ? true : false);
+        const aprsc = (processes.filter((a) => a.process.startsWith("aprsc")).reduce((a, c) => a + c.active, 0) ? true : false);
+        const backend = (processes.filter((a) => a.process.startsWith("habtracker")).reduce((a, c) => a + c.active, 0) ? true : false);
+        const gpsd = (processes.filter((a) => a.process.startsWith("gpsd")).reduce((a, c) => a + c.active, 0) ? true : false);
+
+        // is the backend active?
+        let isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
+
+        // is the backend beaconing?
+        let isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
+
+        // are we igating?
+        let isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
+
+        // is the backend connected to an SDR dongle?
+        let isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
+
+        // are we listening for packets from an instance of KA9Q-Radio running on the local network?
+        let isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
+
+        // Loop through the processes, updating the browser page to reflect status (running or not).
+        processes.forEach(function(proc) {
+            let element = document.getElementById(proc.process + "-status");
+
+            // the element already exists on the web page, so just update that section with this process's status
+            if (element) {
+                element.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+            }
+
+            // otherwise we need to add an entry to the <div> table for this process
+            else {
+                /**** example HTML for the process table row *****
+                    <div class="table-row">
+                        <div class="table-cell">direwolf</div>
+                        <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolf-error"></span></div>
+                    </div>
+                ***************************************************/
+
+                // if the process table exists...then add a row for this process
+                let table = document.getElementById("processtable");
+                if (table) {
+                    let rowdiv = document.createElement("div");      // for the entire row itself
+                    let leftcell = document.createElement("div");    // the leftmost cell of the row
+                    let rightcell = document.createElement("div");   // the rightmost cell of the row
+                    let statusspan = document.createElement("span"); // location where we stuff the status of the process
+                    let errspan = document.createElement("span");    // location where we can post a short error message for the individual process if need be
+
+                    rowdiv.className = "table-row";  
+                    leftcell.className = "table-cell";  
+                    rightcell.className = "table-cell";
+                    rightcell.setAttribute("style", "text-align: right;");
+                    statusspan.id = proc.process + "-status";
+                    errspan.id = proc.process + "-error";
+
+                    leftcell.innerHTML = proc.process.toLowerCase();
+                    statusspan.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
+                    rightcell.appendChild(statusspan);
+                    rightcell.appendChild(errspan);
+                    rowdiv.appendChild(leftcell);
+                    rowdiv.appendChild(rightcell);
+                    table.appendChild(rowdiv);
+                }
+            }
+        });
+
+        // by default set the status to not running.
+        let donehtml = "<mark>Not running.</mark>";
+
+        // backend is "active", we've found an SDR dongle attached
+        if (isActive && isRFMode) {
+            // ...then we'd expect to find direwolf, aprsc, and the backend running...at least.
+            if (direwolf && aprsc && backend)
+                donehtml = "<mark style=\"background-color: lightgreen;\">Running.</mark>";
+        }
+        // backend is "active", but there wasn't an SDR dongle attached...so we're presumably running in "online" mode
+        else if (isActive && !isRFMode) {
+
+            // ...then we'd expect to find just aprsc and the backend running.  Although direwolf might be running, but just for beaconing via an external radio, so we don't count that.
+            if (aprsc && backend)
+                donehtml = "<mark style=\"background-color: lightgreen;\">Running.</mark>";
+        }
+
+        // update the overall backend status.
+        document.getElementById("systemstatus").innerHTML = donehtml;
+
     }
+
 
     /***********
     * addControlPlaceholders
@@ -2147,7 +2046,7 @@ function getTrackers() {
         hud = L.control.flighthud({ position: "centerbottom", flights: flightids});
 
         // startup SSE operations.
-        setupSSE("ssestream.php?gpsstatus=true&configuration=true");
+        initializeSSE();
     }
 
     /*********
@@ -2171,48 +2070,52 @@ function getTrackers() {
     * initialize_other function
     *
     * This function performs all of the heavy lifting to init the data sources displayed on the map for non-flight sources.
+    *
+    * returns an array of the realtime layers created
     ***********/
     function initialize_layers() {
+
+        // the list of realtime layers 
+        let rtlayers = [];
+
         // Layer groups for all stations and just my station.  This allows toggling the visibility of these two groups of objects.
-        var allstations = L.markerClusterGroup();
-        //var allstations = L.layerGroup();
-        var allrfstations = L.layerGroup();
-        //var allrfstations = L.markerClusterGroup();
+        //var allstations = L.markerClusterGroup();
+        var allstations = L.layerGroup();
         var mystation = L.layerGroup();
-        //var wxstations = L.layerGroup();
-        var wxstations = L.markerClusterGroup();
+        //var wxstations = L.markerClusterGroup();
+        var wxstations = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
 
+        // where all other stations land
         allStationsLayer = createRealtimeLayer("", false, allstations, 5 * 1000, mapStyle);
-        rfStationsLayer = createRealtimeLayer("", false, allrfstations, 5 * 1000, mapStyle);
+        rtlayers.push(allStationsLayer);
         if (showallstations == 1) {
             allStationsLayer.addTo(map); 
-            rfStationsLayer.addTo(map); 
         }
 
-        //var b = createRealtimeLayer("getmystation.php", true, mystation, 5 * 1000, mapStyle);
-        //var c = createRealtimeLayer("gettrackerstations.php", true, trackersatlarge, 5 * 1000, mapStyle);
+        // realtime layers
         myPositionLayer = createRealtimeLayer("", false, mystation, 5 * 1000, mapStyle);
         trackersAtLargeLayer = createRealtimeLayer("", false, trackersatlarge, 5 * 1000, mapStyle);
         weatherStationsLayer = createRealtimeLayer("", false, wxstations, 5 * 1000, mapStyle);
+
+        rtlayers.push(myPositionLayer);
+        rtlayers.push(trackersAtLargeLayer);
+        rtlayers.push(weatherStationsLayer);
+
+        // add the location system's positon to the map
         myPositionLayer.addTo(map);
 
-        // Add our current position to the map if available, otherwise, it'll get added to the map as position updates come in.
-        //if (lastposition) 
-        //    myPositionLayer.update(lastposition);
-
+        // Add the trackers layer to the map
         trackersAtLargeLayer.addTo(map);
 
-        layerControl.addOverlay(trackersatlarge, "Trackers at Large", "Other Stations");
+        // Add these layers to the map layer selector
+        layerControl.addOverlay(trackersatlarge, "Trackers", "Other Stations");
         layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
-        layerControl.addOverlay(allrfstations, "Other Stations (RF only)", "Other Stations");
-        layerControl.addOverlay(allstations, "Other Stations (Inet only)", "Other Stations");
+        layerControl.addOverlay(allstations, "Other Stations", "Other Stations");
         layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
-        // Get an update from the all, rf, and weather stations
-        updateOtherStations("full");
 
         /*
         * This sets up all the flight layers.
@@ -2225,7 +2128,6 @@ function getTrackers() {
             var predictedpathlayer = L.layerGroup();
             var landingpredictionlayer = L.layerGroup();
             var cutdownpredictionlayer = L.layerGroup();
-            var trackerstationslayer = L.layerGroup();
             var beacons = [];
 
             for (key2 in flightids[key].callsigns) {
@@ -2237,7 +2139,14 @@ function getTrackers() {
                     5 * 1000, 
                     flightids[key].flightid + flightids[key].callsigns[key2]
                 );
+
+                // Add this flight layer to our list of realtime layers
+                rtlayers.push(r);
+
+                // Add this flight layer to the map
                 r.addTo(map);
+
+                // update the beacons global
                 beacons.push({ 
                     "callsign": flightids[key].callsigns[key2], 
                     "layer": r,
@@ -2248,15 +2157,16 @@ function getTrackers() {
                 layerControl.addOverlay(activeflightlayer, flightids[key].callsigns[key2], "Flight:  " + flightids[key].flightid);
             }
 
-            /* The Trackers and Predict File layers */
-            var d = createRealtimeLayer("", false, trackerstationslayer, 5 * 1000, function(){ return { color: 'black'}});
+            /* Predict File layers */
             var e = createFlightPredictionLayer("", predictedpathlayer, 5 * 1000);
+            rtlayers.push(e);
 
             /* The landing prediction layer */
             var f = createLandingPredictionsLayer("", landingpredictionlayer, 
                 5 * 1000,
                 flightids[key].flightid
             );
+            rtlayers.push(f);
 
             /* prediction layer for early cutdown */
             var g = createLandingPredictionsLayer("", cutdownpredictionlayer, 
@@ -2264,19 +2174,20 @@ function getTrackers() {
                 flightids[key].flightid,
                 landingPredictionStyleCutdown
             );
-            d.addTo(map);
+            rtlayers.push(g);
+
+            // add the landing prediction and early cutdown prediction layers to the map
             f.addTo(map);
             g.addTo(map);
 
             /* Add these layers to the map's layer control */
-            layerControl.addOverlay(trackerstationslayer, "Trackers", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(predictedpathlayer, "Pre-Flight Predicted Path", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(landingpredictionlayer, "Landing Predictions", "Flight:  " + flightids[key].flightid);
             layerControl.addOverlay(cutdownpredictionlayer, "Cutdown Predictions", "Flight:  " + flightids[key].flightid);
 
+            // update the flightList global with all flight layers
             flightList.push({
                 "flightid": flightids[key].flightid,
-                "trackerlayer": d,
                 "predictlayer": e,
                 "landinglayer": f,
                 "cutdownlayer": g,
@@ -2285,8 +2196,8 @@ function getTrackers() {
             });
          }
 
-        // Call update flight function to populate data...  
-        updateFlightData("full");
+
+        return rtlayers;
     }
 
 
@@ -2353,28 +2264,28 @@ function getTrackers() {
             i += 1;
         }
 
-        // The idea is to stagger the loading of these so that the browser isn't bogged down at first load.
-        //
         // Build the gauges and charts
         buildGauges(); 
         buildCharts();
 
-        // load map layers
-        initialize_layers();
+        // create map layers
+        realtimeLayers = initialize_layers();
 
-        // Read in the configuration
-	    //getConfiguration();
+        // Get an update from the all, rf, and weather stations
+        updateOtherStations("full");
 
-        // Get the status of running processes
-        getProcessStatus();
+        // Call update flight function to populate data...  
+        updateFlightData("full");
 
-        // build the Trackers table
-        getTrackers();
+        // prune off older objecs from the map every minute
+        setInterval(function() {
+            pruneMap(realtimeLayers, 60 * 1000);
+        });
 
         // Update all things on the map.  Note:  updateAllItems will schedule itself to run every 5 seconds.  No need for a setInterval call.
-        if (updateTimeout)
-            clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(function() {updateAllItems("notfull");}, 5000); 
+        //if (updateTimeout)
+        //    clearTimeout(updateTimeout);
+        //updateTimeout = setTimeout(function() {updateAllItems("notfull");}, 5000); 
 
         // When this map screen loses focus and then the user returns...
         window.onfocus = gainFocus;
@@ -2384,7 +2295,35 @@ function getTrackers() {
         window.addEventListener("resize", function() {
             resizeCharts();
         });
+    }
 
+    /********* 
+     * pruneMap
+     *
+     * Will loop through all of the layers on the map, pruning off those objects that are older
+     *********/
+    function pruneMap(realtime_layers) {
+        if (!realtime_layers)
+            return 0;
+
+        // number of objects pruned
+        let num = 0;
+
+        // the cutoff period, measured from right now.
+        let cutoff = new Date(Date.now() - lookbackPeriod * 60000);
+
+        if (Array.isArray(realtime_layers)) {
+            // list of layers to prune
+            realtime_layers.forEach( function(l) {
+                num += pruneRealtimeLayer(l, cutoff);
+            });
+        }
+        else {
+            // just a single layer to prune
+            num += pruneRealtimeLayer(realtime_layers, cutoff);
+        }
+
+        return num;
     }
 
 
@@ -2397,10 +2336,10 @@ function getTrackers() {
         if(typeof(EventSource) !== "undefined") {
 
             // Create new SSE source
-            packetsource = new EventSource(backendurl);
+            eventsource = new EventSource(backendurl);
 
             // listen for new gps position alerts
-            packetsource.addEventListener("gpsstatus", function(event) {
+            eventsource.addEventListener("gpsstatus", function(event) {
 
                 let gpsjson;
                 
@@ -2424,7 +2363,7 @@ function getTrackers() {
                 }
             });
 
-            packetsource.addEventListener("configuration", function(event) {
+            eventsource.addEventListener("configuration", function(event) {
                 let configjson;
 
                 // Parse the incoming json
@@ -2437,7 +2376,72 @@ function getTrackers() {
                 if (configjson) 
                     processConfiguration(configjson);
             });
+
+            eventsource.addEventListener("backendstatus", function(event) {
+
+                let json;
+                
+                // Parse the incoming json
+                try { json = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "backend status JSON parse error", "event": event, "error": e.message, "backendstatusjson": json});
+                }
+
+                if (json)
+                    processStatus(json);
+            });
+
+            eventsource.addEventListener("packets", function(event) {
+
+                let json;
+                
+                // Parse the incoming json
+                try { json = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "new packet JSON parse error", "event": event, "error": e.message, "packetsjson": json});
+                }
+
+                if (json)
+                    packethandler(json);
+            });
+
+            eventsource.addEventListener("trackers", function(event) {
+
+                let json;
+                
+                // Parse the incoming json
+                try { json = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "trackers JSON parse error", "event": event, "error": e.message, "trackersjson": json});
+                }
+
+                if (json)
+                    processTrackers(json);
+            });
+
+
+            // listen for any errors, try and restart the connection if there were any
+            eventsource.addEventListener("error", function(event) {
+
+                //console.log({"function": "event source error", "error": event});
+
+                // close the event source
+                eventsource.close();
+
+                // wait for one second then restart SSE 
+                setTimeout(initializeSSE, 1000);
+            });
         }
+    }
+
+
+    /***********
+    * initializeSSE
+    *
+    * restart the SSE stream
+    ***********/
+    function initializeSSE() {
+        setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&packets=true&trackers=true");
     }
 
 
@@ -2910,6 +2914,8 @@ function getTrackers() {
         if (features.length > 0) {
             rl.remove({"features": features});
         }
+
+        return features.length;
     }
 
 
@@ -2997,6 +3003,194 @@ function getTrackers() {
             $("#" + p.flightid + "_statustime_" + i).text(time_string);
             $("#" + p.flightid + "_statuscallsign_" + i).text(p.callsign);
             $("#" + p.flightid + "_statuspacket_" + i).text(p.packet);
+        }
+
+    }
+
+
+    /************
+     * packethandler
+     *
+     * handle the individual packets coming from the SSE stream
+    *************/
+    function packethandler(json) {
+
+        let callsign;
+        let coordinates;
+
+        /******* Example JSON *******
+        {
+            "type": "Feature", 
+            "geometry": {
+                "type": "Point", 
+                "coordinates": [-104.902884025, 39.271953083]
+            }, 
+            "properties": {
+                "tm": "2025-03-14T13:01:41.362621-06:00", 
+                "raw": "KJ7NCH-11>APLRG1,TCPIP*,qAC,T2EDM:!L:[MX3z69a  GLoRa APRS TTGO", 
+                "hash": "88495d5c6185f64dfbb865b8f4f654be", 
+                "ptype": "!", 
+                "source": "127.0.0.1", 
+                "symbol": "La", 
+                "bearing": 0, 
+                "channel": 0, 
+                "comment": "LoRa APRS TTGO", 
+                "altitude": 0, 
+                "callsign": "KJ7NCH-11", 
+                "frequency": null, 
+                "speed_mph": 0, 
+                "location3d": {
+                    "crs": {
+                        "type": "name", 
+                        "properties": {
+                            "name": "EPSG:4326"
+                        }
+                    }, 
+                    "type": "Point", 
+                    "coordinates": [-104.90288402471872, 39.27195308275098, 0]
+                }
+            }
+        }
+
+        {
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      -108.045360806,
+      38.350239927
+    ]
+  },
+  "properties": {
+    "tm": "2025-03-15T18:54:01.005575-06:00",
+    "raw": "N2XGL-6>APRARX,TCPIP*,qAC,T2SJC:;RSONDE-CO*005358h3821.01N/10802.72WO241/017/A=073052 DFM-24061930 Clb=-30.9m/s t=-52.5C 404.410 MHz Type=DFM09 Radiosonde !wI0!",
+    "hash": "87ff82fb0e47ca1b7bff7ad5b2f48e41",
+    "ptype": ";",
+    "source": "127.0.0.1",
+    "symbol": "/O",
+    "bearing": 241,
+    "channel": 0,
+    "comment": "DFM-24061930 Clb=-30.9m/s t=-52.5C 404.410 MHz Type=DFM09 Radiosonde",
+    "altitude": 73052,
+    "callsign": "RSONDE-CO",
+    "frequency": null,
+    "speed_mph": 20,
+    "location3d": {
+      "crs": {
+        "type": "name",
+        "properties": {
+          "name": "EPSG:4326"
+        }
+      },
+      "type": "Point",
+      "coordinates": [
+        -108.04536080586081,
+        38.350239926739924,
+        22266.249600000003
+      ]
+    },
+    "tooltip": "RSONDE-CO",
+    "label": "RSONDE-CO",
+    "id": "RSONDE-CO",
+    "iconsize": 24
+  }
+}
+
+        **************************/
+
+        if (json.properties && json.properties.callsign) {
+            callsign = json.properties.callsign;
+        }
+
+        // without a callsign we can't proceed
+        if (!callsign)
+            return null;
+
+        // without position information we can't add/update this station's location on the map
+        if (json.geometry && json.geometry.type && json.geometry.coordinates) {
+            coordinates = json.geometry.coordinates;
+        }
+        if (!coordinates)
+            return null;
+
+        // the leaflet group to add this geojson feature too
+        let layer = null;
+        let flightid = null;
+
+        // set the ID for the geojson feature
+        json.properties.id = json.properties.callsign;
+
+        // iconsize...hard setting this for the moment.
+        json.properties.iconsize = 24;
+
+        // fix the time
+        let dateobj = new Date(Date.parse(json.properties.tm));
+        json.properties.time = getISODateTimeString(dateobj, true);
+
+        // frequency being null
+        json.properties.frequency = (json.properties.source.startsWith("direwolf") || json.properties.source.startsWith("ka9q") ?  json.properties.frequency : "TCPIP");
+
+        // label, tooltip
+        json.properties.label = callsign;
+        json.properties.tooltip = callsign;
+
+        // determine if this station is part of an existing layer group already on the map
+        // loop through each flight, to check if this incoming json is a beacon on one of those flights
+        flightList.forEach(function(f) {
+            
+            // list of beacons on this flight
+            let beacons = f.beacons;
+
+            beacons.forEach(function(b) {
+                if (b.callsign.toUpperCase() == callsign.toUpperCase()) {
+                    layer = b.layer;
+
+                    // set flightid
+                    json.properties.flightid = b.flightid;
+
+                    // set object type
+                    if (json.properties.symbol && json.properties.symbol == "/O")
+                        json.properties.objecttype == "balloon";
+
+                    // set label
+                    let altstring = (json.properties.altitude * 1.0).toLocaleString() + "ft";
+                    json.properties.label == callsign + "<br>" + altstring;
+
+                    // tooltip
+                    json.properties.tooltip = callsign;
+                }
+            });
+        });
+
+        // didn't find a match within the flight beacon layers, so now search through the list of trackers.
+        if (!layer) {
+            trackersList.forEach(function(team) {
+                trackers = team.trackers;
+                trackers.forEach(function(t) {
+                    if (t.callsign.toUpperCase() == callsign.toUpperCase()) {
+                        layer = trackersAtLargeLayer;
+
+                        // adjust for the tactical team name
+                        json.properties.tooltip = t.tactical;
+                        json.properties.label = t.tactical;
+                        json.properties.comment = "Tactical: " + t.tactical + "<br>" + json.properties.comment;
+                    }
+                });
+            });
+        }
+
+        // Add this new data to the layer group
+        if (layer) {
+            //console.log("adding packet to layer.  ", json);
+            layer.update(json);
+
+        }
+        else {
+            //console.log("placing packet in allStationsLayer:  ", json);
+
+            // if not a flight beacon and not a tracker the dump this packet into the "everything else" layer
+            allStationsLayer.update(json);
+
         }
 
     }
@@ -3164,33 +3358,6 @@ function getTrackers() {
                                 clearRealtimeLayer(flight.predictlayer);
                             }
 
-
-                            if (trackersJSON.features.length > 0) {
-                                var x;
-                                var f = trackersJSON.features;
-
-                                // Remove this tracker from the Trackers At Large layer...
-                                for (x in f) {
-                                    var thisone = {"features" : [{"properties" : {"id": f[x].properties.id}}]};
-                                    var y;
-
-                                    if (typeof(trackersAtLargeLayer.getFeature(f[x].properties.id)) != "undefined") {
-                                        trackersAtLargeLayer.remove(thisone);
-                                    }
-
-                                    var z;
-                                    // Remove this tracker from a different flight's tracker list...
-                                    for (z in flightList) {
-                                        if (flightList[z].flightid != fid) {
-                                            if (typeof(flightList[z].trackerlayer.getFeature(f[x].properties.id)) != "undefined") {
-                                                flightList[z].trackerlayer.remove(thisone);
-                                            }
-                                        }
-                                    }
-                                }
-                                flight.trackerlayer.update(trackersJSON);
-                            }
-
                             if (packetlist.positionpackets.length > 0) {
                                 updateLatestPackets(packetlist.positionpackets);
                             }
@@ -3273,7 +3440,6 @@ function getTrackers() {
 
                             pruneRealtimeLayer(flight.landinglayer, cutoff);
                             pruneRealtimeLayer(flight.predictlayer, cutoff);
-                            pruneRealtimeLayer(flight.trackerlayer, cutoff);
 
                             var b;
                             for (b in flight.beacons) {
@@ -3319,72 +3485,16 @@ function getTrackers() {
         $.get(url, function(data) {
             var is_incremental = (this.url.indexOf("starttime") !== -1);
 
-            if (typeof(data.inetstations) != "undefined") {
-                if (data.inetstations.features.length > 0) {
-                    if (is_incremental) {
-                        var x;
-                        var f = data.inetstations.features;
 
-                        // Remove this station from the RF Stations layer as it's now shown up as an Internet-discovered one...
-                        for (x in f) {
-                            var thisone = {"features" : [{"properties" : {"id": f[x].properties.id}}]};
-                            if (typeof(rfStationsLayer.getFeature(f[x].properties.id)) != "undefined") {
-                                rfStationsLayer.remove(thisone);
-                            }
-                        }
-                    }
-                    allStationsLayer.update(data.inetstations);
-                }
-            }
-            if (typeof(data.rfstations) != "undefined") {
-                if (data.rfstations.features.length > 0) {
-                    if (is_incremental) {
-                        var x;
-                        var f = data.rfstations.features;
+            allStationsLayer.update(data.rfstations);
+            allStationsLayer.update(data.inetstations);
 
-                        // Remove this station from the Ineternet Stations layer as it's now shown up as an RF-discovered one...
-                        for (x in f) {
-                            var thisone = {"features" : [{"properties" : {"id": f[x].properties.id}}]};
-                            if (typeof(allStationsLayer.getFeature(f[x].properties.id)) != "undefined") {
-                                allStationsLayer.remove(thisone);
-                            }
-                        }
-                    }
-
-                    rfStationsLayer.update(data.rfstations);
-                }
-            }
             if (typeof(data.weatherstations) != "undefined")
                 weatherStationsLayer.update(data.weatherstations);
-            if (typeof(data.trackerstations) != "undefined") {
-                if (data.trackerstations.features.length > 0) {
-                    var x;
-                    var f = data.trackerstations.features;
-
-                    // Remove this tracker from any flight specific tracker list...
-                    for (x in f) {
-                        var thisone = {"features" : [{"properties" : {"id": f[x].properties.id}}]};
-                        var y;
-
-                        for (y in flightList) {
-                            if (typeof(flightList[y].trackerlayer.getFeature(f[x].properties.id)) != "undefined") {
-                                flightList[y].trackerlayer.remove(thisone);
-                            }
-                        }
-                    }
-                    trackersAtLargeLayer.update(data.trackerstations);
-                }
-
-            }
-
-            // We no longer update our location on the map from this periodic poll of the backend.  Position updates are handled through setupSSE now.
-            //if (typeof(data.myposition) != "undefined")
-            //    myPositionLayer.update(data.myposition);
 
             // Prune off any RF, inet, or weather stations
             var cutoff = new Date(Date.now() - lookbackPeriod * 60000);
-            //var layers = [allStationsLayer, rfStationsLayer, weatherStationsLayer, myPositionLayer, trackersAtLargeLayer];
-            var layers = [allStationsLayer, rfStationsLayer, weatherStationsLayer, trackersAtLargeLayer];
+            var layers = [allStationsLayer, weatherStationsLayer, trackersAtLargeLayer];
 
             layers.forEach( function(l) {
                 pruneRealtimeLayer(l, cutoff);
@@ -3398,156 +3508,8 @@ function getTrackers() {
                 }
             });
 
-            // APRS messages packets
-            if (typeof(data.messages) != "undefined") {
-                updateMessagesTable(data.messages);
-            }
-
         });
     }
-
-
-
-    /************
-     * updateMessagesTable
-     *
-     * With a list of messages as input, create a table within the sidebar for these APRS message packets highlighting any that are addressed to mycallsign.
-     *
-     * Example:  [{"thetime":"2021-11-12T07:22:52.392","callsign_from":"SP9UOB-12","callsign_to":"EMAIL-2","the_message":"sp9uob@gmail.com tracker boot 2630 144390000 kHz last=50.33168,-125.64470 rtc=396","message_num":"2630"}]
-    *************/
-    function updateMessagesTable(msgs) {
-        var keys = Object.keys(msgs);
-
-        // the element that we'll ultimately load our content into
-        var container = document.getElementById("packetdata");
-
-        // the table itself
-        var table = document.createElement("table");
-        table.setAttribute("class", "packetlist");
-        table.setAttribute("width", "100%");
-
-        // the columns
-        //var columns = ["Time", "To", "From", "Msg #"];
-        var columns = ["Time", "Message"];
-
-        // Add the header row
-        var row = table.insertRow(-1);
-        columns.forEach(function(l) {
-            var headerCell = row.insertCell(-1);
-            headerCell.innerHTML = l;
-            headerCell.setAttribute("class", "packetlistheader");
-        });
-
-        // Now add the messages themselves to the table
-        if (keys.length == 0) {
-            row = table.insertRow(-1);
-            var blankcell1 = row.insertCell(-1);
-            var blankcell2 = row.insertCell(-1);
-            blankcell1.setAttribute("class", "packetlist");
-            blankcell2.setAttribute("class", "packetlist");
-            blankcell1.innerHTML = "n/a";
-            blankcell2.innerHTML = "No messages available.";
-        }
-        else {
-            msgs.forEach(function(m, i) {
-
-                // Make sure all of the JSON elements are defined
-                if (typeof(m.callsign_to) == "undefined" ||
-                    typeof(m.callsign_from) == "undefined" ||
-                    typeof(m.thetime) == "undefined" || 
-                    typeof(m.the_message) == "undefined" ||
-                    typeof(m.message_num) == "undefined" ||
-                    typeof(m.sat) == "undefined") {
-                    return;
-                }
-
-
-                // create a row for this message
-                row = table.insertRow(-1);
-
-                // Cells for each data element
-                var time = row.insertCell(-1);
-                var content = row.insertCell(-1);
-
-                var classlist = "packetlist";
-
-                // change the background color on every other row
-                if (i % 2) {
-                    classlist = "packetlist highlight";
-                }
-
-                // If this message is addressed directly to "mycallsign", then change the highlighting
-                if (mycallsign == m.callsign_to.toUpperCase()) {
-                    classlist = "packetlist important";
-                }
-
-                time.setAttribute("class", classlist + " normal");
-                content.setAttribute("class", classlist + " monospace");
-
-                // create a new date object fromt the time
-                var thetime = new Date(m.thetime);
-
-                // create a 24hr time string
-                var time_string = (thetime.getHours() < 10 ? "0" : "") + thetime.getHours() + ":" 
-                    + (thetime.getMinutes() < 10 ? "0" : "") + thetime.getMinutes() + ":" 
-                    + (thetime.getSeconds() < 10 ? "0" : "") + thetime.getSeconds();
-
-                // Was this to/from a satellite?
-                var sat = "";
-                if (m.sat * 1.0 == 1) 
-                    sat = "<br><mark class=\"okay\">[ Satellite ]</mark>";
-
-                // Search through the map layers to determine if the sender of this message is on the map
-                // First, look through the RF stations layer (as that's likely where the station is...so we search it first).
-                var found = rfStationsLayer.getFeature(m.callsign_from.toUpperCase());
-
-                // if not found, then we next check the at large trackers layer
-                if (!found) 
-                    found = trackersAtLargeLayer.getFeature(m.callsign_from.toUpperCase());
-
-                // if still not found, then we next check the the trackers layers from each active flight
-                if (!found) {
-                    flightList.forEach(function(f) {
-                        var trackers = f.trackerlayer;
-                        var id = trackers.getFeature(m.callsign_from.toUpperCase());
-
-                        if (id)
-                            found = id;
-                    });
-                }
-
-                // If we found the sender's station on the map, then grab the lat/lon and create a hyperlink for panning the map.
-                var fromStation;
-                if (found && found.geometry.coordinates) {
-                    var onclick;
-
-                    onclick="(function () { if (!map.hasLayer(rfStationsLayer.options.container)) map.addLayer(rfStationsLayer.options.container); dispatchPanToEvent('" + found.geometry.coordinates[1] + "', '" + found.geometry.coordinates[0] + "'); })();";
-                    fromStation = "<a href=\"#\"  onclick=\"" + onclick + "\">" + m.callsign_from.toUpperCase() + "</a>";
-                }
-                else
-                    fromStation = m.callsign_from.toUpperCase();
-
-                var html = "<table cellpadding=0 cellspacing=0 border=0><tr><td><font class=\"normal\">From: </font></td><td>" + fromStation + "</td></tr>"
-                    + "<tr><td><font class=\"normal\">To: </font></td><td>" + m.callsign_to.toUpperCase() + "</td></tr>"
-                    + "<tr><td><font class=\"normal\">Msg#: </font></td><td>" + (m.message_num ? m.message_num : "--") + "</td></tr></table>"
-                    + "<p>" + m.the_message + "</p>";
-
-                // Update content of the cells
-                time.innerHTML = time_string + sat;
-                content.innerHTML = html;
-
-            });
-        }
-
-
-        // Blank the container to clear out any prior data
-        container.innerHTML = "";
-
-        // Now update with our content
-        container.appendChild(table);
-
-    }
-
 
 
     /************
@@ -3722,17 +3684,11 @@ function getTrackers() {
     *************/
     function updateAllItems(fullupdate) {
 
-        // Update process status
-        getProcessStatus();
-
         // Update all, rf, and weather stations
         updateOtherStations(fullupdate);
 
         // Update all, rf, and weather stations
         updateFlightData(fullupdate);
-
-        // Update the tracker list only if this is a full update
-        getTrackers();
 
         // Update the TTL values
         checkTTL();

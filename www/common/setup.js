@@ -1833,7 +1833,7 @@
     function displayKioskData() {
 
         // Get the configuration
-        $.get("getconfiguration.php", function(data) {
+        $.get("getconfiguration-memcache.php", function(data) {
             var keys = Object.keys(data);
             var i;
 

@@ -34,10 +34,10 @@
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
 
     // Grab some functions
-    include $documentroot . '/common/functions.php';
+    include_once $documentroot . '/common/functions.php';
 
     // include the event source objects
-    include $documentroot . '/eventsources.php';
+    include_once $documentroot . '/eventsources.php';
 
 
 
@@ -89,6 +89,7 @@
      * Returns an array with the various event source objects that the end user's browser is requesting.
      ***********/
     function getRequestedEvents() {
+        global $documentroot;
 
         // what does the browser want to receive SSE events for?  By default only configuration update events are sent.
         $events = Array();
@@ -109,6 +110,14 @@
                 $events[] = new PacketEvent();
         }
 
+        // tracker updates
+        $get_trackers = "";
+        if (isset($_GET["trackers"])) {
+            $get_trackers = strtoupper(check_string($_GET["trackers"], 20));
+            if ($get_trackers == "TRUE")
+                $events[] = new TrackerEvent();
+        }
+
         // Backend status
         $get_backendstatus = "";
         if (isset($_GET["backendstatus"])) {
@@ -118,11 +127,27 @@
         }
 
         // Backend logging updates
-        $get_logupdates = "";
-        if (isset($_GET["logupdates"])) {
-            $get_logupdates = strtoupper(check_string($_GET["logupdates"], 20));
-            if ($get_logupdates == "TRUE")
-                $events[] = new LogEvent();
+        $get_mainlog = "";
+        if (isset($_GET["mainlog"])) {
+            $get_mainlog = strtoupper(check_string($_GET["mainlog"], 20));
+            if ($get_mainlog == "TRUE") 
+                $events[] = new LogEvent("mainlog", $documentroot . "/logs/start_session.log");
+        }
+
+        // stderr outupt
+        $get_stderr = "";
+        if (isset($_GET["stderr"])) {
+            $get_stderr = strtoupper(check_string($_GET["stderr"], 20));
+            if ($get_stderr == "TRUE") 
+                $events[] = new LogEvent("stderr", $documentroot . "/logs/start_session.log.stderr");
+        }
+
+        // Backend logging updates
+        $get_direwolflog = "";
+        if (isset($_GET["direwolflog"])) {
+            $get_direwolflog = strtoupper(check_string($_GET["direwolflog"], 20));
+            if ($get_direwolflog == "TRUE") 
+                $events[] = new LogEvent("direwolflog", $documentroot . "/logs/direwolf.out");
         }
 
         // Backend configuration updates
@@ -147,18 +172,6 @@
     // determine which events we're supposed to report on
     $events = getRequestedEvents();
 
-    // Connect to the database
-    /*
-    $link = connect_to_database();
-    if (!$link) {
-        db_error(sql_last_error());
-        return 0;
-    }
-
-    // start listening for postgresql NOTIFY events
-    pg_query($link, "LISTEN new_packet;");
-    */
-
     // stop flushing
     ob_end_flush();
 
@@ -177,11 +190,6 @@
     sendSSEHeartbeat();
 
     while (!connection_aborted()) {
-
-        // The result from our postgresql LISTEN command.
-        //$result = pg_get_notify($link);
-        // check if we got anything back from the postgresql database
-        //if ($result) { 
 
         // loop through each event, checking if there's anything to send to the browser
         $eventcount = 0;
@@ -218,11 +226,16 @@
         else {
 
             // sleep for a small amount of seconds
-            sleep(1);
+            usleep(0.5 * 1000000);
 
             // increment the sleep counter
             $sleepcounter++;
         }
+    }
+
+    // the browser connection was broken so close all events
+    foreach ($events as $e) {
+        $e->close();
     }
 
     // done.

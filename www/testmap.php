@@ -1,10 +1,9 @@
 <?php
 /*
-*
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020,2023 Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -29,7 +28,7 @@
     else
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
 
-    include $documentroot . '/common/header-testmap.php';
+    include_once $documentroot . '/common/header-testmap.php';
 ?>
 <script src="/testmap.js"></script>
 <div class="map" id="map"></div>

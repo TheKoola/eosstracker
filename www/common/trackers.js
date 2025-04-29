@@ -52,7 +52,7 @@
         }
 
         $.get("addtracker.php?callsign=" + call + "&notes=" + notes.value + "&team=" + selectedTeam, function(data) {
-            var trackerJson = JSON.parse(data);
+            var trackerJson = data;
  
             if (trackerJson.result == 0)
                 document.getElementById("newtrackererror").innerHTML = "<mark>" + trackerJson.error + "</mark>"; 
@@ -139,8 +139,7 @@ function getTrackers() {
  
 
             $.get("gettrackers.php", function(data) {
-                //var trackerJson = JSON.parse(data);
-                var trackerJson = data;
+                var trackerJson = data.trackers;
                 var keys = Object.keys(trackerJson);
                 var i; 
                 var j;
@@ -154,7 +153,7 @@ function getTrackers() {
                 table.setAttribute("style", "width: auto");
  
                 //The columns
-                var columns = ["Team and Flight Assignment", "Callsign", "Notes", "Move to This Team"];
+                var columns = ["Team", "Callsign", "Notes", "Move to This Team"];
      
                 //Add the header row.
                 var row = table.insertRow(-1);
@@ -173,7 +172,8 @@ function getTrackers() {
                     var trackerkeys = Object.keys(trackers);
                     var teamcell = row.insertCell(0);
                     var flight;
-                    var html = "<select id=\"" + trackerJson[i].tactical + "\" onchange='changeAssignedFlight(\"" + trackerJson[i].tactical + "\", this)'>";
+                    //var html = "<select id=\"" + trackerJson[i].tactical + "\" onchange='changeAssignedFlight(\"" + trackerJson[i].tactical + "\", this)'>";
+                    var html;
                     var checked;
                     var foundmatch = 0;
    
@@ -183,6 +183,7 @@ function getTrackers() {
                         teamcell.setAttribute("style", "background-color: #737373;"); 
  
  
+                    /*
                     for (flight in flightids) {
                         if (flightids[flight].flight == trackerJson[i].flightid) {
                             checked = "selected=\"selected\""; 
@@ -197,8 +198,10 @@ function getTrackers() {
                     else
                         checked = "";
                     html = html + "<option value=\"atlarge\" " + checked + " >At Large</option></select>";
+                    */
          
-                    teamcell.innerHTML = "<span style=\"font-size: 1.3em;\"><strong>" + trackerJson[i].tactical + "</strong></span><br>" + html;
+                    //teamcell.innerHTML = "<span style=\"font-size: 1.3em;\"><strong>" + trackerJson[i].tactical + "</strong></span><br>" + html;
+                    teamcell.innerHTML = "<span style=\"font-size: 1.3em;\"><strong>" + trackerJson[i].tactical + "</strong></span>";
                     teamcell.setAttribute("rowspan", trackerkeys.length);
                   
                     var t;
@@ -221,7 +224,8 @@ function getTrackers() {
                         cellCallsign.setAttribute("class", "trackerlist");
                         if (i % 2)
                             cellCallsign.setAttribute("style", "background-color: #737373;"); 
-                        cellCallsign.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"width: 22px; height: 22px;\" onclick=\'deleteTracker(\"" + trackers[j].callsign + "\")\'> &nbsp; " + trackers[j].callsign;
+                        cellCallsign.innerHTML = "<img src=\"/images/graphics/trashcan.png\" style=\"vertical-align: middle; width: 22px; height: 22px;\" onclick=\'deleteTracker(\"" + trackers[j].callsign + "\")\'> &nbsp; " 
+                            + "<span style=\"vertical-align: middle;\">" + trackers[j].callsign + "</span>";
     
                         var cellNotes = row.insertCell(-1);
                         cellNotes.setAttribute("class", "trackerlist");

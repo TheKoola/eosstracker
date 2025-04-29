@@ -821,7 +821,7 @@ class MulticastPacketStream(PacketStream):
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.bind((self.server.hostname, self.server.portnum))
-            mreq = struct.pack("4sl", socket.inet_aton(self.server.hostname), socket.INADDR_ANY)
+            mreq = struct.pack("4sl", socket.inet_aton(socket.gethostbyname(self.server.hostname)), socket.INADDR_ANY)
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
             self.sock.setblocking(1)
             self.sock.settimeout(5)
@@ -1810,7 +1810,7 @@ def connectorTap(configuration, typeoftap = 'aprs'):
         # start the RTP + AX.25 connection to the ka9q-radio backend
 
         # create a new RTP connection object
-        server = Server(hostname="239.85.210.44", portnum=5004, nickname="RTP Multicast")
+        server = Server(hostname="ax25.local", portnum=5004, nickname="RTP Multicast")
         tap = RTPStream(server = server, loggingqueue = configuration["loggingqueue"], stopevent = configuration["stopevent"], configuration = configuration)
 
     elif typeoftap == 'aprs' or typeoftap == 'cwop':

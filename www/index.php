@@ -124,7 +124,6 @@ include $documentroot . '/common/header.php';
 
     <!-- Notices -->
     <div style="clear: both; padding-top: 20px;">
-        <p class="normal-italic"><strong>Note:</strong> Process status is updated automatically every 5secs.</p>
         <p class="normal-italic"><strong>Note:</strong> GPS state is only updated while system processes are running</p>
     </div>
 
@@ -134,14 +133,15 @@ include $documentroot . '/common/header.php';
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         System Logs
     </p>
-    <p class="packetdata-header">Stdout</p>
-    <pre class="packetdata"><span id="logfile"></span></pre>
-    <p class="packetdata-header">Stderr</p>
-    <pre class="packetdata" ><span id="errfile"></span></pre>
-    <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
+    <p class="packetdata-header">Main Log</p>
+    <div id="mainlog" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
+    <p class="packetdata-header">Errors</p>
+    <div id="stderr" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
+    <!-- <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
     <pre class="packetdata" ><span id="beacons"></span></pre>
+    -->
     <p class="packetdata-header">Direwolf Output</p>
-    <pre class="packetdata" ><span id="direwolf"></span></pre>
+    <div id="direwolflog" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
     <p><span id="debug"></span></p>
 </div>
 

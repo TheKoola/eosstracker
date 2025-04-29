@@ -597,7 +597,7 @@ include $documentroot . '/common/header.php';
 
              <td class="packetlist">
                  <strong>KA9Q-Radio</strong> uses a novel approach in distributing audio streams from radio frequencies.  If this option is enabled, this system will listen for any audio streams produced
-                     by a KA9Q-Radio instance running on the local network.  
+                     by a KA9Q-Radio instance running on the local network.  This will listen using multicast networking to the hostname, ax25.local.
              </td>
              <td class="packetlist"  id="ka9qradiotext" style="text-align: center; white-space: nowrap;">Listen for KA9Q-Radio: <input type="checkbox" form="configuration_form" name="ka9qradio" id="ka9qradio"></td>
         </tr> 

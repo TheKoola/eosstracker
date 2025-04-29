@@ -217,7 +217,7 @@ class GPSPoller(object):
     # Save GPS status to a memcache object
     # ...saves the GPS data (JSON) to a status file that the web frontend reads
     ##################################################
-    def _saveGPSMemcache(self, objname: str = "gps_status", gs: dict = None)->None:
+    def _saveGPSMemcache(self, objname: str = "gpsstatus", gs: dict = None)->None:
 
         gpsstats = self.gpsstatus
         if gs:
@@ -352,7 +352,7 @@ class GPSPoller(object):
         # Save the GPS stats to the JSON status file, the shared memory object, and to memcache
         self._saveGPSStatus(self.toGeoJson(gpsstats))
         self._updatePosition(gpsstats)
-        self._saveGPSMemcache("gps_status", gpsstats)
+        self._saveGPSMemcache("gpsstatus", gpsstats)
 
 
     #####################################

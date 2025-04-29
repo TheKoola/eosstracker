@@ -32,91 +32,158 @@
     include $documentroot . '/common/functions.php';
 
     // Check the flightid HTML GET variable
-    $get_flightid = "";
-    $whereclause = "";
-    if (isset($_GET["flightid"])) 
-        if (($get_flightid = strtoupper(check_string($_GET["flightid"], 20))) != "") 
-            $whereclause = " and t.flightid = $1 ";
- 
-    
-
-    ## Connect to the database
-    $link = connect_to_database();
-    if (!$link) {
-        db_error(sql_last_error());
-        return 0;
-    }
+    //$get_flightid = "";
+    //if (isset($_GET["flightid"])) 
+    //    $get_flightid = strtoupper(check_string($_GET["flightid"], 20));
 
 
-    $query = "select
-     t.tactical,
-     tm.callsign,
-     tm.notes, 
-     case
-         when t.flightid = '' or t.flightid is null then 'At Large'
-         else t.flightid
-     end as flightid
+    /************
+     * getTrackers
+     *
+     * Read from the backend database to get a list of tactical teams and the trackers associated with them.
+     *
+     * Arguments:  
+     *     accepts an optional flightid argument that will narrow the returned results to those trackers that are 
+     *     assigned to that particular flight.
+     ***********/
+    function getTrackers(string $flightid = null): ?object {
 
-     from
-     teams t,
-     trackers tm
-   
-     where
-     tm.tactical = t.tactical " .
-     ($get_flightid == "" ? "" : " and t.flightid = $1 ")  .
+        // Connect to the database
+        $link = connect_to_database();
+        if (!$link) {
+            db_error(sql_last_error());
+            return 0;
+        }
 
-     "order by 
-     t.tactical asc,
-     tm.callsign asc
-     ;";
+        // SQL query to get the list of trackers and teams
+        $query = "select
+         t.tactical,
+         tm.callsign,
+         tm.notes, 
+         case
+             when t.flightid = '' or t.flightid is null then 'At Large'
+             else t.flightid
+         end as flightid
 
-    if ($get_flightid == "")
-        $result = sql_query($query);
-    else 
-        $result = pg_query_params($link, $query, array(sql_escape_string($get_flightid)));
+         from
+         teams t,
+         trackers tm
+       
+         where
+         tm.tactical = t.tactical " .
+         ($flightid == "" ? "" : " and t.flightid = $1 ")  .
 
-    if (!$result) {
-        db_error(sql_last_error());
+         "order by 
+         t.tactical asc,
+         tm.callsign asc
+         ;";
+
+        if ($flightid == "")
+            $result = sql_query($query);
+        else 
+            $result = pg_query_params($link, $query, array(sql_escape_string($flightid)));
+
+        if (!$result) {
+            db_error(sql_last_error());
+            sql_close($link);
+
+            // upon error return an empty array
+            return Array();
+        }
+
+        // close the db connection
         sql_close($link);
-        return 0;
-    }
 
-    $trackers = [];
-    $teams = [];
+        $trackerjson = [];
+        $teams = [];
+        while ($row = sql_fetch_array($result)) {
+            $trackers[$row["tactical"]][] = array("tactical" => $row['tactical'], "callsign" => $row['callsign'], "notes" => $row['notes']);
+            $teams[$row["tactical"]] = $row["flightid"];
+        }
 
-    while ($row = sql_fetch_array($result)) {
-        $trackers[$row["tactical"]][] = array("tactical" => $row['tactical'], "callsign" => $row['callsign'], "notes" => $row['notes']);
-        $teams[$row["tactical"]] = $row["flightid"];
-    }
+        foreach ($trackers as $tactical => $ray) {
 
-    $outerfirsttime = 0;
-    printf ("[ ");
-    foreach ($trackers as $tactical => $ray) {
-        if ($outerfirsttime == 1)
-            printf (", ");
-        $outerfirsttime = 1;
-        printf ("{ \"tactical\" : %s, \"flightid\" : %s, \"trackers\" : [ ", json_encode($tactical), json_encode($teams[$tactical]));
-        $firsttime = 0;
-        foreach ($ray as $k => $list) {
-            if ($firsttime == 1)
-                printf (", ");
-            $firsttime = 1;
-           // printf ("<br><br>");
-           // print_r($list);
-           // printf ("<br><br>");
-            printf ("{\"tactical\" : %s, \"callsign\" : %s, \"notes\" : %s }", 
-                json_encode($list["tactical"]), 
-                json_encode($list["callsign"]), 
-                json_encode(($list["notes"] == "" ? "n/a" : $list["notes"])) 
+            $trackers = [];
+            foreach ($ray as $k => $list) {
+
+                // add this tracker entry to the trackers list
+                $trackers[] = Array(
+                    //"tactical" => $list["tactical"],
+                    "callsign" => $list["callsign"],
+                    "notes" => ($list["notes"] == "" ? "n/a" : $list["notes"])
+                );
+            }
+
+            // add entry to json array
+            $trackerjson[] = Array(
+                "tactical" => $tactical,
+                "flightid" => $teams[$tactical],
+                "trackers" => $trackers
             );
         }
-        printf (" ] } ");
+
+        $json = Array(
+            "timestamp" => microtime(true),
+            "trackers" => $trackerjson
+        );
+        return (object) $json;
     }
-    printf (" ]");
 
-//    printf ("%s<br><br>", json_encode($trackers));
-//    printf ("%s", json_encode($object));
 
-    sql_close($link);
+
+
+     /************
+     * main code below
+     ***********/
+
+    // where we'll store the results
+    $js = new stdClass();
+
+    // status of our memcache attempt
+    $cache_status = null;
+
+    try {
+
+        // create a new memcache object and connect to the backend daemon
+        $memcache = new Memcache;
+        $connectionresult = $memcache->connect('localhost', 11211);
+        if (!$connectionresult)
+            throw new Exception("memcache fail");
+
+        // attempt to get the key from memcache
+        $getresult = $memcache->get('trackers');
+        if ($getresult) {
+
+            // convert the returned JSON to a PHP object
+            $js = json_decode($getresult, false);
+            $cache_status = "cache hit";
+        }
+        else {
+            // cache miss.  Now get the list of trackers from the backend
+            $js = getTrackers();
+            $cache_status = "cache miss";
+
+            // now add this to memcache with a TTL of 900 seconds.
+            $memcache->set('trackers', json_encode($js), false, 900);
+        }
+
+        // close the memcache connection.
+        $memcache->close();
+
+    } catch (Exception $e) {
+
+        // close the memcache object, just in case
+        $memcache->close();
+
+        // get the list of trackers from the backend
+        $js = getTrackers();
+        $cache_status = "exception:  " . $e;
+    }
+
+    // add the cache status key/value pair
+    $js->memcache_status = $cache_status;
+
+    // print out results
+    printf("%s", json_encode($js));
 
 ?>

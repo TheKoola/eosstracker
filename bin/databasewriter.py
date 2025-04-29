@@ -39,6 +39,7 @@ from logging.handlers import QueueHandler, QueueListener, TimedRotatingFileHandl
 #import local configuration items
 import habconfig 
 from packet import Packet
+import queries
 
 
 #####################################
@@ -100,6 +101,10 @@ class databaseWriter(object):
         self.logger.debug(f"    dbstring: {self.dbstring}")
         self.logger.debug(f"    timezone: {self.timezone}")
 
+        # memcache list of packets for all active flights and tracker stations
+        self.flightMemcache = []
+        self.trackerMemcache = []
+
 
     ################################
     # This function will block until the stopevent is triggered
@@ -114,6 +119,9 @@ class databaseWriter(object):
 
         # long timeout
         long_timeout = timeout * 12
+
+        # the list of active flight beacons (i.e. their callsigns)
+        beaconlist = []
 
         # This will attempt a connection multiples times (ie. the following while loop), waiting a few seconds in between tries.
         while not self.stopevent.is_set():
@@ -151,11 +159,26 @@ class databaseWriter(object):
                             self.logger.debug(f"Packet from queue:  {packet}")
 
                             # write this packet to the database
-                            self.writeToDatabase(packet)
+                            callsign = self.writeToDatabase(packet)
+
+                            # if this is an active flight callsign, then update the memcache flight list
+                            if callsign:
+                                if callsign in beaconlist:
+                                    self.updateMemcache(packet);
+
 
                     except (Empty, ValueError) as e:
 
                         #self.logger.debug(f"Packetqueue was empty: {e}")
+                        
+                        # since that there wasn't anything in the queue, update the list of active flight beacons
+                        # get a list of active flights
+                        # columns for returned numpy array:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
+                        flights = queries.getFlights(self.dbconn, self.logger)
+
+                        # list of active flight beacons
+                        if flights is not None:
+                            beaconlist = flights[:,1] if flights.shape[0] > 0 else []
 
                         # if the queue was empty, then wait for a second before retrying
                         self.stopevent.wait(1)
@@ -180,6 +203,12 @@ class databaseWriter(object):
         #    self.logger.debug(f"Caught interrupt event, exiting run() function:  {err}")
         #    self.close()
 
+
+    ##################################################
+    # update MemCache key and packet
+    ##################################################
+    def updateMemcache(self, p: Packet):
+        self.logger.debug(f"Packet to be added to memcache list: {p}");
 
 
     ##################################################
@@ -254,12 +283,13 @@ class databaseWriter(object):
     ##################################################
     # Write an incoming packet to the database
     ##################################################
-    def writeToDatabase(self, p: Packet):
+    def writeToDatabase(self, p: Packet)->str:
         """
         this will write the incoming packet (p) to the database. 
         """
 
-        
+        # the callsign that we'll eventually return to the caller 
+        callsign = None
 
         # If packet is None then just return
         if not p:
@@ -343,6 +373,8 @@ class databaseWriter(object):
             if packet["object_name"] != "":
                 packet["from"] = packet["object_name"]
 
+            # the callsign
+            callsign = packet["from"]
 
             self.logger.debug("checking if a posit packet...")
             # If the packet includes a location (some packets do not) then we form our SQL insert statement differently
@@ -579,7 +611,7 @@ class databaseWriter(object):
             tapcur.close()
             self.close()
 
-        return True
+        return callsign
 
 
 ##################################################

@@ -37,7 +37,8 @@
 
 
         // backend url
-        let backendurl = "ssestream.php";
+        //let backendurl = "testssestream.php";
+        let backendurl = "ssestream.php?packets=true&gpsstatus=true";
 
         // Create new SSE source
         let packetsource = new EventSource(backendurl);
@@ -58,7 +59,7 @@
 
 
         // listen for new positions
-        packetsource.addEventListener("gps_status", function(event) {
+        packetsource.addEventListener("gpsstatus", function(event) {
 
             // Parse the incoming json
             const jsondata = event.data;
@@ -71,7 +72,7 @@
         });
 
         // listen for new packets
-        packetsource.addEventListener("new_packet", function(event) {
+        packetsource.addEventListener("packets", function(event) {
 
             // Parse the incoming json
             const jsondata = event.data;
@@ -82,6 +83,15 @@
             data.innerHTML += "<pre>" + ts.toLocaleString() + ", " + jsondata + "</pre>";
         });
 
+        // listen for error events
+        packetsource.addEventListener("error", function(event) {
+            console.log("error", event);
+        });
+
+        // listen for open events
+        packetsource.addEventListener("open", function(event) {
+            console.log("SSE opened.  ", event);
+        });
     }
 
 

@@ -611,3 +611,80 @@ mark.marginal {
     color: black;
     background-color: #ffff80;
 }
+
+
+.leaflet-control-gpsbox {
+	display: flex; 
+	border: 2px solid #ccc;
+    border-radius: 5px;
+	background-color: white;
+	padding: 3px 10px;
+    font-size: 1.2em;
+    align-items: center;
+    cursor: pointer;
+}
+.leaflet-control-gpsbox:hover {
+    border: 2px solid blue;
+}
+
+img.locationtriangle {
+    max-height: 18px;
+    margin-right: 8px;
+    float: left;
+}
+
+div.gpsstatustext {
+}
+
+.leaflet-control-statusbox {
+	display: flex; 
+	border: 2px solid #ccc;
+    border-radius: 5px;
+	background-color: white;
+	padding: 3px 10px;
+    font-size: 1.2em;
+    align-items: center;
+    cursor: pointer;
+}
+
+div.statusboxtext {
+}
+
+.leaflet-control-connectionstatus {
+	display: block; 
+	border: 2px solid #ccc;
+    border-radius: 5px;
+	background-color: rgba(255, 255, 255, .5);
+	padding: 3px 10px;
+    font-size: 1em;
+    align-items: left;
+    cursor: pointer;
+}
+
+table.leaflet-control-connectionstatus-table {
+    text-align: left;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    margin: 0px;
+    padding:  0px;
+}
+
+th.leaflet-control-connectionstatus-table {
+    color: #222222;
+    text-align: left;
+    text-decoration:none;
+    white-space: nowrap;
+    word-wrap: break-word;
+    font-variant:  small-caps;
+    font-weight:  bold;
+}
+
+td.leaflet-control-connectionstatus-table {
+    color: #222222;
+    text-align: left;
+    text-decoration:none;
+    white-space: nowrap;
+    word-wrap: break-word;
+    font-variant:  normal;
+    font-weight:  normal;
+}
