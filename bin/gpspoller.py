@@ -280,7 +280,7 @@ class GPSPoller(object):
         utc_datetime = datetime.datetime.now(datetime.timezone.utc)
 
         if not gpstime:
-            return utc_datetime.isoformat(timespec='seconds') + 'Z'
+            return utc_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         try:
             # convert the incoming datetime string to a datetime object
@@ -288,13 +288,13 @@ class GPSPoller(object):
 
             # make sure the year is correct.  If not, then just return the system's datetime
             if gpsdatetime.year == utc_datetime.year:
-                return gpsdatetime.isoformat(timespec='seconds') + 'Z'
+                return gpsdatetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         except ValueError:
             self.logger.debug(f"Error parsing datetime from the GPS: {gpstime}");
 
         # there was an error of some kind so just use the system's datetime instead
-        return utc_datetime.isoformat(timespec='seconds') + 'Z'
+        return utc_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
     #####################################
@@ -618,6 +618,33 @@ class GPSPoller(object):
 
         return mysats_sorted
 
+    ##################################################
+    # sanitize values coming from gpsd.fix
+    ##################################################
+    def sanitize(self, gpsd: gps = None)->dict:
+
+        if not gpsd:
+            return None
+
+        # cleaner for any values returned from GPSD
+        clean = lambda x: x if math.isfinite(x) else 0.0
+
+        # dictionary w/ default values
+        d = {
+                "track": 0.0,
+                "speed": 0.0,
+                "altitude": 0.0,
+                "latitude": 0.0,
+                "longitude": 0.0
+                }
+
+        d["altitude"] =  clean(gpsd.fix.altitude)
+        d["latitude"] =  clean(gpsd.fix.latitude)
+        d["longitude"] = clean(gpsd.fix.longitude)
+        d["track"] =     clean(gpsd.fix.track)
+        d["speed"] =     clean(gpsd.fix.speed)
+
+        return d
 
 
     ##################################################
@@ -711,8 +738,11 @@ class GPSPoller(object):
                 # 3D Fix
                 if gpsmode == 3:
 
+                    # get sanitized fix values from gpsd
+                    clean = self.sanitize(gpsd)
+
                     if lastmode != gpsmode:
-                        self.logger.info(f"3D GPS fix acquired: {gpsd.fix.latitude}, {gpsd.fix.longitude} @ {round(gpsd.fix.altitude * 3.2808399, 0)}ft")
+                        self.logger.info(f"3D GPS fix acquired: {clean['latitude']}, {clean['longitude']} @ {round(clean['altitude'] * 3.2808399, 0)}ft")
                     lastmode = gpsmode
 
                     # calculate the elapsed time between the last database position insert.  If it's been longer than some minimum interval then we want to add 
@@ -720,7 +750,7 @@ class GPSPoller(object):
                     elapsed_time = datetime.datetime.now(datetime.timezone.utc) - last_insert_time
 
                     # If our position has changed by .0001 of a lat/lon degree, then we consider it significant enough to add a row to the database
-                    if (round(gpsd.fix.latitude,4) != prevlat or round(gpsd.fix.longitude,4) != prevlon) or elapsed_time.total_seconds() > 7200:
+                    if (round(clean["latitude"], 4) != prevlat or round(clean["longitude"], 4) != prevlon) or elapsed_time.total_seconds() > 7200:
 
                         self.logger.debug(f"GPS timezone: {self.timezone}")
 
@@ -748,7 +778,7 @@ class GPSPoller(object):
                         thetime = datetime_record
 
                         # If our position is non-zero and altitude is > 0 then proceed with the database insert
-                        if gpsd.fix.latitude != 0 and gpsd.fix.longitude != 0 and gpsd.fix.altitude >= 0:
+                        if clean["latitude"] != 0 and clean["longitude"] != 0 and clean["altitude"] >= 0:
 
                             # Only insert this record into the database if we've not already had an update for this GPS position
                             if thetime != timeprev:
@@ -756,14 +786,14 @@ class GPSPoller(object):
                                     gpscur.execute(sql, [
                                         thetime,
                                         self.timezone,
-                                        round(gpsd.fix.speed * 2.236936, 1),
-                                        gpsd.fix.track,
-                                        round(gpsd.fix.altitude * 3.2808399, 0),
-                                        gpsd.fix.longitude,
-                                        gpsd.fix.latitude,
-                                        gpsd.fix.longitude,
-                                        gpsd.fix.latitude,
-                                        gpsd.fix.altitude
+                                        round(clean["speed"] * 2.236936, 1),
+                                        clean["track"],
+                                        round(clean["altitude"] * 3.2808399, 0),
+                                        clean["longitude"],
+                                        clean["latitude"],
+                                        clean["longitude"],
+                                        clean["latitude"],
+                                        clean["altitude"]
                                     ])
 
                                     # Commit the transaction to PostgreSQL
@@ -773,8 +803,8 @@ class GPSPoller(object):
                                     timeprev = thetime
 
                                     # Save this position for the next iteration of the loop
-                                    prevlat = round(gpsd.fix.latitude,4)
-                                    prevlon = round(gpsd.fix.longitude,4)
+                                    prevlat = round(clean["latitude"], 4)
+                                    prevlon = round(clean["longitude"], 4)
 
                                     # log the time of this database insert
                                     last_insert_time = datetime.datetime.now(datetime.timezone.utc)
@@ -794,12 +824,12 @@ class GPSPoller(object):
                                      "host" : self.gpshost,
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
-                                     "lat" : float(round(gpsd.fix.latitude, 6)),
-                                     "lon" : float(round(gpsd.fix.longitude, 6)),
+                                     "lat" : float(round(clean["latitude"], 6)),
+                                     "lon" : float(round(clean["longitude"], 6)),
                                      "satellites" : satellites,
-                                     "bearing" : float(round(gpsd.fix.track, 0)),
-                                     "speed_mph" : float(round(gpsd.fix.speed * 2.236936, 1)),
-                                     "altitude" : float(round(gpsd.fix.altitude * 3.2808399, 0)),
+                                     "bearing" : float(round(clean["track"], 0)),
+                                     "speed_mph" : float(round(clean["speed"] * 2.236936, 1)),
+                                     "altitude" : float(round(clean["altitude"] * 3.2808399, 0)),
                                      "error" : "n/a"
                                    }
                     except ValueError as error:
@@ -825,6 +855,9 @@ class GPSPoller(object):
                         self.logger.info(f"2D GPS fix acquired")
                     lastmode = gpsmode
 
+                    # get sanitized fix values from gpsd
+                    clean = self.sanitize(gpsd)
+
                     # update the gpsstatus dictionary
                     try:
                         self.gpsstatus = { "utc_time" : str(datetime_record),
@@ -832,12 +865,12 @@ class GPSPoller(object):
                                      "host" : self.gpshost,
                                      "status" : "normal",
                                      "devicepath" : str(gpspath),
-                                     "lat" : float(round(gpsd.fix.latitude, 6)),
-                                     "lon" : float(round(gpsd.fix.longitude, 6)),
+                                     "lat" : float(round(clean["latitude"], 6)),
+                                     "lon" : float(round(clean["longitude"], 6)),
                                      "satellites" : satellites,
-                                     "bearing" : float(round(gpsd.fix.track, 0)),
-                                     "speed_mph" : float(round(gpsd.fix.speed * 2.236936, 1)),
-                                     "altitude" : float(round(gpsd.fix.altitude * 3.2808399, 0)),
+                                     "bearing" : float(round(clean["track"], 0)),
+                                     "speed_mph" : float(round(clean["speed"] * 2.236936, 1)),
+                                     "altitude" : float(round(clean["altitude"] * 3.2808399, 0)),
                                      "error" : "n/a"
                                        }
                     except ValueError as error:
