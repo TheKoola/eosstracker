@@ -1365,15 +1365,15 @@ class AprsisStream(PacketStream):
         lon_d = int(gpsposition["longitude"])
         lat_ns = 'N' if lat_d >= 0 else 'S'
         lon_ew = 'E' if lon_d >= 0 else 'W'
-        lat_ms = (lat_d - gpsposition["latitude"]) * 60
-        lon_ms = (lon_d - gpsposition["longitude"]) * 60
+        lat_ms = (gpsposition["latitude"] - lat_d) * 60
+        lon_ms = (gpsposition["longitude"] - lon_d) * 60
 
-        latitude  = f"{abs(lat_d):>02}{abs(lat_ms):>02.2f}{lat_ns}"
-        longitude = f"{abs(lon_d):>03}{abs(lon_ms):>02.2f}{lon_ew}"
+        latitude  = f"{abs(lat_d):02}{abs(lat_ms):04.2f}{lat_ns}"
+        longitude = f"{abs(lon_d):03}{abs(lon_ms):05.2f}{lon_ew}"
 
         # get the current time in UTC
         ts = datetime.datetime.now(datetime.timezone.utc)
-        timestamp = f"{ts.hour:>02}{ts.minute:>02}{ts.second:>02}h"
+        timestamp = f"{ts.hour:02}{ts.minute:02}{ts.second:02}h"
 
         # get the symbol and overlay (if it exists)
         symbol = self.configuration["symbol"] if "symbol" in self.configuration else None
