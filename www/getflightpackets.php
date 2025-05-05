@@ -232,7 +232,8 @@
                             packets z
 
                             where
-                            z.location2d != '' 
+                            z.location2d is not null
+                            and st_isvalid(z.location2d) = true
                             and z.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
                             and z.tm > to_timestamp(cast($8 as bigint))
                             and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
@@ -248,7 +249,8 @@
                         flightmap fm
 
                         where 
-                        a.location2d != '' 
+                        a.location2d is not null
+                        and st_isvalid(a.location2d) = true
                         and dw.hash is null
                         and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                         and a.tm > to_timestamp(cast($9 as bigint))
@@ -364,7 +366,8 @@
                                 packets z
 
                                 where
-                                z.location2d != '' 
+                                z.location2d is not null
+                                and st_isvalid(z.location2d) = true
                                 and z.tm > (now() - (to_char(($5)::interval, 'HH24:MI:SS'))::time) 
                                 and z.tm > to_timestamp(cast($10 as bigint))
                                 and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
@@ -381,7 +384,8 @@
 
                             where 
                             dw.hash is null
-                            and a.location2d != '' 
+                            and a.location2d is not null
+                            and st_isvalid(a.location2d) = true
                             and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
                             and a.tm > to_timestamp(cast($11 as bigint))
                             and fm.flightid = f.flightid

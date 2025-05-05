@@ -154,7 +154,8 @@ def getLatestPackets(dbconn = None, callsign = None, timezone = None, cutoff = 2
         where 
         a.callsign = %s
         and a.tm > (now() - interval '06:00:00')
-        and a.location2d != ''
+        and a.location2d is not null 
+        and st_isvalid(a.location2d) = true
         ;
     """
 
@@ -298,7 +299,8 @@ def getLatestPackets(dbconn = None, callsign = None, timezone = None, cutoff = 2
                             flightmap fm
 
                             where 
-                            a.location2d != '' 
+                            a.location2d is not null 
+                            and st_isvalid(a.location2d) = true
                             and a.tm > (now() - interval '06:00:00')
                             and fm.flightid = f.flightid
                             and f.active = 'y'
@@ -661,7 +663,8 @@ def getLandingElevation(dbconn = None, callsign = None, distance = None, logger 
                                     packets t
 
                                     where 
-                                    t.location2d != ''
+                                    t.location2d is not null 
+                                    and st_isvalid(t.location2d) = true
                                     and t.altitude > 0
                                     and t.tm > (now() - interval '06:00:00')
                                     and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')

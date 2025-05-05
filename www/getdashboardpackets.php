@@ -83,19 +83,19 @@
             round(cast(ST_Y(a.location2d) as numeric), 6) as latitude, 
             round(cast(ST_X(a.location2d) as numeric), 6) as longitude,
             case 
-                when a.location2d != '' and m.location2d != '' then
+                when a.location2d is not null and m.location2d is not null then
                     round(cast (ST_DistanceSphere(m.location2d, a.location2d)*.621371/1000 as numeric), 2)
                 else 
                     -99
             end as distance_miles,
             case 
-                when a.location2d != '' and m.location2d != '' and a.altitude > 0 and m.altitude > 0 then
+                when a.location2d is not null and m.location2d is not null and a.altitude > 0 and m.altitude > 0 then
                     round(cast(degrees(atan((a.altitude - m.altitude) / (cast(ST_DistanceSphere(m.location2d, a.location2d) as numeric) * 3.28084))) as numeric), 2)
                 else 
                     -99
             end as angle,
             case 
-                when a.location2d != '' and m.location2d != '' then
+                when a.location2d is not null and m.location2d is not null then
                     round(cast(degrees(ST_Azimuth(m.location2d, a.location2d)) as numeric), 2)
                 else
                     -99
@@ -201,19 +201,19 @@
                 y.source,
                 y.hash,
                 case
-                    when y.location2d != '' and gps.location2d != '' then
+                    when y.location2d is not null and gps.location2d is not null then
                         round(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric), 2)
                     else
                         -99
                 end as distance_miles,
                 case
-                    when y.location2d != '' and gps.location2d != '' then
+                    when y.location2d is not null and gps.location2d is not null then
                         round(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric), 2)
                     else
                         -99
                 end as angle,
                 case
-                    when y.location2d != '' and gps.location2d != '' then
+                    when y.location2d is not null and gps.location2d is not null then
                         round(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric), 2)
                     else
                         -99

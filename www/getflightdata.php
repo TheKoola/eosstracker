@@ -361,7 +361,8 @@
             where 
             a.callsign = $1
             and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
-            and a.location2d != ''
+            and a.location2d is not null 
+            and st_isvalid(a.location2d) = true
             ;
         ";
 
@@ -557,7 +558,8 @@
                                 flightmap fm
 
                                 where 
-                                a.location2d != '' 
+                                a.location2d is not null 
+                                and st_isvalid(a.location2d) = true
                                 and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
                                 and a.tm > (to_timestamp($3)::timestamp)
                                 and fm.flightid = f.flightid
@@ -854,7 +856,8 @@
 
                 where
                 b.callsign is null
-                and a.location2d != ''
+                and a.location2d is not null 
+                and st_isvalid(a.location2d) = true
                 and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time)
                 and a.tm > (to_timestamp($2)::timestamp)
                 and case
@@ -1822,7 +1825,8 @@
         where 
         fm.flightid = f.flightid 
         and a.callsign = fm.callsign 
-        and a.location2d != '' 
+        and a.location2d is not null 
+        and st_isvalid(a.location2d) = true
         and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
         and a.altitude > 0 
         and f.flightid = $3

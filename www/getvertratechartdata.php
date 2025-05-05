@@ -80,7 +80,8 @@ flightmap fm
 where 
 fm.flightid = f.flightid 
 and a.callsign = fm.callsign 
-and a.location2d != '' 
+and a.location2d is not null
+and st_isvalid(a.location2d) = true
 and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
 and a.altitude > 0 
 and active = 't'  " . $flightstring . " 
