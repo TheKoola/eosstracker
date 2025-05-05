@@ -667,7 +667,7 @@ def getLandingElevation(dbconn = None, callsign = None, distance = None, logger 
                                     and st_isvalid(t.location2d) = true
                                     and t.altitude > 0
                                     and t.tm > (now() - interval '06:00:00')
-                                    and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
+                                    and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\\O', 'O%%', '\\S', 'S%%', '\\^', '^%%')
 
                                     order by 
                                     t.tm asc
