@@ -1368,7 +1368,7 @@ class LandingPredictor(PredictorBase):
                 #    latitude_change_rate, 
                 #    longitude_change_rate, 
                 #    elapsed_mins
-                latestpackets =  np.array(queries.getLatestPackets(dbconn = self.landingconn, callsign = callsign, timezone = self.timezone, cutoff = 200, logger = self.logger))
+                latestpackets =  np.array(queries.getLatestPackets(dbconn = self.landingconn, callsign = callsign, timezone = self.timezone, cutoff = 20, logger = self.logger))
                 self.logger.debug("latestpackets.shape: %s" % str(latestpackets.shape))
 
                 # Have there been any packets heard from this callsign yet? 
@@ -2132,7 +2132,7 @@ def runLandingPredictor(config):
         lp = LandingPredictor(
                 dbstring = habconfig.dbConnectionString, 
                 timezone=config['timezone'], 
-                timeout = 200, 
+                timeout = 20, 
                 landinglocations = config["landinglocations"], 
                 activebeacons = config["activebeacons"],
                 loggingqueue = config["loggingqueue"],
