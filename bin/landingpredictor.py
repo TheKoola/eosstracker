@@ -1368,7 +1368,7 @@ class LandingPredictor(PredictorBase):
                 #    latitude_change_rate, 
                 #    longitude_change_rate, 
                 #    elapsed_mins
-                latestpackets =  np.array(queries.getLatestPackets(dbconn = self.landingconn, callsign = callsign, timezone = self.timezone, cutoff = 20, logger = self.logger))
+                latestpackets =  np.array(queries.getLatestPackets(dbconn = self.landingconn, callsign = callsign, timezone = self.timezone, cutoff = 200, logger = self.logger))
                 self.logger.debug("latestpackets.shape: %s" % str(latestpackets.shape))
 
                 # Have there been any packets heard from this callsign yet? 
@@ -1648,7 +1648,7 @@ class LandingPredictor(PredictorBase):
                         self.logger.debug("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
                         # execute the SQL insert statement
-                        landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, coef, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
+                        landingcur.execute(landingprediction_sql, [ fid, callsign, predictiontype, float(coef), float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text, round(float(flightpath[0][2]))])
                         self.landingconn.commit()
 
 
@@ -1918,7 +1918,7 @@ class LandingPredictor(PredictorBase):
                                     self.logger.debug("Inserting record into database: %s" % ts.strftime("%Y-%m-%d %H:%M:%S"))
 
                                     # execute the SQL insert statement
-                                    landingcur.execute(landingprediction_sql, [ fid, callsign, coef, float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text])
+                                    landingcur.execute(landingprediction_sql, [ fid, callsign, float(coef), float(flightpath[-1][1]), float(flightpath[-1][0]), linestring_text])
                                     self.landingconn.commit()
 
                                     # Add this predicted landingn location to our list
@@ -2132,7 +2132,7 @@ def runLandingPredictor(config):
         lp = LandingPredictor(
                 dbstring = habconfig.dbConnectionString, 
                 timezone=config['timezone'], 
-                timeout = 20, 
+                timeout = 200, 
                 landinglocations = config["landinglocations"], 
                 activebeacons = config["activebeacons"],
                 loggingqueue = config["loggingqueue"],
