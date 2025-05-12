@@ -669,7 +669,7 @@ class APRSIS(object):
             print thetime, "Database error with packet(", x, "):  ", error
             tapcur.close()
             self.close()
-        except (aprslib.ParseError, aprslib.UnknownFormat) as exp:
+        except (aprslib.ParseError, aprslib.UnknownFormat, IndexError) as exp:
 
             # We can't parse the packet, but we can still add it to the database, just without the usual location/altitude/speed/etc. parameters.
             debugmsg("Unable to parse APRS packet: {}".format(exp))
