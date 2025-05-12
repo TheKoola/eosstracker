@@ -16,3 +16,4 @@ www/audio/*.mp3
 www/audio/*.json
 www/.htaccess
 www/mbtiles/*
+www/tileserver

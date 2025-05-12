@@ -135,7 +135,7 @@
 </script>
 
 
-<!-- Global site tag (gtag.js) - Google Analytics -->
+<!-- Global site tag (gtag.js) - Google Analytics 
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-131059318-2"></script>
 <script>
    window.dataLayer = window.dataLayer || [];
@@ -143,6 +143,7 @@
      gtag('js', new Date());
      gtag('config', 'UA-131059318-2');
 </script>
+-->
 
     <!-- this is for the sidebar html -->
     <div id="sidebar" class="sidebar collapsed">
@@ -203,6 +204,13 @@
 
                         }
                     ?>
+                </div>
+                <div class="div-table" style="margin-top: 30px;">
+                    <p class="section-header" style="text-decoration: underline;">Historical Flight Data</p>
+                    <p class="lorem">
+                        Please visit the <a target="_blank" href="/historical.php">Historical Data</a> browser to view telemetry, download data, 
+                        and view flight analysis for EOSS flights in recent years (EOSS-291 -to the- present).
+                    </p>
                 </div>
                 <div class="div-table" style="margin-top: 30px;">
                     <p class="section-header" style="text-decoration: underline;">System Status</p>

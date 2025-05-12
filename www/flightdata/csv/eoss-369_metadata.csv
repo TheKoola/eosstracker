@@ -1,0 +1,2 @@
+flight,beacons,day,balloonsize,liftfactor,h2fill,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
+EOSS-369,"['KC0D-3', 'AE0SS-4']",2025-03-23,2000gm,1.25,333,8.99,4.48,1.81,15.28,4.41,19.69,20.21

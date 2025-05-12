@@ -261,6 +261,20 @@ div.nodeid {
     color: #626262;
 }
 
+ul.normal-italic {
+    color: #c8c8c8;
+    margin: 0px;
+    margin-left: 30px;
+    font-style: italic;
+}
+
+li.normal-italic {
+    color: #c8c8c8;
+    margin: 0px;
+    margin-left: 30px;
+    font-style: italic;
+}
+
 p.normal-italic {
     color: #c8c8c8;
     margin: 0px;
@@ -374,6 +388,15 @@ table.packetlist {
     padding:  0px;
 }
 
+table.flightlist {
+    text-align: left;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin: 0px;
+    padding:  0px;
+}
+
 table.trackerlist {
     text-align: left;
     vertical-align: middle;
@@ -430,6 +453,22 @@ table.trackerlist {
     background-color: #999999;
 }
 
+.flightlist {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .9em;
+    color: #c8c8c8;
+}
+.flightlist tr:hover { background-color: #737373; };
+.flightlist a :link  { color:  #0000aa; text-decoration:none; } 
 
 .trackerlist {
     text-align: left;
@@ -475,6 +514,20 @@ td.packetlistright {
     color: #c8c8c8;
     width:  100%;
     background-color: lightsteelblue;
+}
+
+.flightlistheader {
+    color: #f8f8f8;
+    text-decoration:none;
+    white-space: normal;
+    word-wrap: break-word;
+    font-variant:  small-caps;
+    font-weight:  normal;
+    border:  solid 1px black;
+    background-color: #404040;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  1.2em;
 }
 
 .trackerlistheader {
