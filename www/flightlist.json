@@ -391,9 +391,8 @@
     {
         "flight": "EOSS-358",
         "beacons": [
-            "AE0SS-1",
-            "AE0SS-3",
-            "KC0D-1"
+            "AE0SS-4",
+            "KC0D-3"
         ],
         "day": "2024-05-04",
         "balloonsize": "1500gm",
