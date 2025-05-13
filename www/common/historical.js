@@ -56,17 +56,9 @@ async function getDefinitions(url) {
     let num = 0;
 
     // Parse the returned json
-    try {
-        js = await response.json();
-    } catch(e) {
-        console.log("getDefinitions json parsing error: ", e, ", json: ", js);
-    }
+    js = await response.json();
 
-    // process flight definitions
-    if (js)
-        num += processFlights(js);
-
-    return num;
+    return js;
 }
 
 
@@ -77,31 +69,14 @@ async function getDefinitions(url) {
 ***********/
 function processFlights(json) {
 
-    /* Json should be an array of entries similar to this:
-     {
-        "flight": "EOSS-291",
-        "beacons": [
-            "KC0D-1",
-            "AE0SS-12"
-        ],
-        "day": "2019-07-13",
-        "balloonsize": "3000gm",
-        "weights": {
-            "client": "11.90",
-            "eoss": "3.71",
-            "parachute": "1.15",
-            "neckload": "16.77",
-            "balloon": "6.61",
-            "gross": "23.38",
-            "necklift": "20.74"
-        },
-        "liftfactor": "1.17",
-        "h2fill": "370"
-    }
-    */
+    if (!json)
+        return;
 
     // indices 
     let key, i;
+
+    // sort the incoming json based on newest flight first
+    json.sort((a, b) => a.flight.localeCompare(b.flight)).reverse();
 
     // Create the table
     let table = document.createElement("Table");
@@ -110,7 +85,7 @@ function processFlights(json) {
     table.setAttribute("style", "width: auto");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -123,14 +98,19 @@ function processFlights(json) {
 
     // Loop through each flight creating the table of entries in the browser
     for (key in json) {
+        //const metadata = getMetadata(json[key].flight);
+
         const cellvalues = [
             json[key].flight,
             json[key].day,
             json[key].balloonsize,
             json[key].beacons.join(", "), 
-            json[key].weights.gross + "lbs (" + (json[key].weights.gross * 0.4535924).toFixed(2) + "kg)",
+            (json[key].maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude.toLocaleString() + "ft </mark>" : json[key].maxaltitude.toLocaleString() + "ft"),
+            json[key].flighttime,
+            (json[key].weights.gross * 1.0).toFixed(2) + "lbs &nbsp; (" + (json[key].weights.gross * 0.4535924).toFixed(2) + "kg)",
             json[key].liftfactor,
-            json[key].h2fill + "scf"
+            json[key].h2fill + "scf",
+            json[key].numpoints.toLocaleString()
         ];
 
         // create a new row for each flight and populate the cells
@@ -145,7 +125,7 @@ function processFlights(json) {
         }
 
         // add the telemetry cell
-/*        let telemetry = row.insertCell(-1);
+        /*let telemetry = row.insertCell(-1);
         telemetry.setAttribute("class", "flightlist");
         let elem = document.createElement("a");
         elem.setAttribute("target", "_blank");
@@ -153,7 +133,8 @@ function processFlights(json) {
         elem.setAttribute("style", "text-align: center;");
         elem.textContent = "Telemetry";
         telemetry.appendChild(elem);
-*/
+        */
+
 
         // now add the "downloads" cell for this flight (i.e. row)
         let downloads = row.insertCell(-1);
@@ -191,18 +172,35 @@ function processFlights(json) {
 }
 
 
+
 /***********
-* startup
+* main
 *
-* Called when the browser loads the page
+* application starting point
 ***********/
-function startup() {
+async function main() {
 
     // determine if this is an apple device or android or something else.
     isApplePlatform = isApple();
 
-    // fetch flight definitions
-    getDefinitions("flightlist.json");
+    // fetch flight definitions and process
+    getDefinitions("/flightdata/json/flights_metadata.json").then((json) => {
+        processFlights(json);
+    });
+
+
+}
+
+
+/***********
+* startup
+*
+* Called when the browser loads the page and used to start our app
+***********/
+function startup() {
+
+    // call main
+    main().catch((e) => console.log(e));
 }
 
 // starting point for everything
