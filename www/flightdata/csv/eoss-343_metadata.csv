@@ -1,2 +1,2 @@
-flight,beacons,day,balloonsize,liftfactor,h2fill,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
-EOSS-343,"['KC0D-12', 'AE0SS-9']",2023-06-17,3000gm,1.20,243,3.13,2.87,2.40,8.40,6.61,15.01,11.40
+flight,beacons,day,balloonsize,liftfactor,h2fill,maxaltitude,numpoints,flighttime,flighttime_secs,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
+EOSS-343,"['KC0D-12', 'AE0SS-9']",2023-06-17,3000gm,1.20,243,78749.0,192,1hrs 45mins 19secs,6319.0,3.13,2.87,2.40,8.40,6.61,15.01,11.40
