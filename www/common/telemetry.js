@@ -22,6 +22,41 @@
 *
 */
 
+/***********
+* initialize_map function
+*
+* initialize the map and add it to the container specified
+***********/
+async function initialize_map(container) {
+
+    let basic = L.mapboxGL({
+        style: '/tileserver/styles/klokantech-basic/style.json',
+        attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+    });
+
+    // Create a map object. 
+    let map = new L.Map(container, {
+        //renderer : canvasRenderer,
+        preferCanvas:  true,
+        zoomControloption: false,
+        layers : [ basic ],
+        minZoom: 4,
+        maxZoom: 20
+    });
+
+    // This is Denver, CO: 39.739, -104.985
+    map.setView(new L.latLng(39.739, -104.985), 10);
+
+    // zoom control
+    let zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // add a scale widget in the lower left hand corner for miles / kilometers.
+    let scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
+
+    return map;
+}
+
+
 
 /***********
 * isApple
@@ -42,6 +77,86 @@ function isApple() {
     return isSafari || isIpad || isMacintosh;
 }
 
+/***********
+* updateNextPrev
+*
+* Update the header text to add links for the prev and next flight
+***********/
+async function updateNextPrev(flightid) {
+
+    // get the entire flightlist
+    const url = "/flightdata/json/flights_metadata.json";
+
+    // get the list of flights
+    let response = await fetch(url);
+    let js;
+    let num = 0;
+
+    // Parse the returned json
+    js = await response.json();
+
+    // process flight definitions and find out where within the flightlist this flightid sits.
+    if (js) {
+
+        // the index of where this flight is within the list of flights
+        const idx = js.findIndex(f => f.flight == flightid);
+
+        // prev and next
+        const prev_idx = (idx+1 < js.length ? idx+1 : 0);
+        const next_idx = (idx-1 >= 0 ? idx-1 : js.length-1);
+
+        // prev and next links
+        const prev_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + js[prev_idx].flight + "\">&laquo; previous: " + js[prev_idx].flight + "</a>";
+        const next_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + js[next_idx].flight + "\">next: " + js[next_idx].flight + " &raquo;</a>";
+
+        // now update the title label to include these links
+        prev_elem = document.getElementById("prevflight");
+        next_elem = document.getElementById("nextflight");
+        next_elem.innerHTML = next_link;
+        prev_elem.innerHTML = prev_link;
+
+        // set the data attribute so the gonext and goprevious event handlers can determine the correct URL to follow
+        next_elem.dataset.next = js[next_idx].flight;
+        prev_elem.dataset.prev = js[prev_idx].flight;
+
+        // add an event listener to catch the user hitting the left or right arrow keys
+        window.addEventListener('keydown', (e) => {
+            if (!e.repeat && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (e.key == "ArrowLeft")
+                    goprevious();
+                if (e.key == "ArrowRight")
+                    gonext();
+            }
+        });
+    }
+
+    return num;
+}
+
+
+/***********
+* goprevious
+***********/
+function goprevious() {
+    let p = document.getElementById("prevflight");
+    const url = "/telemetry.php?flightid=" + p.dataset.prev;
+
+    window.location = url;
+    return false;
+}
+
+/***********
+* gonext
+***********/
+function gonext() {
+    let n = document.getElementById("nextflight");
+    const url = "/telemetry.php?flightid=" + n.dataset.next;
+
+    window.location = url;
+    return false;
+}
+
+
 
 /***********
 * getFlight
@@ -56,17 +171,12 @@ async function getFlight(url) {
     let num = 0;
 
     // Parse the returned json
-    try {
-        js = await response.json();
-    } catch(e) {
-        console.log("getFlight json parsing error: ", e, ", json: ", js);
-    }
-
+    js = await response.json();
 
     // process flight definitions
     if (js) {
-        const flightdata = processMetadata(js);
-        createCharts(flightdata);
+        buildTable(js);
+        createCharts(js);
     }
 
     return num;
@@ -79,10 +189,8 @@ async function getFlight(url) {
 ***********/
 function createCharts(flightdata) {
 
-    const data = flightdata.packets;
 
-
-    if (!data)
+    if (!flightdata)
         return;
 
 
@@ -119,42 +227,201 @@ function createCharts(flightdata) {
         } 
     */
 
+
     try {
 
-        const max_idx = flightdata.max_idx;
-
-        const plot = Plot.plot({
-            grid: true,
-            color: { legend: true },
-            marginLeft: 50,
-            marginBottom: 50,
-            marginTop: 50,
-            style: { overflow: "visible", fontSize: "13px" },
-            width: 800,
-            height: 600,
-            x: { label: "Date/Time", type: "time" },
-            y: { label: "Altitude (ft)", interval: 500 },
-            marks: [
-
-                // The primary data series
-                Plot.dot(data, {x: "thetime", y: "altitude", stroke: "phase" }),
-
-                // Add a value label for the max altitude
-                Plot.text(data, Plot.select((I) => [I[max_idx]], {
-                    x: "thetime",
-                    y: "altitude",
-                    text: (elem) => {return elem.altitude.toLocaleString() + "ft";}, 
-                    textAnchor: "start",
-                    dx: 20,
-                    dy: 0
-                }))
-            ]
+        // convert the packettime epoch ms to a local date object
+        let data = flightdata.packets.map((a) => {
+            // convert UTC time to local time
+            const utcdate = new Date(a.packettime);
+            const localtime = new Date(utcdate.getTime() - utcdate.getTimezoneOffset()*60*1000)
+            return {...a, localtime, "curve_fit": a.velocity_curvefit*60 };
         });
 
-        //alert("max:  " + JSON.stringify(max_packet));
-        const div = document.getElementById("altitudeplot");
-        div.innerHTML = "";
-        div.append(plot);
+        const getminmax = function(ray) {
+            const min_vrate = ray.reduce((acc, obj) => (obj.vert_rate_ftmin < acc ? obj.vert_rate_ftmin : acc), Infinity);
+            const max_vrate = ray.reduce((prev, current) => (prev.vert_rate_ftmin > current.vert_rate_ftmin ? prev : current)).vert_rate_ftmin;
+            return [min_vrate, max_vrate];
+        };
+
+        const setplot = function(titletext, plot, id) {
+            let title_elem = document.getElementById(id + "-title");
+            let plot_elem  = document.getElementById(id);
+            const title = "<p class=\"normal\" style=\"border: 0; font-size: 1.2em; font-variant: small-caps; text-align: left;\">";
+
+            if (title_elem) {
+                title_elem.innerHTML = title + titletext + "</p>";
+            }
+
+            if (plot_elem) {
+                plot_elem.innerHTML = "";
+
+                if (plot)
+                    plot_elem.append(plot);
+                else {
+                    let p = document.createElement("p");
+                    p.setAttribute("class", "normal");
+                    p.setAttribute("style", "text-align: center; font-size: 1.2em; border: 0; margin-top: 50px; margin-bottom: 50px;");
+                    p.innerHTML = "<span style=\"color: #a8a8a8; background-color: #383838; padding: 4px 16px;\">No Data</span>";
+                    plot_elem.append(p);
+                }
+            }
+        };
+
+        /*
+        const ascent_data =  data.filter(item => item.flight_phase === "ascending");
+        const descent_data = data.filter(item => item.flight_phase === "descending");
+        const ascent_vrate_domain  = getminmax(ascent_data);
+        const descent_vrate_domain = getminmax(descent_data);
+        */
+        
+
+        // the altitude chart
+        const createAltitudePlot = function (d) {
+            return Plot.plot({
+                color: { legend: true, className: "legend" },
+                marginLeft: 50,
+                marginBottom: 50,
+                marginTop: 50,
+                marginRight: 50,
+                style: { overflow: "visible", fontSize: "12px" },
+                width: 800,
+                height: 500,
+                x: { label: "Date/Time", type: "time" },
+                y: { label: "Altitude (ft)", interval: 500 },
+                marks: [
+                    // the grid and axis
+                    Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.axisY({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.gridY({stroke: "#f0f0f0" }),
+                    Plot.gridX({stroke: "#f0f0f0" }),
+                    Plot.frame({stroke: "#404040", strokeWidth: 2}),
+
+                    // The primary data series
+                    Plot.dot(d, {x: "localtime", y: "altitude", stroke: "flight_phase" }),
+
+                    // Add a value label for the max altitude
+                    Plot.text(d, Plot.selectMaxY({
+                        x: "localtime",
+                        y: "altitude",
+                        text: (elem) => {return elem.altitude.toLocaleString() + "ft";}, 
+                        textAnchor: "start",
+                        fill: "white",
+                        dx: 0,
+                        dy: -20 
+                    })),
+                    Plot.crosshair(d, {x: "localtime", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                ]
+            });
+        };
+
+        let altitudeplot = createAltitudePlot(data);
+        setplot("Altitude vs. Time", altitudeplot, "altitudeplot");
+
+
+        // the velocity chart
+        const createVelocityPlot = function (d, c) {
+
+            return Plot.plot({
+                color: { ...c, legend: true, className: "legend" },
+                marginLeft: 50,
+                marginBottom: 50,
+                marginTop: 50,
+                marginRight: 50,
+                style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
+                width: 800,
+                height: 500,
+                x: { label: "Vertical Rate (ft/min)" },
+                y: { label: "Altitude (ft)", interval: 500 },
+                marks: [
+                    // the grid and axis
+                    Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.axisY({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.gridY({stroke: "#f0f0f0" }),
+                    Plot.gridX({stroke: "#f0f0f0" }),
+                    Plot.frame({stroke: "#404040", strokeWidth: 2}),
+
+                    // The primary data series
+                    Plot.dot(d,  {x: "vert_rate_ftmin", y: "altitude", stroke: "flight_phase" }),
+                    Plot.line(d, {x: "curve_fit", y: "altitude", stroke: "flight_phase", strokeOpacity: 1, strokeWidth: 2 }),
+                    Plot.crosshair(d, {x: "vert_rate_ftmin", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                ]
+            });
+        };
+
+        let ascent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "ascending"), altitudeplot.scale("color"));
+        setplot("Ascent Rate", ascent_velocityplot, "ascent_velocityplot");
+
+        let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"));
+        setplot("Descent Rate", descent_velocityplot, "descent_velocityplot");
+
+        // the temperature chart
+        const createTemperaturePlot = function (d, c) {
+
+            return Plot.plot({
+                color:  { ...c, legend: true, className: "legend" },
+                marginLeft: 50,
+                marginBottom: 50,
+                marginTop: 50,
+                marginRight: 50,
+                style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
+                width: 800,
+                height: 500,
+                x: { label: "Temperature (F)", transform: (a) => (a - 273.15) * 9/5 + 32 },
+                y: { label: "Altitude (ft)", interval: 500 },
+                facet: { label: "Beacon Callsign" },
+                marks: [
+                    // the grid and axis
+                    Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.axisY({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.gridY({stroke: "#f0f0f0" }),
+                    Plot.gridX({stroke: "#f0f0f0" }),
+                    Plot.frame({stroke: "#404040", strokeWidth: 2}),
+
+                    // The primary data series
+                    Plot.dot(d,  {x: "temperature_k", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.crosshair(d, {x: "temperature_k", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                ]
+            });
+        };
+
+        let temps = data.filter(a => a.temperature_k != null);
+        let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color")) : null);
+        setplot("Temperature", temperatureplot, "temperatureplot");
+
+        // the airdensity chart
+        const createAirdensityPlot = function (d, c) {
+
+            return Plot.plot({
+                color: { ...c, legend: true, className: "legend" },
+                marginLeft: 50,
+                marginBottom: 50,
+                marginTop: 50,
+                marginRight: 50,
+                style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
+                width: 800,
+                height: 500,
+                x: { label: "Airdensity (kg/m^3)" },
+                y: { label: "Altitude (ft)", interval: 500 },
+                facet: { label: "Beacon Callsign" },
+                marks: [
+                    // the grid and axis
+                    Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.axisY({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
+                    Plot.gridY({stroke: "#f0f0f0" }),
+                    Plot.gridX({stroke: "#f0f0f0" }),
+                    Plot.frame({stroke: "#404040", strokeWidth: 2}),
+
+                    // The primary data series
+                    Plot.dot(d,  {x: "airdensity_kgm3", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.crosshair(d, {x: "airdensity_kgm3", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                ]
+            });
+        };
+
+        let densities = data.filter(a => a.airdensity_kgm3 != null);
+        let airdensityplot = (densities && densities.length > 0 ?  createAirdensityPlot(densities , altitudeplot.scale("color")) : null);
+        setplot("Air Density", airdensityplot, "airdensityplot");
 
     } catch(error) {
         alert("error: " + error.message);
@@ -167,38 +434,28 @@ function createCharts(flightdata) {
 *
 * Build the table of information about the flight's details.
 ***********/
-function processMetadata(json) {
-
-    console.log(json);
+function buildTable(json) {
 
     // indices 
     let key, i;
     const packets = json.packets;
     const launchdate = json.day;
+    const max_altitude = json.maxaltitude;
+    const flightduration = json.flighttime;
 
-    // where we'll store data points
-    let data = [];
-    let max_altitude = 0;
-    let max_idx = 0;
+    // is this an apple platform?  So we know to send user's to Google Maps or Apple Maps when clicking coordinate links.
+    const isApplePlatform = isApple();
 
-    if (packets && packets.length > 0) {
+    // function to form up the URL that will take the user to their specific map platform for directions to these coordinates
+    let mapurl = function(flightname, lat, lon, alt) {
+        let URL = "";
+        if (isApplePlatform)
+            URL = "https://maps.apple.com/?q=" + flightname + "&ll=" + lat + "%2C" + lon;
+        else
+            URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
 
-        // convert the time strings to actual date objects and sort by time
-        data = packets.map((a) => {
-            const thetime = new Date(a.packettime);
-            return { thetime, "altitude": a.altitude, "temperature": a.temperature_k, "pressure": a.pressure_pa, "velocity_z": a.velocity_z };
-        }).sort((a, b) => a.thetime > b.thetime);
-
-        // find the data point with the max altitude.
-        max_idx = data.reduce((maxIdx, obj, idx) => obj.altitude > data[maxIdx].altitude ? idx : maxIdx, 0);
-
-        // construct a string for the max altitude
-        max_altitude = data[max_idx].altitude;
-
-        // add the flight phase (ascent or descent) to the data points
-        data = data.map((a, i) => i <= max_idx ? {...a, "phase": "ascent"} : {...a, "phase": "descent"});
-    }
-
+        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + "ft";
+    };
 
     // Create the table
     let table = document.createElement("Table");
@@ -207,7 +464,7 @@ function processMetadata(json) {
     table.setAttribute("style", "width: auto");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Max Altitude", "Weights", "Beacon Callsigns", "Lift Factor", "H<sub>2</sub> Fill", "Data Points", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Ascent Airflow Transition Points", "Weights", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -230,8 +487,8 @@ function processMetadata(json) {
         for (let [key, value] of  Object.entries(js)) {
             let thisrow = "<tr><td style=\"font-size: 1em; text-align: left;\">";
             thisrow += key;
-            thisrow += "</td><td style=\"font-size: 1em; padding-left: 10px; text-align: right;\">";
-            thisrow += value + "lbs";
+            thisrow += "</td><td style=\"font-size: 1em; padding-left: 10px; text-align: left;\">";
+            thisrow += (value * 1.0).toFixed(2) + "lbs &nbsp; (" + (value * 0.4535924).toFixed(2) + "Kg)";
             thisrow += "</td></tr>";
 
             rows += thisrow;
@@ -239,11 +496,28 @@ function processMetadata(json) {
 
         // if there was anything processed, then create the table html string
         if (rows) {
-            html += "<table cellpadding=0 cellspacing=0 border=0>";
+            html += "<table style=\"padding: 10px;\">";
+            html += "<tr><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Item</th><th style=\"font-variant: small-caps;font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Weight</th></tr>";
             html += rows;
             html += "</table>";
         }
 
+        return html;
+    };
+
+    // function to build a quick table for displaying the Reynolds transition points
+    const reynoldstable = function(data) {
+        let html = "<table style=\"padding: 10px;\">";
+        html += "<tr><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Reynolds Number</th><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: right; padding-left: 20px; border-bottom: 1px solid darkgray;\">Altitude</td></tr>";
+        html += json.reynolds_transitions.reduce(function(html, item) {
+            html += "<tr><td style=\"font-size: 1em; text-align: left;\">";
+            html += item.transition;
+            html += "</td><td style=\"font-size: 1em; padding-left: 20px; text-align: right;\">";
+            html += item.altitude.toLocaleString() + "ft";
+            html += "</td></tr>";
+            return html;
+        }, '');
+        html += "</table>";
         return html;
     };
 
@@ -252,13 +526,21 @@ function processMetadata(json) {
         json.flight,
         json.day,
         json.balloonsize, 
-        max_altitude.toLocaleString() + "ft", 
-        json.weights.gross + "lbs (" + (json.weights.gross * 0.4535924).toFixed(2) + "kg)<hr>" + weighttable(json.weights),
         json.beacons.join(", "),
+        (json.maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json.maxaltitude.toLocaleString() + "ft </mark>" : json.maxaltitude.toLocaleString() + "ft"),
+
+        mapurl(json.flight, json.launch_location.latitude, json.launch_location.longitude, json.launch_location.altitude),
+        mapurl(json.flight, json.landing_location.latitude, json.landing_location.longitude, json.landing_location.altitude),
+        json.range_distance_traveled.toFixed(2) + "mi",
+
+        json.flighttime,
+        reynoldstable(json.reynolds_transitions), 
+        weighttable(json.weights),
         json.liftfactor,
         json.h2fill + "scf",
-        data.length
+        json.numpoints.toLocaleString()
     ];
+
 
     // loop through the various attributes creating cells for each of them.
     for (i = 0; i < cellvalues.length; i++) {
@@ -298,56 +580,57 @@ function processMetadata(json) {
     else
         downloads.innerHTML = "n/a";
 
-
     // update the element with our data
     metadata.innerHTML = "";
     metadata.appendChild(table);
-
-    return {
-        "flight": json.flight, 
-        "launchdate": json.day,
-        "balloonsize": json.balloonsize, 
-        "weights": json.weights, 
-        "beacons": json.beacons, 
-        "liftfactor": json.liftfactor, 
-        "h2fill_scf": json.h2fill, 
-        "max_altitude": max_altitude, 
-        "max_idx": max_idx, 
-        "packets": data
-    };
 }
 
 
 /***********
-* startup
+* main
 *
-* Called when the browser loads the page
+* application entry point
 ***********/
-function startup() {
+async function main() {
 
     // determine if this is an apple device or android or something else.
-    isApplePlatform = isApple();
+    //const isApplePlatform = isApple();
 
     // get the flightid
     const flightid = document.getElementById("flightid").getAttribute("data-flightid");
 
+    // if we've been supplied with a flightid, then process
     if (flightid) {
+
         // update the header label
         document.getElementById("headerlabel").innerHTML = "Telemetry for " + flightid;
+
+        // update the prev and next flights on the header label
+        updateNextPrev(flightid);
         
-        // fetch flight data and process...
+        // fetch flight data and process
         getFlight("/flightdata/json/" + flightid.toLocaleLowerCase() + ".json");
 
-        // test the plot stuff
-        //const plot = Plot.rectY({length: 10000}, Plot.binX({y: "count"}, {x: Math.random})).plot();
-        //const div = document.getElementById("myplot");
-        //div.append(plot);
+        //let map = initialize_map('map');
     }
     else {
         // update the header label
         document.getElementById("headerlabel").innerHTML = "No flight ID specified.";
     }
 }
+
+
+/***********
+* startup
+*
+* Called when the browser loads the page and used to start our app
+***********/
+function startup() {
+
+    // call main
+    main().catch((e) => console.log(e));
+}
+
 
 // starting point for everything
 document.addEventListener("DOMContentLoaded", startup);

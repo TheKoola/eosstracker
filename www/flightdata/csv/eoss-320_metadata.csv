@@ -1,2 +1,2 @@
-flight,beacons,day,balloonsize,liftfactor,h2fill,maxaltitude,numpoints,flighttime,flighttime_secs,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
-EOSS-320,"['KC0D-1', 'AE0SS-13']",2022-01-28,3000gm,1.20,353,93155.0,435,1hrs 56mins 0secs,6960.0,7.75,6.23,1.15,15.13,6.61,21.74,19.48
+flight,beacons,day,balloonsize,liftfactor,h2fill,maxaltitude,numpoints,flighttime,flighttime_secs,range_distance_traveled,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift,launch_location.latitude,launch_location.longitude,launch_location.altitude,landing_location.latitude,landing_location.longitude,landing_location.distance_from_launch,landing_location.altitude
+EOSS-320,"['KC0D-1', 'AE0SS-13']",2022-01-28,3000gm,1.20,353,93155.0,435,1hrs 56mins 0secs,6960.0,77.23,7.75,6.23,1.15,15.13,6.61,21.74,19.48,39.6080166667,-104.0423,5306.0,38.6113,-103.3882,77.23,5141.0

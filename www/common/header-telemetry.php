@@ -49,9 +49,19 @@ if (!isset($pagetitle))
 else
     printf ("<title>%s</title>\n", $pagetitle);
 ?>
+<script src="/leaflet/leaflet.js"></script>
 <script src="/common/d3.min.js"></script> 
 <script src="/common/plot.min.js"></script> 
+<link rel="stylesheet" href="/leaflet/leaflet.css">
 <link rel="stylesheet" href="/common/styles.css">
+
+<!-- Mapbox GL JS -->
+<script src="/common/mapbox-gl.js"></script>
+<link href="/common/mapbox-gl.css" rel="stylesheet">
+
+<!-- Leaflet shim for mapbox -->
+<script src="/common/leaflet-mapbox-gl.js"></script>
+
 </head>
 <body class="cover-page">
 <div class="logo">

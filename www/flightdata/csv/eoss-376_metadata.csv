@@ -1,2 +1,2 @@
-flight,beacons,day,balloonsize,liftfactor,h2fill,maxaltitude,numpoints,flighttime,flighttime_secs,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift
-EOSS-376,"['KC0D-1', 'AE0SS-3']",2025-05-10,1500gm,1.30,257,93577.0,455,2hrs 7mins 40secs,7660.0,6.28,3.34,1.70,11.32,3.31,14.62,15.71
+flight,beacons,day,balloonsize,liftfactor,h2fill,maxaltitude,numpoints,flighttime,flighttime_secs,range_distance_traveled,weights.client,weights.eoss,weights.parachute,weights.neckload,weights.balloon,weights.gross,weights.necklift,launch_location.latitude,launch_location.longitude,launch_location.altitude,landing_location.latitude,landing_location.longitude,landing_location.distance_from_launch,landing_location.altitude
+EOSS-376,"['KC0D-1', 'AE0SS-3']",2025-05-10,1500gm,1.30,257,93577.0,455,2hrs 7mins 40secs,7660.0,22.46,6.28,3.34,1.70,11.32,3.31,14.62,15.71,39.2365,-103.6966666667,5773.0,38.9131666667,-103.65,22.46,5263.0

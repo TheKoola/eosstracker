@@ -39,18 +39,30 @@ if (isset($_GET["flightid"])) {
 
 ?>
 <script src="/common/telemetry.js"></script>
+<span id="flightid" data-flightid="<?php echo $get_flightid;?>" ></span>
 <div style="margin-bottom 30px;">
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         <span id="headerlabel">Telemetry</span>
     </p>
 </div>
-<span id="flightid" data-flightid="<?php echo $get_flightid;?>" ></span>
-<div id="metadata" style="margin-left: 30px; margin-bottom: 30px;"></div>
-<div id="altitudeplot" style="margin-left: 30px;"></div>
-<div id="map" style="margin-left: 30px;"></div>
-<div id="temperatureplot" style="margin-left: 30px;"></div>
-<div id="airdensityplot" style="margin-left: 30px;"></div>
+<div style="display: grid; grid-gap: 5px; grid-template-columns: 1fr 1fr; margin-left: 30px;">
+
+    <!-- the previous and next flight links -->
+    <div style="border: 0; text-align: left; font-size: 1.2em;"                       class="normal" id="prevflight">Previous flight: EOSS-123</div>
+    <div style="border: 0; text-align: right;  font-size: 1.2em; margin-right: 30px;" class="normal" id="nextflight">Next flight: EOSS-456</div>
+
+    <!-- the table of data specific to this flight -->
+    <div style="grid-column: 1 / span 2; margin-bottom: 30px;" id="metadata"></div>
+
+    <!-- the charts -->
+    <div><div id="altitudeplot-title"></div><div id="altitudeplot" style="text-align: left;"></div></div>
+    <div><div id="map-title"><p class="normal" style="border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;">Map to be inserted here</p></div><div id="map"></div></div>
+    <div><div id="ascent_velocityplot-title"></div><div id="ascent_velocityplot" style="text-align: left;"></div></div>
+    <div><div id="descent_velocityplot-title"></div><div id="descent_velocityplot" style="text-align: left;"></div></div>
+    <div><div id="temperatureplot-title"></div><div id="temperatureplot" style="text-align: left;"></div></div>
+    <div><div id="airdensityplot-title"></div><div id="airdensityplot" style="text-align: left;"></div></div>
+</div>
 
 <?php
     include $documentroot . '/common/footer.php';

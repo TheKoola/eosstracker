@@ -52,6 +52,12 @@ include_once $documentroot . '/common/header-historical.php';
         Be sure to review the <a style="border: 0;" href="#schema">schema information</a> at the bottom of this page as there are a number of columns included beyond those integral to the Ham Radio, APRS packet specification.  
         In addition, make sure you're aware of how frequently telemetry data is collected, data quality issues, and similar topics by reviewing the <a style="border: 0;" href="#datanotes">data notes</a> section.
     </p>
+    <p class="normal" style="border: 0;">
+        The list of flights (similar to the list below) is also available in the following formats:
+        <a target="_blank" href="/flightdata/csv/flights_metadata.csv">csv</a>,
+        <a target="_blank" href="/flightdata/json/flights_metadata.json">json</a>, and 
+        <a target="_blank" href="/flightdata/xlsx/flights_metadata.xlsx">excel</a>.
+    </p>
 </div>
 <div id="flightlist" style="margin-left: 30px;"></div>
 <div id="schema" style="margin-bottom: 30px;">
@@ -76,6 +82,7 @@ include_once $documentroot . '/common/header-historical.php';
         <tr class="flightlist"><td class="flightlist">speed_mph</td><td class="flightlist">The speed in MPH as reported within the APRS position packet</td></tr>
         <tr class="flightlist"><td class="flightlist">latitude</td><td class="flightlist">The latitude as reported within the APRS position packet</td></tr>
         <tr class="flightlist"><td class="flightlist">longitude	</td><td class="flightlist">The longitude as reported within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">distance_from_launch</td><td class="flightlist">The distance in miles from the launch location (i.e. usually from the first APRS packet heard for the flight) to the landing location (i.e. usually the last APRS packet heard from the flight)</td></tr>
         <tr class="flightlist"><td class="flightlist">temperature_k</td><td class="flightlist">The temperature in Kelvin as reported from the beacon’s thermocouple sensor (if available)</td></tr>
         <tr class="flightlist"><td class="flightlist">pressure_pa</td><td class="flightlist">The pressure in Pascals as reported from the beacon’s pressure sensor (if available)</td></tr>
         <tr class="flightlist"><td class="flightlist">airdensity_slugs</td><td class="flightlist">The air density (computed from the pressure and temperature values and assumes 1% relative humidity) in “slugs”.</td></tr>
@@ -146,6 +153,13 @@ include_once $documentroot . '/common/header-historical.php';
                 For the purposes of this data set, these conditions are estimated by determining how far above or below the average vertical ascent rate a given data point is.  For example, if a data point shows 
                 higher z-axis velocity compared to the average for the entire ascent portion of the flight then it is assumed that the airflow around the balloon is causing less drag.  Conversely, for below average 
                 z-axis velocities, it is then assumed that the balloon is experiencing more laminar airflow and thus higher drag.  
+            </li>
+            <li class="normal" style="border: 0;">
+                <font style="font-variant: small-caps"><strong>Launch/Landing Locations and Distances:</strong></font>
+                The launch and landing locations are determined by using the first and last APRS packets available respectively.  In some instances, an incomplete list of APRS packets for a flight was igated to APRS-IS,
+                which unfortunately results in an inacurate representation for the launch and landing locations.  For example, flight EOSS-343 shows a landing location and altitude of 14,000ft.  As exciting as that might sound,
+                the flight didn't actually land on the summit of a Colorado 14er!  In the case of EOSS-343, as the flight approached landing, packets transmitted by its beacons were never igated to APRS-IS and consequently 
+                are not available within the dataset on this site.
             </li>
         </ol>
     </p>

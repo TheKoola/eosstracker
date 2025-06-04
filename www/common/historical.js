@@ -72,6 +72,31 @@ function processFlights(json) {
     if (!json)
         return;
 
+    // get the browser's user agent string and determine is this is an apple devices or not
+    let isApple = function() {
+        let ua = navigator.userAgent; 
+        let isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+        let isIpad = /iPad/i.test(ua);
+        let isMacintosh = /Macintosh/i.test(ua);
+        let isTouchDevice = "ontouchend" in document;
+                    
+        return isSafari || isIpad || isMacintosh;
+    };
+
+    // is this an apple platform?  So we know to send user's to Google Maps or Apple Maps when clicking coordinate links.
+    const isApplePlatform = isApple();
+
+    // function to form up the URL that will take the user to their specific map platform for directions to these coordinates
+    let mapurl = function(flightname, lat, lon, alt) {
+        let URL = "";
+        if (isApplePlatform)
+            URL = "https://maps.apple.com/?q=" + flightname + "&ll=" + lat + "%2C" + lon;
+        else
+            URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
+
+        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + "ft";
+    };
+
     // indices 
     let key, i;
 
@@ -85,7 +110,7 @@ function processFlights(json) {
     table.setAttribute("style", "width: auto");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -106,6 +131,9 @@ function processFlights(json) {
             json[key].balloonsize,
             json[key].beacons.join(", "), 
             (json[key].maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude.toLocaleString() + "ft </mark>" : json[key].maxaltitude.toLocaleString() + "ft"),
+            mapurl(json[key].flight, json[key].launch_location.latitude, json[key].launch_location.longitude, json[key].launch_location.altitude),
+            mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, json[key].landing_location.altitude),
+            json[key].range_distance_traveled.toFixed(2) + "mi",
             json[key].flighttime,
             (json[key].weights.gross * 1.0).toFixed(2) + "lbs &nbsp; (" + (json[key].weights.gross * 0.4535924).toFixed(2) + "kg)",
             json[key].liftfactor,
@@ -125,7 +153,8 @@ function processFlights(json) {
         }
 
         // add the telemetry cell
-        /*let telemetry = row.insertCell(-1);
+        /*
+        let telemetry = row.insertCell(-1);
         telemetry.setAttribute("class", "flightlist");
         let elem = document.createElement("a");
         elem.setAttribute("target", "_blank");
