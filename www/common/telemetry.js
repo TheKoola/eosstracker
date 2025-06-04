@@ -236,9 +236,6 @@ function createCharts(data) {
     if (!data)
         return;
 
-    /*********/
-    // REMOVE TRY BLOCK BEFORE PRODUCTION
-    /*********/
     try {
 
         // function to get the min and max vertical rates
@@ -439,7 +436,8 @@ function createCharts(data) {
         setplot("Air Density", airdensityplot, "airdensityplot");
 
     } catch(error) {
-        alert("error: " + error.message);
+        //alert("error: " + error.message);
+        console.log(error);
     }
 }
 
