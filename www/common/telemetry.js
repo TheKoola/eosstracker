@@ -477,7 +477,7 @@ function buildTable(json) {
     // title
     let p = document.createElement("p");
     p.setAttribute("class", "normal");
-    p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0;");
+    p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0; font-variant: small-caps;");
     p.innerHTML = "Flight Data";
     div.appendChild(p);
 
@@ -517,7 +517,7 @@ function buildTable(json) {
         // title
         let p = document.createElement("p");
         p.setAttribute("class", "normal");
-        p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0;");
+        p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0; font-variant: small-caps;");
         p.innerHTML = "Weights";
         div.appendChild(p);
 
