@@ -487,6 +487,22 @@ table.trackerlist {
     font-size:  .95em;
     color: #c8c8c8;
 }
+
+.flightlist-plain {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    border-collapse:  collapse;
+    border:  solid 1px black;
+    margin-top:  3px;
+    margin-bottom:  3px;
+    padding-right:  5px;
+    padding-left:  5px;
+    font-size:  .95em;
+    color: #c8c8c8;
+}
+
 .flightlist tr:hover { background-color: #737373; };
 .flightlist a :link  { color:  #0000aa; text-decoration:none; } 
 

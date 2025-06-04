@@ -460,7 +460,7 @@ function buildTable(json) {
     // Create the table
     let table = document.createElement("Table");
     let metadata = document.getElementById("metadata");
-    table.setAttribute("class", "flightlist");
+    table.setAttribute("class", "flightlist-plain");
     table.setAttribute("style", "width: auto");
 
     // the columns
@@ -528,11 +528,9 @@ function buildTable(json) {
         json.balloonsize, 
         json.beacons.join(", "),
         (json.maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json.maxaltitude.toLocaleString() + "ft </mark>" : json.maxaltitude.toLocaleString() + "ft"),
-
         mapurl(json.flight, json.launch_location.latitude, json.launch_location.longitude, json.launch_location.altitude),
         mapurl(json.flight, json.landing_location.latitude, json.landing_location.longitude, json.landing_location.altitude),
         json.range_distance_traveled.toFixed(2) + "mi",
-
         json.flighttime,
         reynoldstable(json.reynolds_transitions), 
         weighttable(json.weights),
