@@ -470,14 +470,25 @@ function buildTable(json) {
         return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + "ft";
     };
 
+    // wrapper div
+    let div = document.createElement("div");
+    div.setAttribute("style", "margin: 30px;");
+
+    // title
+    let p = document.createElement("p");
+    p.setAttribute("class", "normal");
+    p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0;");
+    p.innerHTML = "Flight Data";
+    div.appendChild(p);
+
     // Create the table
     let table = document.createElement("Table");
     let metadata = document.getElementById("metadata");
     table.setAttribute("class", "flightlist-plain");
-    table.setAttribute("style", "width: auto");
+    table.setAttribute("style", "width: auto;");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Ascent Airflow Transition Points", "Weights", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Ascent Airflow Transition Points", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -492,30 +503,53 @@ function buildTable(json) {
     row = table.insertRow(-1);
     row.setAttribute("class", "flightlist");
 
-    // function to build a quick table for displaying the weight line items
+    // function to build a table for displaying the weight line items
     const weighttable = function(js) {
-        let html = "";
-        let rows = "";
 
-        for (let [key, value] of  Object.entries(js)) {
-            let thisrow = "<tr><td style=\"font-size: 1em; text-align: left;\">";
-            thisrow += key;
-            thisrow += "</td><td style=\"font-size: 1em; padding-left: 10px; text-align: left;\">";
-            thisrow += (value * 1.0).toFixed(2) + "lbs &nbsp; (" + (value * 0.4535924).toFixed(2) + "Kg)";
-            thisrow += "</td></tr>";
+        // sanity check
+        if (!js || js.length == 0)
+            return null;
 
-            rows += thisrow;
+        // wrapper div
+        let div = document.createElement("div");
+        div.setAttribute("style", "margin-bottom: 30px; margin-left: 30px;");
+
+        // title
+        let p = document.createElement("p");
+        p.setAttribute("class", "normal");
+        p.setAttribute("style", "border: 0; font-size: 1.2em; margin-left: 0;");
+        p.innerHTML = "Weights";
+        div.appendChild(p);
+
+        // the table
+        let table = document.createElement("table");
+        table.setAttribute("class", "flightlist-plain");
+        table.setAttribute("style", "width: auto;");
+
+        // header row
+        let row = table.insertRow(-1);
+        let keys = Object.keys(js);
+        for (let key in keys) {
+            let headerCell = document.createElement("th");
+            headerCell.innerHTML = keys[key];
+            headerCell.setAttribute("class", "flightlistheader");
+            row.appendChild(headerCell);
         }
 
-        // if there was anything processed, then create the table html string
-        if (rows) {
-            html += "<table style=\"padding: 10px;\">";
-            html += "<tr><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Item</th><th style=\"font-variant: small-caps;font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Weight</th></tr>";
-            html += rows;
-            html += "</table>";
+        // table rows
+        let values = Object.values(js);
+        let tablerow = table.insertRow(-1);
+        for (let value in values) {
+            let tablecell = document.createElement("td");
+            tablecell.setAttribute("class", "flightlist");
+
+            //tablecell.setAttribute("style", "font-size: 1em; padding-left: 10px; text-align: left;");
+            tablecell.innerHTML = (values[value] * 1.0).toFixed(2) + "lbs &nbsp; (" + (values[value] * 0.4535924).toFixed(2) + "Kg)";
+            tablerow.appendChild(tablecell);
         }
 
-        return html;
+        div.appendChild(table);
+        return div;
     };
 
     // function to build a quick table for displaying the Reynolds transition points
@@ -546,7 +580,7 @@ function buildTable(json) {
         json.range_distance_traveled.toFixed(2) + "mi",
         json.flighttime,
         reynoldstable(json.reynolds_transitions), 
-        weighttable(json.weights),
+        //weighttable(json.weights),
         json.liftfactor,
         json.h2fill + "scf",
         json.numpoints.toLocaleString()
@@ -591,9 +625,18 @@ function buildTable(json) {
     else
         downloads.innerHTML = "n/a";
 
-    // update the element with our data
+
+    // blank the page element (just in case);
     metadata.innerHTML = "";
-    metadata.appendChild(table);
+
+    // add the flight data table to the div
+    div.appendChild(table);
+
+    // Add the div to the page element
+    metadata.appendChild(div);
+
+    // add the weights table to the page element
+    metadata.appendChild(weighttable(json.weights));
 }
 
 
