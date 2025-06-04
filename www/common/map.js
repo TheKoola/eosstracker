@@ -1722,7 +1722,7 @@ function getTrackers() {
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
-            zoomControloption: false,
+            zoomControl: false,
             layers : [ basic ],
             minZoom: 4,
             maxZoom: 20
