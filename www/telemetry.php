@@ -53,7 +53,7 @@ if (isset($_GET["flightid"])) {
     <div style="border: 0; text-align: right;  font-size: 1.2em; margin-right: 30px;" class="normal" id="nextflight">Next flight: EOSS-456</div>
 
     <!-- the table of data specific to this flight -->
-    <div style="grid-column: 1 / span 2; margin-bottom: 30px;" id="metadata"></div>
+    <div style="grid-column: 1 / span 2; margin-bottom: 30px;margin-right: 30px;" id="metadata"></div>
 
     <!-- the charts -->
     <div><div id="altitudeplot-title"></div><div id="altitudeplot" style="text-align: left;"></div></div>

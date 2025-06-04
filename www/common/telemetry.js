@@ -22,6 +22,8 @@
 *
 */
 
+let map; 
+
 /***********
 * initialize_map function
 *
@@ -29,33 +31,61 @@
 ***********/
 async function initialize_map(container) {
 
+    // the container element
+    let container_elem = document.getElementById(container);
+
+    // if the container exists then add some styling to container 
+    if (container_elem) 
+        container_elem.setAttribute("style", "margin-left: 30px; width: 85%; height: 85%;");
+    else
+        return null;  // without a container, we can't add a map object to it.
+
+    // the map title
+    let container_title = document.getElementById(container + "-title");
+    if (container_title) 
+        container_title.innerHTML = "<p class=\"normal\" style=\"border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;\">Flight Path (NOT YET COMPLETE)</a>";
+
+    // map style
     let basic = L.mapboxGL({
         style: '/tileserver/styles/klokantech-basic/style.json',
         attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
     });
 
     // Create a map object. 
-    let map = new L.Map(container, {
+    let m = new L.Map(container, {
         //renderer : canvasRenderer,
         preferCanvas:  true,
-        zoomControloption: false,
+        zoomControl: false,
         layers : [ basic ],
         minZoom: 4,
         maxZoom: 20
     });
 
-    // This is Denver, CO: 39.739, -104.985
-    map.setView(new L.latLng(39.739, -104.985), 10);
+    // Default starting location for the map.  This is Denver, CO: 39.739, -104.985
+    m.setView(new L.latLng(39.739, -104.985), 10);
 
     // zoom control
-    let zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(map);
+    let zoomcontrol = L.control.zoom({ position: 'topright' }).addTo(m);
 
-    // add a scale widget in the lower left hand corner for miles / kilometers.
-    let scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(map);
+    // add a scale widget in the lower right hand corner for miles / kilometers.
+    let scale = L.control.scale({position: 'bottomright', maxWidth: 200}).addTo(m);
 
-    return map;
+    return m;
 }
 
+
+/***********
+ * addToMap
+ *
+ * This will process the provided JSON, constructing a geojson featurecollection, then add that to the map
+ **********/
+function addToMap(data) {
+
+    // sanity check
+    if (!data || !map)
+        return;
+
+}
 
 
 /***********
@@ -173,10 +203,23 @@ async function getFlight(url) {
     // Parse the returned json
     js = await response.json();
 
-    // process flight definitions
+    // process flight json data
     if (js) {
+
+        // build the data table at the top of the page
         buildTable(js);
-        createCharts(js);
+
+        // convert the packettime epoch ms to a local date object
+        let packetdata = js.packets.map((a) => {
+            // convert UTC time to local time
+            const utcdate = new Date(a.packettime);
+            const localtime = new Date(utcdate.getTime() - utcdate.getTimezoneOffset()*60*1000)
+            return {...a, localtime, "curve_fit": a.velocity_curvefit*60 };
+        });
+
+        // for those build out functions that need the packet data...
+        createCharts(packetdata);
+        updateMap(packetdata);
     }
 
     return num;
@@ -187,63 +230,25 @@ async function getFlight(url) {
 *
 * Creates the altitude vs time chart for the flight
 ***********/
-function createCharts(flightdata) {
+function createCharts(data) {
 
-
-    if (!flightdata)
+    // sanity check
+    if (!data)
         return;
 
-
-    /***** Json for each packet should look similar to the following *******
-        {
-            "flightid": "EOSS-328",
-            "callsign": "KC0D-15",
-            "receivetime": 1659166756701,
-            "packettime": 1659166755000,
-            "altitude": 5830.0,
-            "vert_rate_ftmin": 380.0,
-            "elapsed_secs": 0.0,
-            "flight_phase": "ascending",
-            "info": "/133915h3916.73N/10329.72WO024/015/A=005830 EOSS BALLOON",
-            "raw": "KC0D-15>APZEOS,EOSS,qAO,W9CN-9:/133915h3916.73N/10329.72WO024/015/A=005830 EOSS BALLOON",
-            "bearing": 24.0,
-            "speed_mph": 17.0,
-            "latitude": 39.2788333333,
-            "longitude": -103.4953333333,
-            "temperature_k": null,
-            "pressure_pa": null,
-            "velocity_x": 5.56e-06,
-            "velocity_y": 2.222e-05,
-            "velocity_z": 6.33333333,
-            "airflow": "high Re",
-            "acceleration": null,
-            "velocity_mean": 6.333333,
-            "acceleration_mean": null,
-            "velocity_std": null,
-            "acceleration_std": null,
-            "velocity_norm": null,
-            "acceleration_norm": null,
-            "velocity_curvefit": 9.865684
-        } 
-    */
-
-
+    /*********/
+    // REMOVE TRY BLOCK BEFORE PRODUCTION
+    /*********/
     try {
 
-        // convert the packettime epoch ms to a local date object
-        let data = flightdata.packets.map((a) => {
-            // convert UTC time to local time
-            const utcdate = new Date(a.packettime);
-            const localtime = new Date(utcdate.getTime() - utcdate.getTimezoneOffset()*60*1000)
-            return {...a, localtime, "curve_fit": a.velocity_curvefit*60 };
-        });
-
+        // function to get the min and max vertical rates
         const getminmax = function(ray) {
             const min_vrate = ray.reduce((acc, obj) => (obj.vert_rate_ftmin < acc ? obj.vert_rate_ftmin : acc), Infinity);
             const max_vrate = ray.reduce((prev, current) => (prev.vert_rate_ftmin > current.vert_rate_ftmin ? prev : current)).vert_rate_ftmin;
             return [min_vrate, max_vrate];
         };
 
+        // function to add a plot to the specified container id
         const setplot = function(titletext, plot, id) {
             let title_elem = document.getElementById(id + "-title");
             let plot_elem  = document.getElementById(id);
@@ -276,7 +281,9 @@ function createCharts(flightdata) {
         */
         
 
+        /***********************/
         // the altitude chart
+        /***********************/
         const createAltitudePlot = function (d) {
             return Plot.plot({
                 color: { legend: true, className: "legend" },
@@ -319,7 +326,9 @@ function createCharts(flightdata) {
         setplot("Altitude vs. Time", altitudeplot, "altitudeplot");
 
 
+        /***********************/
         // the velocity chart
+        /***********************/
         const createVelocityPlot = function (d, c) {
 
             return Plot.plot({
@@ -355,7 +364,10 @@ function createCharts(flightdata) {
         let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"));
         setplot("Descent Rate", descent_velocityplot, "descent_velocityplot");
 
+
+        /***********************/
         // the temperature chart
+        /***********************/
         const createTemperaturePlot = function (d, c) {
 
             return Plot.plot({
@@ -389,7 +401,10 @@ function createCharts(flightdata) {
         let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color")) : null);
         setplot("Temperature", temperatureplot, "temperatureplot");
 
+
+        /***********************/
         // the airdensity chart
+        /***********************/
         const createAirdensityPlot = function (d, c) {
 
             return Plot.plot({
@@ -605,11 +620,13 @@ async function main() {
 
         // update the prev and next flights on the header label
         updateNextPrev(flightid);
+
+        // create a map object
+        map = initialize_map('map');
         
         // fetch flight data and process
         getFlight("/flightdata/json/" + flightid.toLocaleLowerCase() + ".json");
 
-        //let map = initialize_map('map');
     }
     else {
         // update the header label

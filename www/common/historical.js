@@ -110,7 +110,7 @@ function processFlights(json) {
     table.setAttribute("style", "width: auto");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Telemetry", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -153,7 +153,6 @@ function processFlights(json) {
         }
 
         // add the telemetry cell
-        /*
         let telemetry = row.insertCell(-1);
         telemetry.setAttribute("class", "flightlist");
         let elem = document.createElement("a");
@@ -162,7 +161,6 @@ function processFlights(json) {
         elem.setAttribute("style", "text-align: center;");
         elem.textContent = "Telemetry";
         telemetry.appendChild(elem);
-        */
 
 
         // now add the "downloads" cell for this flight (i.e. row)
