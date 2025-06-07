@@ -79,7 +79,7 @@ function initialize_map(container) {
 
     // map style
     let basic = L.mapboxGL({
-        style: 'https://track.eoss.org/tileserver/styles/klokantech-basic/style.json',
+        style: '/tileserver/styles/klokantech-basic/style.json',
         attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
     });
 
