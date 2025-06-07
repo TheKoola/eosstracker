@@ -156,7 +156,7 @@ function processFlights(json) {
         let telemetry = row.insertCell(-1);
         telemetry.setAttribute("class", "flightlist");
         let elem = document.createElement("a");
-        elem.setAttribute("target", "_blank");
+        //elem.setAttribute("target", "_blank");
         elem.setAttribute("href", "/telemetry.php?flightid=" + json[key].flight);
         elem.setAttribute("style", "text-align: center;");
         elem.textContent = "Telemetry";

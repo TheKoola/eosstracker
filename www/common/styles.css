@@ -327,6 +327,7 @@ img.bluesquare {
 .next:hover { color: black; text-decoration: none; background-color: #d0d0d0; }
 .prev:hover { color: black; text-decoration: none; background-color: #d0d0d0; }
 a:hover { color: white; text-decoration:underline; }
+a.inverse:hover { color: black; background-color: #99b3ff; text-decoration:underline; }
 a.packetlist-link:link { color:  #0000aa; text-decoration:none; } 
 a.packetlist-link:hover { color: #0000aa; text-decoration: underline; }
 a.header:hover { color: white; text-decoration: underline; }
@@ -338,6 +339,11 @@ a {
     color: #99b3ff;
     text-decoration: none;
 }
+
+a.inverse {
+    text-decoration: none;
+}
+
 
 .next {
     color: #f8f8f8;
@@ -790,3 +796,61 @@ div.antenna {
     color: #c8c8c8;
     font-size: 12px;
 }
+
+.myTooltipLabelStyle {
+/*  background: #F5F5F5;*/
+  background: #f2efe9;
+  text-align:  center;
+  box-shadow: none;
+  font-size:  1em;
+  border: none;
+  box-shadow: none;
+  margin: 0px;
+  padding:  0px;
+  cursor: none;
+}
+
+.myTooltipStyle {
+    font-size: 1em;
+}
+
+.flightTooltipLabelStyle {
+  font-size:  1em;
+  background: #ffffcc;
+  border: none;
+  border: 1px solid tan;
+  text-align:  center;
+  box-shadow: none;
+  font-weight: bold;
+  box-shadow: none;
+  margin: 0px;
+  padding:  2px;
+  cursor: none;
+}
+
+.flightBreadCrumbStyle {
+  font-size:  .9em;
+  background: #f2efe9;
+  border: none;
+/*  border: 1px solid tan;*/
+  text-align:  center;
+  box-shadow: none;
+/*  font-weight: bold;*/
+  box-shadow: none;
+  margin: 0px;
+  padding:  2px;
+  cursor: none;
+}
+
+@keyframes blueToWhiteTransition {
+    from { background-color: steelblue; }
+    to { background-color: white; }
+}
+
+.blueToWhite {
+    animation-name:  blueToWhiteTransition;
+    animation-duration: 0.5s;
+}
+
+.copytoclipboard:hover { background-color: #99b3ff; }
+

@@ -99,6 +99,7 @@ include_once $documentroot . '/common/header-historical.php';
         <tr class="flightlist"><td class="flightlist">velocity_norm</td><td class="flightlist">The normalized z-axis velocity in standard deviations.
         <tr class="flightlist"><td class="flightlist">acceleration_norm</td><td class="flightlist">The normalized z-axis acceleration in standard deviations.</td></tr>
         <tr class="flightlist"><td class="flightlist">velocity_curvefit</td><td class="flightlist">The curve-fittted, smoothed, z-axis velocity value (ft/s)</td></tr>
+        <tr class="flightlist"><td class="flightlist">reynolds_transition</td><td class="flightlist">Denotes if a data point has been marked as the average point where airflow around the flight (i.e. the balloon, etc.) is transitioning (ex. Reynolds numbers for the airflow are transitioning from high_to_low or low_to_high).  A lack of data (i.e. null, etc.) in this field indicates no transition has been detected for this data point.</td></tr>
         </table>
     </p>
 </div>
