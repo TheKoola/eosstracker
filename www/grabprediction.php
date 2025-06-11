@@ -272,7 +272,9 @@ function getPredictFile($dbconn, $fid, $lsite, $url) {
         "Limon" => "licco",
         "NWS" => "nwsco",
         "Windsor" => "wsrco",
-        "Coors Field" => "crfco"
+        "Coors Field" => "crfco",
+        "Hutchinson KS" => "hutks",
+        "Thornton VFW" => "thoco"
     ];
 
     printf ("[");
