@@ -1713,12 +1713,12 @@ function getTrackers() {
         var overlays;
 
         osmbright = L.mapboxGL({
-            style: 'https://track.eoss.org/tileserver/styles/osm-bright/style.json',
+            style: '/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
         basic = L.mapboxGL({
-            style: 'https://track.eoss.org/tileserver/styles/klokantech-basic/style.json',
+            style: '/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
