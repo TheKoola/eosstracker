@@ -1679,21 +1679,25 @@ function getTrackers() {
       //$.get("getstatus.php", function(data) {
       $.get("getstatus-memcache.php", function(data) {
           var statusJson = data;
-          var keys = Object.keys(statusJson.processes);
-          var i = 0;
-          var k = 0;
+          var donehtml = "<mark>N/A</mark>";
 
-          /* Loop through the processes and update their status */
-          /* Loop through the processes and update their status */
-          for (i = 0; i < keys.length; i++) {
-              if (statusJson.processes[i].process == "habtracker-d") {
-                  k += statusJson.processes[i].status;
+          if (statusJson && statusJson.processes) {
+              var keys = Object.keys(statusJson.processes);
+              var i = 0;
+              var k = 0;
+
+              /* Loop through the processes and update their status */
+              for (i = 0; i < keys.length; i++) {
+                  if (statusJson.processes[i].process == "habtracker-d") {
+                      k += statusJson.processes[i].status;
+                  }
               }
+
+              donehtml = "<mark>Not running.</mark>";
+              if (statusJson.rf_mode == 0 && k >= 1)
+                  donehtml = "<mark style=\"background-color: lightgreen;\">Running in online mode.</mark>";
           }
 
-          var donehtml = "<mark>Not running.</mark>";
-          if (statusJson.rf_mode == 0 && k >= 1)
-              donehtml = "<mark style=\"background-color: lightgreen;\">Running in online mode.</mark>";
           $("#systemstatus").html(donehtml);
       });
     }
@@ -1709,12 +1713,12 @@ function getTrackers() {
         var overlays;
 
         osmbright = L.mapboxGL({
-            style: '/tileserver/styles/osm-bright/style.json',
+            style: 'https://track.eoss.org/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
         basic = L.mapboxGL({
-            style: '/tileserver/styles/klokantech-basic/style.json',
+            style: 'https://track.eoss.org/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
 
