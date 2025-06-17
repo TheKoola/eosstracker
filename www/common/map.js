@@ -2260,9 +2260,6 @@ function getTrackers() {
         // Get the status of running processes
         setTimeout(function() { getProcessStatus(); }, 30);
 
-        // Build the charts
-        //setTimeout(function() { buildCharts(); }, 35);
-
         // build the Trackers table
         setTimeout(function() { getTrackers(); }, 40);
 
@@ -2274,12 +2271,6 @@ function getTrackers() {
         // When this map screen loses focus and then the user returns...
         window.onfocus = gainFocus;
         window.onblur = lostFocus;
-
-        // Listener so that the charts for flights are resized when the screen changes size.
-        window.addEventListener("resize", function() {
-            resizeCharts();
-        });
-
     }
 
 
@@ -2307,51 +2298,16 @@ function getTrackers() {
      * This function creates the charts for the individual flight tabs.
     *************/
     function buildCharts () {
-        var flight;
-        var achart;
-        var vchart;
+        let flight;
 
-        // build empty charts for each active flight
-        var i = 0;
+        // a placeholder until migration to a better charting package (i.e. Observable Plot) is completed.
         for (flight in flightids) {
-            var data = {};
-            var cols = {};
-            var altElement = "#" + flightids[flight].flightid + "_altitudechart";
-            var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
-            
-            // This is the altitude vs. time chart
-            achart = c3.generate({
-                bindto: altElement,
-                size: { width: getChartWidth(), height: getChartHeight() },
-                padding: {right: 10 },
-                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%Y-%m-%d %H:%M:%S'  },
-                axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
-                    type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                    y: { label: { text: 'Altitude (ft)', position: 'outer-middle' }, tick: {format: function(d) { return Math.round(d / 1000) + "k"; } } } },
-                //grid: { x: { show: true }, y: { show: true, lines: [{ value: lastposition.properties.altitude, class: 'groundlevel', text: 'Ground Level'}] } }
-                grid: { x: { show: true }, y: { show: true } },
-                line: { connectNull: true },
-                point: { show: false }
-            });
+            let altElementId = flightids[flight].flightid + "_altitudechart";
+            let vertElementId = flightids[flight].flightid + "_verticalchart";
+            let altelem = document.getElementById(altElementId);
+            let vertelem = document.getElementById(vertElementId);
 
-            // This is the vertical rate vs. time chart
-            vchart = c3.generate({
-                bindto: vertElement,
-                size: { width: getChartWidth(), height: getChartHeight() },
-                padding: {right: 10 },
-                data: { empty : { label: { text: "No Data Available" } }, type: 'area', json: data, xs: cols, xFormat: '%Y-%m-%d %H:%M:%S'  },
-                axis: { x: { label: { text: 'Time', position: 'outer-center' }, 
-                    type: 'timeseries', tick: { count: 6, format: '%H:%M' }  }, 
-                    y: { label: { text: 'Vertical Rate (ft/min)', position: 'outer-middle' }, tick: { format: d3.format(",d") }  } },
-                //grid: { x: { show: true }, y: { show: true, lines: [{ value: lastposition.properties.altitude, class: 'groundlevel', text: 'Ground Level'}] } }
-                grid: { x: { show: true }, y: { show: true } },
-                line: { connectNull: true },
-                point: { show: false }
-            });
-
-
-            $(altElement).data('altitudeChart', achart);
-            $(vertElement).data('verticalChart', vchart);
+            altelem.innerHTML = vertelem.innerHTML = "<mark>Not Available</mark>";
         }
     }
 
@@ -2366,36 +2322,6 @@ function getTrackers() {
         }
 
         return false;
-    }
-
-    /************
-     * resizeCharts
-     *
-     * This function loops through the current flights, adjusting their chart sizes to fit the screen
-    *************/
-    function resizeCharts() {
-        var w = getChartWidth();
-        var h = getChartHeight();
-
-
-        // Loop through each flight's sidebar tab, resizing the charts.
-        for (flight in flightids) {
-            var altElement = "#" + flightids[flight].flightid + "_altitudechart";
-            var vertElement = "#" + flightids[flight].flightid + "_verticalchart";
-            
-            var vchart = $(vertElement).data('verticalChart');
-            var achart = $(altElement).data('altitudeChart');
-
-            vchart.resize({
-                height: h,
-                width: w
-            });
-
-            achart.resize({
-                height: h,
-                width: w
-            });
-        }
     }
 
 
@@ -2838,21 +2764,6 @@ function getTrackers() {
         if ($(lastpacketpath).length)
             $(lastpacketpath).html("No data available.");
 
-        // clear the Altitude chart
-        var a_element = "#" + flightid + "_altitudechart";
-        if ($(a_element).length) {
-            var achart = $(a_element).data('altitudeChart');
-            achart.unload();
-        }
-
-        // clear the vertical chart
-        var v_element = "#" + flightid + "_verticalchart";
-        if ($(v_element).length) {
-            var vchart = $(v_element).data('verticalChart');
-            vchart.unload();
-        }
-
-
         // Loop through each packet section
         var i = 0;
         var elem;
@@ -3076,15 +2987,6 @@ function getTrackers() {
                                             var bm;
                                             var newlist = [];
                                             var yaxis = "tm-" + incoming_callsign;
-                                            var verticalchart = {
-                                                [incoming_callsign]: [],
-                                                [yaxis]: []
-                                            };
-                                            var altitudechart = {
-                                                [incoming_callsign]: [],
-                                                [yaxis]: []
-                                            };
-                                            var lastvalues = null;
 
                                             // Now loop through each feature for this individual beacon
                                             for (bm in beacon_json.features) {
@@ -3100,19 +3002,6 @@ function getTrackers() {
 
                                                     // for all non-balloonmarker features, we add them to the newlist
                                                     newlist.push(thefeature);
-
-                                                    if (objecttype == "balloon") {
-
-                                                        // Only if the time and vertical rate properties exist
-                                                        if (thefeature.properties.time && thefeature.properties.packet_time && thefeature.properties.verticalrate && thefeature.properties.altitude) {
-                                                            var tmstring = thefeature.properties.time.split(" ")[0] + " " + thefeature.properties.packet_time;
-                                                            lastvalues = {
-                                                                "verticalrate": Math.trunc(thefeature.properties.verticalrate * 1.0),
-                                                                "altitude": Math.trunc(thefeature.properties.altitude * 1.0),
-                                                                "yaxis": tmstring
-                                                            };
-                                                        }
-                                                    }
                                                 }
                                                 else if (objecttype && objecttype == 'balloonmarker') {
 
@@ -3121,35 +3010,9 @@ function getTrackers() {
 
                                                     // If this balloonmarker is new, then we add it to our list
                                                     if (!onthemap) 
-                                                    newlist.push(thefeature);
-
-                                                    // Only if the time and vertical rate properties exist
-                                                    if (thefeature.properties.time && thefeature.properties.packet_time && thefeature.properties.verticalrate && thefeature.properties.altitude) {
-                                                        var tmstring = thefeature.properties.time.split(" ")[0] + " " + thefeature.properties.packet_time;
-                                                        verticalchart[incoming_callsign].push(Math.trunc(thefeature.properties.verticalrate * 1.0));
-                                                        verticalchart[yaxis].push(tmstring);
-
-                                                        altitudechart[incoming_callsign].push(Math.trunc(thefeature.properties.altitude * 1.0));
-                                                        altitudechart[yaxis].push(tmstring);
-                                                    }
+                                                        newlist.push(thefeature);
                                                 }
                                             }
-
-                                            // Append the most recent chart data
-                                            if (lastvalues) {
-                                                altitudechart[incoming_callsign].push(lastvalues.altitude);
-                                                altitudechart[yaxis].push(lastvalues.yaxis);
-                                                verticalchart[incoming_callsign].push(lastvalues.verticalrate);
-                                                verticalchart[yaxis].push(lastvalues.yaxis);
-                                            }
-
-                                            // Update the altitude chart
-                                            if (altitudechart[incoming_callsign].length > 0)
-                                                updateAltitudeChart({ "chartdata": altitudechart, "flightid": fid});
-
-                                            // Update the vertical chart
-                                            if (verticalchart[incoming_callsign].length > 0)
-                                                updateVerticalChart({ "chartdata": verticalchart, "flightid": fid});
 
                                             // replace the existing JSON for this beacon
                                             flight.beacons[h].json = beacon_json;
@@ -3365,57 +3228,6 @@ function getTrackers() {
     }
 
 
-    /************
-     * updateAltitudeChart
-     *
-     * This function will update the altitude chart on the sidebar
-    *************/
-    function updateAltitudeChart(json) {
-        var fid = json.flightid;
-        var thekeys = Object.keys(json.chartdata);
-
-        var k = 0;
-        var chartkeys = Object.keys(json.chartdata);
-        var cols = {};
-        var element = "#" + fid + "_altitudechart";
-
-        for (k = 0; k < chartkeys.length; k++) {  
-            if (! chartkeys[k].startsWith("tm-")) {
-                cols[chartkeys[k]] = "tm-" + chartkeys[k];
-            }
-        }
-
-        // Load data into each Altitude chart
-        var achart = $(element).data('altitudeChart');
-        achart.load({ json: json.chartdata, xs: cols }); 
-    }
-
-
-    /************
-     * updateVertChart
-     *
-     * This function will update the vertical chart on the sidebar
-    *************/
-    function updateVerticalChart(json) {
-        var fid = json.flightid;
-        var thekeys = Object.keys(json.chartdata);
-
-        var k = 0;
-        var chartkeys = Object.keys(json.chartdata);
-        var cols = {};
-        var element = "#" + fid + "_verticalchart";
-
-        for (k = 0; k < chartkeys.length; k++) {  
-            if (! chartkeys[k].startsWith("tm-")) {
-                cols[chartkeys[k]] = "tm-" + chartkeys[k];
-            }
-        }
-
-        // Load data into each Altitude chart
-        var achart = $(element).data('verticalChart');
-        achart.load({ json: json.chartdata, xs: cols }); 
-    }
-        
 
     /************
      * UpdateAllItems
