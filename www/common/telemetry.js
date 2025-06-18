@@ -25,6 +25,13 @@
 // globals
 let map; 
 
+// units
+let UNITS;
+
+// json data
+let FLIGHT_JSON;
+let FLIGHTLIST;
+
 // the various map panes
 let pathsPane;
 let flightPane;
@@ -75,11 +82,12 @@ function initialize_map(container) {
     // the map title
     let container_title = document.getElementById(container + "-title");
     if (container_title) 
-        container_title.innerHTML = "<p class=\"normal\" style=\"border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;\">Flight Path</a>";
+        container_title.innerHTML = "<p class=\"normal\" style=\"border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;\">Flight Path <font style=\"font-size: .6em;\">(Imperial units only...for now)</font></p>";
 
     // map style
     let basic = L.mapboxGL({
-        style: '/tileserver/styles/klokantech-basic/style.json',
+        //style: '/tileserver/styles/klokantech-basic/style.json',
+        style: 'https://track.eoss.org/tileserver/styles/klokantech-basic/style.json',
         attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
     });
 
@@ -154,19 +162,6 @@ function initialize_panes() {
 }
 
 
-/***********
- * addToMap
- *
- * This will process the provided JSON, constructing a geojson featurecollection, then add that to the map
- **********/
-function addToMap(data) {
-
-    // sanity check
-    if (!data || !map)
-        return;
-
-}
-
 
 /***********
 * isApple
@@ -188,36 +183,40 @@ function isApple() {
 }
 
 /***********
+* getFlightList
+*
+* get the list of flights
+***********/
+async function getFlightList(url) {
+
+    // get the list of flights
+    let response = await fetch(url);
+
+    // return the json
+    return await response.json();
+}
+
+
+/***********
 * updateNextPrev
 *
 * Update the header text to add links for the prev and next flight
 ***********/
-async function updateNextPrev(flightid) {
-
-    // get the entire flightlist
-    const url = "/flightdata/json/flights_metadata.json";
-
-    // get the list of flights
-    let response = await fetch(url);
-    let js;
-    let num = 0;
-
-    // Parse the returned json
-    js = await response.json();
+function updateNextPrev(flightid) {
 
     // process flight definitions and find out where within the flightlist this flightid sits.
-    if (js) {
+    if (FLIGHTLIST) {
 
         // the index of where this flight is within the list of flights
-        const idx = js.findIndex(f => f.flight == flightid);
+        const idx = FLIGHTLIST.findIndex(f => f.flight == flightid);
 
         // prev and next
-        const prev_idx = (idx+1 < js.length ? idx+1 : 0);
-        const next_idx = (idx-1 >= 0 ? idx-1 : js.length-1);
+        const prev_idx = (idx+1 < FLIGHTLIST.length ? idx+1 : 0);
+        const next_idx = (idx-1 >= 0 ? idx-1 : FLIGHTLIST.length-1);
 
         // prev and next links
-        const prev_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + js[prev_idx].flight + "\">&laquo; previous: " + js[prev_idx].flight + "</a>";
-        const next_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + js[next_idx].flight + "\">next: " + js[next_idx].flight + " &raquo;</a>";
+        const prev_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + FLIGHTLIST[prev_idx].flight + "&units=" + UNITS + "\">&laquo; previous: " + FLIGHTLIST[prev_idx].flight + "</a>";
+        const next_link = "<a class=\"next\" href=\"/telemetry.php?flightid=" + FLIGHTLIST[next_idx].flight + "&units=" + UNITS + "\">next: " + FLIGHTLIST[next_idx].flight + " &raquo;</a>";
 
         // now update the title label to include these links
         prev_elem = document.getElementById("prevflight");
@@ -226,8 +225,8 @@ async function updateNextPrev(flightid) {
         prev_elem.innerHTML = prev_link;
 
         // set the data attribute so the gonext and goprevious event handlers can determine the correct URL to follow
-        next_elem.dataset.next = js[next_idx].flight;
-        prev_elem.dataset.prev = js[prev_idx].flight;
+        next_elem.dataset.next = FLIGHTLIST[next_idx].flight;
+        prev_elem.dataset.prev = FLIGHTLIST[prev_idx].flight;
 
         // add an event listener to catch the user hitting the left or right arrow keys
         window.addEventListener('keydown', (e) => {
@@ -240,7 +239,6 @@ async function updateNextPrev(flightid) {
         });
     }
 
-    return num;
 }
 
 
@@ -287,24 +285,72 @@ async function getFlight(url) {
     if (js) {
 
         // convert the packettime epoch ms to a local date object
-        let packetdata = js.packets.map((a) => {
+        const packetdata = js.packets.map((a) => {
             // convert UTC time to local time
             const utcdate = new Date(a.packettime);
             const localtime = new Date(utcdate.getTime() - utcdate.getTimezoneOffset()*60*1000)
-            return {...a, "localtime": utcdate, "curve_fit": a.velocity_curvefit*60 };
+            return {...a, "localtime": utcdate, "velocity_curvefit_ftmin": a.velocity_curvefit_fts*60 };
         });
+
+       /* const metric = ["_m", "_ms", "_ms2", "_kph", "_kgm3", "_pa", "_c", "_k"];
+        const imperial = ["_ft", "_fts", "_fts2", "_mph", "_slugs", "_atm", "_f" ];
+        const isUnit = function (val, units) {
+            return units.some(a => val.endsWith(a));
+        };
+        
+        const imperial_packets = Object.fromEntries(
+            Object.entries(packetdata).filter(
+                ([key, val]) => !isUnit(key, metric))
+        );
+        */
 
         // update the packets key with this new data that includes the localtime
         js.packets = packetdata;
 
+        // save the JSON to the global
+        FLIGHT_JSON = js;
+
         // call downstream functions 
-        buildTable(js);
-        createCharts(js);
+        updatePage(js);
         updateMap(js);
     }
 
     return num;
 }
+
+// wrapper function to update all data on the page
+function updatePage(js) {
+    if (!js)
+        return;
+
+    // units
+    const imperial = (UNITS == "imperial" ? true : false);
+
+    // update the "Historical Data" link
+    let elem = document.getElementById("historicallink");
+    if (elem) 
+        elem.href = "/historical.php?units=" + UNITS;
+
+    // add some generic keys that contain data in current units
+    const data = js.packets.map(function (a) {
+        return {...a, 
+            "altitude": (imperial ? a.altitude_ft : a.altitude_m),
+            "curve_fit": (imperial ? a.velocity_curvefit_fts * 60 : a.velocity_curvefit_ms),
+            "vert_rate": (imperial ? a.velocity_z_fts * 60 : a.velocity_z_ms),
+            "temperature": (imperial ? a.temperature_f : a.temperature_c),
+            "airdensity": (imperial ? a.airdensity_slugs : a.airdensity_kgm3)
+        };
+    });
+
+    // update the packets data with updates from above
+    js.packets = data;
+
+    updateNextPrev(js.flight);
+    buildTable(js);
+    createCharts(js);
+    regenMapLabels();
+}
+
 
 // style function.  Only applies to Path's like lines and polygons.
 function geojsonstyle(geojson) {
@@ -339,6 +385,10 @@ function stationPopup(geojson) {
 
     if (!geojson || !geojson.properties)
         return false;
+
+    // units (hard setting this for now)
+    //const imperial = (UNITS == "imperial" ? true : false);
+    const imperial = true;
 
     // the flight name of the existing feature
     let flight = (geojson.properties.flight ? geojson.properties.flight : (geojson.properties.flightid ? geojson.properties.flightid : "Not Available"));
@@ -396,9 +446,10 @@ function stationPopup(geojson) {
             html += "<tr><td colspan=2 style=\"margin: 0; padding:0; text-align: left;\">Reynolds transition point: " + msg + "</td></tr>";
         }
 
-        // the altitude of burst 
+        // the altitude of burst or breadcrumb objects
         if (geojson.properties.id.endsWith("burst") || geojson.properties.id.endsWith("breadcrumb"))
-            html += "<tr><td colspan=2 style=\"margin: 0; padding:0; text-align: left; white-space: nowrap;\">Altitude: <mark class=\"marginal\">" + Math.round(geojson.properties.altitude * 1.0).toLocaleString() + "ft</mark></td></tr>";
+            html += "<tr><td colspan=2 style=\"margin: 0; padding:0; text-align: left; white-space: nowrap;\">Altitude: <mark class=\"marginal\">" + 
+                (imperial ? Math.round(geojson.properties.altitude_ft*1.0).toLocaleString() + "ft" : Math.round(geojson.properties.altitude_m*1.0).toLocaleString() + "m") + "</mark></td></tr>";
 
         // the lat/lon HTML string
         const coords = createCoordsHTML(geojson);
@@ -464,10 +515,14 @@ function stationTooltip(geojson) {
     if (!geojson)
         return null;
 
+    // units (hard setting this for now)
+    //const imperial = (UNITS == "imperial" ? true : false);
+    const imperial = true;
+
     let content = null;
 
     if (geojson.properties.id.endsWith("burst"))
-        content = "Burst: " + Math.round(geojson.properties.altitude * 1.0).toLocaleString() + "ft";
+        content = "Burst: " + (imperial ? Math.round(geojson.properties.altitude_ft * 1.0).toLocaleString() + "ft" : Math.round(geojson.properties.altitude_m * 1.0).toLocaleString() + "m");
     if (geojson.properties.id.endsWith("launch"))
         content = "Launch";
     if (geojson.properties.id.endsWith("landing"))
@@ -480,6 +535,14 @@ function stationTooltip(geojson) {
     return content;
 } 
 
+/***********
+* regenMapLabels
+*
+* loops through all layers on the map and updates tooltip and popup content
+***********/
+function regenMapLabels() {
+
+}
 
 /***********
 * updateMap
@@ -492,6 +555,7 @@ function updateMap(data) {
     const fc = createFeatureCollection(data);
 
     if (fc && map) {
+
         // create a new leafjetjs geojson object for each feature in the collection
         fc.features.forEach(f => {
             let geojson = L.geoJSON(f, {
@@ -602,6 +666,8 @@ function updateMap(data) {
                 }
 
             });
+
+            // Add this feature to the map
             geojson.addTo(map);
         });
 
@@ -622,6 +688,10 @@ function createFeatureCollection(data) {
 
     if (!data || !data.packets || data.packets.length == 0)
         return null;
+
+    // units (hard setting this for now)
+    //const imperial = (UNITS == "imperial" ? true : false);
+    const imperial = true;
 
     // the packets
     const packets = data.packets;
@@ -646,7 +716,7 @@ function createFeatureCollection(data) {
 
     // find the packet based on its altitude and return a geojson feature 
     const featureFromPacket = function(id, alt, packetlist) {
-        const burst = packetlist.find(a => a.altitude === alt);
+        const burst = packetlist.find(a => a.altitude_ft === alt);
         if (burst) {
             const point = {
                 "type": "Point",
@@ -688,7 +758,7 @@ function createFeatureCollection(data) {
 
 
     // search for and create the burst point geojson feature
-    const burstfeature = featureFromPacket(properties.flight + "_burst", properties.maxaltitude, packets);
+    const burstfeature = featureFromPacket(properties.flight + "_burst", (imperial ? properties.maxaltitude_ft : properties.maxaltitude_m), packets);
     if (burstfeature)
         features.push(burstfeature);
 
@@ -703,7 +773,7 @@ function createFeatureCollection(data) {
         features.push(landingfeature);
     
     // gather the data points that we'll use to create breadcrumbs from, but ignore the burst point, along with the first and last data points, and any reynolds transitions points.
-    let breadcrumb_packets = packets.slice(1, -1).filter(a => a.altitude != properties.maxaltitude);
+    let breadcrumb_packets = packets.slice(1, -1).filter(a => a.altitude_ft != (imperial ? properties.maxaltitude_ft : properties.maxaltitude_m));
 
     // split that into ascent and descending set of packets
     let bc_packets_ascent = breadcrumb_packets.filter(a => a.flight_phase == "ascending")
@@ -715,7 +785,7 @@ function createFeatureCollection(data) {
     bc_packets_ascent = bc_packets_ascent.map(function(p) {
         p.tooltiptext = null;
         if (i % mod == 0) 
-            p.tooltiptext = Math.round(p.altitude / 1000) + "k";
+            p.tooltiptext = Math.round(p.altitude_ft / 1000) + (imperial ? "k" : "km");
 
         if (p.reynolds_transition == "high_to_low" || p.reynolds_transition == "low_to_high")
             p.tooltiptext = "Re Transition";
@@ -730,7 +800,7 @@ function createFeatureCollection(data) {
     bc_packets_descent = bc_packets_descent.map(function(p) {
         p.tooltiptext = null;
         if (i % mod == 0) 
-            p.tooltiptext = Math.round(p.altitude / 1000) + "k";
+            p.tooltiptext = Math.round(p.altitude_ft / 1000) + (imperial ? "k" : "km");
         
         if (p.reynolds_transition == "high_to_low" || p.reynolds_transition == "low_to_high")
             p.tooltiptext = "Re Transition";
@@ -770,6 +840,9 @@ function createCharts(js) {
     // sanity check
     if (!js || !js.packets || js.packets.length == 0)
         return;
+
+    // units
+    const imperial = (UNITS == "imperial" ? true : false);
 
     // the packet data
     const data = js.packets;
@@ -812,7 +885,7 @@ function createCharts(js) {
         /***********************/
         // the altitude chart
         /***********************/
-        const createAltitudePlot = function (d) {
+        const createAltitudePlot = function (d, isImperial) {
             return Plot.plot({
                 color: { legend: true, className: "legend" },
                 marginLeft: 50,
@@ -823,7 +896,7 @@ function createCharts(js) {
                 width: width,
                 height: height,
                 x: { label: "Date/Time", type: "time" },
-                y: { label: "Altitude (ft)", interval: 500 },
+                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 marks: [
                     // the grid and axis
                     Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
@@ -841,8 +914,8 @@ function createCharts(js) {
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
                         x: "localtime",
-                        y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / 1000).toLocaleString() + "k, " + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        y: "altitude", 
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -853,7 +926,7 @@ function createCharts(js) {
                     Plot.text(d, Plot.selectMaxY({
                         x: "localtime",
                         y: "altitude",
-                        text: (elem) => {return elem.altitude.toLocaleString() + "ft";}, 
+                        text: (elem) => {return elem.altitude.toLocaleString() + (isImperial ? "ft" : "m");}, 
                         textAnchor: "start",
                         fill: "white",
                         dx: 0,
@@ -864,14 +937,14 @@ function createCharts(js) {
             });
         };
 
-        let altitudeplot = createAltitudePlot(data);
+        let altitudeplot = createAltitudePlot(data, imperial);
         setplot("Altitude vs. Time", altitudeplot, "altitudeplot");
 
 
         /***********************/
         // the velocity chart
         /***********************/
-        const createVelocityPlot = function (d, c) {
+        const createVelocityPlot = function (d, c, isImperial) {
 
             return Plot.plot({
                 color: { ...c, legend: true, className: "legend" },
@@ -882,8 +955,8 @@ function createCharts(js) {
                 style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
                 width: width,
                 height: height,
-                x: { label: "Vertical Rate (ft/min)" },
-                y: { label: "Altitude (ft)", interval: 500 },
+                x: (isImperial ? { label: "Vertical Rate (ft/min)" } : { label: "Vertical Rate (m/s)" }),
+                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 marks: [
                     // the grid and axis
                     Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
@@ -893,17 +966,17 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a => !a.reynolds_transition),  {x: "vert_rate_ftmin", y: "altitude", stroke: "flight_phase" }),
+                    Plot.dot(d.filter(a => !a.reynolds_transition),  {x: "vert_rate", y: "altitude", stroke: "flight_phase" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "vert_rate_ftmin", y: "altitude", stroke: "red", fill: "red" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "vert_rate", y: "altitude", stroke: "red", fill: "red" }),
                     Plot.ruleY(d.filter(a => a.reynolds_transition), { y: "altitude", stroke: "red", fill: "red", strokeDasharray: [10,10] }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "vert_rate_ftmin",
+                        x: "vert_rate",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / 1000).toLocaleString() + "k, " + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -913,22 +986,22 @@ function createCharts(js) {
                     // fitted line
                     Plot.line(d, {x: "curve_fit", y: "altitude", stroke: "flight_phase", strokeOpacity: 1, strokeWidth: 2 }),
 
-                    Plot.crosshair(d, {x: "vert_rate_ftmin", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: "vert_rate", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let ascent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "ascending"), altitudeplot.scale("color"));
+        let ascent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "ascending"), altitudeplot.scale("color"), imperial);
         setplot("Ascent Rate", ascent_velocityplot, "ascent_velocityplot");
 
-        let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"));
+        let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"), imperial);
         setplot("Descent Rate", descent_velocityplot, "descent_velocityplot");
 
 
         /***********************/
         // the temperature chart
         /***********************/
-        const createTemperaturePlot = function (d, c) {
+        const createTemperaturePlot = function (d, c, isImperial) {
 
             return Plot.plot({
                 color:  { ...c, legend: true, className: "legend" },
@@ -939,8 +1012,9 @@ function createCharts(js) {
                 style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
                 width: width,
                 height: height,
-                x: { label: "Temperature (F)", transform: (a) => (a - 273.15) * 9/5 + 32 },
-                y: { label: "Altitude (ft)", interval: 500 },
+                //x: { label: "Temperature (F)", transform: (a) => (a - 273.15) * 9/5 + 32 },
+                x: (isImperial ? { label: "Temperature (F)" } : { label: "Temperature (C)" }),
+                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 facet: { label: "Beacon Callsign" },
                 marks: [
                     // the grid and axis
@@ -951,16 +1025,16 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a=> !a.reynolds_transition), {x: "temperature_k", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.dot(d.filter(a=> !a.reynolds_transition), {x: "temperature", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "temperature_k", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "temperature", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "temperature_k",
+                        x: "temperature",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / 1000).toLocaleString() + "k, " + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -968,20 +1042,20 @@ function createCharts(js) {
                         fx: "callsign"
                     }),
 
-                    Plot.crosshair(d, {x: "temperature_k", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: "temperature", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let temps = data.filter(a => a.temperature_k != null);
-        let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color")) : null);
+        let temps = data.filter(a => a.temperature != null);
+        let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color"), imperial) : null);
         setplot("Temperature", temperatureplot, "temperatureplot");
 
 
         /***********************/
         // the airdensity chart
         /***********************/
-        const createAirdensityPlot = function (d, c) {
+        const createAirdensityPlot = function (d, c, isImperial) {
 
             return Plot.plot({
                 color: { ...c, legend: true, className: "legend" },
@@ -992,8 +1066,8 @@ function createCharts(js) {
                 style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
                 width: width,
                 height: height,
-                x: { label: "Airdensity (kg/m^3)" },
-                y: { label: "Altitude (ft)", interval: 500 },
+                x: (isImperial ? { label: "Airdensity (slugs)" } : { label: "Airdensity (kg/m^3)" }),
+                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 facet: { label: "Beacon Callsign" },
                 marks: [
                     // the grid and axis
@@ -1004,16 +1078,16 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a=> !a.reynolds_transition),  {x: "airdensity_kgm3", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.dot(d.filter(a=> !a.reynolds_transition),  {x: "airdensity", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "airdensity_kgm3", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "airdensity", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "airdensity_kgm3",
+                        x: "airdensity",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / 1000).toLocaleString() + "k, " + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -1021,13 +1095,13 @@ function createCharts(js) {
                         fx: "callsign"
                     }),
 
-                    Plot.crosshair(d, {x: "airdensity_kgm3", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: "airdensity", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let densities = data.filter(a => a.airdensity_kgm3 != null);
-        let airdensityplot = (densities && densities.length > 0 ?  createAirdensityPlot(densities , altitudeplot.scale("color")) : null);
+        let densities = data.filter(a => a.airdensity != null);
+        let airdensityplot = (densities && densities.length > 0 ?  createAirdensityPlot(densities , altitudeplot.scale("color"), imperial) : null);
         setplot("Air Density", airdensityplot, "airdensityplot");
 
     } catch(error) {
@@ -1044,11 +1118,14 @@ function createCharts(js) {
 ***********/
 function buildTable(json) {
 
+    // units
+    const imperial = (UNITS == "imperial" ? true : false);
+
     // indices 
     let key, i;
     const packets = json.packets;
     const launchdate = json.day;
-    const max_altitude = json.maxaltitude;
+    const max_altitude = (imperial ? json.maxaltitude_ft : json.maxaltitude_m);
     const flightduration = json.flighttime;
 
     // is this an apple platform?  So we know to send user's to Google Maps or Apple Maps when clicking coordinate links.
@@ -1062,7 +1139,7 @@ function buildTable(json) {
         else
             URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
 
-        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + "ft";
+        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + (imperial ? "ft" : "m");
     };
 
     // wrapper div
@@ -1099,7 +1176,7 @@ function buildTable(json) {
     row.setAttribute("class", "flightlist");
 
     // function to build a table for displaying the weight line items
-    const weighttable = function(js) {
+    const weighttable = function(js, units) {
 
         // sanity check
         if (!js || js.length == 0)
@@ -1126,20 +1203,26 @@ function buildTable(json) {
         let keys = Object.keys(js);
         for (let key in keys) {
             let headerCell = document.createElement("th");
-            headerCell.innerHTML = keys[key];
+            const keyname = keys[key].split("_")[0];
+            headerCell.innerHTML = keyname;
             headerCell.setAttribute("class", "flightlistheader");
             row.appendChild(headerCell);
         }
 
         // table rows
-        let values = Object.values(js);
+        //let values = Object.values(js);
         let tablerow = table.insertRow(-1);
-        for (let value in values) {
+
+        //for (let value in values) {
+        for (const [key, value] of Object.entries(js)) {
             let tablecell = document.createElement("td");
             tablecell.setAttribute("class", "flightlist");
 
+            // get the units from the key name
+            const units = key.split("_")[1];
+
             //tablecell.setAttribute("style", "font-size: 1em; padding-left: 10px; text-align: left;");
-            tablecell.innerHTML = (values[value] * 1.0).toFixed(2) + "lbs &nbsp; (" + (values[value] * 0.4535924).toFixed(2) + "Kg)";
+            tablecell.innerHTML = (value * 1.0).toFixed(2) + units + "s";
             tablerow.appendChild(tablecell);
         }
 
@@ -1148,14 +1231,14 @@ function buildTable(json) {
     };
 
     // function to build a quick table for displaying the Reynolds transition points
-    const reynoldstable = function(data) {
+    const reynoldstable = function(data, isImperial) {
         let html = "<table style=\"padding: 10px;\">";
         html += "<tr><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: left; border-bottom: 1px solid darkgray;\">Reynolds Number</th><th style=\"font-variant: small-caps; font-size: 1.1em; text-align: right; padding-left: 20px; border-bottom: 1px solid darkgray;\">Altitude</td></tr>";
         html += json.reynolds_transitions.reduce(function(html, item) {
             html += "<tr><td style=\"font-size: 1em; text-align: left;\">";
             html += item.transition;
             html += "</td><td style=\"font-size: 1em; padding-left: 20px; text-align: right;\">";
-            html += item.altitude.toLocaleString() + "ft";
+            html += (isImperial ? item.altitude_ft.toLocaleString() + "ft" : item.altitude_m.toLocaleString() + "m");
             html += "</td></tr>";
             return html;
         }, '');
@@ -1163,19 +1246,22 @@ function buildTable(json) {
         return html;
     };
 
+
     // the various entries for the cells.
     const cellvalues = [
         json.flight,
         json.day,
         json.balloonsize, 
         json.beacons.join(", "),
-        (json.maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json.maxaltitude.toLocaleString() + "ft </mark>" : json.maxaltitude.toLocaleString() + "ft"),
-        mapurl(json.flight, json.launch_location.latitude, json.launch_location.longitude, json.launch_location.altitude),
-        mapurl(json.flight, json.landing_location.latitude, json.landing_location.longitude, json.landing_location.altitude),
-        json.range_distance_traveled.toFixed(2) + "mi",
+        (imperial ? 
+            (json.maxaltitude_ft >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json.maxaltitude_ft.toLocaleString() + "ft </mark>" : json.maxaltitude_ft.toLocaleString() + "ft") : 
+            (json.maxaltitude_m >= 30480 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json.maxaltitude_m.toLocaleString() + "m </mark>" : json.maxaltitude_m.toLocaleString() + "m")
+        ),
+        mapurl(json.flight, json.launch_location.latitude, json.launch_location.longitude, (imperial ? json.launch_location.altitude_ft : json.launch_location.altitude_m)),
+        mapurl(json.flight, json.landing_location.latitude, json.landing_location.longitude, (imperial ? json.landing_location.altitude_ft : json.launch_location.altitude_m)),
+        (imperial ? json.range_distance_traveled_mi.toFixed(2) + "mi" : json.range_distance_traveled_km.toFixed(2) + "km"),
         json.flighttime,
-        reynoldstable(json.reynolds_transitions), 
-        //weighttable(json.weights),
+        reynoldstable(json.reynolds_transitions, imperial), 
         json.liftfactor,
         json.h2fill + "scf",
         json.numpoints.toLocaleString()
@@ -1230,9 +1316,82 @@ function buildTable(json) {
     // Add the div to the page element
     metadata.appendChild(div);
 
+    // filter the weights based on the type of units we're displaying
+    const filtered_weights = Object.fromEntries(
+        Object.entries(json.weights).filter(
+            ([key, val]) => key.includes( (imperial ? "_lb" : "_kg"))));
+
     // add the weights table to the page element
-    metadata.appendChild(weighttable(json.weights));
+    metadata.appendChild(weighttable(filtered_weights));
 }
+
+
+/***********
+* createUnitsLink
+*
+* this will create the link (on the page) so the user can select between imperial or metric units
+***********/
+function createUnitsLink(u) {
+
+    // find the DOM element we need to update
+    let elem = document.getElementById("unitslink");
+
+    if (!elem)
+        return;
+
+    // sanity check
+    if (u != "imperial" && u != "metric")
+        u = "imperial";
+
+    elem.innerHTML = (u == "imperial" ?
+        "<mark class=\"okay\">[ Imperial ]</mark> &nbsp; Switch to: <font class=\"pseudolink\" onclick=\"switchtometric();\">Metric</font>" :
+        "<mark class=\"okay\">[ Metric ]</mark>   &nbsp; Switch to: <font class=\"pseudolink\" onclick=\"switchtoimperial();\">Imperial</font>");
+}
+
+
+/***********
+* switchtoimperial
+*
+* change units being displayed to imperial
+***********/
+function switchtoimperial() {
+
+    // are we already on imperial?
+    if (UNITS == "imperial")
+        return;
+
+    // set the global
+    UNITS = "imperial";
+
+    // reprocess the flightlist
+    updatePage(FLIGHT_JSON);
+
+    // change the units display
+    createUnitsLink(UNITS);
+}
+
+
+/***********
+* switchtometric
+*
+* change units being displayed to metric
+***********/
+function switchtometric() {
+
+    // are we already on imperial?
+    if (UNITS == "metric")
+        return;
+
+    // set the global
+    UNITS = "metric";
+
+    // reprocess the flightlist
+    updatePage(FLIGHT_JSON);
+
+    // change the units display
+    createUnitsLink(UNITS);
+}
+
 
 
 /***********
@@ -1247,6 +1406,15 @@ async function main() {
 
     // get the flightid
     const flightid = document.getElementById("flightid").getAttribute("data-flightid");
+    UNITS = document.getElementById("units").getAttribute("data-units");
+
+    // defaults
+    if (!UNITS)
+        UNITS = default_value;
+
+    // defaults
+    if (UNITS != "imperial" && UNITS != "metric")
+        UNITS = default_value;
 
     // if we've been supplied with a flightid, then process
     if (flightid) {
@@ -1260,11 +1428,21 @@ async function main() {
         // update the header label
         document.getElementById("headerlabel").innerHTML = "Telemetry for " + flightid;
 
-        // update the prev and next flights on the header label
-        updateNextPrev(flightid);
+        // get the fligh list metadata
+        getFlightList("/flightdata/json/flights_metadata.json").then((json) => {
+
+            // save the flightlist metadata
+            FLIGHTLIST = json;
+
+            // update the prev and next flights on the header label
+            updateNextPrev(FLIGHTLIST.flight);
+        });
 
         // fetch flight data and process
         getFlight("/flightdata/json/" + flightid.toLocaleLowerCase() + ".json");
+
+        // create the initial units link
+        createUnitsLink(UNITS);
 
     }
     else {

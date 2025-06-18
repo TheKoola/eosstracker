@@ -37,9 +37,18 @@ if (isset($_GET["flightid"])) {
     $get_flightid = strtoupper(check_string($_GET["flightid"], 20));
 }
 
+// Check units selector
+$get_units = "";
+if (isset($_GET["units"])) 
+    $get_units = strtolower(check_string($_GET["units"], 20));
+
+if ($get_units == "" || ($get_units != "metric" && $get_units != "imperial"))
+    $get_units = "imperial";
+
 ?>
 <script src="/common/telemetry.js"></script>
 <span id="flightid" data-flightid="<?php echo $get_flightid;?>" ></span>
+<span id="units" data-units="<?php echo $get_units;?>" ></span>
 <div style="margin-bottom 30px;">
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
@@ -51,6 +60,9 @@ if (isset($_GET["flightid"])) {
     <!-- the previous and next flight links -->
     <div style="border: 0; text-align: left; font-size: 1.2em;"                       class="normal" id="prevflight">Previous flight: EOSS-123</div>
     <div style="border: 0; text-align: right;  font-size: 1.2em; margin-right: 30px;" class="normal" id="nextflight">Next flight: EOSS-456</div>
+
+    <!-- where we specify the units we're using for data -->
+    <div class="normal" style="border: 0; grid-column: 1 / span 2; margin-left: 30px; margin-bottom: 0px; margin-top: 30px; margin-right: 30px;">Current units are displayed in: <span id="unitslink"></span></div>
 
     <!-- the table of data specific to this flight -->
     <div style="grid-column: 1 / span 2; margin-bottom: 30px;margin-right: 30px;" id="metadata"></div>

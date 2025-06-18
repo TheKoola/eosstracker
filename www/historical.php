@@ -30,24 +30,33 @@ $documentroot = $_SERVER["DOCUMENT_ROOT"];
 include_once $documentroot . '/common/functions.php';
 include_once $documentroot . '/common/header-historical.php';
 
+    // Check units selector
+    $get_units = "";
+    if (isset($_GET["units"])) 
+        $get_units = strtolower(check_string($_GET["units"], 20));
+
+    if ($get_units == "" || ($get_units != "metric" && $get_units != "imperial"))
+        $get_units = "imperial";
+
 ?>
 <script src="/common/historical.js"></script>
 <div style="margin-bottom: 30px;">
+<span id="units" data-units="<?php echo $get_units;?>" ></span>
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         Historical Flight Data
     </p>
+    <p class="subheader">Overview</p>
     <p class="normal" style="border: 0;">
         The following is a list of all EOSS flight data from recent years.  Data is available in several formats:
-    </p>
-    <p class="normal" style="border: 0;">
-        <ul>
+        <ul style="margin-left: 30px;">
             <li class="normal" style="border: 0;">Comma separated values (*.csv)</li>
             <li class="normal" style="border: 0;">JavaScript Object Notation (*.json)</li>
             <li class="normal" style="border: 0;">Microsoft Excel (*.xlsx)</li>
             <li class="normal" style="border: 0;">Pandas - Python Pandas pickle format (*.pkl)</li>
         </ul>
     </p>
+    <p class="subheader">Details</p>
     <p class="normal" style="border: 0;">
         Be sure to review the <a style="border: 0;" href="#schema">schema information</a> at the bottom of this page as there are a number of columns included beyond those integral to the Ham Radio, APRS packet specification.  
         In addition, make sure you're aware of how frequently telemetry data is collected, data quality issues, and similar topics by reviewing the <a style="border: 0;" href="#datanotes">data notes</a> section.
@@ -58,7 +67,15 @@ include_once $documentroot . '/common/header-historical.php';
         <a target="_blank" href="/flightdata/json/flights_metadata.json">json</a>, and 
         <a target="_blank" href="/flightdata/xlsx/flights_metadata.xlsx">excel</a>.
     </p>
+    <p class="subheader">Units</p>
+    <p class="normal" style="border: 0;">
+        Current units are displayed in:
+        <span id="unitslink"></span>
+        <br><strong>NOTE:</strong>  Download files (ex. metadata, csv, json, excel, pandas) contain data in both Imperial and Metric units.  There's no need to download data twice (ex. once for Metric and again for Imperial).
+
+    </p>
 </div>
+    <p class="subheader">Flight List</p>
 <div id="flightlist" style="margin-left: 30px;"></div>
 <div id="schema" style="margin-bottom: 30px;">
     <p class="header">
@@ -67,39 +84,57 @@ include_once $documentroot . '/common/header-historical.php';
     </p>
     <p class="normal" style="border: 0;">
         <table class="flightlist" style="margin-left: 30px;">
-        <tr class="flightlist"><th class="flightlistheader">Column</th><th class="flightlistheader">Notes</th></tr>
-        <tr class="flightlist"><td class="flightlist">flightid</td><td class="flightlist">Flight ID (ex. EOSS-123)</td></tr>
-        <tr class="flightlist"><td class="flightlist">callsign</td><td class="flightlist">Callsign of the beacon transmitting this packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">receivetime</td><td class="flightlist">The timestamp the packet was added to the database on track.eoss.org</td></tr>
-        <tr class="flightlist"><td class="flightlist">packettime</td><td class="flightlist">The timestamp within the APRS position packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">altitude</td><td class="flightlist">Altitude in feet</td></tr>
-        <tr class="flightlist"><td class="flightlist">vert_rate_ftmin</td><td class="flightlist">Vertical rate in ft/min</td></tr>
-        <tr class="flightlist"><td class="flightlist">elapsed_secs</td><td class="flightlist">Total elapsed seconds for this phase of the flight (i.e. ascent, descent)</td></tr>
-        <tr class="flightlist"><td class="flightlist">flight_phase</td><td class="flightlist">Ascending, descending</td></tr>
-        <tr class="flightlist"><td class="flightlist">info</td><td class="flightlist">The information field of the APRS packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">raw</td><td class="flightlist">The raw APRS packet as ingested from APRS-IS</td></tr>
-        <tr class="flightlist"><td class="flightlist">bearing</td><td class="flightlist">Bearing as reported within the APRS position packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">speed_mph</td><td class="flightlist">The speed in MPH as reported within the APRS position packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">latitude</td><td class="flightlist">The latitude as reported within the APRS position packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">longitude	</td><td class="flightlist">The longitude as reported within the APRS position packet</td></tr>
-        <tr class="flightlist"><td class="flightlist">distance_from_launch</td><td class="flightlist">The distance in miles from the launch location (i.e. usually from the first APRS packet heard for the flight) to the landing location (i.e. usually the last APRS packet heard from the flight)</td></tr>
-        <tr class="flightlist"><td class="flightlist">temperature_k</td><td class="flightlist">The temperature in Kelvin as reported from the beacon’s thermocouple sensor (if available)</td></tr>
-        <tr class="flightlist"><td class="flightlist">pressure_pa</td><td class="flightlist">The pressure in Pascals as reported from the beacon’s pressure sensor (if available)</td></tr>
-        <tr class="flightlist"><td class="flightlist">airdensity_slugs</td><td class="flightlist">The air density (computed from the pressure and temperature values and assumes 1% relative humidity) in “slugs”.</td></tr>
-        <tr class="flightlist"><td class="flightlist">airdensity_kgm3</td><td class="flightlist">The air density (computed from the pressure and temperature values and assumes 1% relative humidity) in “kg/m^3”.</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_x</td><td class="flightlist">The horizontal, x-axis, velocity in longitude degrees per second.</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_y</td><td class="flightlist">The horizontal, y-axis, velocity in latitude degrees per second.</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_z</td><td class="flightlist">The vertical, z-axis, velocity in feet per second.</td></tr>
-        <tr class="flightlist"><td class="flightlist">airflow</td><td class="flightlist">The estimated airflow conditions.  “high Re” = high Reynolds number environment (ex. Turbulent, lower drag).  “low Re” = low Reynolds number environment (ex. Laminar, higher drag)</td></tr>
-        <tr class="flightlist"><td class="flightlist">acceleration</td><td class="flightlist">The vertical, z-axis, acceleration in feet per second^2</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_mean</td><td class="flightlist">The running mean of the z-axis velocity (ft/s).  (I.e. vertical rate)</td></tr>
-        <tr class="flightlist"><td class="flightlist">acceleration_mean</td><td class="flightlist">The running mean of the z-axis acceleration (ft/s^s) (i.e. vertical acceleration) </td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_std</td><td class="flightlist">The running standard deviation of the z-axis velocity </td></tr>
-        <tr class="flightlist"><td class="flightlist">acceleration_std</td><td class="flightlist">The running standard deviation of the z-axis acceleration</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_norm</td><td class="flightlist">The normalized z-axis velocity in standard deviations.
-        <tr class="flightlist"><td class="flightlist">acceleration_norm</td><td class="flightlist">The normalized z-axis acceleration in standard deviations.</td></tr>
-        <tr class="flightlist"><td class="flightlist">velocity_curvefit</td><td class="flightlist">The curve-fittted, smoothed, z-axis velocity value (ft/s)</td></tr>
-        <tr class="flightlist"><td class="flightlist">reynolds_transition</td><td class="flightlist">Denotes if a data point has been marked as the average point where airflow around the flight (i.e. the balloon, etc.) is transitioning (ex. Reynolds numbers for the airflow are transitioning from high_to_low or low_to_high).  A lack of data (i.e. null, etc.) in this field indicates no transition has been detected for this data point.</td></tr>
+        <tr class="flightlist"><th class="flightlistheader">Column</th><th class="flightlistheader">Units</th><th class="flightlistheader">Notes</th></tr>
+        <tr class="flightlist"><td class="flightlist">flightid</td><td class="flightlist">--</td><td class="flightlist">Flight ID (ex. EOSS-123)</td></tr>
+        <tr class="flightlist"><td class="flightlist">callsign</td><td class="flightlist">--</td><td class="flightlist">Callsign of the beacon transmitting this packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">receivetime</td><td class="flightlist">timestamp</td><td class="flightlist">The timestamp the packet was added to the database on track.eoss.org</td></tr>
+        <tr class="flightlist"><td class="flightlist">packettime</td><td class="flightlist">timestamp</td><td class="flightlist">The timestamp within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">altitude_ft</td><td class="flightlist">feet</td><td class="flightlist">Altitude in feet</td></tr>
+        <tr class="flightlist"><td class="flightlist">altitude_m</td><td class="flightlist">meters</td><td class="flightlist">Altitude in meters</td></tr>
+        <tr class="flightlist"><td class="flightlist">vert_rate_ftmin</td><td class="flightlist">feet/min</td><td class="flightlist">Vertical rate in ft/min</td></tr>
+        <tr class="flightlist"><td class="flightlist">elapsed_secs</td><td class="flightlist">seconds</td><td class="flightlist">Total elapsed seconds for this phase of the flight (i.e. ascent, descent)</td></tr>
+        <tr class="flightlist"><td class="flightlist">flight_phase</td><td class="flightlist">--</td><td class="flightlist">Ascending, descending</td></tr>
+        <tr class="flightlist"><td class="flightlist">info</td><td class="flightlist">--</td><td class="flightlist">The information field of the APRS packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">raw</td><td class="flightlist">--</td><td class="flightlist">The raw APRS packet as ingested from APRS-IS</td></tr>
+        <tr class="flightlist"><td class="flightlist">bearing</td><td class="flightlist">degrees</td><td class="flightlist">Bearing as reported degrees from North within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">speed_mph</td><td class="flightlist">miles/hour</td><td class="flightlist">The speed in MPH as reported within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">speed_kph</td><td class="flightlist">kilometers/hour</td><td class="flightlist">The speed in KPH as reported within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">latitude</td><td class="flightlist">decimal degrees</td><td class="flightlist">The latitude in decimal degrees as reported within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">longitude	</td><td class="flightlist">decimal degrees</td><td class="flightlist">The longitude  in decimal degreesas reported within the APRS position packet</td></tr>
+        <tr class="flightlist"><td class="flightlist">distance_from_launch_mi</td><td class="flightlist">miles</td><td class="flightlist">The distance in miles from the launch location (i.e. usually from the first APRS packet heard for the flight) to the landing location (i.e. usually the last APRS packet heard from the flight)</td></tr>
+        <tr class="flightlist"><td class="flightlist">distance_from_launch_km</td><td class="flightlist">kilometers</td><td class="flightlist">The distance in kilometers from the launch location (i.e. usually from the first APRS packet heard for the flight) to the landing location (i.e. usually the last APRS packet heard from the flight)</td></tr>
+        <tr class="flightlist"><td class="flightlist">temperature_c</td><td class="flightlist">celsius degrees</td><td class="flightlist">The temperature in Celsius as reported from the beacon’s thermocouple sensor (if available)</td></tr>
+        <tr class="flightlist"><td class="flightlist">temperature_f</td><td class="flightlist">fahrenheit degrees</td><td class="flightlist">The temperature in Fahrenheit as reported from the beacon’s thermocouple sensor (if available)</td></tr>
+        <tr class="flightlist"><td class="flightlist">temperature_k</td><td class="flightlist">kelvins</td><td class="flightlist">The temperature in Kelvin as reported from the beacon’s thermocouple sensor (if available)</td></tr>
+        <tr class="flightlist"><td class="flightlist">pressure_pa</td><td class="flightlist">pascals</td><td class="flightlist">The pressure in Pascals as reported from the beacon’s pressure sensor (if available)</td></tr>
+        <tr class="flightlist"><td class="flightlist">pressure_atm</td><td class="flightlist">atmospheres</td><td class="flightlist">The pressure in Atmospheres as reported from the beacon’s pressure sensor (if available)</td></tr>
+        <tr class="flightlist"><td class="flightlist">airdensity_slugs</td><td class="flightlist">slugs (lbf &middot; s<sup>2</sup>/ft)</td><td class="flightlist">The air density (computed from the pressure and temperature values and assumes 1% relative humidity) in “slugs”.</td></tr>
+        <tr class="flightlist"><td class="flightlist">airdensity_kgm3</td><td class="flightlist">kilograms/meter<sup>3</sup></td><td class="flightlist">The air density (computed from the pressure and temperature values and assumes 1% relative humidity) in “kg/m<sup>3</sup>”.</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_x_degs</td><td class="flightlist">degrees/second</td><td class="flightlist">The horizontal, x-axis, velocity in longitude degrees per second.</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_y_degs</td><td class="flightlist">degrees/second</td><td class="flightlist">The horizontal, y-axis, velocity in latitude degrees per second.</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_z_fts</td><td class="flightlist">feet/second</td><td class="flightlist">The vertical, z-axis, velocity in feet per second.</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_z_ms</td><td class="flightlist">meters/second</td><td class="flightlist">The vertical, z-axis, velocity in meters per second.</td></tr>
+        <tr class="flightlist"><td class="flightlist">airflow</td><td class="flightlist">--</td><td class="flightlist">The estimated airflow conditions.  “high Re” = high Reynolds number environment (ex. Turbulent, lower drag).  “low Re” = low Reynolds number environment (ex. Laminar, higher drag)</td></tr>
+
+        <tr class="flightlist"><td class="flightlist">acceleration_fts2</td><td class="flightlist">feet/second<sup>2</sup></td><td class="flightlist">The vertical, z-axis, acceleration (ft/s<sup>2</sup>)</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_mean_fts</td><td class="flightlist">feet/second</td><td class="flightlist">The running mean of the z-axis velocity (ft/s).  (I.e. vertical rate)</td></tr>
+        <tr class="flightlist"><td class="flightlist">acceleration_mean_fts2</td><td class="flightlist">feet/second<sup>2</sup></td><td class="flightlist">The running mean of the z-axis acceleration (ft/s<sup>2</sup>) (i.e. vertical acceleration) </td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_std_fts</td><td class="flightlist">feet/second</td><td class="flightlist">The running standard deviation of the z-axis velocity </td></tr>
+        <tr class="flightlist"><td class="flightlist">acceleration_std_fts2</td><td class="flightlist">feet/second<sup>2</sup></td><td class="flightlist">The running standard deviation of the z-axis acceleration (ft/s<sup>2</sup>)</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_norm_fts</td><td class="flightlist">standard deviations</td><td class="flightlist">The normalized z-axis velocity in standard deviations (of imperial velocity values).
+        <tr class="flightlist"><td class="flightlist">acceleration_norm_fts2</td><td class="flightlist">standard deviations</td><td class="flightlist">The normalized z-axis acceleration in standard deviations (of imperial acceleration values).</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_curvefit_fts</td><td class="flightlist">feet/second</td><td class="flightlist">The curve-fitted, smoothed, z-axis velocity value (ft/s)</td></tr>
+
+        <tr class="flightlist"><td class="flightlist">acceleration_ms2</td><td class="flightlist">meters/second<sup>2</sup></td><td class="flightlist">The vertical, z-axis, acceleration (m/s<sup>2</sup>)</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_mean_ms</td><td class="flightlist">meters/second</td><td class="flightlist">The running mean of the z-axis velocity (m/s).  (I.e. vertical rate)</td></tr>
+        <tr class="flightlist"><td class="flightlist">acceleration_mean_ms2</td><td class="flightlist">meters/second<sup>2</sup></td><td class="flightlist">The running mean of the z-axis acceleration (m/s<sup>2</sup>) (i.e. vertical acceleration) </td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_std_ms</td><td class="flightlist">meters/second</td><td class="flightlist">The running standard deviation of the z-axis velocity (m/s) </td></tr>
+        <tr class="flightlist"><td class="flightlist">acceleration_std_ms2</td><td class="flightlist">meters/second<sup>2</sup></td><td class="flightlist">The running standard deviation of the z-axis acceleration (m/s<sup>2</sup>)</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_norm_ms</td><td class="flightlist">standard deviations</td><td class="flightlist">The normalized z-axis velocity in standard deviations (of metric velocity values).
+        <tr class="flightlist"><td class="flightlist">acceleration_norm_ms2</td><td class="flightlist">standard deviations</td><td class="flightlist">The normalized z-axis acceleration in standard deviations (of metric acceleration values).</td></tr>
+        <tr class="flightlist"><td class="flightlist">velocity_curvefit_ms</td><td class="flightlist">meters/second</td><td class="flightlist">The curve-fitted, smoothed, z-axis velocity value (m/s)</td></tr>
+
+        <tr class="flightlist"><td class="flightlist">reynolds_transition</td><td class="flightlist">--</td><td class="flightlist">Denotes if a data point has been marked as the average point where airflow around the flight (i.e. the balloon, etc.) is transitioning (ex. Reynolds numbers for the airflow are transitioning from high_to_low or low_to_high).  A lack of data (i.e. null, etc.) in this field indicates no transition has been detected for this data point.</td></tr>
         </table>
     </p>
 </div>

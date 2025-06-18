@@ -334,6 +334,11 @@ a.header:hover { color: white; text-decoration: underline; }
 a.subheader:hover { color: white; text-decoration: underline; }
 a.navbar:hover { color: white; text-decoration:underline; }
 
+.pseudolink {
+   color:#99b3ff;
+   text-decoration:underline;
+   cursor:pointer;
+}
 
 a {
     color: #99b3ff;
@@ -853,4 +858,3 @@ div.antenna {
 }
 
 .copytoclipboard:hover { background-color: #99b3ff; }
-

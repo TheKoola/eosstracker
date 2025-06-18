@@ -72,7 +72,7 @@ else
 </div>
 <div class="menubar">
     <ul class="menubar">
-        <li class="menubar"><a href="/historical.php" class="navbar">Historical Data</a></li>
+        <li class="menubar"><a id="historicallink" href="/historical.php" class="navbar">Historical Data</a></li>
         <li class="menubar"><a id="maplink" href="/index.php" target="_blank" class="navbar">Map</a></li>
         </ul>
 </div>

@@ -23,6 +23,11 @@
 */
 
 
+// globals
+let UNITS = "imperial";
+let FLIGHT_JSON = null;
+
+
 /***********
 * isApple
 *
@@ -72,6 +77,9 @@ function processFlights(json) {
     if (!json)
         return;
 
+    // are we using imperial units or metric
+    const imperial = (UNITS == "imperial" ? true : false);
+
     // get the browser's user agent string and determine is this is an apple devices or not
     let isApple = function() {
         let ua = navigator.userAgent; 
@@ -94,7 +102,7 @@ function processFlights(json) {
         else
             URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
 
-        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + "ft";
+        return "<a href=\"" + URL + "\" target=\"_blank\">" + lat.toFixed(8) + ", " + lon.toFixed(8) + "</a> @ " + alt.toLocaleString() + (imperial ? "ft" : "m");
     };
 
     // indices 
@@ -130,12 +138,15 @@ function processFlights(json) {
             json[key].day,
             json[key].balloonsize,
             json[key].beacons.join(", "), 
-            (json[key].maxaltitude >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude.toLocaleString() + "ft </mark>" : json[key].maxaltitude.toLocaleString() + "ft"),
-            mapurl(json[key].flight, json[key].launch_location.latitude, json[key].launch_location.longitude, json[key].launch_location.altitude),
-            mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, json[key].landing_location.altitude),
-            json[key].range_distance_traveled.toFixed(2) + "mi",
+            (imperial ? 
+                (json[key].maxaltitude_ft >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude_ft.toLocaleString() + "ft </mark>" : json[key].maxaltitude_ft.toLocaleString() + "ft") :
+                (json[key].maxaltitude_m >= 30480 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude_m.toLocaleString() + "m </mark>" : json[key].maxaltitude_m.toLocaleString() + "m") 
+            ),
+            mapurl(json[key].flight, json[key].launch_location.latitude, json[key].launch_location.longitude, Math.round(imperial ? json[key].launch_location.altitude_ft : json[key].launch_location.altitude_m)),
+            mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, Math.round(imperial ? json[key].launch_location.altitude_ft : json[key].launch_location.altitude_m)),
+            (imperial ? json[key].range_distance_traveled_mi.toFixed(2) + "mi" : json[key].range_distance_traveled_km.toFixed(2) + "km"),
             json[key].flighttime,
-            (json[key].weights.gross * 1.0).toFixed(2) + "lbs &nbsp; (" + (json[key].weights.gross * 0.4535924).toFixed(2) + "kg)",
+            (imperial ? (json[key].weights.gross_lb * 1.0).toFixed(2) + "lb" : (json[key].weights.gross_kg * 1.0).toFixed(2) + "kgs"),
             json[key].liftfactor,
             json[key].h2fill + "scf",
             json[key].numpoints.toLocaleString()
@@ -157,7 +168,7 @@ function processFlights(json) {
         telemetry.setAttribute("class", "flightlist");
         let elem = document.createElement("a");
         //elem.setAttribute("target", "_blank");
-        elem.setAttribute("href", "/telemetry.php?flightid=" + json[key].flight);
+        elem.setAttribute("href", "/telemetry.php?flightid=" + json[key].flight + (imperial ? "&units=imperial" : "&units=metric"));
         elem.setAttribute("style", "text-align: center;");
         elem.textContent = "Telemetry";
         telemetry.appendChild(elem);
@@ -198,6 +209,71 @@ function processFlights(json) {
     flightlist.appendChild(table);
 }
 
+/***********
+* createUnitsLink
+*
+* this will create the link (on the page) so the user can select between imperial or metric units
+***********/
+function createUnitsLink(u) {
+
+    // find the DOM element we need to update
+    let elem = document.getElementById("unitslink");
+
+    if (!elem)
+        return;
+
+    // sanity check
+    if (u != "imperial" && u != "metric")
+        u = "imperial";
+
+    elem.innerHTML = (u == "imperial" ? 
+        "<mark class=\"okay\">[ Imperial ]</mark> &nbsp; Switch to: <font class=\"pseudolink\" onclick=\"switchtometric();\">Metric</font>" : 
+        "<mark class=\"okay\">[ Metric ]</mark>   &nbsp; Switch to: <font class=\"pseudolink\" onclick=\"switchtoimperial();\">Imperial</font>");
+}
+
+
+/***********
+* switchtoimperial
+*
+* change units being displayed to imperial
+***********/
+function switchtoimperial() {
+
+    // are we already on imperial?
+    if (UNITS == "imperial") 
+        return;
+
+    // set the global
+    UNITS = "imperial";
+
+    // reprocess the flightlist 
+    processFlights(FLIGHT_JSON);
+
+    // change the units display
+    createUnitsLink(UNITS);
+}
+
+
+/***********
+* switchtometric
+*
+* change units being displayed to metric
+***********/
+function switchtometric() {
+
+    // are we already on imperial?
+    if (UNITS == "metric") 
+        return;
+
+    // set the global
+    UNITS = "metric";
+
+    // reprocess the flightlist 
+    processFlights(FLIGHT_JSON);
+
+    // change the units display
+    createUnitsLink(UNITS);
+}
 
 
 /***********
@@ -207,15 +283,35 @@ function processFlights(json) {
 ***********/
 async function main() {
 
+    let default_value = "imperial";
+    let u;
+
     // determine if this is an apple device or android or something else.
     isApplePlatform = isApple();
 
     // fetch flight definitions and process
     getDefinitions("/flightdata/json/flights_metadata.json").then((json) => {
+
+        // set the global
+        FLIGHT_JSON = json;
+
+        // process it
         processFlights(json);
     });
 
+    // get the units we're initially supposed to use, and create the link on the screen for selecting between imperial and metric
+    UNITS = document.getElementById("units").getAttribute("data-units");
 
+    // defaults
+    if (!UNITS)
+        UNITS = default_value;
+
+    // defaults
+    if (UNITS != "imperial" && UNITS != "metric")
+        UNITS = default_value;
+
+    // create the initial units link
+    createUnitsLink(UNITS);
 }
 
 
