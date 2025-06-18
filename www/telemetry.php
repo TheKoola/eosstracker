@@ -68,12 +68,12 @@ if ($get_units == "" || ($get_units != "metric" && $get_units != "imperial"))
     <div style="grid-column: 1 / span 2; margin-bottom: 30px;margin-right: 30px;" id="metadata"></div>
 
     <!-- the charts -->
-    <div style="width: 800px; height: 500px;"><div id="altitudeplot-title"></div><div id="altitudeplot" style="text-align: left;"></div></div>
-    <div style="width: 800px; height: 500px;"><div id="map-title"><p class="normal" style="border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;">Map to be inserted here</p></div><div id="map"></div></div>
-    <div style="width: 800px; height: 500px;"><div id="ascent_velocityplot-title"></div><div id="ascent_velocityplot" style="text-align: left;"></div></div>
-    <div style="width: 800px; height: 500px;"><div id="descent_velocityplot-title"></div><div id="descent_velocityplot" style="text-align: left;"></div></div>
-    <div style="width: 800px; height: 500px;"><div id="temperatureplot-title"></div><div id="temperatureplot" style="text-align: left;"></div></div>
-    <div style="width: 800px; height: 500px;"><div id="airdensityplot-title"></div><div id="airdensityplot" style="text-align: left;"></div></div>
+    <div><div id="altitudeplot-title"></div><div id="altitudeplot" style="text-align: left; width: 800px; height: 500px;"></div></div>
+    <div><div id="map-title"><p class="normal" style="border: 0; text-align: left; font-size: 1.2em; font-variant: small-caps;">Map to be inserted here</p></div><div id="map" style="width: 800px; height: 500px;"></div></div>
+    <div><div id="ascent_velocityplot-title"></div><div id="ascent_velocityplot" style="text-align: left; width: 800px; height: 500px;"></div></div>
+    <div><div id="descent_velocityplot-title"></div><div id="descent_velocityplot" style="text-align: left; width: 800px; height: 500px;"></div></div>
+    <div><div id="temperatureplot-title"></div><div id="temperatureplot" style="text-align: left; width: 800px; height: 500px;"></div></div>
+    <div><div id="airdensityplot-title"></div><div id="airdensityplot" style="text-align: left; width: 800px; height: 500px;"></div></div>
 </div>
 
 <?php

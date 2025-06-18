@@ -915,7 +915,7 @@ function createCharts(js) {
                     Plot.text(d.filter(a => a.reynolds_transition), {
                         x: "localtime",
                         y: "altitude", 
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -976,7 +976,7 @@ function createCharts(js) {
                     Plot.text(d.filter(a => a.reynolds_transition), {
                         x: "vert_rate",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -1034,7 +1034,7 @@ function createCharts(js) {
                     Plot.text(d.filter(a => a.reynolds_transition), {
                         x: "temperature",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -1087,7 +1087,7 @@ function createCharts(js) {
                     Plot.text(d.filter(a => a.reynolds_transition), {
                         x: "airdensity",
                         y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1)).toLocaleString() + (isImperial ? "k, " : "m, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
