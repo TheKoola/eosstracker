@@ -163,16 +163,16 @@ include_once $documentroot . '/common/header-historical.php';
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Statistical Values:</strong></font>
-                Statistical columns are added for motion values (ex. velocity, acceleration, etc) and include running means, standard deviations, and normalizations.  In this context, “running” 
-                in this context means that for a specific packet, the mean, std, norm values are computed based on all packets heard up to that point.
+                Statistical columns are added for motion values (ex. velocity, acceleration, etc) and include running means, standard deviations, and normalizations.  In this context, “running”
+                means that for a specific packet, the mean, std, norm values are computed based on all packets heard up to that point.
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Units:</strong></font>
-                The units are mostly imperial.  This is a work in progress as we're hoping to get to a complete set of data for both imperial and metric without intermingling.
+                Data files (ex. csv, excel, pandas, json) include fields with both imperial and metric units - it's the same data, but provided to save the end user time/trouble in converting from one to another.  
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Timestamps:</strong></font>
-                Timestamps in the JSON file formats are in milliseconds since the Epoch (Jan-1, 1970), but all other formats are nice, pretty time values.
+                Timestamps for the receivetime and packettime columns within JSON data files are in ISO8601 format:  YYYY-MM-DDTHH:MM:SS.SSS.
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Missing Data Points:</strong></font>
@@ -191,11 +191,11 @@ include_once $documentroot . '/common/header-historical.php';
                 z-axis velocities, it is then assumed that the balloon is experiencing more laminar airflow and thus higher drag.  
             </li>
             <li class="normal" style="border: 0;">
-                <font style="font-variant: small-caps"><strong>Launch/Landing Locations and Distances:</strong></font>
-                The launch and landing locations are determined by using the first and last APRS packets available respectively.  In some instances, an incomplete list of APRS packets for a flight was igated to APRS-IS,
-                which unfortunately results in an inacurate representation for the launch and landing locations.  For example, flight EOSS-343 shows a landing location and altitude of 14,000ft.  As exciting as that might sound,
-                the flight didn't actually land on the summit of a Colorado 14er!  In the case of EOSS-343, as the flight approached landing, packets transmitted by its beacons were never igated to APRS-IS and consequently 
-                are not available within the dataset on this site.
+                <font style="font-variant: small-caps"><strong>Launch/Landing Locations:</strong></font>
+                The launch and landing locations are determined by using the first and last APRS packets available respectively with the distances between the two computed in miles and kilometers.
+                In some instances, however, an incomplete list of APRS packets for a flight was igated to APRS-IS, which unfortunately results in an inacurate representation for the launch and landing locations.  For example, 
+                flight EOSS-343 shows a landing location and altitude of 14,000ft (4267m).  As exciting as that might sound, the flight didn't actually land on the summit of a Colorado 14er!  In the case of EOSS-343, 
+                as the flight approached landing, packets transmitted by its beacons were never igated to APRS-IS and consequently are not available within the dataset on this site.
             </li>
         </ol>
     </p>
