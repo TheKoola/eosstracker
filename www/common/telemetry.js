@@ -323,27 +323,10 @@ function updatePage(js) {
     if (!js)
         return;
 
-    // units
-    const imperial = (UNITS == "imperial" ? true : false);
-
     // update the "Historical Data" link
     let elem = document.getElementById("historicallink");
     if (elem) 
         elem.href = "/historical.php?units=" + UNITS;
-
-    // add some generic keys that contain data in current units
-    const data = js.packets.map(function (a) {
-        return {...a, 
-            "altitude": (imperial ? a.altitude_ft : a.altitude_m),
-            "curve_fit": (imperial ? a.velocity_curvefit_fts * 60 : a.velocity_curvefit_ms),
-            "vert_rate": (imperial ? a.velocity_z_fts * 60 : a.velocity_z_ms),
-            "temperature": (imperial ? a.temperature_f : a.temperature_c),
-            "airdensity": (imperial ? a.airdensity_slugs : a.airdensity_kgm3)
-        };
-    });
-
-    // update the packets data with updates from above
-    js.packets = data;
 
     updateNextPrev(js.flight);
     buildTable(js);
@@ -831,7 +814,7 @@ function createFeatureCollection(data) {
 
 
 /***********
-* createAltitudeChart
+* createCharts
 *
 * Creates the altitude vs time chart for the flight
 ***********/
@@ -842,7 +825,18 @@ function createCharts(js) {
         return;
 
     // units
-    const imperial = (UNITS == "imperial" ? true : false);
+    const isImperial = (UNITS == "imperial" ? true : false);
+
+    // fields to use based on the unit selection
+    const fields = {
+        "isImperial": (UNITS == "imperial" ? true : false),
+        "time": "localtime",
+        "altitude": (isImperial ? "altitude_ft" : "altitude_m"),
+        "curve_fit": (isImperial ? "velocity_curvefit_fts" : "velocity_curvefit_ms"),
+        "vert_rate": (isImperial ? "velocity_z_fts"  : "velocity_z_ms"),
+        "temperature": (isImperial ? "temperature_f" : "temperature_c"),
+        "airdensity": (isImperial ? "airdensity_slugs" : "airdensity_kgm3")
+    };
 
     // the packet data
     const data = js.packets;
@@ -885,7 +879,7 @@ function createCharts(js) {
         /***********************/
         // the altitude chart
         /***********************/
-        const createAltitudePlot = function (d, isImperial) {
+        const createAltitudePlot = function (d, fields) {
             return Plot.plot({
                 color: { legend: true, className: "legend" },
                 marginLeft: 50,
@@ -896,7 +890,7 @@ function createCharts(js) {
                 width: width,
                 height: height,
                 x: { label: "Date/Time", type: "time" },
-                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
+                y: (fields.isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 marks: [
                     // the grid and axis
                     Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
@@ -906,16 +900,16 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a => !a.reynolds_transition), {x: "localtime", y: "altitude", stroke: "flight_phase" }),
+                    Plot.dot(d.filter(a => !a.reynolds_transition), {x: fields.time, y: fields.altitude, stroke: "flight_phase" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "localtime", y: "altitude", stroke: "red", fill: "red" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: fields.time, y: fields.altitude, stroke: "red", fill: "red" }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "localtime",
-                        y: "altitude", 
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        x: fields.time,
+                        y: fields.altitude, 
+                        text: (elem) => { return Math.round(elem[fields.altitude] / (fields.isImperial ? 1000 : 1000)).toLocaleString() + (fields.isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -924,27 +918,27 @@ function createCharts(js) {
 
                     // Add a value label for the max altitude
                     Plot.text(d, Plot.selectMaxY({
-                        x: "localtime",
-                        y: "altitude",
-                        text: (elem) => {return elem.altitude.toLocaleString() + (isImperial ? "ft" : "m");}, 
+                        x: fields.time,
+                        y: fields.altitude,
+                        text: (elem) => {return elem[fields.altitude].toLocaleString() + (fields.isImperial ? "ft" : "m");}, 
                         textAnchor: "start",
                         fill: "white",
                         dx: 0,
                         dy: -20 
                     })),
-                    Plot.crosshair(d, {x: "localtime", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: fields.time, y: fields.altitude, color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let altitudeplot = createAltitudePlot(data, imperial);
+        let altitudeplot = createAltitudePlot(data, fields);
         setplot("Altitude vs. Time", altitudeplot, "altitudeplot");
 
 
         /***********************/
         // the velocity chart
         /***********************/
-        const createVelocityPlot = function (d, c, isImperial) {
+        const createVelocityPlot = function (d, c, fields) {
 
             return Plot.plot({
                 color: { ...c, legend: true, className: "legend" },
@@ -955,8 +949,8 @@ function createCharts(js) {
                 style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
                 width: width,
                 height: height,
-                x: (isImperial ? { label: "Vertical Rate (ft/min)" } : { label: "Vertical Rate (m/s)" }),
-                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
+                x: (fields.isImperial ? { label: "Vertical Rate (ft/min)", transform: (a) => a*60 } : { label: "Vertical Rate (m/s)" }),
+                y: (fields.isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 marks: [
                     // the grid and axis
                     Plot.axisX({ fill: "#c8c8c8", stroke: "#f0f0f0" }),
@@ -966,17 +960,17 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a => !a.reynolds_transition),  {x: "vert_rate", y: "altitude", stroke: "flight_phase" }),
+                    Plot.dot(d.filter(a => !a.reynolds_transition),  {x: fields.vert_rate, y: fields.altitude, stroke: "flight_phase" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "vert_rate", y: "altitude", stroke: "red", fill: "red" }),
-                    Plot.ruleY(d.filter(a => a.reynolds_transition), { y: "altitude", stroke: "red", fill: "red", strokeDasharray: [10,10] }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: fields.vert_rate, y: fields.altitude, stroke: "red", fill: "red" }),
+                    Plot.ruleY(d.filter(a => a.reynolds_transition), { y: fields.altitude, stroke: "red", fill: "red", strokeDasharray: [10,10] }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "vert_rate",
-                        y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        x: fields.vert_rate,
+                        y: fields.altitude,
+                        text: (elem) => { return Math.round(elem[fields.altitude] / (fields.isImperial ? 1000 : 1000)).toLocaleString() + (fields.isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -984,24 +978,24 @@ function createCharts(js) {
                     }),
 
                     // fitted line
-                    Plot.line(d, {x: "curve_fit", y: "altitude", stroke: "flight_phase", strokeOpacity: 1, strokeWidth: 2 }),
+                    Plot.line(d, {x: fields.curve_fit, y: fields.altitude, stroke: "flight_phase", strokeOpacity: 1, strokeWidth: 2 }),
 
-                    Plot.crosshair(d, {x: "vert_rate", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: fields.vert_rate, y: fields.altitude, color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let ascent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "ascending"), altitudeplot.scale("color"), imperial);
+        let ascent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "ascending"), altitudeplot.scale("color"), fields);
         setplot("Ascent Rate", ascent_velocityplot, "ascent_velocityplot");
 
-        let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"), imperial);
+        let descent_velocityplot = createVelocityPlot(data.filter(item => item.flight_phase == "descending"), altitudeplot.scale("color"), fields);
         setplot("Descent Rate", descent_velocityplot, "descent_velocityplot");
 
 
         /***********************/
         // the temperature chart
         /***********************/
-        const createTemperaturePlot = function (d, c, isImperial) {
+        const createTemperaturePlot = function (d, c, fields) {
 
             return Plot.plot({
                 color:  { ...c, legend: true, className: "legend" },
@@ -1013,8 +1007,8 @@ function createCharts(js) {
                 width: width,
                 height: height,
                 //x: { label: "Temperature (F)", transform: (a) => (a - 273.15) * 9/5 + 32 },
-                x: (isImperial ? { label: "Temperature (F)" } : { label: "Temperature (C)" }),
-                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
+                x: (fields.isImperial ? { label: "Temperature (F)" } : { label: "Temperature (C)" }),
+                y: (fields.isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 facet: { label: "Beacon Callsign" },
                 marks: [
                     // the grid and axis
@@ -1025,16 +1019,16 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a=> !a.reynolds_transition), {x: "temperature", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.dot(d.filter(a=> !a.reynolds_transition), {x: fields.temperature, y: fields.altitude, stroke: "flight_phase", fx: "callsign" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "temperature", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: fields.temperature, y: fields.altitude, stroke: "red", fill: "red", fx: "callsign" }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "temperature",
-                        y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        x: fields.temperature,
+                        y: fields.altitude,
+                        text: (elem) => { return Math.round(elem[fields.altitude] / (fields.isImperial ? 1000 : 1000)).toLocaleString() + (fields.isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -1042,20 +1036,20 @@ function createCharts(js) {
                         fx: "callsign"
                     }),
 
-                    Plot.crosshair(d, {x: "temperature", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: fields.temperature, y: fields.altitude, color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let temps = data.filter(a => a.temperature != null);
-        let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color"), imperial) : null);
+        let temps = data.filter(a => a[fields.temperature] != null);
+        let temperatureplot = (temps && temps.length > 0 ? createTemperaturePlot(temps, altitudeplot.scale("color"), fields) : null);
         setplot("Temperature", temperatureplot, "temperatureplot");
 
 
         /***********************/
         // the airdensity chart
         /***********************/
-        const createAirdensityPlot = function (d, c, isImperial) {
+        const createAirdensityPlot = function (d, c, fields) {
 
             return Plot.plot({
                 color: { ...c, legend: true, className: "legend" },
@@ -1066,8 +1060,8 @@ function createCharts(js) {
                 style: { overflow: "visible", fontSize: "12px", color: "#c8c8c8" },
                 width: width,
                 height: height,
-                x: (isImperial ? { label: "Airdensity (slugs)" } : { label: "Airdensity (kg/m^3)" }),
-                y: (isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
+                x: (fields.isImperial ? { label: "Airdensity (slugs)" } : { label: "Airdensity (kg/m^3)" }),
+                y: (fields.isImperial ? { label: "Altitude (ft)", interval: 500 } : { label: "Altitude (m)", interval: 150 }),
                 facet: { label: "Beacon Callsign" },
                 marks: [
                     // the grid and axis
@@ -1078,16 +1072,16 @@ function createCharts(js) {
                     Plot.frame({stroke: "#404040", strokeWidth: 2}),
 
                     // The primary data series
-                    Plot.dot(d.filter(a=> !a.reynolds_transition),  {x: "airdensity", y: "altitude", stroke: "flight_phase", fx: "callsign" }),
+                    Plot.dot(d.filter(a=> !a.reynolds_transition),  {x: fields.airdensity, y: fields.altitude, stroke: "flight_phase", fx: "callsign" }),
 
                     // plot any reynolds transistions
-                    Plot.dot(d.filter(a => a.reynolds_transition), {x: "airdensity", y: "altitude", stroke: "red", fill: "red", fx: "callsign" }),
+                    Plot.dot(d.filter(a => a.reynolds_transition), {x: fields.airdensity, y: fields.altitude, stroke: "red", fill: "red", fx: "callsign" }),
 
                     // add a text label for each reynolds transition
                     Plot.text(d.filter(a => a.reynolds_transition), {
-                        x: "airdensity",
-                        y: "altitude",
-                        text: (elem) => { return Math.round(elem.altitude / (isImperial ? 1000 : 1000)).toLocaleString() + (isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
+                        x: fields.airdensity,
+                        y: fields.altitude,
+                        text: (elem) => { return Math.round(elem[fields.altitude] / (fields.isImperial ? 1000 : 1000)).toLocaleString() + (fields.isImperial ? "k, " : "km, ") + (elem.reynolds_transition == "high_to_low" ? "Turbulent-to-Laminar" : "Laminar-to-Turbulent");},
                         textAnchor: "start", 
                         fill: "white", 
                         dx: +20,
@@ -1095,24 +1089,24 @@ function createCharts(js) {
                         fx: "callsign"
                     }),
 
-                    Plot.crosshair(d, {x: "airdensity", y: "altitude", color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
+                    Plot.crosshair(d, {x: fields.airdensity, y: fields.altitude, color: "flight_phase", ruleStrokeWidth: 2, textFill: "white", textStroke: "black", textStrokeOpacity: .7, textStrokeWidth: 20 })
                 ]
             });
         };
 
-        let densities = data.filter(a => a.airdensity != null);
-        let airdensityplot = (densities && densities.length > 0 ?  createAirdensityPlot(densities , altitudeplot.scale("color"), imperial) : null);
+        let densities = data.filter(a => a[fields.airdensity] != null);
+        let airdensityplot = (densities && densities.length > 0 ?  createAirdensityPlot(densities , altitudeplot.scale("color"), fields) : null);
         setplot("Air Density", airdensityplot, "airdensityplot");
 
     } catch(error) {
-        alert("error: " + error.message);
-        //console.log(error);
+        //alert("error: " + error.message);
+        console.log(error);
     }
 }
 
 
 /***********
-* processMetadata
+* buildTable
 *
 * Build the table of information about the flight's details.
 ***********/
@@ -1176,7 +1170,7 @@ function buildTable(json) {
     row.setAttribute("class", "flightlist");
 
     // function to build a table for displaying the weight line items
-    const weighttable = function(js, units) {
+    const weighttable = function(js) {
 
         // sanity check
         if (!js || js.length == 0)
