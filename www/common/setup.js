@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -1021,40 +1021,25 @@
     ***********/
     function validateCallsign() {
         var callsign = document.getElementById("callsign");
-	    
 
         if (!callsign.checkValidity()) {
             disableIgating();
-            disableBeaconing();
+            disableRFBeaconing();
             document.getElementById("beaconing").disabled = true;
-            //document.getElementById("beaconingtext").className = "disabled";
-            document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext1").className = "disabled";
-            document.getElementById("igatingtext2").className = "disabled";
-            document.getElementById("igating").checked = false;
             document.getElementById("beaconing").checked = false;
-            //throw callsign.validationMessage;
 	        return false;
 	    }
         if (callsign.value != "") {
-            document.getElementById("igating").disabled = false;
             document.getElementById("beaconing").disabled = false;
-            document.getElementById("igatingtext1").className = "normal";
-            document.getElementById("igatingtext2").className = "normal";
             document.getElementById("beaconingtexta").className = "normal";
             document.getElementById("beaconingtextb").className = "normal";
             }	
         else {
             disableIgating();
-            disableBeaconing();
+            disableRFBeaconing();
             document.getElementById("beaconing").disabled = true;
             document.getElementById("beaconingtexta").className = "disabled";
             document.getElementById("beaconingtextb").className = "disabled";
-            document.getElementById("igating").disabled = true;
-            document.getElementById("igatingtext1").className = "disabled";
-            document.getElementById("igatingtext2").className = "disabled";
-            document.getElementById("igating").checked = false;
-            document.getElementById("beaconing").checked = false;
         }
         
         return true;
@@ -1065,81 +1050,47 @@
     /***********
     * disableIgating
     *
-    * This function will disable the passcode data entry section
+    * This function will disable the igating and ibeaconing sections
     ***********/
     function disableIgating() {
-        document.getElementById("passcode").disabled = true;
-        document.getElementById("passcodetext1").className = "disabled";
-        document.getElementById("passcodetext2").className = "disabled";
-	    document.getElementById("ibeacon").disabled = true;
-    	document.getElementById("ibeaconrate").disabled = true;
-    	document.getElementById("ibeaconratetext1").className = "disabled";
-    	document.getElementById("ibeaconratetext2").className = "disabled";
 
-    	var beaconing = document.getElementById("beaconing").checked;
-    	if (!beaconing) {
-    	    document.getElementById("symbol").disabled = true;
-    	    document.getElementById("beaconingtext101").className = "disabled";
-    	    document.getElementById("beaconingtext102").className = "disabled";
-    	    document.getElementById("comment").disabled = true;
-    	    document.getElementById("beaconingtext81").className = "disabled";
-    	    document.getElementById("beaconingtext82").className = "disabled";
-            if (checkOverlay()) {
-                document.getElementById("overlay").disabled = false;
-                document.getElementById("overlaytext").className = "normal-noborders";
-            }
-                else {
-                document.getElementById("overlay").disabled = true;
-                document.getElementById("overlaytext").className = "disabled-noborders";
-            }
-	    }
+	    document.getElementById("igating").checked = false;
+	    document.getElementById("igating").disabled = true;
+        document.getElementById("igatingtext1").className = "disabled";
+        document.getElementById("igatingtext2").className = "disabled";
+	    document.getElementById("ibeacon").checked = false;
+	    document.getElementById("ibeacon").disabled = true;
+    	document.getElementById("ibeacontext1").className = "disabled";
+    	document.getElementById("ibeacontext2").className = "disabled";
+
+        // disable the APRS symbol, comment, overlay 
+        checkStationIcon();
     }
 
     /***********
-    * disableBeaconing
+    * disableRFBeaconing
     *
     * This function will disable the beaconing data entry section
     ***********/
-    function disableBeaconing() {
-        //document.getElementById("beaconing").disabled = true;
-        //document.getElementById("beaconingtext").className = "disabled";
-            
+    function disableRFBeaconing() {
         document.getElementById("audiodev").disabled = true;
         document.getElementById("serialport").disabled = true;
         document.getElementById("serialproto").disabled = true;
         document.getElementById("includeeoss").disabled = true;
         document.getElementById("eoss_string").disabled = true;
-        document.getElementById("objectbeaconing").disabled = true;
-        document.getElementById("mobilestation").disabled = true;
-        document.getElementById("mobiletext1").className = "disabled";
-        document.getElementById("mobiletext2").className = "disabled";
-        checkMobile();
-        
-        var igating = document.getElementById("igating").checked;
-        if (!igating) {
-            document.getElementById("symbol").disabled = true;
-            document.getElementById("beaconingtext101").className = "disabled";
-            document.getElementById("beaconingtext102").className = "disabled";
-            document.getElementById("comment").disabled = true;
-            document.getElementById("beaconingtext81").className  = "disabled";
-            document.getElementById("beaconingtext82").className  = "disabled";
-            if (checkOverlay()) {
-                document.getElementById("overlay").disabled = false;
-                document.getElementById("overlaytext").className = "normal-noborders";
-            }
-            else {
-                document.getElementById("overlay").disabled = true;
-                document.getElementById("overlaytext").className = "disabled-noborders";
-            }
-        }
+        document.getElementById("beaconlimit").disabled = true;
+
+        // disable the APRS symbol, comment, overlay 
+        checkStationIcon();
+
+        document.getElementById("beaconingtext3a").className = "disabled";
+        document.getElementById("beaconingtext3b").className = "disabled";
         document.getElementById("beaconingtext6a").className = "disabled";
         document.getElementById("beaconingtext6b").className = "disabled";
         document.getElementById("beaconingtext7a").className = "disabled";
         document.getElementById("beaconingtext7b").className = "disabled";
         document.getElementById("beaconingtext9a").className = "disabled";
         document.getElementById("beaconingtext9b").className = "disabled";
-        document.getElementById("objectbeacona").className = "disabled";
-        document.getElementById("objectbeaconb").className = "disabled";
     }
 
         
@@ -1177,15 +1128,15 @@
     * This function will validate the comment field
     ***********/
     function validateComment() {
-	var comment = document.getElementById("comment");
-	
-	if (!comment.checkValidity()) {
-	    comment.setCustomValidity("Invalid character within comment field.  Characters, | and ~ are not allowed.");
-	    return false;
-	}
- 
-	comment.setCustomValidity("");
-	return true;
+        var comment = document.getElementById("comment");
+
+        if (!comment.checkValidity()) {
+            comment.setCustomValidity("Invalid character within comment field.  Characters, | and ~ are not allowed.");
+            return false;
+        }
+     
+        comment.setCustomValidity("");
+        return true;
     }
 
 
@@ -1255,51 +1206,23 @@
     ***********/
     function validatePasscode() {
         var passcode = document.getElementById("passcode");
-	var callsign = document.getElementById("callsign");
-	var calculatedPasscode = generatePasscode(callsign.value);
+        var callsign = document.getElementById("callsign");
+        var calculatedPasscode = generatePasscode(callsign.value);
 
-
-	if (!passcode.checkValidity()) { 
-	    //throw passcode.validationMessage;
+        if (!passcode.checkValidity()) { 
             return false;
-	}
+        }
 
-	if (String(passcode.value) != String(calculatedPasscode) || passcode.value == "") {
-	    passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value.toUpperCase() + ".");
-	    //throw passcode.validationMessage; 
-	    return false;
-	}
+        if (String(passcode.value) != String(calculatedPasscode) || passcode.value == "") {
+            passcode.setCustomValidity("Invalid passcode for callsign, " + callsign.value.toUpperCase() + ".");
+            return false;
+        }
 
-	passcode.setCustomValidity("");
+        passcode.setCustomValidity("");
 
-	return true;
+        return true;
     }
 
-
-    /***********
-    * validateSlowSpeed function
-    *
-    * This function will make sure that the slowspeed threshold is <= fast speed threshold
-    ***********/
-    function validateSlowSpeed() {
-        var slowspeed = document.getElementById("slowspeed");
-	var fastspeed = document.getElementById("fastspeed");
-
-	if (!slowspeed.checkValidity()) { 
-	  //  throw slowspeed.validationMessage;
-            return false;
-	}
-
-	if (parseInt(slowspeed.value) > 0 && parseInt(slowspeed.value) > parseInt(fastspeed.value)) {
-	    slowspeed.setCustomValidity("Slow speed threshold cannot be greater than fast speed threshold");
-	   // throw slowspeed.validationMessage; 
-	    return false;
-	}
-
-	slowspeed.setCustomValidity("");
-	
-	return true;
-    }
 
 
     /***********
@@ -1311,27 +1234,25 @@
         var symbol = document.getElementById("symbol");
         var currentSymbol = symbol.options[symbol.selectedIndex].value;
 
-	var sym;
+        var sym;
         r = aprssymbols;
         r.sort(function(a, b) { return (String(a.description) < String(b.description) ? -1 : (String(a.description) > String(b.description) ? 1 : 0))});
         var keys = Object.keys(r);
         var enableOverlay = false;
-	var tc;
+        var tc;
         for (sym in keys) {
             if (typeof(r[sym].description) != "undefined" && typeof(r[sym].tocall) != "undefined" && r[sym].symbol != "1x")  {
                 if (currentSymbol == r[sym].symbol) {
-		    for (tc in validoverlays) {
+                    for (tc in validoverlays) {
                         if (r[sym].tocall == validoverlays[tc]) {
                             enableOverlay = true;
                         }
                     }
-		    
-		}
+                }
+            }
+        }
 
-	    }
-	}
-
-	return enableOverlay;
+        return enableOverlay;
     }
 	
 	
@@ -1340,39 +1261,81 @@
     /***********
     * checkIgating function
     *
-    * This function will check that the checkbox "igating" is checked and if so, enable some input fields.
+    * This function will check that a valid passcode was entered and if so, enable the igating and ibeaconing checkboxes.
     ***********/
     function checkIgating() {
-        var igating = document.getElementById("igating");
-	
-	if (igating.checked) {
-	    document.getElementById("passcode").disabled = false;
-	    document.getElementById("passcodetext1").className = "normal";
-	    document.getElementById("passcodetext2").className = "normal";
-	    document.getElementById("symbol").disabled = false;
-	    document.getElementById("beaconingtext101").className = "normal";
-	    document.getElementById("beaconingtext102").className = "normal";
-	    document.getElementById("comment").disabled = false;
-	    document.getElementById("beaconingtext81").className = "normal";
-	    document.getElementById("beaconingtext82").className = "normal";
-	    if (checkOverlay()) {
-	        document.getElementById("overlay").disabled = false;
-	        document.getElementById("overlaytext").className = "normal-noborders";
-	    }
+        var passcode = document.getElementById("passcode").value;
+
+        if (passcode != "" && validatePasscode()) {
+            document.getElementById("igating").disabled = false;
+            document.getElementById("igatingtext1").className = "normal";
+            document.getElementById("igatingtext2").className = "normal";
+            document.getElementById("ibeacon").disabled = false;
+            document.getElementById("ibeacontext1").className = "normal";
+            document.getElementById("ibeacontext2").className = "normal";
+
+            // enable the APRS symbol, comment, and overlay section
+            checkStationIcon();
+        }
         else {
-	        document.getElementById("overlay").disabled = true;
-	        document.getElementById("overlaytext").className = "disabled-noborders";
-	    }
-	    document.getElementById("ibeacon").disabled = false;
-	    document.getElementById("ibeaconrate").disabled = false;
-	    document.getElementById("ibeaconratetext1").className = "normal";
-	    document.getElementById("ibeaconratetext2").className = "normal";
-	}
-	else {
-	    disableIgating();
-	}
+            disableIgating();
+        }
+    }
+
+    /***********
+    * checkStationIcon function
+    *
+    * This function will check if either the ibeaconing checkbox or the RF beaconing checkbox are checked, if so, enable the symbol/overlay/comment section
+    ***********/
+    function checkStationIcon() {
+
+        // function to disable the APRS symbol, overlay, and comment section
+        var disableSymbolSection = function() {
+            document.getElementById("symbol").disabled = true;
+            document.getElementById("beaconingtext101").className = "disabled";
+            document.getElementById("beaconingtext102").className = "disabled";
+            document.getElementById("comment").disabled = true;
+            document.getElementById("beaconingtext81").className = "disabled";
+            document.getElementById("beaconingtext82").className = "disabled";
+            document.getElementById("overlay").disabled = true;
+            document.getElementById("overlaytext").className = "disabled-noborders";
+        };
+
+        // function to enable the APRS symbol, overlay, and comment section
+        var enableSymbolSection = function() {
+            document.getElementById("symbol").disabled = false;
+            document.getElementById("beaconingtext101").className = "normal";
+            document.getElementById("beaconingtext102").className = "normal";
+            document.getElementById("comment").disabled = false;
+            document.getElementById("beaconingtext81").className = "normal";
+            document.getElementById("beaconingtext82").className = "normal";
+
+            // for the overlay, we need to check if there's a valid symbol that allows overlays
+            if (checkOverlay()) {
+                document.getElementById("overlay").disabled = false;
+                document.getElementById("overlaytext").className = "normal-noborders";
+            }
+            else {
+                document.getElementById("overlay").disabled = true;
+                document.getElementById("overlaytext").className = "disabled-noborders";
+            }
+        };
 
 
+        var rfbeaconing = document.getElementById("beaconing");
+        var ibeaconing = document.getElementById("ibeacon");
+
+        // check if both are disabled
+        if (rfbeaconing.disabled && ibeaconing.disabled) {
+            disableSymbolSection();
+        }
+        else {
+            // otherwise, one of the beaconing capabilities has been enabled so determine if one of them is checked
+            if (rfbeaconing.checked || ibeaconing.checked) 
+                enableSymbolSection();
+            else
+                disableSymbolSection();
+        }
     }
 
     /***********
@@ -1389,86 +1352,23 @@
             document.getElementById("serialproto").disabled = false;
             document.getElementById("comment").disabled = false;
             document.getElementById("includeeoss").disabled = false;
-            document.getElementById("objectbeaconing").disabled = false;
-            document.getElementById("mobilestation").disabled = false;
-            document.getElementById("mobiletext1").className = "normal";
-            document.getElementById("mobiletext2").className = "normal";
+            document.getElementById("beaconlimit").disabled = false;
             checkEOSS();
-            checkMobile();
-            document.getElementById("symbol").disabled = false;
-            if (checkOverlay()) {
-                document.getElementById("overlay").disabled = false;
-                document.getElementById("overlaytext").className = "normal-noborders";
-            }
-                else {
-                document.getElementById("overlay").disabled = true;
-                document.getElementById("overlaytext").className = "disabled-noborders";
-            }
+
+            // enable the APRS symbol, comment, and overlay section
+            checkStationIcon();
+
+            document.getElementById("beaconingtext3a").className = "normal";
+            document.getElementById("beaconingtext3b").className = "normal";
             document.getElementById("beaconingtext6a").className = "normal";
             document.getElementById("beaconingtext6b").className = "normal";
             document.getElementById("beaconingtext7a").className = "normal";
             document.getElementById("beaconingtext7b").className = "normal";
-            document.getElementById("beaconingtext81").className = "normal";
-            document.getElementById("beaconingtext82").className = "normal";
             document.getElementById("beaconingtext9a").className = "normal";
             document.getElementById("beaconingtext9b").className = "normal";
-            document.getElementById("beaconingtext101").className = "normal";
-            document.getElementById("beaconingtext102").className = "normal";
-            document.getElementById("objectbeacona").className = "normal";
-            document.getElementById("objectbeaconb").className = "normal";
         }
         else {
-            disableBeaconing();
-        }
-    }
-
-
-    /***********
-    * checkMobile function
-    *
-    * This function will check that the checkbox "Mobile station" is checked and if so, enable some input fields.
-    ***********/
-    function checkMobile() {
-        var mobilestation = document.getElementById("mobilestation");
-        var rfbeaconing = document.getElementById("beaconing");
-
-        if (mobilestation.checked && rfbeaconing.checked)  {
-            document.getElementById("fastspeed").disabled   = false;
-            document.getElementById("fastrate").disabled    = false;
-            document.getElementById("slowspeed").disabled   = false;
-            document.getElementById("slowrate").disabled    = false;
-            document.getElementById("beaconlimit").disabled = false;
-            document.getElementById("fastturn").disabled    = false;
-            document.getElementById("slowturn").disabled    = false;
-            document.getElementById("beaconingtext1a").className = "normal";
-            document.getElementById("beaconingtext1b").className = "normal";
-            document.getElementById("beaconingtext2a").className = "normal";
-            document.getElementById("beaconingtext2b").className = "normal";
-            document.getElementById("beaconingtext3a").className = "normal";
-            document.getElementById("beaconingtext3b").className = "normal";
-            document.getElementById("beaconingtext4a").className = "normal";
-            document.getElementById("beaconingtext4b").className = "normal";
-            document.getElementById("beaconingtext5a").className = "normal";
-            document.getElementById("beaconingtext5b").className = "normal";
-        }
-        else {
-            document.getElementById("fastspeed").disabled   = true;
-            document.getElementById("fastrate").disabled    = true;
-            document.getElementById("slowspeed").disabled   = true;
-            document.getElementById("slowrate").disabled    = true;
-            document.getElementById("beaconlimit").disabled = true;
-            document.getElementById("fastturn").disabled    = true;
-            document.getElementById("slowturn").disabled    = true;
-            document.getElementById("beaconingtext1a").className = "disabled";
-            document.getElementById("beaconingtext1b").className = "disabled";
-            document.getElementById("beaconingtext2a").className = "disabled";
-            document.getElementById("beaconingtext2b").className = "disabled";
-            document.getElementById("beaconingtext3a").className = "disabled";
-            document.getElementById("beaconingtext3b").className = "disabled";
-            document.getElementById("beaconingtext4a").className = "disabled";
-            document.getElementById("beaconingtext4b").className = "disabled";
-            document.getElementById("beaconingtext5a").className = "disabled";
-            document.getElementById("beaconingtext5b").className = "disabled";
+            disableRFBeaconing();
         }
     }
 
@@ -1494,6 +1394,7 @@
     ***********/
     function getConfiguration() {
         $.get("readconfiguration-memcache.php", function(jsonData) {
+
             //var jsonData = JSON.parse(data);
             var keys = Object.keys(jsonData);
             var i;
@@ -1507,19 +1408,17 @@
 
             document.getElementById("passcode").value = (typeof(jsonData.passcode) == "undefined" ? "" : jsonData.passcode);	    
             document.getElementById("ibeacon").checked = (typeof(jsonData.ibeacon) == "undefined" ? false : (jsonData.ibeacon == "true" ? true : false));
-            document.getElementById("ibeaconrate").value = (typeof(jsonData.ibeaconrate) == "undefined" ? "" : jsonData.ibeaconrate);	    
-            document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
-            document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
-            document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
-            document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
+            //document.getElementById("fastspeed").value = (typeof(jsonData.fastspeed) == "undefined" ? "" : jsonData.fastspeed);	    
+            //document.getElementById("slowspeed").value = (typeof(jsonData.slowspeed) == "undefined" ? "" : jsonData.slowspeed);	    
+            //document.getElementById("fastrate").value = (typeof(jsonData.fastrate) == "undefined" ? "" : jsonData.fastrate);	    
+            //document.getElementById("slowrate").value = (typeof(jsonData.slowrate) == "undefined" ? "" : jsonData.slowrate);	    
+            //document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
+            //document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
+            //document.getElementById("mobilestation").checked = (typeof(jsonData.mobilestation) == "undefined" ? false : (jsonData.mobilestation == "true" ? true : false));
             document.getElementById("beaconlimit").value = (typeof(jsonData.beaconlimit) == "undefined" ? "" : jsonData.beaconlimit);
-            document.getElementById("fastturn").value = (typeof(jsonData.fastturn) == "undefined" ? "" : jsonData.fastturn);	    
-            document.getElementById("slowturn").value = (typeof(jsonData.slowturn) == "undefined" ? "" : jsonData.slowturn);	    
             document.getElementById("includeeoss").checked = (typeof(jsonData.includeeoss) == "undefined" ? false : (jsonData.includeeoss == "true" ? true : false));
-            document.getElementById("mobilestation").checked = (typeof(jsonData.mobilestation) == "undefined" ? false : (jsonData.mobilestation == "true" ? true : false));
-            document.getElementById("ka9qradio").checked = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
             document.getElementById("eoss_string").value = (typeof(jsonData.eoss_string) == "undefined" ? "EOSS" : jsonData.eoss_string);
-            document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment);
+            document.getElementById("comment").value = (typeof(jsonData.comment) == "undefined" ? "EOSS Tracker" : jsonData.comment.replace(/[|~]/g, ''));
             document.getElementById("gpshost").value = (typeof(jsonData.gpshost) == "undefined" ? "" : jsonData.gpshost);	    
             var olay = (typeof(jsonData.overlay) == "undefined" ? "" : jsonData.overlay.toUpperCase());
             $("#serialproto").val((typeof(jsonData.serialproto) == "undefined" ? "RTS" : jsonData.serialproto));
@@ -1642,11 +1541,9 @@
             });
             var beaconing = (typeof(jsonData.beaconing) == "undefined" ? false : (jsonData.beaconing == "true" ? true : false));
             var igating = (typeof(jsonData.igating) == "undefined" ? false : (jsonData.igating == "true" ? true : false));
-            var objectbeaconing = (typeof(jsonData.objectbeaconing) == "undefined" ? false : (jsonData.objectbeaconing == "true" ? true : false));
                     
             document.getElementById("igating").checked = igating;
             document.getElementById("beaconing").checked = beaconing;
-            document.getElementById("objectbeaconing").checked = objectbeaconing;
             checkIgating();
             checkBeaconing();
             validateCallsign();
@@ -1666,23 +1563,21 @@
 	    var callsign = document.getElementById("callsign");
 	    var passcode = document.getElementById("passcode");
 	    var ibeacon = document.getElementById("ibeacon");
-	    var ibeaconrate = document.getElementById("ibeaconrate");
-	    var fastspeed = document.getElementById("fastspeed");
-	    var slowspeed = document.getElementById("slowspeed");
-	    var fastrate = document.getElementById("fastrate");
-	    var slowrate = document.getElementById("slowrate");
+	    //var fastspeed = document.getElementById("fastspeed");
+	    //var slowspeed = document.getElementById("slowspeed");
+	    //var fastrate = document.getElementById("fastrate");
+	    //var slowrate = document.getElementById("slowrate");
+	    //var fastturn = document.getElementById("fastturn");
+	    //var slowturn = document.getElementById("slowturn");
+	    //var mobilestation = document.getElementById("mobilestation");
 	    var beaconlimit = document.getElementById("beaconlimit");
-	    var fastturn = document.getElementById("fastturn");
-	    var slowturn = document.getElementById("slowturn");
 	    var igating = document.getElementById("igating");
 	    var beaconing = document.getElementById("beaconing");
-	    var objectbeaconing = document.getElementById("objectbeaconing");
 	    var audiodev = document.getElementById("audiodev");
 	    var ssid = document.getElementById("ssid");
 	    var serialport = document.getElementById("serialport");
 	    var serialproto = document.getElementById("serialproto");
 	    var includeeoss = document.getElementById("includeeoss");
-	    var mobilestation = document.getElementById("mobilestation");
         var eoss = document.getElementById("eoss_string");
 	    var comment = document.getElementById("comment");
 	    var symbol = document.getElementById("symbol");
@@ -1692,9 +1587,9 @@
         var filter_radius = document.getElementById("filter_radius");
 	    var gpshost = document.getElementById("gpshost");
         var timezone = document.getElementById("settimezone");
-        var ka9qradio = document.getElementById("ka9qradio");
 
-	    var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
+	    //var fields = [ comment, fastspeed, fastrate, slowspeed, slowrate, beaconlimit, fastturn, slowturn ];
+	    var fields = [ comment, beaconlimit ];
 	    var f;
 
         if (!filter_lat.checkValidity()) {
@@ -1727,29 +1622,26 @@
             return false;
 	    }
 
-        if (igating.checked) {
+
+        // if there was a passcode entered, check it for validity
+        if (passcode.value != "") {
 		    if (!validatePasscode()) {
                 throw passcode.validationMessage;
                 return false;
             }
-            else if (ibeacon.checked && !ibeaconrate.checkValidity()) {
-                throw ibeaconrate.validationMessage;
-                return false;
-            }
             else {
-                form_data.append("ibeacon", ibeacon.checked.toString());
+                form_data.append("ibeacon", ibeacon.checked);
                 form_data.append("passcode", passcode.value);
-                form_data.append("igating", igating.checked.toString());
-                form_data.append("ibeaconrate", ibeaconrate.value);
+                form_data.append("igating", igating.checked);
 		    }
 	    }
 	    else {
-		    form_data.append("igating", "false");
+            form_data.append("ibeacon", false);
+		    form_data.append("igating", false);
 		    form_data.append("passcode", "");
         }
 
-        form_data.append("ka9qradio", ka9qradio.checked.toString());
-        form_data.append("mobilestation", mobilestation.checked.toString());
+        //form_data.append("mobilestation", mobilestation.checked);
 
 	    if (beaconing.checked) {
 		    for (f of fields) {
@@ -1758,32 +1650,27 @@
 			        return false;
 		        }
 	        }
-            form_data.append("beaconing", beaconing.checked.toString());
-            form_data.append("objectbeaconing", objectbeaconing.checked.toString());
-            form_data.append("includeeoss", includeeoss.checked.toString());
+            form_data.append("beaconing", beaconing.checked);
+            form_data.append("includeeoss", includeeoss.checked);
             form_data.append("eoss_string", eoss.value);
-            form_data.append("fastspeed", fastspeed.value);
-            form_data.append("fastrate", fastrate.value);
-            form_data.append("slowspeed", slowspeed.value);
-            form_data.append("slowrate", slowrate.value);
             form_data.append("beaconlimit", beaconlimit.value);
-            form_data.append("fastturn", fastturn.value);
-            form_data.append("slowturn", slowturn.value);
+            //form_data.append("fastspeed", fastspeed.value);
+            //form_data.append("fastrate", fastrate.value);
+            //form_data.append("slowspeed", slowspeed.value);
+            //form_data.append("slowrate", slowrate.value);
+            //form_data.append("fastturn", fastturn.value);
+            //form_data.append("slowturn", slowturn.value);
         }
         else {
-            form_data.append("beaconing", "false");
-            form_data.append("objectbeaconing", "false");
+            form_data.append("beaconing", false)
         }
 
-        if (beaconing.checked || igating.checked)  {
-            form_data.append("comment", comment.value);
-            form_data.append("symbol", symbol.value);
-            if (!overlay.disabled) {
-                form_data.append("overlay", overlay.value.toUpperCase());
-            }
-            else {
-                form_data.append("overlay", "");
-            }
+        form_data.append("symbol", symbol.value);
+        if (comment.value != "") 
+            form_data.append("comment", comment.value.replace(/[|~]/g, ''));
+
+        if (overlay.value != "") {
+            form_data.append("overlay", overlay.value.toUpperCase());
         }
         else {
             form_data.append("overlay", "");

@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -689,5 +689,15 @@ div.antenna {
   font-family:  "Gill Sans", "GillSans", "Helvetica", "san-serif";
   font-size: 2em;
   fill: #aaaaaa;
+}
+
+@keyframes WhiteToBackgroundTransition {
+    from { background-color: white; }
+    to { background-color: #505050; }
+}
+
+.whiteToBackground {
+    animation-name:  WhiteToBackgroundTransition;
+    animation-duration: 0.5s;
 }
 

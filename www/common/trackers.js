@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -137,7 +137,6 @@ function getTrackers() {
                 $("#newtrackerteam").append($("<option></option>").val(teamsJson[t].tactical).html(teamsJson[t].tactical));
             }
  
-
             $.get("gettrackers.php", function(data) {
                 var trackerJson = data.trackers;
                 var keys = Object.keys(trackerJson);

@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -47,31 +47,28 @@
         $ray["iconsize"] = "24";
         $ray["plottracks"] = "off";
         $ray["ssid"] = "9";
-        $ray["igating"] =  "false";
-        $ray["beaconing"] = "false";
-        $ray["objectbeaconing"] = "false";
+        $ray["igating"] =  False;
+        $ray["beaconing"] = False;
         $ray["passcode"] = "";
-        $ray["fastspeed"] = "45";
-        $ray["fastrate"] = "01:00";
-        $ray["slowspeed"] = "5";
-        $ray["slowrate"] = "10:00";
+        //$ray["fastspeed"] = "45";
+        //$ray["fastrate"] = "01:00";
+        //$ray["slowspeed"] = "5";
+        //$ray["slowrate"] = "10:00";
+        //$ray["fastturn"] = "20";
+        //$ray["slowturn"] = "60";
+        //$ray["mobilestation"] = True;
         $ray["beaconlimit"] = "02:00";
-        $ray["fastturn"] = "20";
-        $ray["slowturn"] = "60";
         $ray["audiodev"] = "0";
         $ray["serialport"] = "none";
         $ray["serialproto"] = "RTS";
         $ray["comment"] = "EOSS Tracker";
-        $ray["includeeoss"] = "true";
+        $ray["includeeoss"] = True;
         $ray["eoss_string"] = "EOSS";
         $ray["symbol"] = "/k";
         $ray["overlay"] = "";
-        $ray["ibeaconrate"] = "15:00";
-        $ray["ibeacon"] = "false";
-        $ray["airdensity"] = "false";
-        $ray["mobilestation"] = "true";
+        $ray["ibeacon"] = False;
+        $ray["airdensity"] = False;
         $ray["gpshost"] = "";
-        $ray["ka9qradio"] = "false";
         $fallbackJSON = json_encode($ray);
 
         // Defaults

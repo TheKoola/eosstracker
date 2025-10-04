@@ -30,10 +30,55 @@
     else
         $documentroot = $_SERVER["DOCUMENT_ROOT"];
     include_once $documentroot . '/common/functions.php';
-    include_once $documentroot . '/common/trackers.php';
+    //include_once $documentroot . '/common/trackers.php';
 
     $config = readconfiguration();
 
+    // query to return an object with active tracker definitions
+    function getTrackers($dblink) {
+
+        // where we'll store the output
+        $output = new stdClass();
+
+        // query flight definitions
+        $query = "
+            select 
+                jsonb_agg(p.*) as trackers
+
+            from 
+            (
+                select
+                    tm.tactical,
+                    tm.callsign,
+                    tm.notes
+
+                from
+                    trackers tm 
+
+                where
+                    tm.tactical != 'ZZ-Not Active'
+
+                order by 
+                    tm.tactical asc,
+                    tm.callsign asc
+            ) as p;";
+
+        // execute the query
+        $result = pg_query($dblink, $query);
+
+        // if the query was successful
+        if ($result) {
+            $rows = sql_fetch_all($result);
+            $data = json_decode($rows[0]["trackers"], false);
+            $output->type = "trackers";
+            $output->data = $data;
+        }
+
+        return $output;
+    }
+
+
+    
     // query to return an object with flight definitions
     function getFlights($dblink) {
 
@@ -104,7 +149,7 @@
 
         // get flight and tracker packets
         $flights = getFlights($link);
-        $trackers = getTrackers();
+        $trackers = getTrackers($link);
 
         // merge the results
         $results = new stdClass();

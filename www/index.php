@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -40,15 +40,18 @@ include $documentroot . '/common/header.php';
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         System Status
     </p>
+    <!-- backend connection status -->
+    <div class="div-table" style="float: none;" id="backendtable">
+        <div class="table-row">
+            <div class="table-cell toprow" style="border: none;">Connection status:</div>
+            <div class="table-cell toprow" style="border: none;" id="backendconnection">n/a</div>
+        </div>
+    </div>
     <div id="antenna-data"></div>
     
-    <p class="header">
-        <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
-        System Processes
-    </p>
     <div class="packetdata" id="ssedata"></div>
 
-    <!-- start/stop buttons -->
+    <!-- start/stop buttons 
     <div class="div-table" style="clear: both;">
         <div class="table-row">
             <div class="table-cell header important toprow">Start and Stop Processes:</div>
@@ -64,6 +67,8 @@ include $documentroot . '/common/header.php';
             </div>
         </div>
     </div>
+    -->
+
 
     <!-- GPS state -->
     <div class="div-table" style="float: left;">
@@ -75,51 +80,14 @@ include $documentroot . '/common/header.php';
         </div>
     </div>
 
-    <!-- System processes -->
-    <div class="div-table" style="float: left;" id="processtable">
-        <div class="table-row">
-            <div class="table-cell header toprow">Process</div>
-            <div class="table-cell header toprow" style="border-left: none; text-align: center;">Status</div>
-        </div>
-    </div>
+    <!-- active flights -->
+    <span id="flighttable"></span>
 
+    <!-- active trackers -->
+    <span id="trackertable"></span>
 
-    <!-- Configuration settings -->
-    <div class="div-table" style="float: left;">
-        <div class="table-row">
-            <div class="table-cell header toprow" style="text-align: center;">Configuration Item</div>
-            <div class="table-cell header toprow" style="text-align: center; border-left: none;">Setting</div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Hostname</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><?php echo $_SERVER["HTTP_HOST"]; echo "<br>" . $_SERVER["SERVER_ADDR"]; ?></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Node Name</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><?php if (is_readable("nodeid.txt")) echo file_get_contents("nodeid.txt"); ?></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Callsign and SSID:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><span id="callsign"></span><span id="ssid"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Timezone:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="timezone"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Igating:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="igating"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">RF Beaconing:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="beaconing"></span></div>
-        </div>
-        <div class="table-row">
-            <div class="table-cell" style="border-top: none;">Listening for KA9Q-Radio:</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none;"><span id="ka9qradio"></span></div>
-        </div>
-    </div>
-
+    <!-- active configuration -->
+    <span id="configtable"></span>
 
 
     <!-- Notices -->
@@ -135,13 +103,8 @@ include $documentroot . '/common/header.php';
     </p>
     <p class="packetdata-header">Main Log</p>
     <div id="mainlog" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
-    <p class="packetdata-header">Errors</p>
-    <div id="stderr" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
-    <!-- <p class="packetdata-header">Transmitted Beacons (last 10 transmissions)</p>
-    <pre class="packetdata" ><span id="beacons"></span></pre>
-    -->
     <p class="packetdata-header">Direwolf Output</p>
-    <div id="direwolflog" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
+    <div id="direwolf" class="packetdata" style="height: 20rem; overflow: scroll;"></div>
     <p><span id="debug"></span></p>
 </div>
 

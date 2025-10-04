@@ -1,7 +1,7 @@
 --##################################################
 --#    This file is part of the HABTracker project for tracking high altitude balloons.
 --#
---#    Copyright (C) 2019,2023 Jeff Deaton (N6BA)
+--#    Copyright (C) 2019,2023 Jeff Deaton (N0JD)
 --#
 --#    HABTracker is free software: you can redistribute it and/or modify
 --#    it under the terms of the GNU General Public License as published by
@@ -51,10 +51,10 @@ from
     a.ptype,
     a.bearing,
     a.source,
-    round(a.speed_mph) as speed_mph,
-    round(a.altitude) as altitude, 
+    round(cast(a.speed_mph as numeric)) as speed_mph,
+    round(cast(a.altitude as numeric)) as altitude, 
     round(cast(ST_Y(a.location2d) as numeric), 3) || ', ' || round(cast(ST_X(a.location2d) as numeric), 3) as coords,
-    round(a.altitude,0) as "alt_ft",
+    round(cast(a.altitude as numeric),0) as "alt_ft",
     a.symbol,
     round(a.frequency / 1000000.0,3) as freq_mhz, 
     case when a.raw similar to '%>%:%' then

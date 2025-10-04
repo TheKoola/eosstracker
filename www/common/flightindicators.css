@@ -6,7 +6,7 @@
 * https://github.com/sebmatton/jQuery-Flight-Indicators
 *
 *
-*  ...with a couple of additional custom indicators from Jeff Deaton, N6BA.  For displaying elevation angle and relative
+*  ...with a couple of additional custom indicators from Jeff Deaton, N0JD.  For displaying elevation angle and relative
 * position of a high altitude balloon object.  -Jeff Deaton, 2019
 *
 */

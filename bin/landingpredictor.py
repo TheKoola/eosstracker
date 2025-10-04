@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020,2021 Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -1163,9 +1163,6 @@ class LandingPredictor(PredictorBase):
     landingconn: pg.extensions.connection = pg.extensions.connection 
 
     # Where we upload latest landing locations for all active flights
-    landinglocations: list = None
-
-    # Where we upload latest landing locations for all active flights
     activebeacons: list = None
 
     # The timezone
@@ -1202,39 +1199,6 @@ class LandingPredictor(PredictorBase):
 
         self.logger.debug("LandingPredictor instance created.")
 
-
-    ################################
-    # update the shared list with latest landing prediction locations
-    ################################
-    def updateLocations(self, locs):
-
-        if self.landinglocations is not None:
-
-            newlist = []
-
-            # now add all of our latest landing tuples (i.e. lat, lon pairs)
-            for tup in locs:
-                newlist.append(tup)
-
-            # update the landing locations shared list
-            self.landinglocations["landings"] = newlist
-
-    ################################
-    # update the shared list with the beacon callsigns from active flights
-    ################################
-    def updateBeacons(self, flightlist):
-
-
-        if self.activebeacons is not None:
-
-            newlist = []
-
-            # now add all of the callsigns from the flightlist
-            for callsign in flightlist:
-                newlist.append(callsign)
-
-            # update the beacon list shared object
-            self.activebeacons["callsigns"] = newlist
 
     ################################
     # destructor
@@ -1310,10 +1274,6 @@ class LandingPredictor(PredictorBase):
         # get list of active flightids/callsign combo records
         # columns:  flightid, callsign, launchsite name, launchsite lat, launch lon, launchsite elevation
         flightids = queries.getFlights(dbconn = self.landingconn, logger = self.logger)
-
-        # update the beacon list shared with other processes
-        if len(flightids) > 0:
-            self.updateBeacons(flightids[0:,1])
 
         # our list of landing locations for all flights processed
         landings = []
@@ -2083,8 +2043,6 @@ class LandingPredictor(PredictorBase):
                     # END:  Check if predict file is uploaded and upload a landing prediction to the database based on that predict.
                     ####################################
     
-                # now update the shared list of landing locations so other processes can use the data
-                self.updateLocations(landings)
 
                 self.logger.debug("============ end processing:   %s : %s ==========" % (fid, callsign))
 
@@ -2133,8 +2091,6 @@ def runLandingPredictor(config):
                 dbstring = habconfig.dbConnectionString, 
                 timezone=config['timezone'], 
                 timeout = 20, 
-                landinglocations = config["landinglocations"], 
-                activebeacons = config["activebeacons"],
                 loggingqueue = config["loggingqueue"],
                 )
 

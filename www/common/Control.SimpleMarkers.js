@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
       window.getSelection().addRange(range);
       document.execCommand("Copy");
       window.getSelection().removeAllRanges();
-      e.setAttribute("class", "blueToWhite");
+      e.classList.add("blueToWhite");
+      setTimeout(function() {
+          let element = elem;
+          document.getElementById(element).classList.remove("blueToWhite");
+      }, 600);
   }
 
 /* SimpleMarkers class */

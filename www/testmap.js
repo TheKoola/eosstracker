@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020,2023 Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -3137,7 +3137,7 @@ function processStatus(json) {
 ***********/
 function processTrackers(json) {
 
-    let js = json.trackers;
+    let js = json.data;
     let key, i;
     let num = (js ? js.length : 0);
 
@@ -3224,7 +3224,7 @@ async function getDefinitions() {
 ***********/
 function processFlights(json) {
 
-    let js = json.flights;
+    let js = json.data;
     let key, i;
     
     // Loop through each flight, collecting the beacons 

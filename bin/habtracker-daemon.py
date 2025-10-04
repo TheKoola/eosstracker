@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, 2021 Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import os
 import time
 import datetime 
 import psycopg2 as pg
-import aprslib
 import logging
 from logging.handlers import QueueListener, TimedRotatingFileHandler, QueueHandler
 #logger = logging.getLogger(__name__)
@@ -50,14 +49,8 @@ from inspect import getframeinfo, stack
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
-import searchrtlsdr
-import aprsreceiver
-import gpspoller
 import databasechecks
-import databasewriter
 import subprocesses
-import connectors
-import queries
 
 
 ##################################################
@@ -109,7 +102,7 @@ def isRunning(myprocname):
     listOfProcesses = []
 
     # This is the list of process names we should look for (we ignore gpsd since it should always be running)
-    procs = ["direwolf", myprocname]
+    procs = [myprocname]
 
     # Iterate over all running processes
     for proc in psutil.process_iter():
@@ -305,225 +298,22 @@ def createProcesses(configuration):
     # Logger
     logger = logging.getLogger(__name__)
 
-    # This is the GPS position tracker process
-    logger.debug(f"Creating GPS Position Trackersubprocess")
-    gpsprocess = mp.Process(name="GPS Position Tracker", target=gpspoller.runGPSPoller, args=(configuration,))
-    gpsprocess.daemon = True
-    procs.append(gpsprocess)
-
-    # This is the database writer process.  It's job is to insert incoming packets into the database
-    logger.debug(f"Creating Database Writer subprocess")
-    dbwriter = mp.Process(name="Database Writer", target=databasewriter.runDatabaseWriter, args=(configuration,))
-    dbwriter.daemon = True
-    procs.append(dbwriter)
-
     # This is the landing predictor process
     logger.debug(f"Creating Landing Predictor subprocess")
     landingprocess = mp.Process(name="Landing Predictor", target=lp.runLandingPredictor, args=(configuration,))
     landingprocess.daemon = True
     procs.append(landingprocess)
 
-    # Start the aprsc sub process
-    logger.debug(f"Creating Aprsc subprocess")
-    aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
-    aprscprocess.daemon = True
-    procs.append(aprscprocess)
-
-    # This is the APRS-IS connection tap, it will connect to the aprsc process we start above.
-    logger.debug(f"Creating APRS-IS Tap subprocess")
-    aprstap = mp.Process(name="APRS-IS Tap", target=connectors.connectorTap, args=(configuration, "aprs"))
-    aprstap.daemon = True
-    procs.append(aprstap)
-
-    # This is the CWOP connection tap.  
-    logger.debug(f"Creating CWOP Tap subprocess")
-    cwoptap = mp.Process(name="CWOP Tap", target=connectors.connectorTap, args=(configuration, "cwop"))
-    cwoptap.daemon = True
-    procs.append(cwoptap)
-
-    # This is the GnuRadio aprsreceiver process(es)
-    freqlist = configuration["direwolffreqlist"]
-    if len(freqlist) > 0 or configuration["beaconing"] == "true" or configuration["beaconing"] == True:
-
-        # Max number of SDR channels we can listen to while staying at or under the max limit for direwolf
-        # We subtract channels from this amount as we loop through the SDR devices.
-        # 
-        # The approach here is to 'waterfall' the available channels across the SDR devices discovered as usable.  We setup (i.e. a gnuradio process) all 
-        # frequencies on the first SDR, if there are any remaining channels we can still use, we're under the max direwolf limit, they get spun up
-        # in a 2nd gnuradio process.  ...and so on until we run out of direwolf channels to use (aka the max channels number is reached).  This will undoubtedly
-        # mean that the first SDR discovered will [usually] be the most heavily used with all/most frequencies being listened too.  It might make sense in the future
-        # to change this so that we try to spread the frequencies more evenly across multiple SDRs (or do an even/odd alloctaion).
-        num_channels = configuration["maxdirewolfchannels"] + (-1 if configuration["beaconing"] else 0)
-
-        # each 'flist' represents an individual SDR device and it's list of frequencies we're wanting it to listen too
-        for flist in freqlist:
-
-            logger.debug(f"{num_channels=}, {flist}")
-
-            # if the number of frequencies is greater than the number of channels we've got available for direwolf, then adjust
-            if num_channels <= 0:
-                logger.debug(f"reached maximum channels for gnuradio processes.  Remaining channels: {num_channels}")
-
-                # we've used up all available channels that we can use with direwolf.  No use in spinning up any more gnuradio processes.
-                break
-
-            # if the number of frequencies is > than the number of direwolf channels we have available, then limit that to the first 'num_channels' amount.
-            elif len(flist) > num_channels:
-                sdr = flist[0:num_channels]
-                logger.debug(f"limiting number of channels for {sdr}.  {num_channels=}")
-
-            # otherwise, we just add all of the frequencies to the list we want to listen too.
-            else:
-                sdr = flist
-                logger.debug(f"adding all channels for {sdr}")
-
-            # subtract this list of channels from the total we're going to have direwolf listen too
-            num_channels -= len(sdr)
-
-            # Get the first element of this list, so we can grab the SDR prefix, serial number, and index number
-            # Example: [144390000, 12010, 'rtl', 'some_string', 1]
-            elem = sdr[0]
-            sdrprefix = elem[2]
-            sdrserialno = elem[3]
-            sdrindex = elem[4]
-
-            logger.debug(f"Creating GnuRadio Receiver subprocess for SDR: {sdrprefix=} {sdrserialno=} {sdrindex=}")
-            aprs = mp.Process(name="GnuRadio Receiver", target=aprsreceiver.GRProcess, args=(configuration, sdr, sdrprefix, sdrserialno, sdrindex))
-            aprs.daemon = True
-            procs.append(aprs)
-
-
+    # If beaconing over RF using direwolf is enabled
+    if configuration["beaconing"] == "true" or configuration["beaconing"] == True:
         # The direwolf process
         logger.debug(f"Creating Direwolf subprocess")
         dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
         dfprocess.daemon = True
         procs.append(dfprocess)
 
-        # The direwolf tap process 
-        logger.debug(f"Creating Direwolf Tap subprocess")
-        dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
-        dftapprocess.daemon = True
-        dftapprocess.name = "Direwolf KISS Tap"
-        procs.append(dftapprocess)
-
-
-    # if we're igating, then create a process to update a JSON file with igating statistics.  
-    # Might expand on this idea in the future with a "stats" or "telemetry" process that publishes data about the backend.
-    #igating = (True if configuration["igating"] == "true" else False) if "igating" in configuration else False
-    #if igating:
-
-        # The telemetry process
-    #    logger.debug(f"Creating Telemetry subprocess")
-    #    tmprocess = mp.Process(name="Telemetry", target=telemetry, args=(configuration,))
-    #    tmprocess.daemon = True
-    #    procs.append(tmprocess)
-
-
-    # This is the RTP Multicast connection tap.  
-    ka9qradio = True if configuration["ka9qradio"] == "true" else False
-    if ka9qradio:
-        rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
-        rtp.daemon = True
-        procs.append(rtp)
-
-
     # Return the list of newly created processes
     return procs
-
-
-##################################################
-# This is the telemetry process.  It will loop, periodically publishing stats about the backend processes to a JSON file
-##################################################
-def telemetry(config)->None:
-
-    # Sanity check
-    if config is None:
-        return None
-
-    # name of this process
-    name = "Telemetry:"
-
-    # make sure we're igating
-    igating = (True if config["igating"] == "true" else False) if "igating" in config else False
-
-    # get the stop event
-    stopevent = config["stopevent"] if "stopevent" in config else None
-
-    # get the logging queue
-    loggingqueue = config["loggingqueue"] if "loggingqueue" in config else None
-
-    # setup logging
-    telemlogger = logging.getLogger(f"{__name__}.Telemetry")
-    telemlogger.setLevel(logging.INFO)
-    telemlogger.propagate = False
-
-    # check if a logging queue was supplied
-    if loggingqueue is not None:
-        handler = QueueHandler(loggingqueue)
-        telemlogger.addHandler(handler)
-
-    telemlogger.debug(f"{name} process started")
-
-    # where we store the telemetry we want to publish
-    jsonFile = "/eosstracker/www/igatestats.json"
-    jsonTempFile = "/eosstracker/www/igatestats.json.tmp"
-
-    # Get the igate stats dictionary
-    igatestats = config["igatestatistics"] if "igatestatistics" in config else None
-    
-    try:
-        
-        # Loop counter
-        i = 0
-
-        # Loop continuously looking to publish telemetry
-        while not stopevent.is_set():
-
-            # handle igating statistics
-            if igatestats:
-
-                # make sure the object exists
-                if "igated_stations" in igatestats:
-
-                    # ...and that there is a valid dictionary therein...
-                    stats = igatestats["igated_stations"]
-                    if stats:
-
-
-                        ##### need a better way to do this instead of just dumping to a JSON file.  Seems poorly thought out.  However, 
-                        ##### at the moment it will do. 
-
-                        # sort the stats dictionary by value in reverse order.
-                        #sorted_stats = sorted(stats.items(), key=lambda x: x[1], reverse=True)
-                        sorted_stats = { x: v for x, v in sorted(stats.items(), key=lambda x: x[1], reverse=True)}
-
-                        telemlogger.debug(f"{name} Igate statistics: {sorted_stats=}")
-
-                        # open the JSON temp file and write our telemetry to it
-                        with open(jsonTempFile, "w") as f:
-                            f.write(json.dumps(sorted_stats))
-
-                        # Now move the temp file in place over the real one.
-                        if os.path.isfile(jsonTempFile):
-                            os.rename(jsonTempFile, jsonFile)
-
-                        # every 60th time through the loop we write an info message to system logging
-                        if not i % 60:
-                            topstations = {A:N for (A,N) in [ k for k in sorted_stats.items()][:3]}
-                            #topstations = sorted_stats[:3]
-                            telemlogger.info(f"{name} Total igated packets: {sum(stats.values())}, top stations {topstations}")
-
-            # wait a few seconds before getting igate stats again
-            stopevent.wait(5)
-
-            # increment our loop counter
-            i += 1
-
-    except (KeyboardInterrupt, SystemExit):
-        telemlogger.info(f"process interrupted.  Now ending.")
-    finally:
-        telemlogger.info(f"process finished.")
-
 
 
 
@@ -550,11 +340,6 @@ def configure_logging()->(QueueListener, mp.Queue):
     logfile.setLevel(logging.INFO)
     logfile.setFormatter(formatter)
     logger.addHandler(logfile)
-
-    aprslogger = logging.getLogger("aprslib")
-    aprslogger.addHandler(ch)
-    aprslogger.addHandler(logfile)
-    aprslogger.setLevel(logging.WARNING)
 
     # setup a queue that will be used the other sub-processes to send their logging to this process
     loggingqueue = mp.Queue()
@@ -609,211 +394,6 @@ def endProcesses(processes = None)->bool:
 
 
 ##################################################
-# Wrapper function that opens a database connection, then calls the getFrequencies function to query the
-# backend database for the list of frequencies we should be listening too.
-##################################################
-def getFreqList():
-
-    # get the logger
-    logger = logging.getLogger(__name__)
-
-    # list of frequencies
-    freqs = None
-
-    try:
-        # Database connection 
-        dbconn = None
-        dbconn = pg.connect (habconfig.dbConnectionString)
-        dbconn.set_session(autocommit=True)
-
-        freqs = queries.getFrequencies(dbconn, logger)
-        logger.debug(f"frequency list: {freqs}")
-
-        dbconn.close()
-
-    except pg.DatabaseError as error:
-        # If there was a connection error
-        dbconn.close()
-        logger.error(f"Database error: {error}")
-
-    return freqs
-
-
-##################################################
-# get the list of frequencies that gnuradio will listen too...and subsequently the UDP ports that direwolf will listen too
-# then construct the freq map that direwolf will use.
-##################################################
-def buildFreqMap(config):
-
-        # get the logger
-        logger = logging.getLogger(__name__)
-
-        # A list of frequency lists (i.e. a list of lists) for creating the direwolf configuration file
-        direwolfFreqList = []
-
-        # The direwolf channel-to-frequency mapping
-        freqmap = []
-
-        # Get the RTL-SDR USB dongles that are attached
-        sdrs = searchrtlsdr.getUSBDevices()
-
-        # The number of SDRs
-        i = len(sdrs)
- 
-        print(("Number of usable SDRs: ", i))
-        logger.info(f"Number of usable SDRs: {i}")
-
-        #  Online-only mode:  
-        #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
-        #      - we do not start GnuRadio processes
-        #      - we do not start Direwolf
-        #   
-        #  RF mode: 
-        #      - we do start aprsc, and connect in "read-only" mode (unless we want to igate packets to the internet)
-        #      - we do start GnuRadio processes
-        #      - we do start Direwolf and have it connect to the aprsc instance via "localhost" 
-
-        direwolfstatus = {}
-        antennas = []
-
-        # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
-        if i > 0:
-
-            # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-            freqs = getFreqList()
-
-            # For each SDR dongle found, start a separate GnuRadio listening process
-            total_freqs = 0
-            chan = 0
-            loop_iter = 0
-            for k in sdrs:
-
-                logger.info(f"Using SDR: {k}")
-                direwolfstatus["rf_mode"] = 1
-                
-                # Append this frequency list to our list for later json output
-                ant = {}
-                ant["rtl_id"] = k["rtl"]
-                ant["prefix"] = k["prefix"]
-                ant["frequencies"] = []
-                ant["rtl_serialnumber"] = k["serialnumber"]
-                ant["rtl_manufacturer"] = k["manufacturer"]
-                ant["rtl_product"] = k["product"]
-
-                # Create frequency/udpport list that gnuradio and direwolf will use.
-                udpport = 12000 + loop_iter * 10
-                freqlist = []
-                for freq in freqs:
-                    ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
-                    freqlist.append([freq, udpport, k["prefix"], k["serialnumber"], k["rtl"]])
-                    freqmap.append([chan, freq])
-                    chan += 2
-                    total_freqs += 1
-                    udpport += 1
-                antennas.append(ant) 
-
-                # append this frequency/UDP port list to the list for Direwolf
-                direwolfFreqList.append(freqlist)
-
-                # The IP destination for where the GnuRadio UDP network block is to send its audio packets too.  This is hard coded to be the loopback address (for now).
-                ip_dest = "127.0.0.1"
-
-                loop_iter += 1
-
-
-            # The direwolf audio sample rate.  This is hardcoded for now to be 50000 as it makes the math easier for the Resampler blocks within the GnuRadio receiver.
-            # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
-            samplerate = 50000
-
-            ssid = int(config["ssid"]) if "ssid" in config else 0
-            if ssid <= 0:
-                ssid = None
-
-            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + ("-" + str(ssid) if ssid else "")
-            logger.info(f"direwolfcallsign: {direwolfstatus['direwolfcallsign']}, ssid: {ssid}")
-            direwolfstatus["direwolffreqlist"] = direwolfFreqList
-            direwolfstatus["direwolffreqmap"] = freqmap
-            direwolfstatus["direwolfaudiorate"] = samplerate
-
-            # Get our our current position
-            #myposition = getGPSPosition()
-
-            # The direwolf process
-            #dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
-            #dfprocess.daemon = True
-            #dfprocess.name = "Direwolf"
-            #processes.append(dfprocess)
-
-            # The direwolf tap process 
-            #dftapprocess = mp.Process(target=kisstap.runKissTap, args=(5, stopevent, configuration, freqmap))
-            #dftapprocess.daemon = True
-            #dftapprocess.name = "Direwolf Tap"
-            #processes.append(dftapprocess)
-
-
-            direwolfstatus["xmit_channel"] = None
-            if config["beaconing"] == "true":
-
-                direwolfstatus["xmit_channel"] = total_freqs * 2
-
-                # The beaconing process (this is different from the position beacons that direwolf will transmit)
-                #print("Starting object beaconing process...")
-
-                #icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
-                #icprocess.daemon = True
-                #icprocess.name = "Object beaconing"
-                #processes.append(icprocess)
-
-        else:
-            direwolfstatus["direwolfcallsign"] = ""
-            direwolfstatus["direwolffreqlist"] = []
-            if config["beaconing"] == "true":
-                direwolfstatus["xmit_channel"] = 0 
-           
-        direwolfstatus["antennas"] = antennas 
-
-        return direwolfstatus
-
-##################################################
-# Determine if the GPS Poller process has acquired a position fix.  
-##################################################
-def getPosition(configuration)->dict:
-
-    # default position object
-    gpsposition = {
-            "altitude" : 0.0,
-            "latitude" : 0.0,
-            "longitude" : 0.0,
-            "bearing" : 0.0,
-            "speed_mph" : 0.0,
-            "isvalid" : False
-            }
-
-    # This retreives the latest GPS data (assuing GPS Poller process is running)
-    g = configuration["position"]
-
-    if "gpsdata" in g:
-        position = g["gpsdata"]
-
-        if "mode"  in position:
-            mode = int(position["mode"])
-
-            if mode == 3:
-                gpsposition["altitude"] = float(position["altitude"])
-                gpsposition["latitude"] = float(position["lat"])
-                gpsposition["longitude"] = float(position["lon"])
-                gpsposition["bearing"] = float(position["bearing"])
-                gpsposition["speed_mph"] = float(position["speed_mph"])
-                gpsposition["isvalid"] = True
-
-                # sanity check
-                if gpsposition["latitude"] == 0 or gpsposition["longitude"] == 0:
-                    gpsposition["isvalid"] = False
-
-    return gpsposition
-
-
-##################################################
 # main function
 ##################################################
 def main():
@@ -864,93 +444,23 @@ def main():
         # Add the stopevent to the our configuration
         configuration["stopevent"] = stopevent
 
-        # incoming packet queue for database writes.  All sub-processes that ingest packets place packets in this queue.
-        configuration["databasequeue"] = mp.Queue(maxsize = 0)
-
-        # for all packets that we're intending to igate. sub-processes will add packets for igating consideration to this queue
-        configuration["igatingqueue"] = mp.Queue(maxsize = 0)
-
         # add the logging queue to the configuration sent to sub-processes so their log messages are routed back here
         configuration["loggingqueue"] = loggingqueue
 
-        # a central, shared location for disimenating latest information from a variety of processes
-        # this is our multi-process manager object (for handling shared dictionaries)
-        manager = mp.Manager()
-
-        # if the manager creation was successful
-        if manager:
-
-            # create a dictionary for storing our position information (gpspoller updates it).  Other processes read this to get latest position details
-            configuration["position"] = manager.dict()
-
-            # Create a list of landing locations for active flights.  this is a list of tuples (i.e. coordinates) for all active flights.  Updated by the 
-            # landing predictor process.  
-            configuration["landinglocations"] = manager.dict()
-
-            # Create a list of all beacon callsigns on active flights.  This is a list of beacon callsigns updated by the landing predictor process.
-            configuration["activebeacons"] = manager.dict()
-
-            # Create an object where we store igating statistics.  This is a dictionary with keys representing a station's callsign.  Values are number of packets igated.
-            configuration["igatestatistics"] = manager.dict()
-
-        else:
-
-            # if we couldn't create a manager object then we set the "position" key to None
-            configuration["position"] = None
-
-
         #######################################################
         #######################################################
 
-
-        # where to store our output JSON status information (the web-based frontend reads this to know if the backend is running or not)
-        status = {}
-        antennas = []
 
         # this holds the list of sub-processes and threads that we want to start/run
         processes = []
 
         # Set JSON inital status data
-        status["rf_mode"] = 0
-        status["direwolfcallsign"] = ""
-        status["antennas"] = []
-        status["igating"] = configuration["igating"]
-        status["beaconing"] = configuration["beaconing"]
-        status["active"] = 1
+        status = {}
+        status["active"] = True
         ts = datetime.datetime.now()
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
-
-        # get the frequency, udp mapping (from backend database of active flights) and set various objects.
-        direwolfstatus = buildFreqMap(configuration)
-        configuration["direwolffreqlist"] = direwolfstatus["direwolffreqlist"] if "direwolffreqlist" in direwolfstatus else []
-        configuration["direwolffreqmap"] = direwolfstatus["direwolffreqmap"] if "direwolffreqmap" in direwolfstatus else None
-        configuration["xmit_channel"] = direwolfstatus["xmit_channel"] if "xmit_channel" in direwolfstatus else None
-        configuration["direwolfcallsign"] = direwolfstatus["direwolfcallsign"] if "direwolfcallsign" in direwolfstatus else None
-        configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"] if "direwolfaudiorate" in direwolfstatus else None
-        configuration["maxdirewolfchannels"] = 8
-        status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
-        status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
-        status["antennas"] = direwolfstatus["antennas"]
         status["gpshost"] = configuration["gpshost"]
-        status["ka9qradio"] = configuration["ka9qradio"]
-
-        # time_ns() returns nanoseconds, divide by 1000 to get microsecs, then floor that and divide by one million to finally 
-        # get to a floating point for microsecs.
-        one_million = 1000000.0
-        status["microsecs"] = math.floor(time.time_ns() / 1000.0) / one_million 
-
-        # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating unless we're listening
-        # to a ka9q-radio backend somewhere on the local network.
-        if len(configuration["direwolffreqlist"]) == 0 and status["ka9qradio"] == "false":
-            configuration["igating"] = "false"
-
-        # we want to connect to this system for aprs-is connectivity
-        #configuration["aprsisserver"] = "noam.aprs2.net"
-        configuration["aprsisserver"] = "127.0.0.1"
-
-        # where the direwolf instance is running
-        configuration["direwolfserver"] = "127.0.0.1"
 
         # Create all of the sub-processes
         processes = createProcesses(configuration)
@@ -999,16 +509,9 @@ def main():
     jsonStatusFile = "/eosstracker/www/daemonstatus.json"
     jsonStatusTempFile = "/eosstracker/www/daemonstatus.json.tmp"
     status = {}
-    status["antennas"] = []
-    status["rf_mode"] = 0
-    status["active"] = 0
+    status["active"] = False
     status["gpshost"] = configuration["gpshost"]
-    status["ka9qradio"] = configuration["ka9qradio"]
-
-    # time_ns() returns nanoseconds, divide by 1000 to get microsecs, then floor that and divide by one million to finally 
-    # get to a floating point for microsecs.
-    one_million = 1000000.0
-    status["microsecs"] = math.floor(time.time_ns() / 1000.0) / one_million 
+    status["timezone"] = str(configuration["timezone"])
 
     with open(jsonStatusTempFile, "w") as f:
         f.write(json.dumps(status))

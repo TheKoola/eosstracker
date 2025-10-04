@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -1613,8 +1613,8 @@
     ***********/
     function processConfiguration(jsonData) {
 
-        document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
-        lookbackPeriod = jsonData.lookbackperiod * 1.0;
+        //document.getElementById("lookbackperiod").value = jsonData.lookbackperiod;
+        //lookbackPeriod = jsonData.lookbackperiod * 1.0;
 
         if (hud)
             hud.setCutoff(lookbackPeriod);
@@ -2083,7 +2083,7 @@
         var allstations = L.layerGroup();
         var mystation = L.layerGroup();
         //var wxstations = L.markerClusterGroup();
-        var wxstations = L.layerGroup();
+        //var wxstations = L.layerGroup();
 
         // Layer group for trackers that are not assigned to a specific flight
         var trackersatlarge = L.layerGroup();
@@ -2098,11 +2098,11 @@
         // realtime layers
         myPositionLayer = createRealtimeLayer("", false, mystation, 5 * 1000, mapStyle);
         trackersAtLargeLayer = createRealtimeLayer("", false, trackersatlarge, 5 * 1000, mapStyle);
-        weatherStationsLayer = createRealtimeLayer("", false, wxstations, 5 * 1000, mapStyle);
+        //weatherStationsLayer = createRealtimeLayer("", false, wxstations, 5 * 1000, mapStyle);
 
         rtlayers.push(myPositionLayer);
         rtlayers.push(trackersAtLargeLayer);
-        rtlayers.push(weatherStationsLayer);
+        //rtlayers.push(weatherStationsLayer);
 
         // add the location system's positon to the map
         myPositionLayer.addTo(map);
@@ -2112,7 +2112,7 @@
 
         // Add these layers to the map layer selector
         layerControl.addOverlay(trackersatlarge, "Trackers", "Other Stations");
-        layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
+        //layerControl.addOverlay(wxstations, "Weather Stations", "Other Stations");
         layerControl.addOverlay(allstations, "Other Stations", "Other Stations");
         layerControl.addOverlay(mystation, "My Location", "Other Stations");
 
@@ -2364,6 +2364,29 @@
             });
 
             eventsource.addEventListener("configuration", function(event) {
+
+                let json;
+                
+                // Parse the incoming json
+                try { json = JSON.parse(event.data);}
+                catch (e) { 
+                    console.log({"what": "configuration JSON parse error", "event": event, "error": e.message, "gpsjson": json});
+                }
+                
+                if (json && json.type) {
+                    if (json.type == "config") 
+                        processConfiguration(json.data);
+                    /*else if (json.type == "trackers")
+                        processTrackers(json.trackers);
+                    else if (json.type == "flights")
+                        processFlights(json.flights);
+                        */
+                }
+
+            });
+
+            /*
+            eventsource.addEventListener("configuration", function(event) {
                 let configjson;
 
                 // Parse the incoming json
@@ -2376,6 +2399,7 @@
                 if (configjson) 
                     processConfiguration(configjson);
             });
+            */
 
             eventsource.addEventListener("backendstatus", function(event) {
 
@@ -2441,7 +2465,8 @@
     * restart the SSE stream
     ***********/
     function initializeSSE() {
-        setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&packets=true&trackers=true");
+        //setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&packets=true&trackers=true");
+        setupSSE("/sse");
     }
 
 
@@ -2493,7 +2518,6 @@
             // Pan the map to the latest GPS location
             if (followme) {
                 dispatchPanToEvent(feature.geometry.coordinates[1] * 1.0, feature.geometry.coordinates[0] * 1.0);
-                console.log("panning:  ", feature);
             }
 
             // Update the speed status box
@@ -3490,11 +3514,12 @@
             allStationsLayer.update(data.inetstations);
 
             if (typeof(data.weatherstations) != "undefined")
-                weatherStationsLayer.update(data.weatherstations);
+                //weatherStationsLayer.update(data.weatherstations);
+                allStationsLayer.update(data.weatherstations);
 
             // Prune off any RF, inet, or weather stations
             var cutoff = new Date(Date.now() - lookbackPeriod * 60000);
-            var layers = [allStationsLayer, weatherStationsLayer, trackersAtLargeLayer];
+            var layers = [allStationsLayer, trackersAtLargeLayer];
 
             layers.forEach( function(l) {
                 pruneRealtimeLayer(l, cutoff);
@@ -3666,13 +3691,23 @@
      * This function will call the "syncpackets.php" file on the local system in an attempt
      * to download any missing packets.
     *************/
-    function syncPackets() {
+    async function syncPackets() {
 
         // The URL for synchronizing packets with track.eoss.org.
         var url = "syncpackets.php";
 
-        $.get(url, function(data) {
-        });
+        // Call the url
+        let response = await fetch(url);
+        let result;
+
+        // get the json from containing the results
+        try{
+            result = await response.json();
+        } catch (e) {
+            console.log("Error in getting results from sync packets url: ", url);
+        }
+
+        return result;
     }
 
 
@@ -3710,14 +3745,30 @@
         }
         globalUpdateCounter += 1;
 
+
+
         // if it's been longer than ~5mins, then try to sync packets with track.eoss.org
         // Get the current time
         var ts = new Date(Date.now());
         if (lastsynctime) {
+
             // compare with the last time a syncpackets was called
             if ((ts - lastsynctime) / 1000 > 300) {
+
                 // sync up packets and set the last sync time
-                syncPackets();
+                syncPackets().then(function(json) {
+
+                    // check the sync result
+                    if (json) {
+
+                        // if packets were added to the database, then we should reload data from the backend
+                        if (json.result === true && json.packets > 0) {
+                            updateFlightData();
+                            updateOtherStations();
+                            checkTTL();
+                        }
+                    }
+                });
                 lastsynctime = new Date(Date.now());
             }
         }
@@ -3887,7 +3938,7 @@ function gainFocus() {
     if (updateTimeout) {
         var priorTimeout = updateTimeout;
         clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(updateAllItems, 5000);
+        //updateTimeout = setTimeout(updateAllItems, 5000);
     }
     return 0;
 }

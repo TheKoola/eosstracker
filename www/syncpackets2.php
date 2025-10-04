@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
+#    Copyright (C) 2019-2025, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,65 +24,90 @@
  */
 
 
-    header("Content-Type:  application/json;");
-    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
-        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
-    else
-        $documentroot = $_SERVER["DOCUMENT_ROOT"];
-    include $documentroot . '/common/functions.php';
+header("Content-Type:  application/json;");
+if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
+    $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
+else
+    $documentroot = $_SERVER["DOCUMENT_ROOT"];
+include $documentroot . '/common/functions.php';
 
-    $config = readconfiguration();
+$config = readconfiguration();
 
-    # This is the context...set this to "false" for using self signed certs.
-    $context = stream_context_create( [
-        'ssl' => [
-        'verify_peer' => true,   # Set to false for testing with self-signed certs
-        'verify_peer_name' => true,   # Set to false for testing with self-signed certs
-        ],
-    ]);
-    
+// This is the context used by the functions below...set this to "false" for using self signed certs.
+$context = stream_context_create( [
+    'ssl' => [
+    'verify_peer' => true,   // Set to false for testing with self-signed certs
+    'verify_peer_name' => true,   // Set to false for testing with self-signed certs
+    ],
+]);
+
+/*****************
+ * SyncError 
+ *
+ * Convenience class for saving results
+ ****************/
+class SyncError {
+    // properties
+    public string $message;
+    public bool $success;
+    public int $packets;
+
+
+    /*********************
+     * constructor
+     *********************/
+    function __construct(bool $success, int $pkts, string $msg) {
+        $this->message = $msg;
+        $this->success = $success;
+        $this->packets = $pkts;
+    }
+
+    // return a JSON string
+    function toJSON(): string {
+        $obj = new stdClass();
+        $obj->result = $this->success;
+        $obj->packets = $this->packets;
+        $obj->message = $this->message;
+        return json_encode($obj);
+    }
+}
+
 
 /*********************
- *
  * Function to download full packet data.
- *
  *********************/
 function getPacketData($packets_url) {
 
     global $context;
 
-    # Get the URL
+    // Get the URL
     $url_data = file_get_contents($packets_url, false, $context);
 
-    # Check the returned value
+    // Check the returned value
     if ($url_data === False) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"No data returned from track.eoss.org\"}");
-        return 0;
+        return new SyncError(false, 0, "No data returned from track.eoss.org");
     }
 
-    # decode the JSON
+    // decode the JSON
     $jsondata = json_decode($url_data, True);
 
-    # Check the JSON validity
+    // Check the JSON validity
     if (json_last_error() != JSON_ERROR_NONE) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
-        return 0;
+        return new SyncError(false, 0, sprintf("Invalid data returned from track.eoss.org: %s", json_last_error_msg()));
     }
 
-    # Make sure the returned data is an array...we're expecting an array of packets to be returned.
+    // Make sure the returned data is an array...we're expecting an array of packets to be returned.
     if (!is_array($jsondata)) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
-        return 0;
+        return new SyncError(false, 0, sprintf("Invalid data returned from track.eoss.org: %s", json_last_error_msg()));
     }
 
 
     if (count($jsondata) > 0) {
 
-        ## Connect to the database
+        // Connect to the database
         $link = connect_to_database();
         if (!$link) {
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
-            return 0;
+            return new SyncError(false, 0, sprintf("Unable to connect to the backend database: %s", sql_last_error()));
         }
 
         $droptable = "drop table if exists incoming;";
@@ -90,18 +115,14 @@ function getPacketData($packets_url) {
 
         $drop_result = pg_query($link, $droptable);
         if (!$drop_result) {
-            #db_error(sql_last_error());
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
         $create_result = pg_query($link, $createtable);
         if (!$create_result) {
-            #db_error(sql_last_error());
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
         $insert = "insert into incoming(
@@ -168,10 +189,8 @@ function getPacketData($packets_url) {
             ));
 
             if (!$insert_result) {
-                db_error(sql_last_error());
-                printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
                 sql_close($link);
-                return 0;
+                return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
             }
 
         }
@@ -197,62 +216,57 @@ function getPacketData($packets_url) {
 
         $update_result = pg_query($link, $update_query);
         if (!$update_result) {
-            #db_error(sql_last_error());
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
         // Number of rows that were inserted
         $affected_rows = pg_affected_rows($update_result);
 
         // success
-        printf ("{ \"result\" : 1, \"packets\" : %s, \"error\": \"Database updated with %d packets.\" }", json_encode($affected_rows), json_encode($affected_rows));
         sql_close($link);
+        return new SyncError(true, $affected_rows, sprintf("Database updated with %d packets", $affected_rows));
     }
     else
-        printf ("{ \"result\" : 0, \"packets\" : 0, \"error\": \"no data returned from track.eoss.org\" }");
+        return new SyncError(false, 0, "No data returned from track.eoss.org");
 }
 
-# This will download only packet hashes and then compare with the existing packet data to determine if there are gaps.
-# Returns:  true if there are packets missing
-#           false if all packets are present in the database or some other error occured
+/*********************
+ * This will download only packet hashes and then compare with the existing packet data to determine if there are gaps.
+ * Returns:  true if there are packets missing
+ *           false if all packets are present in the database or some other error occured
+ *********************/
 function checkPacketData($hashurl) {
 
     global $context;
 
-    # Get the URL
+    // Get the URL
     $url_data = file_get_contents($hashurl, false, $context);
-    #printf ("\nGetting contents from, %s:  %s\n", $hashurl, $url_data);
 
-    # Check the returned value
+    // Check the returned value
     if ($url_data === False) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"No data returned from track.eoss.org\"}");
-        return 0;
+        return new SyncError(false, 0, "No data returned from track.eoss.org");
     }
 
-    # decode the JSON
+    // decode the JSON
     $jsondata = json_decode($url_data, True);
 
-    # Check the JSON validity
+    // Check the JSON validity
     if (json_last_error() != JSON_ERROR_NONE) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
-        return 0;
+        return new SyncError(false, 0, sprintf("Invalid data returned from track.eoss.org: %s", json_last_error_msg()));
     }
 
-    # Make sure the returned data is an array...we're expecting an array of packets to be returned.
+    // Make sure the returned data is an array...we're expecting an array of packets to be returned.
     if (!is_array($jsondata)) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Invalid data returned from track.eoss.org: %s\"}", json_last_error_msg());
-        return 0;
+        return new SyncError(false, 0, sprintf("Invalid data returned from track.eoss.org: %s", json_last_error_msg()));
     }
 
     if (count($jsondata) > 0) {
 
-        ## Connect to the database
+        // Connect to the database
         $link = connect_to_database();
         if (!$link) {
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode("Unable to connect to the backend database: " . sql_last_error()));
-            return 0;
+            return new SyncError(false, 0, sprintf("Unable to connect to the backend database: %s", sql_last_error()));
         }
 
         $droptable = "drop table if exists incoming;";
@@ -260,16 +274,14 @@ function checkPacketData($hashurl) {
 
         $drop_result = pg_query($link, $droptable);
         if (!$drop_result) {
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
         $create_result = pg_query($link, $createtable);
         if (!$create_result) {
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
         $insert = "insert into incoming(
@@ -293,9 +305,8 @@ function checkPacketData($hashurl) {
             ));
 
             if (!$insert_result) {
-                printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
                 sql_close($link);
-                return 0;
+                return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
             }
 
         }
@@ -318,49 +329,63 @@ function checkPacketData($hashurl) {
 
         $check_result = pg_query($link, $check_query);
         if (!$check_result) {
-            printf ("{\"result\": 0, \"packets\": 0, \"error\": %s}", json_encode(sql_last_error()));
             sql_close($link);
-            return 0;
+            return new SyncError(false, 0, sprintf("Database error: %s", sql_last_error()));
         }
 
-        # Close the database connection
+        // Close the database connection
         sql_close($link);
 
-        return sql_num_rows($check_result);
+        $num_rows =  sql_num_rows($check_result);
+        return new SyncError(true, $num_rows, sprintf("Number of rows returned from Hash check: %d", $num_rows));
 
     }
     else {
-        printf ("{ \"result\" : 0, \"packets\" : 0, \"error\": \"no data returned from track.eoss.org\" }");
-        return 0;
+        return new SyncError(false, 0, "No data returned from track.eoss.org");
     }
 }
 
 
-    # The URL
-    $hashes_url = "https://track.eoss.org/getpackethashes.php";
-    $fullpackets_url = "https://track.eoss.org/getpackets.php";
 
-    # Get HTML headers by trying to load the URL 
-    $file_headers = get_headers($hashes_url, 0, $context);
 
-    # Check if successful
-    if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
-        $exists = false;
-    else 
-        $exists = true;
+/**************************************************
+**************************************************
+* Main body below
+**************************************************
+**************************************************/
 
-    if (!$exists) {
-        printf ("{\"result\": 0, \"packets\": 0, \"error\": \"Unable to contact track.eoss.org\"}");
-        return 0;
-    }
+// The URL
+$hashes_url = "https://track.eoss.org/getpackethashes.php";
+$fullpackets_url = "https://track.eoss.org/getpackets.php";
 
-    # Determine if there are packets missing
+// Get HTML headers by trying to load the URL 
+$file_headers = get_headers($hashes_url, 0, $context);
+
+// Check if successful
+if(!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') 
+    $exists = false;
+else 
+    $exists = true;
+
+
+// if contact with track.eoss.org was made, then try and sync up packets
+if ($exists) {
+
+    // Determine if there are packets missing
     $ret = checkPacketData($hashes_url);
 
-    # if there are packets missing then download the full data and update this database
-    if ($ret)  {
+    // if there are packets missing then download the full data and update this database
+    if ($ret->success)  {
         $r = getPacketData($fullpackets_url);
+        printf("%s", $r->toJSON());
     }
+    else 
+        printf("%s", $ret->toJSON());
+}
+else {
+    $err = new SyncError(false, 0, "Unable to contact track.eoss.org");
+    printf("%s", $err->toJSON());
+}
 
 ?>
 

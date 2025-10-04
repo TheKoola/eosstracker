@@ -1,7 +1,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, 2020, 2021 Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ def databaseUpdates(logger):
 
 
 
+
         #------------------- tracker stuff ------------------#
         # SQL to check if the column exists or not
         check_row_sql = "select * from teams where tactical='ZZ-Not Active';"
@@ -64,7 +65,38 @@ def databaseUpdates(logger):
             insert_sql = "insert into teams (tactical, flightid) values ('ZZ-Not Active', NULL);"
             dbcur.execute(insert_sql)
             dbconn.commit()
-        #------------------- tracker stuff ------------------#
+
+
+        #------------------- gpsposition table ------------------#
+        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
+        check_columns = [ ("speed_mph", "double precision"), ("bearing", "double precision"), ("altitude_ft", "double precision") ]
+
+        for column, coltype in check_columns:
+            # SQL to check if the column exists or not
+            check_column_sql = "select column_name, data_type from information_schema.columns where table_name='gpsposition' and column_name=%s;"
+            dbcur.execute(check_column_sql, [ column ])
+            rows = dbcur.fetchall()
+
+            # If the number of rows returned is zero, then we need to create the column
+            if len(rows) == 0:
+                logger.info(f"Adding gpsposition::{column} column.")
+
+                # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                alter_table_sql = "alter table gpsposition add column " + column + " " + coltype + ";";
+                dbcur.execute(alter_table_sql)
+                dbconn.commit()
+
+            # otherwise, the column exists so we check the data_type and set that if needed
+            else:
+                for row in rows:
+                    # if the column has a different data type than expected, then alter that column
+                    if row[0] == column and row[1] != coltype:
+                        logger.info(f"Altering gpsposition::{column} data type from {row[1]} to {coltype}.")
+                        # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                        alter_table_sql = "alter table gpsposition alter column " + column + " type " + coltype + ";"
+                        dbcur.execute(alter_table_sql)
+
+
 
 
         #------------------- landingpredictions table ------------------#
@@ -103,6 +135,7 @@ def databaseUpdates(logger):
 
 
 
+        made_changes = False
         #------------------- packets table ------------------#
         # SQL to add an index on the time column of the packets table
         sql_exists = "select exists (select * from pg_indexes where schemaname='public' and tablename = 'packets' and indexname = 'packets_tm');"
@@ -118,13 +151,12 @@ def databaseUpdates(logger):
                 dbconn.commit()
 
 
-        # This is the list of columns we need to check as older versions of the software/database might not have been updated.
-        check_columns = [ ("source", "text"), ("channel", "numeric"), ("frequency", "numeric") ]
+        # full list of columns we need to check along with their data types
+        check_columns = [ ("source", "text"), ("speed_mph", "double precision"), ("bearing", "double precision"), ("altitude", "double precision"), ("channel", "integer"), ("frequency", "integer") ]
 
-        made_changes = False
         for column, coltype in check_columns:
             # SQL to check if the column exists or not
-            check_column_sql = "select column_name from information_schema.columns where table_name='packets' and column_name=%s;"
+            check_column_sql = "select column_name, data_type from information_schema.columns where table_name='packets' and column_name=%s;"
             dbcur.execute(check_column_sql, [ column ])
             rows = dbcur.fetchall()
 
@@ -138,7 +170,20 @@ def databaseUpdates(logger):
                 dbconn.commit()
                 made_changes = True
 
+            # otherwise, the column exists so we check the data_type and set that if needed
+            else:
+                for row in rows:
+                    # if the column has a different data type than expected, then alter that column
+                    if row[0] == column and row[1] != coltype:
+                        logger.info(f"Altering packets::{column} data type from {row[1]} to {coltype}.")
+                        # SQL to alter the "landingpredictions" table and add the "flightpath" column
+                        alter_table_sql = "alter table packets alter column " + column + " type " + coltype + ";"
+                        dbcur.execute(alter_table_sql)
+                        dbconn.commit()
 
+
+
+        # if any structural changes were made, then we need to update some things
         if made_changes:
 
             # SQL to check how many rows are in the packets and landingpredictions tables

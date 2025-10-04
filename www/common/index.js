@@ -3,7 +3,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019, Jeff Deaton (N6BA)
+#    Copyright (C) 2019, Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ let waitingOnStatus = false;
 // SSE event handler
 let eventsource;
 
+// the nodeid of this system
+let nodeid;
+
 
 /***********
 * escapeHtml
@@ -50,39 +53,485 @@ function escapeHtml(s) {
 }
 
 /***********
+* getDefinitions
+*
+* This will fetch the flight and tracker definitions fromt the backend.
+***********/
+async function getDefinitions() {
+
+    // get the list of flights
+    let response = await fetch("getdefinitions2.php");
+    let js;
+    let num = 0;
+
+    // Parse the returned json
+    try {
+        js = await response.json();
+    } catch(e) {
+        console.log("getDefinitions json parsing error: ", e, ", json: ", js);
+    }
+
+    // process tracker definitions
+    if (js && js.trackers)
+        num += processTrackers(js.trackers.data);
+
+    // process flight definitions
+    if (js && js.flights)
+        num += processFlights(js.flights.data);
+
+    return num;
+}
+
+
+/***********
 * processConfiguration
 *
-* This function will read the current configuration
+* process incoming JSON that represents configuration data
 ***********/
-function processConfiguration(jsonData) {
+/*
+function processConfiguration(json) {
+    if (!json)
+        return;
 
-    let callsign = (typeof(jsonData.callsign) == "undefined" ? "" : jsonData.callsign);
-    let timezone = (typeof(jsonData.timezone) == "undefined" ? "" : jsonData.timezone);
-    let audiodev = (typeof(jsonData.audiodev) == "undefined" ? "" : jsonData.audiodev);
-    let igating = (typeof(jsonData.igating) == "undefined" ? "false" : jsonData.igating);
-    let i = (igating == "true" ? "yes" : "no");
-    let i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
-    let beaconing = (typeof(jsonData.beaconing) == "undefined" ? "false" : jsonData.beaconing);
-    let eoss = (typeof(jsonData.eoss_string) == "undefined" ? "" : (typeof(jsonData.includeeoss) == "undefined" ? "" : (jsonData.includeeoss == "true" ? jsonData.eoss_string : "")));
-    let b = (beaconing == "true" ? "yes" : "no");
-    let b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
-    let ssid = jsonData.ssid;
-    let ka9q = (typeof(jsonData.ka9qradio) == "undefined" ? false : (jsonData.ka9qradio == "true" ? true : false));
-    let ka9qhtml = (ka9q ? "<mark class=\"marginal\">yes</mark>" : "no");
+    try {
+        let callsign = (typeof(json.station.callsign) == "undefined" ? "" : json.station.callsign);
+        let timezone = (typeof(json.station.timezone) == "undefined" ? "" : json.station.timezone);
+        let audiodev = (typeof(json.direwolf.audiodev) == "undefined" ? "" : json.direwolf.audiodev);
+        let igating = (typeof(json.aprsis.igating) == "undefined" ? "false" : json.aprsis.igating);
+        let i = (igating == "true" ? "yes" : "no");
+        let i2 = (i == "yes" ? "<mark class=\"marginal\">" + i + "</mark>" : i);
+        let beaconing = (typeof(json.direwolf.beaconing) == "undefined" ? "false" : json.direwolf.beaconing);
+        let eoss = (typeof(json.direwolf.eoss_string) == "undefined" ? "" : (typeof(json.direwolf.includeeoss) == "undefined" ? "" : (json.direwolf.includeeoss == "true" ? json.direwolf.eoss_string : "")));
+        let b = (beaconing == "true" || beaconing == true ? "yes" : "no");
+        let b2 = (b == "yes" ? "<mark class=\"marginal\">" + b + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : b);
 
-    // check if we should even be using an ssid (i.e. we're not beaconing) or if it's '0' and we shouldn't be displaying it with a callsign
-    if (typeof(jsonData.beaconing) == "undefined" || callsign == "" || ssid == "0" || ssid == 0)
-        ssid = "";
+        // update status elements
+        document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
+        document.getElementById("timezone").innerHTML = timezone;
+        document.getElementById("igating").innerHTML = i2;
+        document.getElementById("beaconing").innerHTML = b2;
+    }
+    catch (e) {
+        alert("processConfiguration error: " + e);
+    }
+}
 
-    //let ssid = (typeof(jsonData.beaconing) == "undefined" ? "" : (callsign == "" ? "" : "-" + jsonData.ssid));
+/*
 
-    // update status elements
-    document.getElementById("callsign").innerHTML = (callsign == "" ? "n/a" : callsign);
-    document.getElementById("timezone").innerHTML = timezone;
-    document.getElementById("igating").innerHTML = i2;
-    document.getElementById("beaconing").innerHTML = b2;
-    document.getElementById("ssid").innerHTML = (ssid != "" ? "-" + ssid : ""); 
-    document.getElementById("ka9qradio").innerHTML = ka9qhtml;
+/***********
+* processConfiguration
+*
+* process incoming configuration information and update the page with a table representing that info.
+***********/
+function processConfiguration(json) {
+
+    // sanity check
+    if (!json)
+        return;
+
+    // the tablediv that we'll add rows too
+    let element = document.getElementById("configtable");
+    element.innerHTML = "";
+
+    // create a new div table
+    let div = document.createElement("div");
+    div.setAttribute("class", "div-table");
+    div.setAttribute("style", "float: left;");
+
+    let p = document.createElement("p");
+    p.setAttribute("class", "normal-italic");
+    p.setAttribute("style", "margin: 0; padding: 0;");
+    let ts = new Date(Date.now());
+    p.innerHTML = ts.toLocaleString();
+    div.appendChild(p);
+
+    // create the table that will contain the configuration elements
+    let table = document.createElement("table");
+    table.setAttribute("class", "trackerlist");
+    table.setAttribute("style", "width: auto");
+    div.appendChild(table);
+
+    //The header columns
+    let columns = ["Configuration", "Setting"];
+
+    //Add the header row
+    let headerrow = table.insertRow(-1);
+    for (c in columns) {
+        let headercell = headerrow.insertCell(-1);
+        headercell.setAttribute("class", "trackerlistheader");
+        headercell.innerHTML = columns[c];
+    }
+
+
+    // create an array of configuration items from the incoming JSON
+    let config = [];
+
+    if (json.station && json.direwolf && json.aprsis) {
+
+        // this system's name 
+        config.push({
+            "name": "Hostname",
+            "value": location.hostname
+        });
+
+        // this system's nodeid (if it exists)
+        config.push({
+            "name": "Node ID",
+            "value": (nodeid ? nodeid : "n/a")
+        });
+
+        // the callsign
+        config.push({
+            "name": "Callsign",
+            "value": (typeof(json.station.callsign) == "undefined" ? "n/a" : json.station.callsign)
+        });
+
+        // the timezone
+        config.push({
+            "name": "Timezone",
+            "value": (typeof(json.station.timezone) == "undefined" ? "n/a" : json.station.timezone)
+        });
+
+        // direwolf's audio device?
+        //let audiodev = (typeof(json.direwolf.audiodev) == "undefined" ? "" : json.direwolf.audiodev);
+
+        // igating?
+        config.push({
+            "name": "Igating",
+            "value": (toBoolean(json.aprsis.igating) ? "<mark class=\"marginal\">yes</mark>" : "no")
+        });
+
+        // RF beaconing enabled?
+        let beaconing = toBoolean(json.direwolf.beaconing);
+        let useEossString = toBoolean(json.direwolf.includeeoss);
+
+        // is there an eoss string defined?
+        let eoss = (typeof(json.direwolf.eoss_string) == "undefined" ? "" : (useEossString ? json.direwolf.eoss_string : ""));
+
+        // RF Beaconing setup
+        config.push({
+            "name": "RF Beaconing",
+            "value": (beaconing ? "<mark class=\"marginal\">yes" + (eoss != "" ? "</mark><br>Path String: <mark class=\"marginal\">" + eoss + " " : "") + "</mark>" : "no")
+        });
+    }
+
+
+    // loop counter
+    let i = 0;
+
+
+    // now loop through each configuration item, adding it to a table
+    for (item in config) {
+
+        // start by creating a new table row
+        let tablerow = table.insertRow(-1);
+
+        // the name of the configuration item
+        let name = tablerow.insertCell(-1);
+        name.setAttribute("class", "trackerlist");
+        name.innerHTML = config[item].name;
+
+        // the value of the configuration item
+        let value = tablerow.insertCell(-1);
+        value.setAttribute("class", "trackerlist");
+        value.setAttribute("style", "text-align: right; font-family:  'Lucida Console', Monaco, monospace;");
+        value.innerHTML = config[item].value;
+
+        // adjust the background color if this is an odd row
+        if (i % 2) {
+            name.setAttribute("style", "background-color: #737373;"); 
+            value.setAttribute("style", "background-color: #737373; text-align: right; font-family:  'Lucida Console', Monaco, monospace;");
+        }
+
+        i++;
+    }
+
+    // finally add to the element
+    element.appendChild(div);
+
+}
+
+/*******
+ * toBoolean
+ *
+ * Handle incoming JSON values that could be strings or booleans
+ *******/
+function toBoolean(value) {
+
+    // sanity check 
+    if (!value)
+        return false;
+
+    // is it string?
+    if (typeof value === "string") {
+        return value.toLowerCase() === "true";
+    }
+
+    // was it already a boolean?
+    if (typeof value === "boolean") {
+        return value;
+    }
+
+    return false;
+}
+
+
+/***********
+* processTrackers
+*
+* process incoming tracker json
+***********/
+function processTrackers(json) {
+    if (!json)
+        return;
+
+    // reduce the incoming JSON to make a nicer list
+    const trackers = json.reduce((acc, curr) => {
+        const tactical = curr.tactical;
+
+        if (!acc[tactical]) {
+            acc[tactical] = {
+                "tactical": tactical,
+                "trackers": []
+            };
+        }
+        acc[tactical].trackers.push({ "callsign": curr.callsign, "notes": curr.notes});
+
+        return acc;
+
+    }, {});
+
+
+    // the tablediv that we'll add rows too
+    let element = document.getElementById("trackertable");
+    element.innerHTML = "";
+
+    // create a new div to contain everything.
+    let div= document.createElement("div");
+    div.setAttribute("class", "div-table");
+    div.setAttribute("style", "float: left;");
+
+    let p = document.createElement("p");
+    p.setAttribute("class", "normal-italic");
+    p.setAttribute("style", "margin: 0; padding: 0;");
+    let ts = new Date(Date.now());
+    p.innerHTML = ts.toLocaleString();
+    div.appendChild(p);
+
+    // create the table that will contain the trackers 
+    let table = document.createElement("table");
+    table.setAttribute("class", "trackerlist");
+    table.setAttribute("style", "width: auto");
+    div.appendChild(table);
+
+    //The header columns
+    let columns = ["Active Trackers", "Callsign", "Notes"];
+
+    //Add the header row
+    let headerrow = table.insertRow(-1);
+    for (c in columns) {
+        let headercell = headerrow.insertCell(-1);
+        headercell.setAttribute("class", "trackerlistheader");
+        headercell.innerHTML = columns[c];
+    }
+
+    // loop counter
+    let i = 0;
+
+    //---- all the individual table rows --- 
+    for (team in trackers) {
+
+        // only want to add active trackers
+        if (trackers[team].tactical != "ZZ-Not Active") {
+
+            // the list of trackers associated with this tactical call
+            let trackerlist = trackers[team].trackers;
+
+            // the number of trackers
+            let num_trackers = trackers[team].trackers.length;
+
+            // start by creating a new table row
+            let tablerow = table.insertRow(-1);
+
+            // the tactical
+            let teamcell = tablerow.insertCell(0);
+            teamcell.setAttribute("class", "trackerlist");
+            teamcell.innerHTML = trackers[team].tactical;
+
+            if (num_trackers > 1) 
+                teamcell.setAttribute("rowspan", num_trackers+1);
+
+            // the background coloring for every other row
+            if (i % 2) 
+                teamcell.setAttribute("style", "background-color: #737373;"); 
+
+            // now loop through the list of trackers
+            for (t in trackerlist) {
+
+                // if the number of trackers is > 1, then we create a new row 
+                if (num_trackers > 1) 
+                    row = table.insertRow(-1);
+                else 
+                    row = tablerow;
+
+                let callsign = trackerlist[t].callsign;
+                let notes = trackerlist[t].notes;
+
+                // the callsign cell
+                let callcell = row.insertCell(-1);
+                callcell.setAttribute("class", "trackerlist");
+                callcell.innerHTML = callsign;
+
+                // the notes cell
+                let notescell = row.insertCell(-1);
+                notescell.setAttribute("class", "trackerlist");
+                notescell.innerHTML = notes;
+
+                // adjust the background color if this is an odd row
+                if (i % 2) {
+                    callcell.setAttribute("style", "background-color: #737373;"); 
+                    notescell.setAttribute("style", "background-color: #737373;"); 
+                }
+            }
+
+            // increment the row counter
+            i++;
+        }
+    }
+
+
+    // finally add to the element
+    element.appendChild(div);
+}
+
+
+/***********
+* processFlights
+*
+* process incoming json for the list of active flights, their beacons, and the launchsite data
+***********/
+function processFlights(json) {
+
+    if (!json)
+        return;
+
+    // reduce the incoming JSON
+    const pivot = json.reduce((acc, curr) => {
+        const fid = curr.flightid;
+
+        if (!acc[fid]) {
+            acc[fid] = {
+                "beacons": curr.callsign + " (" + curr.frequency + "MHz)",
+                "lat": curr.launch_latitude,
+                "lon": curr.launch_longitude,
+                "elevation": curr.launch_altitude,
+                "launchsite": curr.launchsite,
+                "description": curr.description,
+                "flightid": fid
+            };
+        }
+        else {
+            acc[fid].beacons += ", " + curr.callsign + " (" + curr.frequency + "MHz)";
+        }
+
+        return acc;
+    }, {});
+
+    // the tablediv that we'll add rows too
+    let element = document.getElementById("flighttable");
+    element.innerHTML = "";
+
+    // create a new div table
+    let div = document.createElement("div");
+    div.setAttribute("class", "div-table");
+    div.setAttribute("style", "float: left;");
+
+    let p = document.createElement("p");
+    p.setAttribute("class", "normal-italic");
+    p.setAttribute("style", "margin: 0; padding: 0;");
+    let ts = new Date(Date.now());
+    p.innerHTML = ts.toLocaleString();
+    div.appendChild(p);
+
+    // create the table that will contain the trackers 
+    let table = document.createElement("table");
+    table.setAttribute("class", "trackerlist");
+    table.setAttribute("style", "width: auto");
+    div.appendChild(table);
+
+    let columns = ["Active Flights", "Beacons", "Description", "Location"];
+
+    //Add the header row
+    let headerrow = table.insertRow(-1);
+    for (c in columns) {
+        let headercell = headerrow.insertCell(-1);
+        headercell.setAttribute("class", "trackerlistheader");
+        headercell.innerHTML = columns[c];
+    }
+
+    // is this an apple platform?
+    let isapple = isApple();
+
+    // loop counter
+    let i = 0;
+
+    // loop through each flight
+    for (f in pivot) {
+        let flightid = pivot[f].flightid;
+        let beacons = pivot[f].beacons;
+        let description = pivot[f].description;
+
+        // start by creating a new table row
+        let tablerow = table.insertRow(-1);
+
+        // the flight
+        let flightcell = tablerow.insertCell(0);
+        flightcell.setAttribute("class", "trackerlist");
+        flightcell.innerHTML = flightid;
+
+        // the beacons
+        let beaconcell = tablerow.insertCell(-1);
+        beaconcell.setAttribute("class", "trackerlist");
+        beaconcell.innerHTML = beacons;
+
+        // the description
+        let desccell = tablerow.insertCell(-1);
+        desccell.setAttribute("class", "trackerlist");
+        desccell.innerHTML = description;
+
+        // the location
+        let loccell = tablerow.insertCell(-1);
+        loccell.setAttribute("class", "trackerlist");
+
+        // construct a random ID the copyToClipboard function can use to identify the coords string.
+        let id = (Math.random() + 1).toString(36).split(".")[1].toUpperCase();
+
+        let lat = (pivot[f].lat * 1.0).toFixed(4);
+        let lon = (pivot[f].lon * 1.0).toFixed(4);
+
+        // form up the URL that will take the user to their specific map platform for directions to these coordinates
+        let URL;
+        if (isapple)
+            URL = "https://maps.apple.com/?q=" + pivot[f].launchsite.replace(/ /g, "%20") + "&ll=" + lat + "%2C" + lon;
+        else
+            URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
+
+        loccell.innerHTML = pivot[f].launchsite + " &nbsp; " + (URL ? "<a target=\"_blank\" href=\"" + URL + "\">" : "") + "<span id=\"" + id + "-coords\">" + lat + ", " + lon + "</span>" + (URL ? "</a>" : "")
+            + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: middle; height: 1em; width: 1em;\" onclick=\"copyToClipboard('" + id + "-coords')\">";
+
+        if (i % 2) {
+            flightcell.setAttribute("style", "background-color: #737373;"); 
+            beaconcell.setAttribute("style", "background-color: #737373;");
+            desccell.setAttribute("style", "background-color: #737373;");
+            loccell.setAttribute("style", "background-color: #737373;");
+        }
+
+        // increment the row counter
+        i++;
+    }
+
+    // finally add this table to the element
+    element.appendChild(div);
 }
 
 
@@ -151,197 +600,6 @@ async function shutDownProcesses() {
     return false;
 }
 
-
-/***********
-* processStatus
-*
-* This function will fetch current status of processes, system status, SDR info, logs, etc. and populate the web page as needed.
-***********/
-function processStatus(json) {
-
-    let statusJson = json.backend;
-    let antennas = statusJson.antennas
-
-    // the processes that we're expecting to be reported on.  By default we set them all to in-active.
-    let processes = [
-        { "process": "direwolf", "active": 0 },
-        { "process": "aprsc", "active": 0 },
-        { "process": "habtracker", "active": 0 },
-        { "process": "gpsd", "active": 0 }
-    ];
-
-    // loop through each expected process comparing that to the list of active processes 
-    processes.forEach(function(item) {
-        for (p in json.processes) {
-            if (json.processes[p].process.startsWith(item.process)) {
-                item.active = (json.processes[p].active == 1 || json.processes[p].active == "true" || json.processes[p].active == true ? 1 : 0);
-                break;
-            }
-        }
-    });
-
-    // status of various processes
-    const direwolf = (processes.filter((a) => a.process.startsWith("direwolf")).reduce((a, c) => a + c.active, 0) ? true : false);
-    const aprsc = (processes.filter((a) => a.process.startsWith("aprsc")).reduce((a, c) => a + c.active, 0) ? true : false);
-    const backend = (processes.filter((a) => a.process.startsWith("habtracker")).reduce((a, c) => a + c.active, 0) ? true : false);
-    const gpsd = (processes.filter((a) => a.process.startsWith("gpsd")).reduce((a, c) => a + c.active, 0) ? true : false);
-
-    // is the backend active?
-    let isActive = (typeof(statusJson.active) != "undefined" ? (statusJson.active == 1 || statusJson.active == "true" || statusJson.active == true ? true : false) : false);
-
-    // is the backend beaconing?
-    let isBeaconing = (typeof(statusJson.beaconing) != "undefined" ? (statusJson.beaconing == 1 || statusJson.beaconing == "true" || statusJson.beaconing == true ? true : false) : false);
-
-    // are we igating?
-    let isIgating = (typeof(statusJson.igating) != "undefined" ? (statusJson.igating == 1 || statusJson.igating == "true" || statusJson.igating == true ? true : false) : false);
-
-    // is the backend connected to an SDR dongle?
-    let isRFMode = (typeof(statusJson.rf_mode) != "undefined" ? (statusJson.rf_mode == 1 || statusJson.rf_mode == "true" || statusJson.rf_mode == true ? true : false) : false);
-
-    // are we listening for packets from an instance of KA9Q-Radio running on the local network?
-    let isKa9qradio = (typeof(statusJson.ka9qradio) != "undefined" ? (statusJson.ka9qradio == 1 || statusJson.ka9qradio == "true" || statusJson.ka9qradio == true ? true : false) : false);
-
-    // Loop through the processes, updating the browser page to reflect status (running or not).
-    processes.forEach(function(proc) {
-        let element = document.getElementById(proc.process + "-status");
-
-        // the element already exists on the web page, so just update that section with this process's status
-        if (element) {
-            element.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-        }
-
-        // otherwise we need to add an entry to the <div> table for this process
-        else {
-            /**** example HTML for the process table row *****
-                <div class="table-row">
-                    <div class="table-cell">direwolf</div>
-                    <div class="table-cell" style="text-align: right;"><span id="direwolf-status"><mark class="notokay">Not okay</mark></span><span id="direwolf-error"></span></div>
-                </div>
-            ***************************************************/
-
-            // if the process table exists...then add a row for this process
-            let table = document.getElementById("processtable");
-            if (table) {
-                let rowdiv = document.createElement("div");      // for the entire row itself
-                let leftcell = document.createElement("div");    // the leftmost cell of the row
-                let rightcell = document.createElement("div");   // the rightmost cell of the row
-                let statusspan = document.createElement("span"); // location where we stuff the status of the process
-                let errspan = document.createElement("span");    // location where we can post a short error message for the individual process if need be
-
-                rowdiv.className = "table-row";  
-                leftcell.className = "table-cell";  
-                rightcell.className = "table-cell";
-                rightcell.setAttribute("style", "text-align: right;");
-                statusspan.id = proc.process + "-status";
-                errspan.id = proc.process + "-error";
-
-                leftcell.innerHTML = proc.process.toLowerCase();
-                statusspan.innerHTML = (proc.active > 0 ? "<mark class=\"okay\">[Okay]</mark>" : "<mark class=\"notokay\">[Not okay]</mark>");
-                rightcell.appendChild(statusspan);
-                rightcell.appendChild(errspan);
-                rowdiv.appendChild(leftcell);
-                rowdiv.appendChild(rightcell);
-                table.appendChild(rowdiv);
-            }
-        }
-    });
-
-    // determine if the backend is actually running.  
-    const numProcessesRunning = (isRFMode ? direwolf + aprsc + backend : aprsc + backend);
-    const totalProcessesExpected = (isRFMode ? 3 : 2);
-    isRunning = numProcessesRunning == totalProcessesExpected;
-
-    // are we starting up or shutting down?
-    const starting = (processInTransition == 1 && totalProcessesExpected - numProcessesRunning > 0 ? true : false);
-    const stopping = (processInTransition == 2 && numProcessesRunning > 0 ? true : false);
-
-    // blank the direwolf error section since we're in transition.  
-    //document.getElementById("direwolf-error").innerHTML = "";
-
-    // We only want to update the status screen if we're NOT in transition
-    if (!starting && !stopping) {
-        processInTransition = 0;
-
-        // if we're running and connected to an SDR, then udpate the status area with the antenna/SDR details
-        if (isRunning && isRFMode) { 
-
-            // if there are antennas/SDR detailed being reported then we display that
-            if (antennas.length > 0) {
-                let antenna_html = "<div class=\"div-table\" style=\"float: left;\">";
-
-                for (i = 0; i < antennas.length; i++) {
-                    let frequencies = antennas[i].frequencies;  
-                    let rtl_id = antennas[i].rtl_id;
-                    let k = 0;
-                    let freqhtml = "";
-                    let callsign_html = "";
-                    //document.getElementById("debug").innerHTML = JSON.stringify(frequencies);
-                    //
-
-                    let product_name_lower = antennas[i].rtl_product.toLowerCase();
-                    let instancename = (product_name_lower.includes("rtl") ? "rtl" : (product_name_lower.includes("airspy") ? "airspy" : "rtl"))
-
-                    for (k = 0; k < frequencies.length; k++) 
-                        freqhtml = freqhtml + frequencies[k].frequency.toFixed(3) + "MHz &nbsp; (" + frequencies[k].udp_port + ")<br>"; 
-
-                    antenna_html = antenna_html + "<div style=\"float: left\"><div class=\"antenna\" style=\"float: left;\"><img src=\"/images/graphics/antenna.png\" style=\"height: 150px;\"></div>"
-                        + "<div class=\"antenna-table\">"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell header toprow\" style=\"font-size: 1.4em; white-space: nowrap;\">Antenna #" + rtl_id + "</div>"
-                        + "    <div class=\"table-cell header toprow\" style=\"text-align: center;\">Details</div>"
-                        + "</div>"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell\">Frequencies</div>"
-                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + freqhtml + "</div>"
-                        + "</div>"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell\">GnuRadio Status</div>"
-                        + "    <div class=\"table-cell\" style=\"text-align: right;\"><mark class=\"okay\">[Okay]</mark></div>"
-                        + "</div>"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell\">SDR Information</div>"
-                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + instancename + " = " + rtl_id + "<br>Product: " + antennas[i].rtl_product + "<br>Manufacturer: " + antennas[i].rtl_manufacturer  + "<br>Serial No: " + antennas[i].rtl_serialnumber + "</div>"
-                        + "</div>"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell\">Igating Status</div>"
-                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isIgating ? "<mark class=\"okay\">[igating]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-                        + "</div>"
-                        + "<div class=\"table-row\">"
-                        + "    <div class=\"table-cell\">Beaconing Status</div>"
-                        + "    <div class=\"table-cell\" style=\"text-align: right;\">" + (isBeaconing ? "<mark class=\"okay\">[beaconing]</mark>" : "<span style=\"font-variant: small-caps;\">[NO]</span>") + "</div>"
-                        + "</div>"
-                        + "</div>"
-                        + "</div>";
-                }
-
-                // update the status screen area
-                $("#antenna-data").html(antenna_html);
-            }
-            else {  // no antenna info...which is odd, since we're supposed to be in RF mode...but...
-                let donehtml = "<p><mark class=\"okay\">Running.</mark></p>";
-
-                // Update the onscreen status
-                $("#antenna-data").html(donehtml);
-            }
-        }
-        else if (isRunning && !isRFMode) {  // We're running in online mode...i.e. SDRs are not attached to the system
-
-            if (isKa9qradio) 
-                donehtml = "<p><mark class=\"okay\">Listening for packets from KA9Q-Radio</mark></p>";
-            else
-                donehtml = "<p><mark class=\"okay\">Running in online mode - no SDRs found.</mark></p>";
-
-            // Update the onscreen status
-            $("#antenna-data").html(donehtml);
-        }
-        else {  // we're not running
-            let donehtml = "<p><mark class=\"marginal\">Not running.</mark></p>";
-
-            // Update the onscreen status
-            $("#antenna-data").html(donehtml);
-        }
-    }
-}
 
 /***********
 * process logs 
@@ -466,33 +724,33 @@ function setupSSE(backendurl) {
                     console.log({"what": "configuration JSON parse error", "event": event, "error": e.message, "gpsjson": json});
                 }
                 
-                if (json)
-                    processConfiguration(json);
-            });
-
-            eventsource.addEventListener("backendstatus", function(event) {
-
-                let json;
-                
-                // Parse the incoming json
-                try { json = JSON.parse(event.data);}
-                catch (e) { 
-                    console.log({"what": "backend status JSON parse error", "event": event, "error": e.message, "gpsjson": json});
+                if (json && json.type) {
+                    if (json.type == "config") 
+                        processConfiguration(json.data);
+                    else if (json.type == "trackers")
+                        processTrackers(json.trackers);
+                    else if (json.type == "flights")
+                        processFlights(json.flights);
                 }
 
-                if (json)
-                    processStatus(json);
             });
 
             // listen for log file updates
             eventsource.addEventListener("mainlog", handleLogEvent);
             eventsource.addEventListener("stderr", handleLogEvent);
             eventsource.addEventListener("direwolflog", handleLogEvent);
+            eventsource.addEventListener("direwolf", handleLogEvent);
 
             // listen for any errors, try and restart the connection if there were any
             eventsource.addEventListener("error", function(event) {
 
-                //console.log({"function": "event source error", "error": event});
+                // update the status section with connection status
+                let data = document.getElementById("backendconnection");
+                data.innerHTML = "<mark class=\"notokay\" style=\"font-size: 1em;\">[ not connected ]</mark>";
+
+                // update the gps section with connection status
+                let gpsdata = document.getElementById("gpsdata");
+                gpsdata.innerHTML = "n/a";
 
                 // close the event source
                 eventsource.close();
@@ -501,9 +759,25 @@ function setupSSE(backendurl) {
                 setTimeout(initializeSSE, 1000);
             });
 
+            // listen for a connection to the backend
+            eventsource.addEventListener("open", function(event) {
+
+                // update the screen with connection status
+                let data = document.getElementById("backendconnection");
+                data.innerHTML = "<mark class=\"okay\" style=\"font-size: 1em;\">[ connected ]</mark>";
+            });
+
+
+
         } catch(error) {
             console.log({"function": "setupSSE", "error": error});
         }
+    }
+    else {
+
+        // update the status section with connection status
+        let data = document.getElementById("backendconnection");
+        data.innerHTML = "<mark class=\"notokay\" style=\"font-size: 1em;\">[ unsupported browser: EventSource not available! ]</mark>";
     }
 }
 
@@ -524,13 +798,14 @@ function handleLogEvent(event) {
     }
 
     if (json) {
+        //alert("new json: " + event.type + ", " + JSON.stringify(json.data));
 
         // get the current log content being displayed on the page
         let elem = document.getElementById(event.type);
         let log = elem.innerHTML;
 
         // append this incoming data to it
-        log = log + (log.length > 0 ? "\r\n" : "") + escapeHtml(json);
+        log = log + (log.length > 0 ? "\r\n" : "") + escapeHtml(json.data);
 
         // trim to be <= 100 lines.  Just count the number of newlines in the output....not "perfect", but will be good 
         // enough to make sure we're not trying to track a jillion lines. ;)
@@ -558,7 +833,8 @@ function handleLogEvent(event) {
 * restart the SSE stream
 ***********/
 function initializeSSE() {
-    setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&mainlog=true&stderr=true&direwolflog=true");
+    //setupSSE("ssestream.php?gpsstatus=true&configuration=true&backendstatus=true&mainlog=true&stderr=true&direwolflog=true");
+    setupSSE("/sse");
 }
 
 
@@ -598,7 +874,7 @@ function updateGPSDisplay(geojson) {
         return;
 
     // Get the GPS fix status
-    let gpsMode = jsonData.mode * 10 / 10;
+    let gpsMode = jsonData.mode * 1;
     if (gpsMode == 0)
         gpsfix = "<mark class=\"notokay\" style=\"font-size: .9em;\">[ no data ]</mark>";
     else if (gpsMode == 1)
@@ -644,12 +920,19 @@ function updateGPSDisplay(geojson) {
 
 
     // Compile the list of satellites
+    //let satellites = jsonData.satellites.sort((a, b) => a.used < b.used);
     let satellites = jsonData.satellites;
     let satellite_html = "<table cellpadding=0 cellspacing=0 border=0><tr><th style=\"font-weight: normal; padding: 5px; text-align: center;\">PRN:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Elev:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\" >Azim:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">SNR:</th><th style=\"font-weight: normal; padding: 5px;text-align: center;\">Used:</th></tr>"; 
 
     let i = 0;
     for (i = 0; i < satellites.length; i++) {
-            satellite_html = satellite_html + "<tr><td style=\"text-align: center;\">" + satellites[i].prn + "</td><td style=\"text-align: center;\">" + satellites[i].elevation + "</td><td style=\"text-align: center;\">" + satellites[i].azimuth + "</td><td style=\"text-align: center;\">" + satellites[i].snr + "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" ? "Y" : "N") + "</td></tr>";
+            satellite_html = satellite_html + 
+            "<tr><td style=\"text-align: center;\">" + satellites[i].PRN + 
+            "</td><td style=\"text-align: center;\">" + satellites[i].el + 
+            "</td><td style=\"text-align: center;\">" + satellites[i].az + 
+            "</td><td style=\"text-align: center;\">" + satellites[i].ss + 
+            "</td><td style=\"text-align: center;\">" + (satellites[i].used == "True" || satellites[i].used == true ? "Y" : "N") + 
+            "</td></tr>";
     }
     
     satellite_html = satellite_html + "</table>";
@@ -715,13 +998,202 @@ function updateMapLink(geojson) {
 
 
 /***********
-* ready
+* startup 
 *
-* This function is only called once the web page is fully loaded.
-***********/
-$(document).ready(function () {
+* main entry point
+************/
+function startup() {
 
+    // get the nodeid of this system (if it exists)
+    getNodeID("nodeid.txt").then(function(text) {
+        nodeid = text;
+    });
+
+    // get current flight and tracker definitions
+    getDefinitions();
+
+    // and a restart'inator so that javascript will restart upon browser coming back into focus
+    document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === 'visible') {
+
+            // refetch the direwolf log file if present
+            getDirewolfLog("/logs/direwolf.log");
+
+            // startup SSE 
+            initializeSSE();
+        }
+    });
+
+    // get the current direwolf log file
+    getDirewolfLog("/logs/direwolf.log").then(function(text) {
+
+        // get the direwolf element
+        let dw = document.getElementById("direwolf");
+
+        // set the content
+        dw.innerHTML = escapeHtml(text);
+
+        // now scroll the element to the bottom (so new lines of text are visible)
+        dw.scrollTop = dw.scrollHeight;
+
+    });
+
+    // get the configuration 
+    getConfiguration("/configuration/config.txt").then(function(json) {
+        if (json && json.data) 
+            processConfiguration(json.data);
+    });
+
+    // startup SSE 
     initializeSSE();
 
-});
+}
 
+/***********
+* isApple
+*
+* Grab the user agent string from the user's browser in attempt to determine if this is an Apple product or not.
+* ...this is primaryily used to craft the map URLs when a user click on a set of coordinates.  So we can send them
+* to Google Maps or to Apple Maps.
+***********/
+function isApple() {
+
+    // get the browser's user agent string
+    let ua = navigator.userAgent;
+    let isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    let isIpad = /iPad/i.test(ua);
+    let isMacintosh = /Macintosh/i.test(ua);
+    let isTouchDevice = "ontouchend" in document;
+
+    return isSafari || isIpad || isMacintosh;
+}
+
+/* Function to copy text from an element to the clipboard */
+function copyToClipboard (elem) {
+    var range = document.createRange();
+    var e = document.getElementById(elem);
+  
+    range.selectNode(e);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand("Copy");
+    window.getSelection().removeAllRanges();
+    e.classList.add("whiteToBackground");
+    setTimeout(function() {
+        let element = elem;
+        document.getElementById(element).classList.remove("whiteToBackground");
+    }, 600);
+}
+
+// get the direwolf log file if it exists
+async function getDirewolfLog(url) {
+    
+    // get the direwolf.log file
+    let response = await fetch(url);
+    let log;
+
+    if (!response.ok) {
+
+        // update the data on the page
+        return "Log file not found";
+    }
+
+    try{
+        log = await response.text();
+    } catch (e) {
+        console.log("Error in fetching direwolf log file: ", e, ", file: ", url);
+    }
+
+    if (log) {
+
+        // trim to be <= 100 lines.  Just count the number of newlines in the output....not "perfect", but will be good 
+        // enough to make sure we're not trying to track a jillion lines. ;)
+        const matches = log.match(/\n/g);
+        const n = (matches ? matches.length : 0);
+        if (n > 100) {
+            const loc = nthChar(log, "\n", n - 100);
+
+            // now trim the string
+            log = log.substring(loc+1);
+        }
+    }
+
+    return log;
+}
+
+// get the node ID of this system (if it exsists)
+async function getNodeID(url) {
+
+    // get the configuration
+    let response = await fetch(url);
+    let text;
+
+    // nodeID file doesn't exist
+    if (!response.ok) {
+        return null;
+    }
+
+    // otherwise, try and read the response text
+    try {
+        text = await response.text();
+    } 
+    catch (e) {
+        console.log("Error in fetching nodeID file: ", e, ", file: ", url);
+    }
+
+    return text;
+}
+
+
+// get the configuration
+async function getConfiguration(url) {
+
+    // get the configuration
+    let response = await fetch(url);
+    let config;
+
+    try{
+        config = await response.json();
+    } catch (e) {
+        console.log("Error in fetching config file: ", e, ", file: ", url);
+    }
+
+    let json;
+    if (config) {
+        try {
+            // transform incoming JSON into the [more] standard form
+            json = {
+                "type": "config",
+                "data": {
+                    "aprsis": {
+                        "beaconing": config.ibeacon,
+                        "igating": config.igating,
+                        "overlay": config.overlay,
+                        "symbol": config.symbol
+                    },
+                    "direwolf": {
+                        "audiodev": config.audiodev,
+                        "beaconing": config.beaconing,
+                        "beaconlimit": config.beaconlimit,
+                        "eoss_string": config.eoss_string,
+                        "includeeoss": config.includeeoss,
+                        "serialport": config.serialport,
+                        "serialproto": config.serialproto
+                    },
+                    "station": {
+                        "callsign": (config.callsign ? (config.ssid ? config.callsign + "-" + config.ssid : config.callsign) : null),
+                        "name": config.comment,
+                        "timezone": config.timezone
+                    }
+                }
+            };
+        } catch (e) {
+                alert("error with json: " + e);
+        }
+    }
+
+    return json;
+}
+
+// starting point for everything 
+document.addEventListener("DOMContentLoaded", startup);

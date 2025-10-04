@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2019,2020, Jeff Deaton (N6BA)
+#    Copyright (C) 2019-2025 Jeff Deaton (N0JD)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,24 +42,33 @@
 
     ## Get a list of flights and their callsign mapping
     $query = '
-        select 
-        f.flightid, 
-        fm.callsign, 
-        fm.location, 
-        fm.freq, 
-        f.active, 
-        f.description,
-        f.launchsite
-   
-        from 
-        flights f left outer join flightmap fm 
-            on fm.flightid = f.flightid
-    
-        order by 
-        f.active desc,
-        f.flightid desc, 
-        f.thedate desc, 
-        fm.callsign asc;';
+        select
+            f.flightid,
+            fm.callsign,
+            fm.location,
+            cast(fm.freq as double precision) as freq,
+            f.active,
+            f.description,
+            f.launchsite,
+            cast(l.lat as double precision) as lat,
+            cast(l.lon as double precision) as lon,
+            cast(l.alt as double precision) as alt
+
+        from
+            flights f left outer join flightmap fm
+                on fm.flightid = f.flightid,
+            launchsites l
+
+
+        where
+            l.launchsite = f.launchsite
+
+        order by
+            f.active desc,
+            f.flightid desc,
+            f.thedate desc,
+            fm.callsign asc;
+    ';
     $result = sql_query($query);
     if (!$result) {
         db_error(sql_last_error());

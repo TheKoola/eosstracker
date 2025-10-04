@@ -450,7 +450,6 @@ class ConfigEvent extends BaseSSEEvent {
         $ray["ssid"] = "9";
         $ray["igating"] =  "false";
         $ray["beaconing"] = "false";
-        $ray["objectbeaconing"] = "false";
         $ray["passcode"] = "";
         $ray["fastspeed"] = "45";
         $ray["fastrate"] = "01:00";
@@ -467,12 +466,10 @@ class ConfigEvent extends BaseSSEEvent {
         $ray["eoss_string"] = "EOSS";
         $ray["symbol"] = "/k";
         $ray["overlay"] = "";
-        $ray["ibeaconrate"] = "15:00";
         $ray["ibeacon"] = "false";
         $ray["airdensity"] = "false";
         $ray["mobilestation"] = "true";
         $ray["gpshost"] = "";
-        $ray["ka9qradio"] = "false";
         $fallbackJSON = json_encode($ray);
 
         // Defaults
@@ -1162,6 +1159,112 @@ class TrackerEvent extends BaseSSEEvent {
 
                 // add the cache status key/value pair
                 $js->memcache_status = $cache_status;
+
+                // create the SSE event string
+                $ssestring = $this->_formSSE(json_encode($js));
+
+                // increment the sequence #
+                $this->seq++;
+            }
+        }
+
+        return $ssestring;
+    }
+}
+
+/*********************
+ * AppStatusEvent class that checks on various json keys in memcache, providing application telemetry data
+ * from the backend.
+ *
+ * Usage:
+ * $mystatus = new AppStatusEvent();
+ * $ssetext = $mystatus->generateSSEEvent();
+ * if ($ssetext)
+ *     sendSSEText($ssetext);
+ *
+ *********************/
+class AppStatusEvent extends BaseSSEEvent {
+
+    // properties
+    private array $keylist;  // the list of memcache keys that we need to query to get data about the backend
+
+    // constructor
+    function __construct(int $threshold = 15) {
+        parent::__construct("apptelemetry", $threshold);
+
+        // set property defaults
+        $this->keylist = Array("aprsis_statistics", "database_statistics", "packet_statistics");
+
+        // set the lasttimestamp to zero
+        $this->lasttimestamp = 0.0;
+    }
+
+    /************
+     * generateSSEText
+     *
+     * construct the SSE text (json) for this event.  Return null if there isn't anything we need to send to the browser.
+     ***********/
+    function generateSSEText(): ?string {
+
+        // where we store our SSE event string (that could be sent to the browser).
+        $ssestring = null;
+
+        // where we'll store the results
+        $js = new stdClass();
+
+        // status of our memcache attempt
+        $cache_status = null;
+
+
+        // define a timestamp that will be used to determine the newest data being received.
+        $newest_timestamp = $this->lasttimestamp;
+
+        try {
+
+            // create a new memcache object and connect to the backend daemon
+            $memcache = new Memcache;
+            $connectionresult = $memcache->connect('localhost', 11211);
+            if (!$connectionresult)
+                throw new Exception("memcache fail");
+
+
+            
+            foreach ($this->keylist as $key) {
+
+                // attempt to get the key from memcache
+                $getresult = $memcache->get($key);
+                if ($getresult) {
+
+                    // convert the returned JSON to a PHP object
+                    $newjson = json_decode($getresult, false);
+                    if ($newjson->microsecs > $this->lasttimestamp) {
+                        $js->$key = $newjson;
+                        if ($newjson->microsecs > $newest_timestamp)
+                            $newest_timestamp = $newjson->microsecs;
+                    }
+                }
+            }
+
+            // close the memcache connection.
+            $memcache->close();
+
+        } catch (Exception $e) {
+
+            // close the memcache connection.
+            $memcache->close();
+        }
+
+        // if we ended up with new data from memcache then send that the the browser
+        if (!empty(get_object_vars($js))) {
+
+            // current time
+            $currenttime = microtime(true);
+
+            // only send an update if we've not already done so within the last 1 second or it's the first time we've been called.
+            if ((int)$currenttime > (int)$this->lastupdate || $this->seq == 0) {
+
+                // update the lasttimestamp
+                $this->lasttimestamp = $newest_timestamp;
 
                 // create the SSE event string
                 $ssestring = $this->_formSSE(json_encode($js));
