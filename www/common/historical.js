@@ -143,7 +143,7 @@ function processFlights(json) {
                 (json[key].maxaltitude_m >= 30480 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude_m.toLocaleString() + "m </mark>" : json[key].maxaltitude_m.toLocaleString() + "m") 
             ),
             mapurl(json[key].flight, json[key].launch_location.latitude, json[key].launch_location.longitude, Math.round(imperial ? json[key].launch_location.altitude_ft : json[key].launch_location.altitude_m)),
-            mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, Math.round(imperial ? json[key].launch_location.altitude_ft : json[key].launch_location.altitude_m)),
+            mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, Math.round(imperial ? json[key].landing_location.altitude_ft : json[key].landing_location.altitude_m)),
             (imperial ? json[key].range_distance_traveled_mi.toFixed(2) + "mi" : json[key].range_distance_traveled_km.toFixed(2) + "km"),
             json[key].flighttime,
             (imperial ? (json[key].weights.gross_lb * 1.0).toFixed(2) + "lb" : (json[key].weights.gross_kg * 1.0).toFixed(2) + "kgs"),
