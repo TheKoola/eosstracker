@@ -1,5 +1,46 @@
 [
     {
+        "flight": "EOSS-387",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-2"
+        ],
+        "day": "2025-11-8",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "9.63",
+            "eoss": "3.24",
+            "parachute": "1.70",
+            "neckload": "14.57",
+            "balloon": "6.61",
+            "gross": "21.19",
+            "necklift": "18.81"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "344"
+    },
+    {
+        "flight": "EOSS-386",
+        "beacons": [
+            "KC0D-1",
+            "AE0SS-1",
+            "AE0SS-3"
+        ],
+        "day": "2025-11-8",
+        "balloonsize": "3000gm",
+        "weights": {
+            "client": "7.80",
+            "eoss": "5.12",
+            "parachute": "1.70",
+            "neckload": "14.61",
+            "balloon": "6.61",
+            "gross": "21.23",
+            "necklift": "18.86"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "344"
+    },
+    {
         "flight": "EOSS-385",
         "beacons": [
             "KC0D-2",
