@@ -269,7 +269,7 @@ function gonext() {
 /***********
 * getFlight
 *
-* This will fetch the flight and tracker definitions fromt the backend.
+* This will fetch the flight and tracker definitions from the backend.
 ***********/
 async function getFlight(url) {
 
@@ -284,8 +284,11 @@ async function getFlight(url) {
     // process flight json data
     if (js) {
 
+        // only interested in those packets that contain a position
+        const filtered = js.packets.filter(a => a.position_packet == true);
+
         // convert the packettime epoch ms to a local date object
-        const packetdata = js.packets.map((a) => {
+        const packetdata = filtered.map((a) => {
             // convert UTC time to local time
             const utcdate = new Date(a.packettime);
             const localtime = new Date(utcdate.getTime() - utcdate.getTimezoneOffset()*60*1000)
