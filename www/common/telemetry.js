@@ -1280,7 +1280,8 @@ function buildTable(json) {
         {"type": "csv",    "ext": "csv" },
         {"type": "json",   "ext": "json" },
         {"type": "excel",  "ext": "xlsx" },
-        {"type": "pandas", "ext": "pkl" }
+        {"type": "pandas", "ext": "pkl" },
+        {"type": "kml",    "ext": "kml" }
     ];
 
     // loop through the various file types, creating an array of links
