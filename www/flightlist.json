@@ -1,5 +1,78 @@
 [
     {
+        "flight": "EOSS-390",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-4"
+        ],
+        "day": "2025-12-6",
+        "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "7.31",
+            "eoss": "3.24",
+            "parachute": "1.70",
+            "neckload": "12.25",
+            "balloon": "3.31",
+            "gross": "15.55",
+            "necklift": "16.91"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "273"
+    },
+    {
+        "flight": "EOSS-389",
+        "beacons": [
+            "KC0D-14",
+            "AE0SS-3"
+        ],
+        "day": "2025-12-6",
+        "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "9.74",
+            "eoss": "2.20",
+            "parachute": "1.70",
+            "neckload": "13.64",
+            "balloon": "3.31",
+            "gross": "16.94",
+            "necklift": "18.72"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "298"
+    },
+    {
+        "flight": "EOSS-388",
+        "beacons": [
+            "KC0D-3",
+            "KC0D-1",
+            "AE0SS-1"
+        ],
+        "day": "2025-12-6",
+        "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "3.88",
+            "eoss": "4.61",
+            "parachute": "1.81",
+            "neckload": "10.30",
+            "balloon": "3.31",
+            "gross": "13.60",
+            "necklift": "14.38"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "239"
+    },
+    {
         "flight": "EOSS-387",
         "beacons": [
             "KC0D-2",
@@ -7,6 +80,10 @@
         ],
         "day": "2025-11-8",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.63",
             "eoss": "3.24",
@@ -28,6 +105,10 @@
         ],
         "day": "2025-11-8",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.80",
             "eoss": "5.12",
@@ -48,6 +129,10 @@
         ],
         "day": "2025-11-2",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "10.16",
             "eoss": "3.44",
@@ -68,6 +153,10 @@
         ],
         "day": "2025-11-2",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.42",
             "eoss": "3.67",
@@ -88,6 +177,10 @@
         ],
         "day": "2025-10-18",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "3.54",
             "eoss": "3.90",
@@ -108,6 +201,10 @@
         ],
         "day": "2025-08-02",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "5.53",
             "eoss": "3.24",
@@ -128,6 +225,10 @@
         ],
         "day": "2025-08-02",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "5.28",
             "eoss": "3.47",
@@ -150,6 +251,10 @@
         ],
         "day": "2025-07-26",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.59",
             "eoss": "6.28",
@@ -170,6 +275,10 @@
         ],
         "day": "2025-06-17",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "3.97",
             "eoss": "3.47",
@@ -190,6 +299,10 @@
         ],
         "day": "2025-06-14",
         "balloonsize": "2000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "1.31",
             "eoss": "2.35",
@@ -211,6 +324,10 @@
         ],
         "day": "2025-05-10",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.13",
             "eoss": "5.02",
@@ -231,6 +348,10 @@
         ],
         "day": "2025-05-10",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.28",
             "eoss": "3.34",
@@ -252,6 +373,10 @@
         ],
         "day": "2025-05-03",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.41",
             "eoss": "4.35",
@@ -272,6 +397,10 @@
         ],
         "day": "2025-05-03",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.32",
             "eoss": "3.47",
@@ -292,6 +421,10 @@
         ],
         "day": "2025-04-12",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "17.70",
             "eoss": "3.47",
@@ -312,6 +445,10 @@
         ],
         "day": "2025-04-12",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.85",
             "eoss": "4.43",
@@ -333,6 +470,10 @@
         ],
         "day": "2025-04-06",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "11.03",
             "eoss": "4.63",
@@ -354,6 +495,10 @@
         ],
         "day": "2025-04-06",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.77",
             "eoss": "5.47",
@@ -374,6 +519,10 @@
         ],
         "day": "2025-03-23",
         "balloonsize": "2000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.99",
             "eoss": "4.48",
@@ -394,6 +543,10 @@
         ],
         "day": "2025-02-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.70",
             "eoss": "3.47",
@@ -414,6 +567,10 @@
         ],
         "day": "2025-02-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.31",
             "eoss": "3.31",
@@ -434,6 +591,10 @@
         ],
         "day": "2024-12-07",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "12.33",
             "eoss": "3.47",
@@ -454,6 +615,10 @@
         ],
         "day": "2024-12-07",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.91",
             "eoss": "3.31",
@@ -474,6 +639,10 @@
         ],
         "day": "2024-11-16",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "11.03",
             "eoss": "3.47",
@@ -494,6 +663,10 @@
         ],
         "day": "2024-11-16",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.62",
             "eoss": "3.31",
@@ -515,6 +688,10 @@
         ],
         "day": "2024-10-20",
         "balloonsize": "2000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "5.81",
             "eoss": "5.12",
@@ -536,6 +713,10 @@
         ],
         "day": "2024-08-03",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "12.29",
             "eoss": "5.02",
@@ -558,6 +739,10 @@
         ],
         "day": "2024-05-18",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "14.79",
             "eoss": "6.65",
@@ -579,6 +764,10 @@
         ],
         "day": "2024-05-04",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.50",
             "eoss": "4.99",
@@ -599,6 +788,10 @@
         ],
         "day": "2024-05-04",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.64",
             "eoss": "3.44",
@@ -619,6 +812,10 @@
         ],
         "day": "2024-04-21",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.21",
             "eoss": "5.79",
@@ -639,6 +836,10 @@
         ],
         "day": "2024-04-21",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.82",
             "eoss": "3.18",
@@ -659,6 +860,10 @@
         ],
         "day": "2024-04-21",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.01",
             "eoss": "2.21",
@@ -679,6 +884,10 @@
         ],
         "day": "2024-03-17",
         "balloonsize": "2000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.06",
             "eoss": "3.19",
@@ -699,6 +908,10 @@
         ],
         "day": "2023-12-02",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.86",
             "eoss": "2.67",
@@ -719,6 +932,10 @@
         ],
         "day": "2023-12-02",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "9.14",
             "eoss": "2.19",
@@ -739,6 +956,10 @@
         ],
         "day": "2023-12-02",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.00",
             "eoss": "3.52",
@@ -759,6 +980,10 @@
         ],
         "day": "2023-11-11",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "13.95",
             "eoss": "6.20",
@@ -779,6 +1004,10 @@
         ],
         "day": "2023-11-04",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "12.12",
             "eoss": "4.32",
@@ -800,6 +1029,10 @@
         ],
         "day": "2023-11-04",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "14.39",
             "eoss": "6.20",
@@ -820,6 +1053,10 @@
         ],
         "day": "2023-10-21",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "4.93",
             "eoss": "6.15",
@@ -841,6 +1078,10 @@
         ],
         "day": "2023-09-09",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "1.02",
             "eoss": "8.04",
@@ -861,6 +1102,10 @@
         ],
         "day": "2023-07-29",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.52",
             "eoss": "4.91",
@@ -881,6 +1126,10 @@
         ],
         "day": "2023-07-22",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.07",
             "eoss": "6.09",
@@ -901,6 +1150,10 @@
         ],
         "day": "2023-06-17",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Spherachute",
+            "size": "10"
+        },
         "weights": {
             "client": "3.13",
             "eoss": "2.87",
@@ -921,6 +1174,10 @@
         ],
         "day": "2023-06-03",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "5.58",
             "eoss": "4.22",
@@ -941,6 +1198,10 @@
         ],
         "day": "2023-05-04",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "2.80",
             "eoss": "4.22",
@@ -961,6 +1222,10 @@
         ],
         "day": "2023-04-22",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.01",
             "eoss": "4.29",
@@ -981,6 +1246,10 @@
         ],
         "day": "2023-04-22",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.16",
             "eoss": "4.29",
@@ -1001,6 +1270,10 @@
         ],
         "day": "2023-04-16",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.00",
             "eoss": "4.71",
@@ -1021,6 +1294,10 @@
         ],
         "day": "2023-04-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "5.38",
             "eoss": "4.75",
@@ -1041,6 +1318,10 @@
         ],
         "day": "2023-04-01",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "12.61",
             "eoss": "4.71",
@@ -1062,6 +1343,10 @@
         ],
         "day": "2023-03-26",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.23",
             "eoss": "7.48",
@@ -1082,6 +1367,10 @@
         ],
         "day": "2023-01-14",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "7.46",
             "eoss": "3.23",
@@ -1102,6 +1391,10 @@
         ],
         "day": "2023-01-14",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "8.53",
             "eoss": "3.17",
@@ -1122,6 +1415,10 @@
         ],
         "day": "2023-01-14",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "5.02",
             "eoss": "4.22",
@@ -1143,6 +1440,10 @@
         ],
         "day": "2022-11-05",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "11.26",
             "eoss": "6.33",
@@ -1163,6 +1464,10 @@
         ],
         "day": "2022-10-29",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.87",
             "eoss": "4.74",
@@ -1184,6 +1489,10 @@
         ],
         "day": "2022-10-15",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.44",
             "eoss": "4.53",
@@ -1205,6 +1514,10 @@
         ],
         "day": "2022-07-30",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "6.89",
             "eoss": "4.05",
@@ -1225,6 +1538,10 @@
         ],
         "day": "2022-07-30",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.32",
             "eoss": "3.68",
@@ -1245,6 +1562,10 @@
         ],
         "day": "2022-07-30",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.61",
             "eoss": "3.75",
@@ -1265,6 +1586,10 @@
         ],
         "day": "2022-04-24",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.52",
             "eoss": "3.68",
@@ -1285,6 +1610,10 @@
         ],
         "day": "2022-04-09",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "8.62",
             "eoss": "2.60",
@@ -1305,6 +1634,10 @@
         ],
         "day": "2022-04-09",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "4.78",
             "eoss": "4.33",
@@ -1325,6 +1658,10 @@
         ],
         "day": "2022-04-09",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.50",
             "eoss": "4.19",
@@ -1346,6 +1683,10 @@
         ],
         "day": "2022-04-02",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "14.77",
             "eoss": "4.67",
@@ -1366,6 +1707,10 @@
         ],
         "day": "2022-01-28",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.75",
             "eoss": "6.23",
@@ -1386,6 +1731,10 @@
         ],
         "day": "2022-01-28",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "13.12",
             "eoss": "4.77",
@@ -1406,6 +1755,10 @@
         ],
         "day": "2021-11-06",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.41",
             "eoss": "4.35",
@@ -1427,6 +1780,10 @@
         ],
         "day": "2021-10-30",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "16.95",
             "eoss": "6.36",
@@ -1447,6 +1804,10 @@
         ],
         "day": "2021-10-10",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "11.38",
             "eoss": "6.12",
@@ -1467,6 +1828,10 @@
         ],
         "day": "2021-10-10",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.87",
             "eoss": "2.97",
@@ -1487,6 +1852,10 @@
         ],
         "day": "2021-08-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "4.80",
             "eoss": "3.55",
@@ -1507,6 +1876,10 @@
         ],
         "day": "2021-08-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.97",
             "eoss": "3.24",
@@ -1527,6 +1900,10 @@
         ],
         "day": "2021-08-01",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "6.97",
             "eoss": "3.24",
@@ -1548,6 +1925,10 @@
         ],
         "day": "2021-07-24",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "5.50",
             "eoss": "5.50",
@@ -1568,6 +1949,10 @@
         ],
         "day": "2021-04-18",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "10.24",
             "eoss": "4.63",
@@ -1588,6 +1973,10 @@
         ],
         "day": "2021-04-10",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.91",
             "eoss": "4.67",
@@ -1608,6 +1997,10 @@
         ],
         "day": "2021-04-03",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "18.68",
             "eoss": "4.63",
@@ -1630,6 +2023,10 @@
         ],
         "day": "2021-03-20",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.44",
             "eoss": "7.73",
@@ -1651,6 +2048,10 @@
         ],
         "day": "2021-01-16",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "6.70",
             "eoss": "4.73",
@@ -1671,6 +2072,10 @@
         ],
         "day": "2020-11-07",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.86",
             "eoss": "3.21",
@@ -1691,6 +2096,10 @@
         ],
         "day": "2020-11-07",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.63",
             "eoss": "2.69",
@@ -1712,6 +2121,10 @@
         ],
         "day": "2020-11-01",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "16.09",
             "eoss": "5.27",
@@ -1732,6 +2145,10 @@
         ],
         "day": "2020-10-03",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "5.14",
             "eoss": "5.30",
@@ -1755,6 +2172,10 @@
         ],
         "day": "2020-08-01",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "17.64",
             "eoss": "5.02",
@@ -1777,6 +2198,10 @@
         ],
         "day": "2020-07-11",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "0.12",
             "eoss": "6.66",
@@ -1797,6 +2222,10 @@
         ],
         "day": "2020-05-30",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.34",
             "eoss": "2.76",
@@ -1817,6 +2246,10 @@
         ],
         "day": "2020-03-15",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "9"
+        },
         "weights": {
             "client": "4.13",
             "eoss": "3.53",
@@ -1837,6 +2270,10 @@
         ],
         "day": "2020-03-15",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "10"
+        },
         "weights": {
             "client": "6.78",
             "eoss": "2.56",
@@ -1857,6 +2294,10 @@
         ],
         "day": "2019-11-09",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "10.06",
             "eoss": "4.60",
@@ -1877,6 +2318,10 @@
         ],
         "day": "2019-11-09",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "17.39",
             "eoss": "3.13",
@@ -1897,6 +2342,10 @@
         ],
         "day": "2019-11-02",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "15.42",
             "eoss": "4.54",
@@ -1917,6 +2366,10 @@
         ],
         "day": "2019-10-12",
         "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "7.02",
             "eoss": "4.09",
@@ -1938,6 +2391,10 @@
         ],
         "day": "2019-07-27",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "8.27",
             "eoss": "4.71",
@@ -1958,6 +2415,10 @@
         ],
         "day": "2019-07-13",
         "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
         "weights": {
             "client": "11.90",
             "eoss": "3.71",

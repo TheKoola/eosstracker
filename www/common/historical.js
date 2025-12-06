@@ -118,7 +118,7 @@ function processFlights(json) {
     table.setAttribute("style", "width: auto");
 
     // the columns
-    const columns = ["Flight", "Date", "Balloon Size", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Telemetry", "Data"];
+    const columns = ["Flight", "Date", "Balloon Size", "Parachute", "Beacon Callsigns", "Max Altitude", "Launch Location", "Landing Location", "Distance Traveled", "Flight Duration", "Total Weight", "Lift Factor", "H<sub>2</sub> Fill", "Number of Data Points", "Telemetry", "Data"];
 
     // add the header row
     var row = table.insertRow(-1);
@@ -133,15 +133,35 @@ function processFlights(json) {
     for (key in json) {
         //const metadata = getMetadata(json[key].flight);
 
+        // the balloon size
+        const balloonsize_metric = parseInt(json[key].balloonsize);
+        const balloonsize_imperial = balloonsize_metric * 0.00220462;
+
+        // the max altitude as determined by telemetry packets
+        let burst_ft = json[key].maxaltitude_ft;
+        let burst_m = json[key].maxaltitude_m;
+
+        // determine if the accelerometer detected burst was successful or not
+        const detected_burst = (json[key].detected_burst && json[key].detected_burst.detected);
+        if (detected_burst) {
+            let db = json[key].detected_burst;
+            burst_ft = (db.burst_ft > burst_ft ? db.burst_ft : burst_ft);
+            burst_m = (db.burst_m > burst_m ? db.burst_m : burst_m);
+        }
+
         const cellvalues = [
             json[key].flight,
             json[key].day,
-            json[key].balloonsize,
+            (imperial ? balloonsize_imperial.toFixed(2) + "lbs" : balloonsize_metric.toFixed(0) + "gm"),
+            (imperial ? (json[key].parachute.size_ft * 1.0).toFixed(0) + "ft" : (json[key].parachute.size_m * 1.0).toFixed(2) + "m") + " " +
+            json[key].parachute.description,
             json[key].beacons.join(", "), 
             (imperial ? 
-                (json[key].maxaltitude_ft >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude_ft.toLocaleString() + "ft </mark>" : json[key].maxaltitude_ft.toLocaleString() + "ft") :
-                (json[key].maxaltitude_m >= 30480 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + json[key].maxaltitude_m.toLocaleString() + "m </mark>" : json[key].maxaltitude_m.toLocaleString() + "m") 
-            ),
+                (burst_ft >= 100000 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + burst_ft.toLocaleString() + "ft </mark>" : burst_ft.toLocaleString() + "ft") :
+                (burst_m >= 30480 ? "<mark class=\"okay\" style=\"font-variant: normal;\"> " + burst_m.toLocaleString() + "m </mark>" : burst_m.toLocaleString() + "m") 
+            ) + 
+            (detected_burst ? "<br><font style=\"font-size:.8em;color:#aaaaaa;\">Beacon Detected</font>" : "")
+            ,
             mapurl(json[key].flight, json[key].launch_location.latitude, json[key].launch_location.longitude, Math.round(imperial ? json[key].launch_location.altitude_ft : json[key].launch_location.altitude_m)),
             mapurl(json[key].flight, json[key].landing_location.latitude, json[key].landing_location.longitude, Math.round(imperial ? json[key].landing_location.altitude_ft : json[key].landing_location.altitude_m)),
             (imperial ? json[key].range_distance_traveled_mi.toFixed(2) + "mi" : json[key].range_distance_traveled_km.toFixed(2) + "km"),
