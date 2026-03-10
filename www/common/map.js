@@ -1712,7 +1712,7 @@ function getTrackers() {
         var baselayer;
         var overlays;
 
-        osmbright = L.mapboxGL({
+        /*osmbright = L.mapboxGL({
             style: '/tileserver/styles/osm-bright/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
@@ -1721,15 +1721,15 @@ function getTrackers() {
             style: '/tileserver/styles/klokantech-basic/style.json',
             attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
         });
+        */
 
         // Create a map object. 
 	    map = new L.Map('map', {
             //renderer : canvasRenderer,
             preferCanvas:  true,
-            zoomControl: false,
-            layers : [ basic ],
+            zoomControloption: false,
             minZoom: 4,
-            maxZoom: 20
+            maxZoom: 19 
         });
 
         // Set default map location and zoom
@@ -1778,10 +1778,46 @@ function getTrackers() {
         // lower z-order.
         pathsPane.style.zIndex = 420; 
 
-        baselayer = { "Basic Map" : basic, "Bright Map" : osmbright };
+        //baselayer = { "Basic Map" : basic, "Bright Map" : osmbright };
  
         // use the grouped layers plugin so the layer selection widget shows layers categorized
-        layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
+        //layerControl = L.control.groupedLayers(baselayer, {}, { groupCheckboxes: true}).addTo(map); 
+
+        // use the grouped layers plugin so the layer selection widget shows layers categorized
+        layerControl = L.control.groupedLayers({}, {}, { groupCheckboxes: true}).addTo(map);
+
+        // Add OSM-Liberty to the map
+        $.get("/tileserver/osm-liberty/style.json", function(d) {
+            let stylejson = d;
+            let myhostname = window.location.hostname;
+
+            // update the hostname within the URL of for the map styling
+            if (d.sources)
+                if (d.sources.openmaptiles)
+                    if (d.sources.openmaptiles.url) {
+                        let url = new URL(d.sources.openmaptiles.url);
+                        d.sources.openmaptiles.url = d.sources.openmaptiles.url.replace(url.hostname, myhostname);
+                    }
+            if (d.sprite) {
+                let url = new URL(d.sprite);
+                d.sprite = d.sprite.replace(url.hostname, myhostname);
+            }
+
+            if (d.glyphs) {
+                let url = new URL(d.glyphs);
+                d.glyphs = d.glyphs.replace(url.hostname, myhostname);
+            }
+
+            osmlibertystyle = d;
+            osmliberty = L.maplibreGL({
+                style: osmlibertystyle,
+                attribution: '<a href="https://www.openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/">© OpenStreetMap</a> contributors'
+            });
+
+            layerControl.addBaseLayer(osmliberty, "Base Map");
+            osmliberty.addTo(map);
+        });
+
 
         // This fixes the layer control such that when used on a touchable device (phone/tablet) that it will scroll if there are a lot of layers.
         if (!L.Browser.touch) {
