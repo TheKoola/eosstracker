@@ -4,18 +4,21 @@ Notes by Jeff N6BA, Dated 2019-03-12
 
 ## Overview ##
 
-All data collected for flights is available for download from the SDR system through the web-based user interface.  In
-addition, the GPS logs are also available for download.  All data is in comma
+All data collected for flights is available for download from the SDR system
+through the web-based user interface.  In addition, the GPS logs are also
+available for download.  All data is in comma
 delimited format (CSV).
 
 ### Flight Data ###
 
-Flight data contains every APRS packet captured by the SDR system from every callsign (i.e. beacon) listed as belonging to
-this particular flight.  A number of fields are broken out for convenience as well as the raw APRS packet itself.  Regardless 
-of how an APRS packet enters the SDR system (ex. over RF or via an Internet connection to APRS-IS servers), that data is 
-available for download.
+Flight data contains every APRS packet captured by the SDR system from every
+callsign (i.e. beacon) listed as belonging to this particular flight.  A number
+of fields are broken out for convenience as well as the raw APRS packet itself.
+Regardless of how an APRS packet enters the SDR system (ex. over RF or via an
+Internet connection to APRS-IS servers), that data is available for download.
 
-Scroll to the right as the flight data table below is too wide for most screens ------>
+Scroll to the right as the flight data table below is too wide for most
+screens ------>
 
 | datetime | flightid | callsign | aprs_symbol | speed_mph | bearing | altitude_ft | lat | lon | comment | md5_hash | raw_packet |
 | -------- | -------- | -------- | ----------- | --------- | ------- | ----------- | --- | --- | ------- | -------- | ---------- |
@@ -26,19 +29,19 @@ Scroll to the right as the flight data table below is too wide for most screens 
 
 #### GPS Logs ####
 
-GPS data is available for download and includes all the usual fields for location and movement data the SDR system 
-has been experiencing (i.e. when it's installed within a moving vehicle).  Satellite fix status is not currently saved within 
+GPS data is available for download and includes all the usual fields for location and movement data the SDR system
+has been experiencing (i.e. when it's installed within a moving vehicle).  Satellite fix status is not currently saved within
 the GPS logs at this time.  
 
-Although GPS latitude and longitude data is saved to a 6-digit resolution, a new GPS log 
-entry is only created when the location has changed by greater than approximately 10 meters (or 4 decimal places for lat/lon 
+Although GPS latitude and longitude data is saved to a 6-digit resolution, a new GPS log
+entry is only created when the location has changed by greater than approximately 10 meters (or 4 decimal places for lat/lon
 figures).  In addition, the frequency that new GPS log entries are created is limited about 2 seconds.
 
 | datetime | speed_mph | bearing | altitude_ft | lat | lon |
 | -------- | --------- | ------- | ----------- | --- | --- |
 | 2019-03-10 08:30:01 | 58 | 24 | 4221 | 40.293141 | -103.593831 |
 | 2019-03-10 08:30:03 | 58 | 17 | 4221 | 40.293579 | -103.593626 |
-| 2019-03-10 08:30:05 | 58 | 9  | 4222 | 40.294036 | -103.593495 |
+| 2019-03-10 08:30:05 | 58 | 9 | 4222 | 40.294036 | -103.593495 |
 
 ## Downloading Data ##
 
@@ -58,9 +61,8 @@ Once on the Data screen there is a form that allows for selection of:
 ### Select Desired Data Type ###
 
 Next, select the type of data you want to download from the SDR system by clicking the dropdown menu option.  This dropdown
-will contain selections for GPS log data as well as any flights that are currently being tracked 
+will contain selections for GPS log data as well as any flights that are currently being tracked
 (see the Setup->Flights menu option).
-
 
 <p align="center">
 <img src="assets/select-data-to-download.png" alt="Select Data Type To Download" width="800">
@@ -68,7 +70,7 @@ will contain selections for GPS log data as well as any flights that are current
 
 ### Enter Desired Date/Time Range ###
 
-Enter the desired date/time range to download.  Be aware that entering a very large range will mean downloading a 
+Enter the desired date/time range to download.  Be aware that entering a very large range will mean downloading a
 potentially large number of rows of CSV data.
 
 <p align="center">
