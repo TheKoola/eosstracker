@@ -1,5 +1,32 @@
 [
     {
+        "flight": "EOSS-391",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-2",
+            "AE0SS-1",
+            "K0SCC-14",
+            "K0SCC-13"
+        ],
+        "day": "2025-03-21",
+        "balloonsize": "1500gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "7.64",
+            "eoss": "1.16",
+            "parachute": "1.70",
+            "neckload": "10.50",
+            "balloon": "3.31",
+            "gross": "13.80",
+            "necklift": "14.64"
+        },
+        "liftfactor": "1.30",
+        "h2fill": "242"
+    },
+    {
         "flight": "EOSS-390",
         "beacons": [
             "KC0D-2",
