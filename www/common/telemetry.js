@@ -1318,6 +1318,7 @@ function buildTable(json) {
         {"type": "json",   "ext": "json" },
         {"type": "excel",  "ext": "xlsx" },
         {"type": "pandas", "ext": "pkl" },
+        {"type": "parquet","ext": "parquet" },
         {"type": "kml",    "ext": "kml" }
     ];
 
