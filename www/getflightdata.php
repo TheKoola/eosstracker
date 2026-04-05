@@ -978,7 +978,6 @@
     /*=================== get landing predictions for this flight ============ */
 
     $seconds_since_last_packet = $elapsed_secs;
-    $seconds_since_last_packet = 10;
     $landings = [];
     $landingfeatures = [];
 

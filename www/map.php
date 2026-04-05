@@ -87,9 +87,9 @@
     $flightlist = [];
     $flightlist = sql_fetch_all($result);
     $numflights = sql_num_rows($result);
-    
 
-    while($row = sql_fetch_array($result)) {
+
+    foreach($flightlist as $row) {
         $flightid = $row["flightid"];
         $query2 = 'select fm.callsign from flightmap fm where fm.flightid = $1 order by fm.callsign desc;';
         $result2 = pg_query_params($link, $query2, array($flightid));

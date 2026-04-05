@@ -105,11 +105,12 @@ include $documentroot . '/common/functions.php';
         $cstr = "beacon" . $i . "_callsign";
         $fstr = "beacon" . $i . "_frequency";
         $dstr = "beacon" . $i . "_description";
-        if (isset($_GET[$cstr]) && isset($_GET[$fstr]) && isset($_GET[$dstr]))
+        if (isset($_GET[$cstr]) && isset($_GET[$fstr]) && isset($_GET[$dstr])) {
             $c = check_string($_GET[$cstr], 20);
             $d = check_string($_GET[$dstr], 64);
             if ($c != "" && $d != "" && check_number($_GET[$fstr], 144.0, 146.0))
                 $beacons[] = array(sql_escape_string($flightid), sql_escape_string($c), sql_escape_string($d), floatval($_GET[$fstr]));
+        }
     }
 
     if ($formerror == false) {

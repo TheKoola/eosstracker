@@ -456,7 +456,7 @@
     ***********/
     function getAudioAlerts() {
         // get audio alerts and add any alerts to the sound queue
-        if (currentflight != "" || currentflight != "allpackets") {
+        if (currentflight != "" && currentflight != "allpackets") {
             $.get("getaudioalerts.php?callerid=" + callerid + "&flightid=" + currentflight, function(d) {
                 var jsonData = d;
                 var a = 0;

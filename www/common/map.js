@@ -285,7 +285,7 @@
             onEachFeature: function (feature, layer) {
                 var html = "";
                 var objecttype = "";
-                if (typeof(feature.properties.objecttype != "undefined"))
+                if (typeof feature.properties.objecttype != "undefined")
                     objecttype = feature.properties.objecttype;
 
                 if (feature.geometry.type == "Point") {
@@ -401,7 +401,7 @@
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize = Math.trunc(parseInt(typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10));
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
                    if (feature.properties.objecttype == "balloon")
@@ -487,7 +487,7 @@
                else 
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof item.properties.iconsize == "undefined" ? 24 : item.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
                if (item.properties.objecttype == "balloon")
@@ -955,7 +955,7 @@
                
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize = Math.trunc(parseInt(typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10)); 
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
 
@@ -1006,7 +1006,7 @@
                else 
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof item.properties.iconsize == "undefined" ? 24 : item.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
@@ -1120,7 +1120,7 @@
                     // Popup for the landing prediction point
 		            layer.bindPopup(html, {className:  'myPopupStyle'} );
 
-                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+                    var iconsize = (typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10); 
 
                     // If this object has a tooltip or label defined...
                     // ...if this is a balloonmarker (i.e. the breadcrumbs within the path), then we need to specify an offset for the tooltip.  
@@ -1169,7 +1169,7 @@
 
                // ...for everything else, we create the standard APRS icon for this object based on it's advertised "symbol"
                else {
-                   var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+                   var iconsize = Math.trunc(parseInt(typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10)); 
                    var iconsize_center = Math.trunc(iconsize/2);
                    var tipanchor = iconsize_center + 10;
 
@@ -1223,7 +1223,7 @@
                else 
                    filename = "/images/aprs/" + item.properties.symbol.charAt(0) + "-" + symbols["\\" + item.properties.symbol.charAt(1)].tocall + ".png";
 
-               var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof item.properties.iconsize == "undefined" ? 24 : item.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
@@ -1289,7 +1289,7 @@
 
                     layer.bindPopup(html, {className:  'myPopupStyle'} );
 
-                    var iconsize = (typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10); 
+                    var iconsize = (typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10); 
 
                     // if this object has a tooltip or label defined...
                     if (feature.properties.tooltip) {
@@ -1349,7 +1349,7 @@
 		           return L.circleMarker(latlon, { radius: 8, pane: "breadcrumbPane", riseOnHover: true, fillColor: "blue", fillOpacity: .9, stroke : false, fill: true });
 
 
-               var iconsize = Math.trunc(parseInt(typeof(feature.properties.iconsize) == undefined ? 24 : feature.properties.iconsize * 10 / 10)); 
+               var iconsize = Math.trunc(parseInt(typeof feature.properties.iconsize == "undefined" ? 24 : feature.properties.iconsize * 10 / 10)); 
                var iconsize_center = Math.trunc(iconsize/2);
                var tipanchor = iconsize_center + 10;
 
@@ -1443,7 +1443,7 @@
                      }
                  }
 
-                 var iconsize = Math.trunc(parseInt(typeof(item.properties.iconsize) == undefined ? 24 : item.properties.iconsize * 10 / 10)); 
+                 var iconsize = Math.trunc(parseInt(typeof item.properties.iconsize == "undefined" ? 24 : item.properties.iconsize * 10 / 10)); 
                  var iconsize_center = Math.trunc(iconsize/2);
                  var tipanchor = iconsize_center + 10;
 
@@ -3101,8 +3101,8 @@ function getTrackers() {
 
                                     // is this a breadcrumb?
                                     if (l.feature.properties.id.indexOf("_cutdownpredictionpoint_") !== -1) {
-                                        var y; 
-                                        var incoming = landingJSON.features;
+                                        var y;
+                                        var incoming = cutdownJSON.features;
 
                                         // determine if this breadcrumb also appears within the incoming JSON
                                         var foundit = false;

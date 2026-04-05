@@ -252,9 +252,9 @@
                         and dw.hash is null
                         and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                         and a.tm > to_timestamp(cast($9 as bigint))
-                        and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
+                        and not (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
                         and fm.flightid = f.flightid
-                        and f.active = 'y'
+                        and f.active = 't'
                         and a.callsign = fm.callsign
 
                     union
@@ -385,9 +385,9 @@
                             and a.tm > (now() - (to_char(($6)::interval, 'HH24:MI:SS'))::time) 
                             and a.tm > to_timestamp(cast($11 as bigint))
                             and fm.flightid = f.flightid
-                            and f.active = 'y'
+                            and f.active = 't'
                             and a.callsign = fm.callsign
-                            and (a.source like 'direwolf%' a.source like 'ka9q-radio%')
+                            and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
 
                             order by 
                             a.hash,

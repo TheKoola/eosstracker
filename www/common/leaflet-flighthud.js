@@ -142,7 +142,7 @@ L.Control.FlightHud = L.Control.extend({
         // Loop through the flightdata looking for this flight.
         for (k in this._flightdata) {
             if (typeof(this._flightdata[k].name) != "undefined") {
-                if (this._flightdata[k].name == name)
+                if (this._flightdata[k].name == f)
                     idx = k;
             }
         } 

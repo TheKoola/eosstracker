@@ -448,7 +448,7 @@
             document.getElementById("newflightnotes").value = "";
             document.getElementById("newflightmonitoring").value = "";
             document.getElementById("newflightlaunchsite").selectedIndex = 0;
-            for (i = 1; i < 6; i++) {
+            for (i = 1; i < 3; i++) {
                 document.getElementById("beacon" + i + "_call").value = "";
                 document.getElementById("beacon" + i + "_description").value = "";
                 document.getElementById("beacon" + i + "_frequency").selectedIndex = 0;
@@ -1712,8 +1712,8 @@
             return false;
 	    }
 
-        if (filter_lat.value == null || filter_lat.value == 0 || filter_lat.value == "", 
-            filter_lon.value == null || filter_lon.value == 0 || filter_lon.value == "",
+        if (filter_lat.value == null || filter_lat.value == 0 || filter_lat.value == "" ||
+            filter_lon.value == null || filter_lon.value == 0 || filter_lon.value == "" ||
             filter_radius.value == null || filter_radius.value == 0 || filter_radius.value == "") {
             customfilter = "";
         }
