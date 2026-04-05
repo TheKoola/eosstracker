@@ -31,7 +31,7 @@ class Packet:
     text: str
     frequency: int
     source: str
-    properties: list = field(default_factory=dict)
+    properties: dict = field(default_factory=dict)
 
     def __post_init__(self)->None:
         if not self.properties:

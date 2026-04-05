@@ -158,7 +158,7 @@ def processChecks(myprocname, kill):
             time.sleep(1)
   
         # check if anything is still running
-        proclist = isRunning(thisprocname) 
+        proclist = isRunning(myprocname)
         leftoverpids = []
         for p in proclist:
             if p["pid"] != mypid:
@@ -632,8 +632,9 @@ def getFreqList():
 
     except pg.DatabaseError as error:
         # If there was a connection error
-        dbconn.close()
         logger.error(f"Database error: {error}")
+        if dbconn:
+            dbconn.close()
 
     return freqs
 

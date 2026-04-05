@@ -301,7 +301,7 @@ def getLatestPackets(dbconn = None, callsign = None, timezone = None, cutoff = 2
                             a.location2d != '' 
                             and a.tm > (now() - interval '06:00:00')
                             and fm.flightid = f.flightid
-                            and f.active = 'y'
+                            and f.active = 't'
                             and a.callsign = fm.callsign
                             and a.altitude > 0
                             and a.callsign = %s
@@ -720,7 +720,7 @@ def getLandingElevation(dbconn = None, callsign = None, distance = None, logger 
                     and lp.rank = 1
                     and a.tm > (now() - interval '23:59:59')
                     and fm.flightid = f.flightid
-                    and f.active = 'y'
+                    and f.active = 't'
                     and a.callsign != fm.callsign
                     and fm.callsign = %s
                     and cast(ST_DistanceSphere(lp.location2d, a.location2d)*.621371/1000 as numeric) < %s
@@ -1039,7 +1039,8 @@ def connectToDatabase(db_connection_string = None, logger = None):
 
     except pg.DatabaseError as error:
         # If there was a connection error
-        dbconn.close()
+        if dbconn:
+            dbconn.close()
         logger.error(f"Database error: {error}")
         sys.stdout.flush()
         return None

@@ -218,7 +218,7 @@ class CredentialSet:
 
 
     def setCallsign(self, callsign: str, passcode: str = '')->None:
-        self.callsign = call.upper()
+        self.callsign = callsign.upper()
         self.passcode = passcode
 
 
@@ -236,8 +236,8 @@ class CredentialSet:
     def __str__(self)->str:
         return self.loginstring
 
-    def __bytes__(self)->str:
-        return bytes(self.loginstring + b'\r\n', encoding='utf-8', errors='ignore')
+    def __bytes__(self)->bytes:
+        return (self.loginstring + '\r\n').encode(encoding='utf-8', errors='ignore')
 
 
 ##################################    
@@ -429,7 +429,7 @@ class PacketStream:
                         if self.queue_age > 0:
 
                             # time when this packet was added to this queue
-                            receive_time = int(packet.properties["decode_time"]) if "decode_time" in packet.properties else int(packet.properties["queue_time"]) if "queue_time" in packet.properties else ts
+                            receive_time = int(packet.properties["decode_time"]) if "decode_time" in packet.properties else int(packet.properties["queue_time"]) if "queue_time" in packet.properties else int(time.time())
 
                             # Amount of time this packet has spent in the queue
                             time_in_queue = int(time.time()) - receive_time

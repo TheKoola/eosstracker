@@ -144,7 +144,7 @@ class KISSProcessor:
                 f_fesc = False
 
         # Now remove any newline/space chars
-        tmp.strip()
+        tmp = tmp.strip()
 
         return tmp
 
@@ -359,7 +359,7 @@ class KISSProcessor:
             else:
                 x = element
 
-            if x == int_fesc:
+            if x == int_fend:
                 packet_escaped += [KISS_FESC, KISS_TFEND]
             elif x == int_fesc:
                 packet_escaped += [KISS_FESC, KISS_TFESC]

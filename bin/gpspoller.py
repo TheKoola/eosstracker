@@ -33,6 +33,7 @@ from scipy.optimize import *
 from gps import *
 import multiprocessing as mp
 from inspect import getframeinfo, stack
+import json
 import logging
 from logging.handlers import QueueHandler, QueueListener
 from dataclasses import dataclass, field
@@ -183,7 +184,7 @@ class GPSPoller(object):
         except pg.DatabaseError as error:
             # If there was a connection error, then close these, just in case they're open
             self.close()
-            self.logger.error("Database error: {error}")
+            self.logger.error(f"Database error: {error}")
             return False
 
 

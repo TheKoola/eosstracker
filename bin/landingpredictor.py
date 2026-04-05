@@ -1838,7 +1838,7 @@ class LandingPredictor(PredictorBase):
                                     if dist_to_balloon < 30:
                                         self.logger.debug("Current location < 30 miles from the current flight, using GPS for landing prediction elevation")
                                         landingprediction_floor = float(gpspos['altitude'])
-                                        gps_estimate = True
+                                        gps_est = True
 
                                 # If we were unable to get an estimate elevation from the brick's GPS, then then query the database for nearby stations
                                 if gps_est == False:

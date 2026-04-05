@@ -80,7 +80,7 @@ def parse_RTP(packet: bytes)->dict:
         ext_start = 12 + 4 * result['csrc_count']
 
         # Convert the first 32bits to host-based byte ordering
-        chunk = struct.unpack('!I', packet[extstart:ext_start+4])[0]
+        chunk = struct.unpack('!I', packet[ext_start:ext_start+4])[0]
         
         # Now mask off the extension header ID and the header length
         result['ext_header_id'] = (chunk >> 16) & 0xffff
@@ -94,7 +94,7 @@ def parse_RTP(packet: bytes)->dict:
         for i in range(result['ext_header_len']):
 
             # Convert each uint32 of the extension header to host-based byte ordering
-            chunk = struct.unpack('!I', packet[extstart+4+i:extstart+8+i])[0]
+            chunk = struct.unpack('!I', packet[ext_start+4+i:ext_start+8+i])[0]
 
             # now append the resulting integer to the extensionheader bytearray
             extensionheader.append(chunk)

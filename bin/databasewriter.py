@@ -162,7 +162,7 @@ class databaseWriter(object):
 
                     except (DBError) as e:
 
-                        self.logger.debug("DBError: {e}")
+                        self.logger.debug(f"DBError: {e}")
 
                         # something happened with the database write attempt, break out of this inner loop
                         break
@@ -611,5 +611,5 @@ def runDatabaseWriter(config):
         config["stopevent"].set()
         k.close()
 
-    logging.info("databaseWriter ended")
+    logger.info("databaseWriter ended")
 
