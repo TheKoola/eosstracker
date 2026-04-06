@@ -47,8 +47,8 @@ if ($get_units == "" || ($get_units != "metric" && $get_units != "imperial"))
 
 ?>
 <script src="/common/telemetry.js"></script>
-<span id="flightid" data-flightid="<?php echo $get_flightid;?>" ></span>
-<span id="units" data-units="<?php echo $get_units;?>" ></span>
+<span id="flightid" data-flightid="<?php echo htmlspecialchars($get_flightid, ENT_QUOTES, 'UTF-8');?>" ></span>
+<span id="units" data-units="<?php echo htmlspecialchars($get_units, ENT_QUOTES, 'UTF-8');?>" ></span>
 <div style="margin-bottom 30px;">
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">

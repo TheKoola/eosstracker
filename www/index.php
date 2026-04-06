@@ -44,7 +44,7 @@
     if (isset($_GET["followfeatureid"]))  
         $get_followfeatureid = check_string($_GET["followfeatureid"], 20);
     if ($get_followfeatureid != "")
-        $pagetitle = "APRS:  " .  $get_followfeatureid;
+        $pagetitle = "APRS:  " .  htmlspecialchars($get_followfeatureid, ENT_QUOTES, 'UTF-8');
 
     // The showallstations HTML GET variable
     $get_showallstations = 0;
@@ -120,7 +120,7 @@
 <script>
     /* Set the global variables */
     var flightids = <?php echo json_encode($output); ?>;
-    var followfeatureid = "<?php echo $get_followfeatureid; ?>";
+    var followfeatureid = <?php echo json_encode($get_followfeatureid); ?>;
     var followme = "<?php echo $get_followme; ?>";
     followme = (followme == "True" ? true : false);
     var showallstations = Number("<?php echo $get_showallstations; ?>");
@@ -215,7 +215,7 @@
                 <div class="div-table" style="margin-top: 30px;">
                     <p class="section-header" style="text-decoration: underline;">System Status</p>
                     <p class="normal" style="margin-bottom: 0px;">Current Status: <span id="systemstatus"></span></p>
-                    <p class="normal" style="margin-top: 0px; margin-bottom: 20px;">System Name: &nbsp;  <?php echo $_SERVER["HTTP_HOST"]; ?></p>
+                    <p class="normal" style="margin-top: 0px; margin-bottom: 20px;">System Name: &nbsp;  <?php echo htmlspecialchars($_SERVER["HTTP_HOST"], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
                 <div class="div-table" style="margin-top: 30px;">
                     <p class="section-header" style="text-decoration: underline;">System Version: <?php if (isset($version)) printf ("%s", $version); ?></p>

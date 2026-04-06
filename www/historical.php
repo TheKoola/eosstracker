@@ -41,7 +41,7 @@ include_once $documentroot . '/common/header-historical.php';
 ?>
 <script src="/common/historical.js"></script>
 <div style="margin-bottom: 30px;">
-<span id="units" data-units="<?php echo $get_units;?>" ></span>
+<span id="units" data-units="<?php echo htmlspecialchars($get_units, ENT_QUOTES, 'UTF-8');?>" ></span>
     <p class="header">
         <img class="bluesquare"  src="/images/graphics/smallbluesquare.png">
         Historical Flight Data

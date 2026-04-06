@@ -82,8 +82,14 @@ function readconfiguration() {
 function connect_to_database() {
     $config = readconfiguration();
 
-    if(isset($config["timezone"]))
-        $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword! options='-c timezone=" . $config['timezone'] . "'");
+    if(isset($config["timezone"])) {
+        // Validate timezone to prevent connection string injection
+        $tz = $config['timezone'];
+        $tz_list = timezone_identifiers_list();
+        if (!in_array($tz, $tz_list))
+            $tz = "America/Denver";
+        $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword! options='-c timezone=" . $tz . "'");
+    }
     else
         $linkvar = pg_connect("host=localhost dbname=aprs user=eosstracker password=Thisisthedatabasepassword!");
 

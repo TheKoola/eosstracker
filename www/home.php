@@ -82,7 +82,7 @@ include $documentroot . '/common/header.php';
         </div>
         <div class="table-row">
             <div class="table-cell" style="border-top: none;">Hostname</div>
-            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><?php echo $_SERVER["HTTP_HOST"]; echo "<br>" . $_SERVER["SERVER_ADDR"]; ?></div>
+            <div class="table-cell" style="text-align: right; border-left: none; border-top: none; font-family:  'Lucida Console', Monaco, monospace;"><?php echo htmlspecialchars($_SERVER["HTTP_HOST"], ENT_QUOTES, 'UTF-8'); echo "<br>" . htmlspecialchars($_SERVER["SERVER_ADDR"], ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
         <div class="table-row">
             <div class="table-cell" style="border-top: none;">Node Name</div>

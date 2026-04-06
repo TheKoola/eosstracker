@@ -75,12 +75,24 @@
     //print_r($defaults);
 
     foreach(array_keys($defaults) as $key) {
-        if(isset($_POST[$key]))
-  	    $configuration[$key] = $_POST[$key];
+        if(isset($_POST[$key])) {
+            // Sanitize: only allow alphanumeric, forward slash, underscore, hyphen, colon, period, and space
+            $val = $_POST[$key];
+            if (preg_match('#^[a-zA-Z0-9/_\-:. ]+$#', $val) && strlen($val) <= 256)
+  	        $configuration[$key] = $val;
+            else if (!isset($configuration[$key]))
+                $configuration[$key] = $defaults[$key];
+        }
         else if (!isset($configuration[$key]))
 	    $configuration[$key] = $defaults[$key];
     }
 
+    // Extra validation: timezone must be a recognized timezone identifier
+    if (isset($configuration["timezone"])) {
+        $tz_list = timezone_identifiers_list();
+        if (!in_array($configuration["timezone"], $tz_list))
+            $configuration["timezone"] = $defaults["timezone"];
+    }
 
     file_put_contents($documentroot . "/configuration/config.txt", json_encode($configuration));
 
