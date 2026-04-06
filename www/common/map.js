@@ -86,6 +86,9 @@
     var lastUpdateTime = 0;
     var flightList = [];
 
+    // is this an apple platform?  So we know to send user's to Google Maps or Apple Maps when clicking coordinate links.
+    let isApplePlatform = false;
+
 
     /***********
     * getChartWidth
@@ -143,6 +146,32 @@
         return -1;
     }
 
+    // helper function to craft an HTML string with lat/lon coordinates with a "copy to clipboard" clickable icon for a geojson Point object.
+    function createCoordsHTML(geojson) {
+        if (!geojson || !geojson.geometry || !geojson.geometry.type || geojson.geometry.type != "Point")
+            return false;
+
+        // this stations callsign / name
+        let callsign = geojson.properties.callsign;
+
+        // construct a random ID the copyToClipboard function can use to identify the coords string.
+        let id = (Math.random() + 1).toString(36).split(".")[1].toUpperCase();
+
+        let lat = (geojson.geometry.coordinates[1] * 10 / 10).toFixed(4);
+        let lon = (geojson.geometry.coordinates[0] * 10 / 10).toFixed(4);
+
+        // form up the URL that will take the user to their specific map platform for directions to these coordinates
+        let URL;
+        if (isApplePlatform)
+            URL = "https://maps.apple.com/?q=" + callsign + "&ll=" + lat + "%2C" + lon;
+        else
+            URL = "https://www.google.com/maps/search/?api=1&query=" + lat + "%2C" + lon;
+
+        let html = "<br>Coords: " + (URL ? "<a target=\"_blank\" href=\"" + URL + "\">" : "") + "<span id=\"" + id + "-coords\">" + lat + ", " + lon + "</span>" + (URL ? "</a>" : "")
+            + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">";
+
+        return html;
+    }
 
     /*********
     * Color settings for styling active flights and their paths
@@ -276,11 +305,9 @@
 		                (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		                (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency + 
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
-                        (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                        "<br>Coords: <span id=\"" + id + "-coords\">"
-                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                        + "</span>"
-                        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                        
+                        createCoordsHTML(feature) + 
+
 		                (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
 
                     // bind the popup content to a popup object using our predefined CSS style
@@ -427,11 +454,9 @@
                 (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
                 (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency +
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
-			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                
+                createCoordsHTML(item) + 
+
                 (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
 
             layer.setPopupContent(html, { className: 'myPopupStyle' });
@@ -705,11 +730,7 @@
 	        		      (typeof(feature.properties.altitude) == "undefined" ? "" : (feature.properties.altitude != 0 && feature.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (feature.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		        	      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency + 
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
-			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                          createCoordsHTML(feature) +
         			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time : ""));
 
 	        	    layer.bindPopup(html, {className:  'myPopupStyle'} );
@@ -791,11 +812,7 @@
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
-			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                createCoordsHTML(item) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time : ""));
 
             // Update the popup content
@@ -891,11 +908,7 @@
 			      (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null ? "<br>Heard on: " + feature.properties.frequency +
                             (feature.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
 
-			      (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">") +
+                        createCoordsHTML(feature) +
 			      (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
 
 
@@ -990,11 +1003,7 @@
 		      (typeof(item.properties.altitude) == "undefined" ? "" : (item.properties.altitude != 0 && item.properties.altitude != "" ? "<br>Altitude: <font class=\"altitudestyle\">" + (item.properties.altitude * 10 / 10).toLocaleString() + "ft</font>" : "")) + 
 		      (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br>Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" ? "" : "MHz") : "" )) +
-			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                createCoordsHTML(item) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
 
             // Update the popup content
@@ -1070,11 +1079,7 @@
                         (typeof(feature.properties.frequency) == "undefined" ? "" : (feature.properties.frequency != "" && feature.properties.frequency != null  ? "<br><font class=\"pathstyle\">Heard on: " + feature.properties.frequency  +
                             (feature.properties.frequency == "ext radio" || feature.properties.frequency == "TCPIP" ? "" : "MHz") +
                         (typeof(feature.properties.heardfrom) == "undefined" ? "" : (feature.properties.heardfrom != "" ? " via: " + feature.properties.heardfrom : "" )) + "</font>" : "" )) +
-                        (typeof(feature.geometry.coordinates) == "undefined" ? "" : 
-                        "<br>Coords: <span id=\"" + id + "-coords\">"
-                        + (feature.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (feature.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                        + "</span>"
-                        + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                        createCoordsHTML(feature) +
                         (typeof(feature.properties.time) == "undefined" ? "" : (feature.properties.time != "" ? "<br>Time: " + feature.properties.time.split(' ')[1].split('.')[0] : ""));
 
                     layer.bindPopup(html, {className:  'myPopupStyle'} );
@@ -1189,11 +1194,7 @@
 		          (typeof(item.properties.frequency) == "undefined" ? "" : (item.properties.frequency != "" && item.properties.frequency != null ? "<br><font class=\"pathstyle\">Heard on: " + item.properties.frequency + 
                             (item.properties.frequency == "ext radio" || item.properties.frequency == "TCPIP" ? "" : "MHz") +
                       (typeof(item.properties.heardfrom) == "undefined" ? "" : (item.properties.heardfrom != "" ? " via " + item.properties.heardfrom : "" )) + "</font>" : "" )) +
-			      (typeof(item.geometry.coordinates) == "undefined" ? "" : 
-                  "<br>Coords: <span id=\"" + id + "-coords\">"
-                  + (item.geometry.coordinates[1] * 10 / 10).toFixed(4) + ", " + (item.geometry.coordinates[0] * 10 / 10).toFixed(4) 
-                  + "</span>"
-                  + " &nbsp; <img src=\"/images/graphics/clipboard.png\" style=\"vertical-align: bottom; height: 15px; width: 15px;\" onclick=\"copyToClipboard('" + id + "-coords')\">" ) +
+                createCoordsHTML(item) +
 		      (typeof(item.properties.time) == "undefined" ? "" : (item.properties.time != "" ? "<br>Time: " + item.properties.time.split(' ')[1].split('.')[0] : ""));
 
             // Update the popup content
@@ -2186,6 +2187,10 @@ function getTrackers() {
      * This function performs some startup actions and calls "initialize", the primary function for starting the map stuff
     *************/
     function startup() {
+
+        // determine if this is an apple platform or not
+        isApplePlatform = isApple();
+
         // initialize the map and its layers
         initialize_map();
 
@@ -3304,4 +3309,23 @@ function gainFocus() {
         updateTimeout = setTimeout(updateAllItems, 5000);
     }
     return 0;
+}
+
+/***********
+* isApple
+*
+* Grab the user agent string from the user's browser in attempt to determine if this is an Apple product or not.
+* ...this is primarily used to craft the map URLs when a user click on a set of coordinates.  So we can send them
+* to Google Maps or to Apple Maps.
+***********/
+function isApple() {
+
+    // get the browser's user agent string
+    let ua = navigator.userAgent;
+    let isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    let isIpad = /iPad/i.test(ua);
+    let isMacintosh = /Macintosh/i.test(ua);
+    let isTouchDevice = "ontouchend" in document;
+
+    return isSafari || isIpad || isMacintosh;
 }
