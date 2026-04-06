@@ -351,8 +351,15 @@ def databaseUpdates():
 
 
     except pg.DatabaseError as error:
-        dbcur.close()
-        dbconn.close()
+        try:
+            dbcur.close()
+        except:
+            pass
+        try:
+            if dbconn:
+                dbconn.close()
+        except:
+            pass
         print error
 
 

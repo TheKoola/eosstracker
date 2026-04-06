@@ -129,8 +129,8 @@ class PredictorBase(object):
         dlat = lat2 - lat1
         a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
         c = 2 * math.asin(math.sqrt(a))
-        #r = 6371 # Radius of earth in kilometers. Use 3956 for miles
-        r = 3956 # Radius of earth in kilometers. Use 3956 for miles
+        #r = 6371 # Radius of earth in kilometers
+        r = 3956 # Radius of earth in miles
 
         return float(c * r)
 
@@ -794,14 +794,13 @@ class LandingPredictor(PredictorBase):
     ################################
     # constructor
     def __init__(self, dbConnectionString = None, timezone = 'America/Denver', timeout = 60):
-        super(PredictorBase, self).__init__()
+        super(LandingPredictor, self).__init__()
 
         # The database connection string
         self.dbstring = dbConnectionString
 
         # The database connection object
         self.landingconn = None
-        self.landingconn = pg.extensions.connection
 
         # The timezone
         self.timezone = 'America/Denver'
@@ -821,7 +820,7 @@ class LandingPredictor(PredictorBase):
     # destructor
     def __del__(self):
         try:
-            if not self.landingconn.closed:
+            if self.landingconn is not None and not self.landingconn.closed:
                 debugmsg("LandingPredictor destructor:  closing database connection.")
                 self.landingconn.close()
         except pg.DatabaseError as error:
@@ -855,11 +854,10 @@ class LandingPredictor(PredictorBase):
         try:
 
             # If not already connected to the database, then try to connect
-            if self.landingconn != None:
-                if self.landingconn.closed:
-                    debugmsg("Connecting to the database: %s" % self.dbstring)
-                    self.landingconn = pg.connect (self.dbstring)
-                    self.landingconn.set_session(autocommit=True)
+            if self.landingconn is None or self.landingconn.closed:
+                debugmsg("Connecting to the database: %s" % self.dbstring)
+                self.landingconn = pg.connect (self.dbstring)
+                self.landingconn.set_session(autocommit=True)
 
             return True
 
@@ -1971,6 +1969,8 @@ class LandingPredictor(PredictorBase):
                             temp2 = np.concatenate((temp1, ad), axis=0)
                             if end_splice_idx < self.airdensities.shape[0] - 1:
                                 temp3 = np.concatenate((temp2, temp_ad[end_splice_idx:, 0:]), axis=0)
+                            else:
+                                temp3 = temp2
 
                             # Remove duplicate values from the array
                             temp4 = []

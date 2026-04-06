@@ -28,6 +28,7 @@ import logging
 import threading as th
 import socket
 import sys
+import os
 import signal
 import random
 from inspect import getframeinfo, stack
@@ -170,7 +171,7 @@ class APRSIS(object):
         self.aprsconn = None
 
         # The timezone
-        self.timezone = 'America\Denver'
+        self.timezone = 'America/Denver'
         if timezone:
             self.timezone = str(timezone)
 
@@ -220,7 +221,7 @@ class APRSIS(object):
         if stopevent:
             self.stopevent = stopevent
         else:
-            selt.stopevent = mp.Event()
+            self.stopevent = mp.Event()
 
 
         # This is the watchdog timeout.  If a packet hasn't been seen in this many seconds, then close the connection and attempt to reconnect.
@@ -827,7 +828,7 @@ class APRSIS(object):
 
             print "APRS-IS filter thread ended:  %s" % self.server
 
-        except Exception as e:
+        except Exception as exp:
             print "APRS-IS filter thread ended:  %s" % self.server
 
 
@@ -932,13 +933,19 @@ class aprsTap(APRSIS):
             return aprsFilter
 
         except pg.DatabaseError as error:
-            pgCursor.close()
+            try:
+                pgCursor.close()
+            except:
+                pass
             self.close()
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
             print thetime, "Database error:  ", error
-        except (StopIteration, KeyboardInterrupt, SystemExit): 
-            pgCursor.close()
+        except (StopIteration, KeyboardInterrupt, SystemExit):
+            try:
+                pgCursor.close()
+            except:
+                pass
             self.close()
 
 
@@ -1085,6 +1092,8 @@ class cwopTap(APRSIS):
                     num_of_positions += 1
 
             # compute average position and create radius filter based on this position
+            if num_of_positions == 0:
+                return ""
             avg_lat = latitude_sum / num_of_positions
             avg_lon = longitude_sum / num_of_positions
             aprsFilter = "r/" + str(avg_lat) + "/" + str(avg_lon) + "/" + str(self.aprsRadius)
@@ -1094,13 +1103,19 @@ class cwopTap(APRSIS):
             return aprsFilter
 
         except pg.DatabaseError as error:
-            pgCursor.close()
+            try:
+                pgCursor.close()
+            except:
+                pass
             self.close()
             ts = datetime.datetime.now()
             thetime = ts.strftime("%Y-%m-%d %H:%M:%S")
             print thetime, "Database error:  ", error
-        except (StopIteration, KeyboardInterrupt, SystemExit): 
-            pgCursor.close()
+        except (StopIteration, KeyboardInterrupt, SystemExit):
+            try:
+                pgCursor.close()
+            except:
+                pass
             self.close()
 
 ##################################################
