@@ -1,5 +1,54 @@
 [
     {
+        "flight": "EOSS-397",
+        "beacons": [
+            "AE0SS-1",
+            "K0SCC-13",
+            "AE0SS-3"
+        ],
+        "day": "2026-04-19",
+        "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "11.15",
+            "eoss": "4.84",
+            "parachute": "1.81",
+            "neckload": "17.80",
+            "balloon": "6.61",
+            "gross": "24.41",
+            "necklift": "22.68"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "396"
+    },
+    {
+        "flight": "EOSS-396",
+        "beacons": [
+            "KC0D-2",
+            "AE0SS-4"
+        ],
+        "day": "2026-04-19",
+        "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "10.48",
+            "eoss": "3.38",
+            "parachute": "1.70",
+            "neckload": "15.56",
+            "balloon": "6.61",
+            "gross": "22.17",
+            "necklift": "19.99"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "359"
+    },
+    {
         "flight": "EOSS-395",
         "beacons": [
             "KC0D-2",
