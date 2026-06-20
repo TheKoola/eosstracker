@@ -1,4 +1,5 @@
 "flight","beacons","day","balloonsize","liftfactor","h2fill","parachute.description","parachute.size","weights.client","weights.eoss","weights.parachute","weights.neckload","weights.balloon","weights.gross","weights.necklift"
+"EOSS-403","[""KC0D-2"",""K0SCC-13""]","2026-06-20","1500gm","1.30","159","Rocketman","10","0.77","3.54","1.46","5.77","3.31","9.08","8.49"
 "EOSS-402","[""KC0D-3"",""AE0SS-3""]","2026-05-09","3000gm","1.20","319","Rocketman","12","7.61","3.74","1.70","13.04","6.61","19.66","16.97"
 "EOSS-401","[""KC0D-2"",""K0SCC-13""]","2026-05-09","3000gm","1.20","321","Rocketman","12","7.31","4.16","1.70","13.17","6.61","19.79","17.13"
 "EOSS-400","[""KC0D-14"",""AE0SS-4"",""K0SCC-14""]","2026-05-02","3000gm","1.20","316","Rocketman","12","6.61","4.59","1.70","12.90","6.61","19.51","16.80"
