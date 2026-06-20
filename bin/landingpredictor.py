@@ -1099,6 +1099,7 @@ class LandingPredictor(PredictorBase):
                                 and a.callsign = fm.callsign
                                 and a.altitude > 0
                                 and a.callsign = %s
+                                and a.raw not like '%%000000h1234.56N/12345.67%%'
 
                                 order by a.tm asc
 
@@ -1472,6 +1473,7 @@ class LandingPredictor(PredictorBase):
                                         and t.altitude > 0
                                         and t.tm > (now() - interval '06:00:00')
                                         and t.symbol not in ('/''', '/O', '/S', '/X', '/^', '/g', '\O', 'O%%', '\S', 'S%%', '\^', '^%%')
+                                        and t.raw not like '%%000000h1234.56N/12345.67%%'
 
                                         order by 
                                         t.tm asc

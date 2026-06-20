@@ -1057,6 +1057,7 @@ class cwopTap(APRSIS):
                 and a.callsign = fm.callsign
                 and a.location2d != ''
                 and a.tm > (now() - interval '02:00:00')
+                and a.raw not like '%%000000h1234.56N/12345.67%%'
 
                 order by
                 a.tm desc,

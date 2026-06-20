@@ -105,6 +105,7 @@
         and fm.flightid = fl.flightid 
         and a.callsign = fm.callsign 
         and fl.active = 'y'
+        and a.raw not like '%000000h1234.56N/12345.67%'
 
         group by
         fl.flightid,

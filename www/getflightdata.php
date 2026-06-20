@@ -561,6 +561,7 @@
                                 and a.callsign = fm.callsign
                                 and a.altitude > 0
                                 and a.callsign = $4
+                                and a.raw not like '%000000h1234.56N/12345.67%'
 
                                 order by a.tm asc
 

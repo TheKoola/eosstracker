@@ -91,6 +91,7 @@
         and a.location2d != '' 
         and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
         and a.symbol != '/_'
+        and a.raw not like '%000000h1234.56N/12345.67%'
 
         order by 
         thetime asc, 

@@ -403,6 +403,7 @@
                     and a.altitude > 0
                     and a.callsign = $3
                     and f.flightid = $4
+                    and a.raw not like '%000000h1234.56N/12345.67%'
 
                 order by
                     thetime,
