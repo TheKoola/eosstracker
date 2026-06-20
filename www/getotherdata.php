@@ -164,6 +164,7 @@
                 and a.tm > (to_timestamp($4)::timestamp)
                 and a.symbol != '/_'
                 and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
+                and a.raw not like '%000000h1234.56N/12345.67%'
 
                 order by 
                 a.hash,
@@ -567,6 +568,7 @@
             and a.tm > (to_timestamp($4)::timestamp)
             and a.symbol != '/_'
             and (a.source not like 'direwolf%' and a.source not like 'ka9q-radio%')
+            and a.raw not like '%000000h1234.56N/12345.67%'
 
             order by 
             thetime asc,
@@ -776,6 +778,7 @@
                 and t.tactical != 'ZZ-Not Active'
                 and tr.tactical = t.tactical 
                 and t.flightid is null 
+                and a.raw not like '%000000h1234.56N/12345.67%'
 
                 order by
                 dense_rank,

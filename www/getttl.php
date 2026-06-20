@@ -139,6 +139,7 @@
                 and fl.active = 't'
                 and fl.flightid = $2 
                 and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time)  
+                and a.raw not like '%000000h1234.56N/12345.67%'
                 
         ) as dt 
         left outer join

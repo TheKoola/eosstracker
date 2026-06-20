@@ -83,6 +83,7 @@
               and a.tm > date_trunc('minute', (now() - (to_char(($2)::interval, 'HH24:MI:SS')::time)))::timestamp
               and a.altitude > 0 
               and active = 't'  " . $flightstring . " 
+              and a.raw not like '%000000h1234.56N/12345.67%'
 
               order by 
               f.flightid, 

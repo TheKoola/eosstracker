@@ -565,6 +565,7 @@
                                 and a.callsign = fm.callsign
                                 and a.altitude > 0
                                 and a.callsign = $4
+                                and a.raw not like '%000000h1234.56N/12345.67%'
 
                                 order by a.tm asc
 
@@ -866,6 +867,7 @@
                 and t.tactical != 'ZZ-Not Active'
                 and tr.tactical = t.tactical " .
                 ($get_flightid == "" ? " and t.flightid is null " : " and t.flightid = $3 ") . "
+                and a.raw not like '%000000h1234.56N/12345.67%'
 
                 order by
                 dense_rank,
@@ -1825,6 +1827,7 @@
         and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time)
         and a.altitude > 0 
         and f.flightid = $3
+        and a.raw not like '%000000h1234.56N/12345.67%'
 
         order by 
         f.flightid, 

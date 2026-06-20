@@ -122,6 +122,7 @@
             and a.tm > (to_timestamp($4)::timestamp)
             and a.symbol != '/_'
             and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
+            and a.raw not like '%000000h1234.56N/12345.67%'
 
             order by 
             thetime asc,

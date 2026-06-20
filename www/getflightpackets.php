@@ -256,6 +256,7 @@
                         and fm.flightid = f.flightid
                         and f.active = 't'
                         and a.callsign = fm.callsign
+                        and a.raw not like '%000000h1234.56N/12345.67%'
 
                     union
                     
@@ -388,6 +389,7 @@
                             and f.active = 't'
                             and a.callsign = fm.callsign
                             and (a.source like 'direwolf%' or a.source like 'ka9q-radio%')
+                            and a.raw not like '%000000h1234.56N/12345.67%'
 
                             order by 
                             a.hash,
