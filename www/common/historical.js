@@ -204,7 +204,7 @@ function processFlights(json) {
             {"type": "csv",    "ext": "csv" },
             {"type": "json",   "ext": "json" },
             {"type": "excel",  "ext": "xlsx" },
-            {"type": "pandas", "ext": "pkl" },
+            //{"type": "pandas", "ext": "pkl" },
             {"type": "parquet","ext": "parquet" },
             {"type": "kml",    "ext": "kml" }
         ];

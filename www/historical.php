@@ -53,7 +53,7 @@ include_once $documentroot . '/common/header-historical.php';
             <li class="normal" style="border: 0;">Comma separated values (*.csv)</li>
             <li class="normal" style="border: 0;">JavaScript Object Notation (*.json)</li>
             <li class="normal" style="border: 0;">Microsoft Excel (*.xlsx)</li>
-            <li class="normal" style="border: 0;">Pandas - Python Pandas pickle format (*.pkl)</li>
+            <li class="normal" style="border: 0;">Apache Parquet (*.parquet)</li>
         </ul>
     </p>
     <p class="subheader">Details</p>
@@ -71,7 +71,7 @@ include_once $documentroot . '/common/header-historical.php';
     <p class="normal" style="border: 0;">
         Current units are displayed in:
         <span id="unitslink"></span>
-        <br><strong>NOTE:</strong>  Download files (ex. metadata, csv, json, excel, pandas) contain data in both Imperial and Metric units.  There's no need to download data twice (ex. once for Metric and again for Imperial).
+        <br><strong>NOTE:</strong>  Download files (ex. metadata, csv, json, excel, parquet) contain data in both Imperial and Metric units.  There's no need to download data twice (ex. once for Metric and again for Imperial).
 
     </p>
 </div>
@@ -168,7 +168,7 @@ include_once $documentroot . '/common/header-historical.php';
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Units:</strong></font>
-                Data files (ex. csv, excel, pandas, json) include fields with both imperial and metric units - it's the same data, but provided to save the end user time/trouble in converting from one to another.  
+                Data files (ex. csv, excel, parquet, json) include fields with both imperial and metric units - it's the same data, but provided to save the end user time/trouble in converting from one to another.  
             </li>
             <li class="normal" style="border: 0;">
                 <font style="font-variant: small-caps"><strong>Timestamps:</strong></font>
