@@ -1,5 +1,31 @@
 [
     {
+        "flight": "EOSS-404",
+        "beacons": [
+            "KC0D-2",
+            "N0JPS",
+            "AE0SS-2",
+            "K0SCC-13"
+        ],
+        "day": "2026-07-25",
+        "balloonsize": "3000gm",
+        "parachute": {
+            "description": "Rocketman",
+            "size": "12"
+        },
+        "weights": {
+            "client": "15.12",
+            "eoss": "5.68",
+            "parachute": "1.70",
+            "neckload": "22.50",
+            "balloon": "6.61",
+            "gross": "29.11",
+            "necklift": "28.32"
+        },
+        "liftfactor": "1.20",
+        "h2fill": "472"
+    },
+    {
         "flight": "EOSS-403",
         "beacons": [
             "KC0D-2",
