@@ -1,0 +1,31 @@
+[package]
+name = "eoss-backend"
+version = "0.2.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "EOSSTracker Rust backend: aprs-streamd ingest into PostgreSQL plus the /api HTTP endpoints and SSE stream."
+
+[[bin]]
+name = "eoss-backend"
+path = "src/main.rs"
+
+[dependencies]
+# The shared aprs-stream schema/codec/transport. Path dependency for now (this
+# Pi's local clone); switch to a pinned git tag of
+# github.com/deatojef/aprs-stream when this gets packaged. Re-exports aprs_decode
+# so we don't need a separate dependency for the typed payload.
+aprs-stream = { path = "/home/eosstracker/aprs-stream/crates/aprs-stream" }
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
+tokio-postgres = "0.7"
+tokio-util = "0.7"
+
+# HTTP + SSE.
+axum = "0.8"
+futures-util = "0.3"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

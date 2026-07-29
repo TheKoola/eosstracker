@@ -132,7 +132,8 @@
                 flights fl
         
             where 
-                a.location2d != ''
+                --a.location2d != ''
+                a.location2d is not null
                 and a.altitude > 0
                 and fm.flightid = fl.flightid
                 and a.callsign = fm.callsign 

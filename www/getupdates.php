@@ -102,7 +102,8 @@
         flights fl
 
         where 
-        a.location2d != '' 
+        --a.location2d != '' 
+        a.location2d is not null
         and a.tm > (now() - interval '11 second')
         and fm.flightid = fl.flightid 
         and a.callsign = fm.callsign 

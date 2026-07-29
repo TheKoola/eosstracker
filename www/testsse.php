@@ -4,7 +4,7 @@
 ##################################################
 #    This file is part of the HABTracker project for tracking high altitude balloons.
 #
-#    Copyright (C) 2023 Jeff Deaton (N6BA)
+#    Copyright (C) 2023,2026 Jeff Deaton (N6BA)
 #
 #    HABTracker is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,63 +23,230 @@
 *
  */
 
-    header("X-Accel-Buffering: no"); // disable ngnix webServer buffering
-    header("Content-Type: text/event-stream");
-    header("Cache-Control: no-cache");
+    // Simple SSE viewer: connect to the Rust backend's /api/sse endpoint (proxied
+    // by Apache) with an EventSource and dump every incoming event to the page.
+    // This replaces the old PHP-based SSE producer that previously lived here.
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSE viewer — eoss-backend</title>
+<style>
+    :root { color-scheme: dark; }
+    body {
+        font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        margin: 0; background: #12161c; color: #e6e6e6;
+    }
+    header { padding: 12px 16px; background: #1b2430; border-bottom: 1px solid #2b3543; }
+    h1 { font-size: 1.1em; margin: 0 0 4px; }
+    header p { margin: 0; font-size: 0.85em; color: #9aa7b4; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; }
+    .controls input[type=text] {
+        flex: 1 1 260px; min-width: 200px; padding: 6px 8px; font-family: monospace;
+        background: #0d1117; color: #e6e6e6; border: 1px solid #2b3543; border-radius: 4px;
+    }
+    button {
+        padding: 6px 14px; border: 0; border-radius: 4px; cursor: pointer; font-weight: 600;
+        background: #2f6fed; color: #fff;
+    }
+    button.secondary { background: #3a4553; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9em; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; display: inline-block; }
+    .dot.connecting { background: #eab308; }
+    .dot.open { background: #22c55e; }
+    .dot.error { background: #ef4444; }
+    .counts { padding: 4px 16px 10px; font-size: 0.85em; color: #9aa7b4; }
+    .counts span { margin-right: 14px; }
+    #log { padding: 0 16px 24px; }
+    .entry {
+        border: 1px solid #2b3543; border-left-width: 4px; border-radius: 4px;
+        margin: 8px 0; padding: 8px 10px; background: #0d1117;
+    }
+    .entry.packet { border-left-color: #22c55e; }
+    .entry.heartbeat { border-left-color: #eab308; }
+    .entry.other { border-left-color: #2f6fed; }
+    .entry.meta { border-left-color: #6b7280; color: #9aa7b4; }
+    .entry .top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .badge {
+        font-family: monospace; font-size: 0.8em; font-weight: 700; padding: 1px 6px;
+        border-radius: 3px; background: #1b2430; text-transform: uppercase;
+    }
+    .ts { font-size: 0.8em; color: #9aa7b4; }
+    .summary { font-family: monospace; font-size: 0.85em; color: #cbd5e1; }
+    pre { margin: 6px 0 0; font-size: 0.8em; white-space: pre-wrap; word-break: break-word; color: #b8c2cc; }
+</style>
+</head>
+<body>
+<header>
+    <h1>SSE viewer &mdash; <code>eoss-backend</code></h1>
+    <p>Connects to the Rust backend's SSE stream with an <code>EventSource</code> and prints every event as it arrives.
+       The <code>/api/*</code> path is served by Apache's reverse proxy to <code>127.0.0.1:3000</code> &mdash; if nothing connects, the
+       <code>&lt;Location /api&gt;</code> proxy config may not be enabled yet.</p>
+</header>
 
-    if (array_key_exists("CONTEXT_DOCUMENT_ROOT", $_SERVER))
-        $documentroot = $_SERVER["CONTEXT_DOCUMENT_ROOT"];
-    else
-        $documentroot = $_SERVER["DOCUMENT_ROOT"];
+<div class="controls">
+    <input type="text" id="url" value="/api/sse" spellcheck="false" aria-label="SSE endpoint URL">
+    <input type="text" id="events" value="packet,heartbeat" spellcheck="false"
+           aria-label="named events to subscribe to" title="Comma-separated SSE event names to listen for">
+    <button id="connect" type="button">Connect</button>
+    <button id="disconnect" type="button" class="secondary" disabled>Disconnect</button>
+    <button id="clear" type="button" class="secondary">Clear</button>
+    <span class="status"><span class="dot" id="dot"></span><span id="statustext">idle</span></span>
+</div>
 
-    include $documentroot . '/common/functions.php';
+<div class="counts">
+    <span>total: <b id="c-total">0</b></span>
+    <span>packet: <b id="c-packet">0</b></span>
+    <span>heartbeat: <b id="c-heartbeat">0</b></span>
+    <span>other: <b id="c-other">0</b></span>
+</div>
 
-    // Connect to the database
-    $link = connect_to_database();
-    if (!$link) {
-        db_error(sql_last_error());
-        return 0;
+<div id="log"></div>
+
+<script>
+(function () {
+    var es = null;
+    var counts = { total: 0, packet: 0, heartbeat: 0, other: 0 };
+
+    var el = function (id) { return document.getElementById(id); };
+    var urlInput = el("url"), eventsInput = el("events");
+    var connectBtn = el("connect"), disconnectBtn = el("disconnect"), clearBtn = el("clear");
+    var dot = el("dot"), statustext = el("statustext"), logEl = el("log");
+
+    function setStatus(state, text) {
+        dot.className = "dot " + state;
+        statustext.textContent = text;
     }
 
-    // start listening for postgresql NOTIFY events
-    pg_query($link, "LISTEN new_packet; LISTEN new_position;");
+    function bumpCount(kind) {
+        counts.total++;
+        if (kind === "packet") counts.packet++;
+        else if (kind === "heartbeat") counts.heartbeat++;
+        else counts.other++;
+        el("c-total").textContent = counts.total;
+        el("c-packet").textContent = counts.packet;
+        el("c-heartbeat").textContent = counts.heartbeat;
+        el("c-other").textContent = counts.other;
+    }
 
-    // close PHP output buffering.  We do this so SSE events aren't "queued" up to the browser - we get an event, we send an event.  ;)
-    ob_end_flush();  
+    // Build a short one-line summary for the common event kinds.
+    function summarize(kind, obj) {
+        if (!obj) return "";
+        var d = obj.data;
+        if (kind === "packet" && d) {
+            var parts = [];
+            if (d.callsign) parts.push(d.callsign);
+            if (d.symbol) parts.push("sym=" + d.symbol);
+            if (d.lat != null && d.lon != null) parts.push(d.lat.toFixed(4) + "," + d.lon.toFixed(4));
+            if (d.altitude) parts.push(Math.round(d.altitude) + "ft");
+            if (d.frequency) parts.push((d.frequency / 1e6).toFixed(3) + "MHz");
+            return parts.join("  ");
+        }
+        return "";
+    }
 
-    // counter to increment upon each result sent to the browser
-    $inc = 0;
+    function addEntry(kind, rawData) {
+        var obj = null;
+        try { obj = JSON.parse(rawData); } catch (e) { /* leave as raw text */ }
 
-    while (!connection_aborted()) {
+        var cls = kind === "packet" ? "packet" : (kind === "heartbeat" ? "heartbeat" : "other");
+        var entry = document.createElement("div");
+        entry.className = "entry " + cls;
 
-        // The result from our postgresql LISTEN command.
-        $result = pg_get_notify($link);
+        var top = document.createElement("div");
+        top.className = "top";
 
-        // check if we got anything back from the postgresql database
-        if ($result) { 
+        var badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = kind;
+        top.appendChild(badge);
 
-            // the event we've listened to
-            $event = $result["message"];
+        var ts = document.createElement("span");
+        ts.className = "ts";
+        var when = (obj && obj.ts) ? new Date(obj.ts) : new Date();
+        ts.textContent = when.toLocaleTimeString();
+        top.appendChild(ts);
 
-            // the data
-            $payload = $result["payload"];
+        var summary = summarize(kind, obj);
+        if (summary) {
+            var s = document.createElement("span");
+            s.className = "summary";
+            s.textContent = summary;
+            top.appendChild(s);
+        }
+        entry.appendChild(top);
 
-            // Send the SSE event to the browser
-            echo "event: $event\n";
-            echo "id: $inc\n";
-            echo "data: " . $payload . "\n\n";
+        var pre = document.createElement("pre");
+        pre.textContent = obj ? JSON.stringify(obj, null, 2) : rawData;
+        entry.appendChild(pre);
 
-            // flush any output to the browser
-            flush(); 
+        // newest on top
+        logEl.insertBefore(entry, logEl.firstChild);
+        bumpCount(kind);
+    }
 
-            // Increment our counter
-            $inc++;
+    function addMeta(text) {
+        var entry = document.createElement("div");
+        entry.className = "entry meta";
+        entry.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+        logEl.insertBefore(entry, logEl.firstChild);
+    }
+
+    function disconnect() {
+        if (es) { es.close(); es = null; }
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        setStatus("", "disconnected");
+    }
+
+    function connect() {
+        disconnect();
+        var url = urlInput.value.trim() || "/api/sse";
+        setStatus("connecting", "connecting to " + url + " …");
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+
+        try {
+            es = new EventSource(url);
+        } catch (e) {
+            setStatus("error", "failed to create EventSource: " + e);
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            return;
         }
 
-        // wait this long before checking for any incoming packets
-        sleep(1); 
+        es.onopen = function () { setStatus("open", "connected to " + url); addMeta("connection opened"); };
+
+        es.onerror = function () {
+            // EventSource auto-reconnects; reflect the transient error state.
+            setStatus("error", "connection error (auto-retrying) …");
+        };
+
+        // Unnamed events (in case the server ever emits without an event: name).
+        es.onmessage = function (ev) { addEntry("message", ev.data); };
+
+        // Named events. EventSource has no wildcard, so subscribe to the names in the
+        // box (comma-separated) — add new kinds there as the backend grows.
+        var names = eventsInput.value.split(",").map(function (n) { return n.trim(); }).filter(Boolean);
+        names.forEach(function (name) {
+            es.addEventListener(name, function (ev) { addEntry(name, ev.data); });
+        });
     }
 
-    // done.
+    connectBtn.addEventListener("click", connect);
+    disconnectBtn.addEventListener("click", disconnect);
+    clearBtn.addEventListener("click", function () {
+        logEl.innerHTML = "";
+        counts = { total: 0, packet: 0, heartbeat: 0, other: 0 };
+        ["total", "packet", "heartbeat", "other"].forEach(function (k) { el("c-" + k).textContent = "0"; });
+    });
 
-?>
+    // Auto-connect on load.
+    connect();
+})();
+</script>
+</body>
+</html>

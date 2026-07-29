@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/eoss-backend",
+]
+
+# `eoss-backend` is the merged Rust backend: it consumes aprs-streamd's multicast
+# and writes the legacy PostgreSQL `packets` table (chunk 1), and serves the
+# `/api/*` HTTP endpoints + SSE stream (chunk 2). Later chunks (native_db storage,
+# etc.) grow this same binary rather than adding processes.
+
+[profile.release]
+strip = true

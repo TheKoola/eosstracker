@@ -49,13 +49,8 @@ from inspect import getframeinfo, stack
 #import local configuration items
 import habconfig 
 import landingpredictor as lp
-import searchrtlsdr
-import aprsreceiver
 import gpspoller
 import databasechecks
-import databasewriter
-import subprocesses
-import connectors
 import queries
 
 
@@ -108,7 +103,7 @@ def isRunning(myprocname):
     listOfProcesses = []
 
     # This is the list of process names we should look for (we ignore gpsd since it should always be running)
-    procs = ["direwolf", myprocname]
+    procs = [myprocname]
 
     # Iterate over all running processes
     for proc in psutil.process_iter():
@@ -310,121 +305,17 @@ def createProcesses(configuration):
     gpsprocess.daemon = True
     procs.append(gpsprocess)
 
-    # This is the database writer process.  It's job is to insert incoming packets into the database
-    logger.debug(f"Creating Database Writer subprocess")
-    dbwriter = mp.Process(name="Database Writer", target=databasewriter.runDatabaseWriter, args=(configuration,))
-    dbwriter.daemon = True
-    procs.append(dbwriter)
-
     # This is the landing predictor process
     logger.debug(f"Creating Landing Predictor subprocess")
     landingprocess = mp.Process(name="Landing Predictor", target=lp.runLandingPredictor, args=(configuration,))
     landingprocess.daemon = True
     procs.append(landingprocess)
 
-    # Start the aprsc sub process
-    logger.debug(f"Creating Aprsc subprocess")
-    aprscprocess = mp.Process(name="Aprsc", target=subprocesses.runSubprocess, args=(configuration, 'aprsc'))
-    aprscprocess.daemon = True
-    procs.append(aprscprocess)
-
-    # This is the APRS-IS connection tap, it will connect to the aprsc process we start above.
-    logger.debug(f"Creating APRS-IS Tap subprocess")
-    aprstap = mp.Process(name="APRS-IS Tap", target=connectors.connectorTap, args=(configuration, "aprs"))
-    aprstap.daemon = True
-    procs.append(aprstap)
-
-    # This is the CWOP connection tap.  
-    logger.debug(f"Creating CWOP Tap subprocess")
-    cwoptap = mp.Process(name="CWOP Tap", target=connectors.connectorTap, args=(configuration, "cwop"))
-    cwoptap.daemon = True
-    procs.append(cwoptap)
-
-    # This is the GnuRadio aprsreceiver process(es)
-    freqlist = configuration["direwolffreqlist"]
-    if len(freqlist) > 0 or configuration["beaconing"] == "true" or configuration["beaconing"] == True:
-
-        # Max number of SDR channels we can listen to while staying at or under the max limit for direwolf
-        # We subtract channels from this amount as we loop through the SDR devices.
-        # 
-        # The approach here is to 'waterfall' the available channels across the SDR devices discovered as usable.  We setup (i.e. a gnuradio process) all 
-        # frequencies on the first SDR, if there are any remaining channels we can still use, we're under the max direwolf limit, they get spun up
-        # in a 2nd gnuradio process.  ...and so on until we run out of direwolf channels to use (aka the max channels number is reached).  This will undoubtedly
-        # mean that the first SDR discovered will [usually] be the most heavily used with all/most frequencies being listened too.  It might make sense in the future
-        # to change this so that we try to spread the frequencies more evenly across multiple SDRs (or do an even/odd alloctaion).
-        num_channels = configuration["maxdirewolfchannels"] + (-1 if configuration["beaconing"] else 0)
-
-        # each 'flist' represents an individual SDR device and it's list of frequencies we're wanting it to listen too
-        for flist in freqlist:
-
-            logger.debug(f"{num_channels=}, {flist}")
-
-            # if the number of frequencies is greater than the number of channels we've got available for direwolf, then adjust
-            if num_channels <= 0:
-                logger.debug(f"reached maximum channels for gnuradio processes.  Remaining channels: {num_channels}")
-
-                # we've used up all available channels that we can use with direwolf.  No use in spinning up any more gnuradio processes.
-                break
-
-            # if the number of frequencies is > than the number of direwolf channels we have available, then limit that to the first 'num_channels' amount.
-            elif len(flist) > num_channels:
-                sdr = flist[0:num_channels]
-                logger.debug(f"limiting number of channels for {sdr}.  {num_channels=}")
-
-            # otherwise, we just add all of the frequencies to the list we want to listen too.
-            else:
-                sdr = flist
-                logger.debug(f"adding all channels for {sdr}")
-
-            # subtract this list of channels from the total we're going to have direwolf listen too
-            num_channels -= len(sdr)
-
-            # Get the first element of this list, so we can grab the SDR prefix, serial number, and index number
-            # Example: [144390000, 12010, 'rtl', 'some_string', 1]
-            elem = sdr[0]
-            sdrprefix = elem[2]
-            sdrserialno = elem[3]
-            sdrindex = elem[4]
-
-            logger.debug(f"Creating GnuRadio Receiver subprocess for SDR: {sdrprefix=} {sdrserialno=} {sdrindex=}")
-            aprs = mp.Process(name="GnuRadio Receiver", target=aprsreceiver.GRProcess, args=(configuration, sdr, sdrprefix, sdrserialno, sdrindex))
-            aprs.daemon = True
-            procs.append(aprs)
-
-
-        # The direwolf process
-        logger.debug(f"Creating Direwolf subprocess")
-        dfprocess = mp.Process(name="Direwolf", target=subprocesses.runSubprocess, args=(configuration, 'direwolf'))
-        dfprocess.daemon = True
-        procs.append(dfprocess)
-
-        # The direwolf tap process 
-        logger.debug(f"Creating Direwolf Tap subprocess")
-        dftapprocess = mp.Process(name="Direwolf KISS Tap", target=connectors.connectorTap, args=(configuration, "dwkiss"))
-        dftapprocess.daemon = True
-        dftapprocess.name = "Direwolf KISS Tap"
-        procs.append(dftapprocess)
-
-
-    # if we're igating, then create a process to update a JSON file with igating statistics.  
-    # Might expand on this idea in the future with a "stats" or "telemetry" process that publishes data about the backend.
-    #igating = (True if configuration["igating"] == "true" else False) if "igating" in configuration else False
-    #if igating:
-
-        # The telemetry process
-    #    logger.debug(f"Creating Telemetry subprocess")
-    #    tmprocess = mp.Process(name="Telemetry", target=telemetry, args=(configuration,))
-    #    tmprocess.daemon = True
-    #    procs.append(tmprocess)
-
-
-    # This is the RTP Multicast connection tap.  
-    ka9qradio = True if configuration["ka9qradio"] == "true" else False
-    if ka9qradio:
-        rtp = mp.Process(name="RTP Multicast Tap", target=connectors.connectorTap, args=(configuration, "rtp"))
-        rtp.daemon = True
-        procs.append(rtp)
-
+    # NOTE: packet ingest (Database Writer, aprsc, APRS-IS/CWOP taps, GnuRadio
+    # receivers, Direwolf, the KISS tap, and the ka9q-radio RTP tap) has been
+    # removed from this daemon.  Those responsibilities now live in the external
+    # aprs-streamd decoder and the Rust `eoss-ingest` daemon, which writes packets
+    # directly into the PostgreSQL `packets` table.
 
     # Return the list of newly created processes
     return procs
@@ -640,141 +531,6 @@ def getFreqList():
 
 
 ##################################################
-# get the list of frequencies that gnuradio will listen too...and subsequently the UDP ports that direwolf will listen too
-# then construct the freq map that direwolf will use.
-##################################################
-def buildFreqMap(config):
-
-        # get the logger
-        logger = logging.getLogger(__name__)
-
-        # A list of frequency lists (i.e. a list of lists) for creating the direwolf configuration file
-        direwolfFreqList = []
-
-        # The direwolf channel-to-frequency mapping
-        freqmap = []
-
-        # Get the RTL-SDR USB dongles that are attached
-        sdrs = searchrtlsdr.getUSBDevices()
-
-        # The number of SDRs
-        i = len(sdrs)
- 
-        print(("Number of usable SDRs: ", i))
-        logger.info(f"Number of usable SDRs: {i}")
-
-        #  Online-only mode:  
-        #      - we do start aprsc, but only have it connect as "read-only" to APRS-IS (regardless if we want to igate or not)
-        #      - we do not start GnuRadio processes
-        #      - we do not start Direwolf
-        #   
-        #  RF mode: 
-        #      - we do start aprsc, and connect in "read-only" mode (unless we want to igate packets to the internet)
-        #      - we do start GnuRadio processes
-        #      - we do start Direwolf and have it connect to the aprsc instance via "localhost" 
-
-        direwolfstatus = {}
-        antennas = []
-
-        # If USB SDR dongles are attached, then we're going to start in RF mode and start GnuRadio and Direwolf processes
-        if i > 0:
-
-            # Get the frequencies to be listened to (ex. 144.39, 144.34, etc.) and UDP port numbers for xmitting the audio over
-            freqs = getFreqList()
-
-            # For each SDR dongle found, start a separate GnuRadio listening process
-            total_freqs = 0
-            chan = 0
-            loop_iter = 0
-            for k in sdrs:
-
-                logger.info(f"Using SDR: {k}")
-                direwolfstatus["rf_mode"] = 1
-                
-                # Append this frequency list to our list for later json output
-                ant = {}
-                ant["rtl_id"] = k["rtl"]
-                ant["prefix"] = k["prefix"]
-                ant["frequencies"] = []
-                ant["rtl_serialnumber"] = k["serialnumber"]
-                ant["rtl_manufacturer"] = k["manufacturer"]
-                ant["rtl_product"] = k["product"]
-
-                # Create frequency/udpport list that gnuradio and direwolf will use.
-                udpport = 12000 + loop_iter * 10
-                freqlist = []
-                for freq in freqs:
-                    ant["frequencies"].append({"frequency": round(freq/1000000.0, 3), "udp_port": udpport})
-                    freqlist.append([freq, udpport, k["prefix"], k["serialnumber"], k["rtl"]])
-                    freqmap.append([chan, freq])
-                    chan += 2
-                    total_freqs += 1
-                    udpport += 1
-                antennas.append(ant) 
-
-                # append this frequency/UDP port list to the list for Direwolf
-                direwolfFreqList.append(freqlist)
-
-                # The IP destination for where the GnuRadio UDP network block is to send its audio packets too.  This is hard coded to be the loopback address (for now).
-                ip_dest = "127.0.0.1"
-
-                loop_iter += 1
-
-
-            # The direwolf audio sample rate.  This is hardcoded for now to be 50000 as it makes the math easier for the Resampler blocks within the GnuRadio receiver.
-            # This primaryly comes into play with airspy dongles as they have a fixed sample rate that is a nice multiple of 50000.
-            samplerate = 50000
-
-            ssid = int(config["ssid"]) if "ssid" in config else 0
-            if ssid <= 0:
-                ssid = None
-
-            direwolfstatus["direwolfcallsign"] = str(config["callsign"]) + ("-" + str(ssid) if ssid else "")
-            logger.info(f"direwolfcallsign: {direwolfstatus['direwolfcallsign']}, ssid: {ssid}")
-            direwolfstatus["direwolffreqlist"] = direwolfFreqList
-            direwolfstatus["direwolffreqmap"] = freqmap
-            direwolfstatus["direwolfaudiorate"] = samplerate
-
-            # Get our our current position
-            #myposition = getGPSPosition()
-
-            # The direwolf process
-            #dfprocess = mp.Process(target=direwolf.direwolf, args=(stopevent, str(configuration["callsign"]) + "-" +  str(configuration["ssid"]), direwolfFreqList, configuration, myposition))
-            #dfprocess.daemon = True
-            #dfprocess.name = "Direwolf"
-            #processes.append(dfprocess)
-
-            # The direwolf tap process 
-            #dftapprocess = mp.Process(target=kisstap.runKissTap, args=(5, stopevent, configuration, freqmap))
-            #dftapprocess.daemon = True
-            #dftapprocess.name = "Direwolf Tap"
-            #processes.append(dftapprocess)
-
-
-            direwolfstatus["xmit_channel"] = None
-            if config["beaconing"] == "true":
-
-                direwolfstatus["xmit_channel"] = total_freqs * 2
-
-                # The beaconing process (this is different from the position beacons that direwolf will transmit)
-                #print("Starting object beaconing process...")
-
-                #icprocess = mp.Process(target=infocmd.runInfoCmd, args=(120, stopevent, configuration))
-                #icprocess.daemon = True
-                #icprocess.name = "Object beaconing"
-                #processes.append(icprocess)
-
-        else:
-            direwolfstatus["direwolfcallsign"] = ""
-            direwolfstatus["direwolffreqlist"] = []
-            if config["beaconing"] == "true":
-                direwolfstatus["xmit_channel"] = 0 
-           
-        direwolfstatus["antennas"] = antennas 
-
-        return direwolfstatus
-
-##################################################
 # Determine if the GPS Poller process has acquired a position fix.  
 ##################################################
 def getPosition(configuration)->dict:
@@ -864,12 +620,6 @@ def main():
         # Add the stopevent to the our configuration
         configuration["stopevent"] = stopevent
 
-        # incoming packet queue for database writes.  All sub-processes that ingest packets place packets in this queue.
-        configuration["databasequeue"] = mp.Queue(maxsize = 0)
-
-        # for all packets that we're intending to igate. sub-processes will add packets for igating consideration to this queue
-        configuration["igatingqueue"] = mp.Queue(maxsize = 0)
-
         # add the logging queue to the configuration sent to sub-processes so their log messages are routed back here
         configuration["loggingqueue"] = loggingqueue
 
@@ -921,31 +671,17 @@ def main():
         status["starttime"] = ts.strftime("%Y-%m-%d %H:%M:%S")
         status["timezone"] = str(configuration["timezone"])
 
-        # get the frequency, udp mapping (from backend database of active flights) and set various objects.
-        direwolfstatus = buildFreqMap(configuration)
-        configuration["direwolffreqlist"] = direwolfstatus["direwolffreqlist"] if "direwolffreqlist" in direwolfstatus else []
-        configuration["direwolffreqmap"] = direwolfstatus["direwolffreqmap"] if "direwolffreqmap" in direwolfstatus else None
-        configuration["xmit_channel"] = direwolfstatus["xmit_channel"] if "xmit_channel" in direwolfstatus else None
-        configuration["direwolfcallsign"] = direwolfstatus["direwolfcallsign"] if "direwolfcallsign" in direwolfstatus else None
-        configuration["direwolfaudiorate"] = direwolfstatus["direwolfaudiorate"] if "direwolfaudiorate" in direwolfstatus else None
-        configuration["maxdirewolfchannels"] = 8
-        status["direwolfcallsign"] = direwolfstatus["direwolfcallsign"]
-        status["rf_mode"] = 1 if status["direwolfcallsign"] else 0
-        status["antennas"] = direwolfstatus["antennas"]
+        # Packet ingest (RF demod/decode, Direwolf, aprsc, and igating) has moved
+        # out of this daemon and into the external aprs-streamd + Rust eoss-ingest
+        # pipeline, so there is no RF mode, Direwolf, or antenna configuration to
+        # build here.  These status keys are kept (inert) so the web frontend and
+        # getstatus.py continue to find the fields they expect.
+        status["rf_mode"] = 0
+        status["direwolfcallsign"] = ""
+        status["antennas"] = []
         status["gpshost"] = configuration["gpshost"]
         status["ka9qradio"] = configuration["ka9qradio"]
-
-        # if direwolf doesn't have anything to listen to (i.e. we didn't find any SDRs attached) then we definitely can't be igating unless we're listening
-        # to a ka9q-radio backend somewhere on the local network.
-        if len(configuration["direwolffreqlist"]) == 0 and status["ka9qradio"] == "false":
-            configuration["igating"] = "false"
-
-        # we want to connect to this system for aprs-is connectivity
-        #configuration["aprsisserver"] = "noam.aprs2.net"
-        configuration["aprsisserver"] = "127.0.0.1"
-
-        # where the direwolf instance is running
-        configuration["direwolfserver"] = "127.0.0.1"
+        configuration["igating"] = "false"
 
         # Create all of the sub-processes
         processes = createProcesses(configuration)

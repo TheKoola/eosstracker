@@ -157,7 +157,8 @@
                                     flightmap fm
 
                                     where 
-                                    a.location2d != '' 
+                                    --a.location2d != '' 
+                                    a.location2d is not null
                                     and a.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
                                     and fm.flightid = f.flightid
                                     and f.active = 'y'
@@ -240,19 +241,19 @@
                 y.source,
                 y.hash,
                 case 
-                when y.location2d != '' and gps.location2d != '' then
+                when y.location2d is not null and gps.location2d is not null then
                     floor(cast(ST_DistanceSphere(y.location2d, gps.location2d)*.621371/1000 as numeric))
                 else
                     -99
                 end as distance_miles,
                 case 
-                when y.location2d != '' and gps.location2d != '' then
+                when y.location2d is not null and gps.location2d is not null then
                     round(cast(degrees(atan((y.altitude  - gps.altitude_ft) / (cast(ST_DistanceSphere(y.location2d, gps.location2d) as numeric) * 3.28084))) as numeric), 2)
                 else
                     -99
                 end as angle,
                 case 
-                when y.location2d != '' and gps.location2d != '' then
+                when y.location2d is not null and gps.location2d is not null then
                     floor(cast(degrees(ST_Azimuth(gps.location2d, y.location2d)) as numeric))
                 else
                     -99
@@ -264,7 +265,7 @@
                     -99
                 end as myheading,
                 case
-                    when lp.location2d != '' and gps.location2d != '' then
+                    when lp.location2d is not null and gps.location2d is not null then
                         floor(cast (ST_DistanceSphere(gps.location2d, lp.location2d)*.621371/1000 as numeric))
                     else
                         -99
@@ -376,7 +377,8 @@
                                 flightmap fm
 
                                 where 
-                                a.location2d != '' 
+                                --a.location2d != '' 
+                                a.location2d is not null
                                 and a.tm > (now() - (to_char(($2)::interval, 'HH24:MI:SS'))::time) 
                                 and fm.flightid = f.flightid
                                 and f.active = 'y'

@@ -9,7 +9,7 @@
   "sources": {
     "openmaptiles": {
       "type": "vector",
-      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/north-america-latest.json"
+      "url": "https://eosstracker.local/tileserver/tileserver.php?/tileserver/planet.json"
     },
     "natural_earth_shaded_relief": {
       "maxzoom": 6,

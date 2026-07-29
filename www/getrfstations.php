@@ -142,7 +142,8 @@
                     packets z
 
                     where
-                    z.location2d != '' 
+                    --z.location2d != '' 
+                    z.location2d is not null
                     and z.tm > (now() - (to_char(($1)::interval, 'HH24:MI:SS'))::time) 
                     and z.tm > (to_timestamp($2)::timestamp)
                     and (z.source like 'direwolf%' or z.source like 'ka9q-radio%')
@@ -160,7 +161,8 @@
                 b.callsign is null
                 and c.callsign is null
                 and dw.hash is null
-                and a.location2d != '' 
+                --and a.location2d != '' 
+                and a.location2d is not null
                 and a.tm > (now() - (to_char(($3)::interval, 'HH24:MI:SS'))::time) 
                 and a.tm > (to_timestamp($4)::timestamp)
                 and a.symbol != '/_'

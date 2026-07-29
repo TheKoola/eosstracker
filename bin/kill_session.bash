@@ -74,20 +74,9 @@ if [ $? -eq 0 ]; then
     fi
 fi
 
-# first kill aprsc because we have to use sudo...
-ps -ef | grep aprsc | grep -v grep > /dev/null
-if [ $? -eq 0 ]; then
-    echo "killing aprsc..." >> ${LOGFILE}
-    sudo pkill aprsc >> ${LOGFILE}
-fi
-
-
-# Now kill direwolf
-ps -ef | grep direwolf | grep -v grep > /dev/null
-if [ $? -eq 0 ]; then
-    echo "killing direwolf..." >> ${LOGFILE}
-    pkill direwolf >> ${LOGFILE}
-fi
+# NOTE: aprsc and direwolf are no longer started by the backend.  Packet ingest
+# moved to the external aprs-streamd decoder and the Rust eoss-ingest daemon, so
+# there is nothing to kill here for those processes.
 
 # delete the daemonstatus.json file
 rm -f ${HOMEDIR}/www/daemonstatus.json

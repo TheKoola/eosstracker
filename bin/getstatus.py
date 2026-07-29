@@ -45,9 +45,10 @@ def getProcStatus(query: list)->list:
 
        try:
            # Get process detail as dictionary
-           pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+           #pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'memory_percent', 'cmdline' ])
+           pInfoDict = proc.as_dict(attrs=['pid', 'ppid', 'name', 'exe', 'cmdline' ])
 
-       except (psutil.NoSuchProcess, psutil.AccessDenied):
+       except (psutil.NoSuchProcess, psutil.AccessDenied, FileNotFoundError, PermissionError):
            # we just skip over those processes that we're not allowed to see or if they no longer exist.
            pass
 
@@ -136,8 +137,10 @@ def main():
     # The name of the habtracker-daemon.py process
     habproc = "habtracker-d"
 
-    # the list of processes that we're interested in
-    procs_of_interest = ["direwolf", "gpsd", habproc, "aprsc"]
+    # the list of processes that we're interested in.  Direwolf and aprsc are no
+    # longer started by the backend (packet ingest moved to aprs-streamd + the
+    # Rust eoss-ingest daemon), so they're no longer tracked here.
+    procs_of_interest = ["gpsd", habproc]
 
 
 
